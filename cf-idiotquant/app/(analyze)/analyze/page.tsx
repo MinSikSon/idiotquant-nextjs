@@ -1,5 +1,6 @@
 'use client';
 
+import { PageSearch } from "@/components/page-search";
 import { SecondarySection } from "@/components/secondary-section";
 import TechnicalSummary from '@/components/research/TechnicalSummary';
 import { normalizeBars } from '@/lib/research/technical';
@@ -23,10 +24,10 @@ import { useStockSearch } from '@/app/(search)/search/hooks/useStockSearch';
 import { selectKrMarketHistory } from '@/lib/features/searchHistory/searchHistorySlice';
 import {
   AlertCircle, Loader2, Flame, CheckCircle,
-  Search, Heart, TrendingUp, ChevronLeft, ChevronDown, Lock, ArrowRight,
+  Heart, TrendingUp, ChevronLeft, ChevronDown, Lock, ArrowRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { PageHeader, PAGE_WIDTH, PAGE_ACTION_CLS, PAGE_PRIMARY_ACTION_CLS } from '@/components/pageHeader';
+import { PageHeader, PAGE_WIDTH, PAGE_ACTION_CLS } from '@/components/pageHeader';
 import { GradeHelp } from './components/GradeHelp';
 import StockLikeStats from '@/components/stockLikeStats';
 import FinancialFreshnessNotice from '@/components/financial-freshness';
@@ -389,7 +390,6 @@ function AnalyzeContent() {
   // 재무 탭 — 추이 그래프와 기간별 숫자표를 전환한다
   const [financeView, setFinanceView] = useState<'bars' | 'table'>('bars');
   // 결과를 보는 중에는 검색줄을 접어 헤더가 종목 정보를 대신 보여준다
-  const [searchOpen, setSearchOpen] = useState(false);
 
   useEffect(() => {
     setHasMounted(true);
@@ -407,9 +407,8 @@ function AnalyzeContent() {
       addToast('error', '국내·미국 종목명으로 검색 결과를 선택하거나 종목코드·티커를 확인해 주세요.');
       return;
     }
-    setSearchOpen(false);
     startTransition(() => { router.push(`/analyze?ticker=${encodeURIComponent(ticker)}`); });
-  }, [router, addToast, staticStockData.allTickers, setSearchOpen]);
+  }, [router, addToast, staticStockData.allTickers]);
 
   useEffect(() => {
     const ticker = searchParams.get('ticker');
@@ -613,20 +612,6 @@ function AnalyzeContent() {
           <span className="font-semibold tabular-nums text-neutral-900 dark:text-white">{headerPrice}</span>
         </> : undefined}
         mobileCompact
-        primaryAction={isPriceLoaded && <button type="button" data-page-input-trigger aria-keyshortcuts="/" title={searchOpen ? "검색창 닫기" : "/ 종목 검색"} onClick={() => {
-              if (isPriceLoaded && searchOpen) { setSearchOpen(false); return; }
-              setSearchOpen(true);
-              requestAnimationFrame(() => {
-                const search = document.getElementById('analyze-stock-search');
-                search?.querySelector<HTMLInputElement>('input')?.focus({ preventScroll: true });
-                search?.scrollIntoView({ block: 'center' });
-              });
-            }}
-            aria-label={searchOpen ? '검색창 닫기' : '다른 종목 검색'}
-            aria-expanded={searchOpen} aria-controls="analyze-stock-search"
-            className={searchOpen ? PAGE_ACTION_CLS : PAGE_PRIMARY_ACTION_CLS}>
-            <Search size={14} aria-hidden="true" /><span>{searchOpen ? "검색 닫기" : "종목 검색"}</span>
-          </button>}
         tabs={isPriceLoaded && (
           <div className={cn(ANALYZE_WIDTH, styles.page, styles.tabsRow)}>
             <div data-analysis-tabs role="group" className={styles.tabStrip} aria-label="분석 보기 선택">
@@ -663,23 +648,14 @@ function AnalyzeContent() {
 
         </> : undefined}
       >
-        {/* 검색줄 — 결과 전에는 항상 열려 있고, 결과를 보는 중에는 돋보기로 펼친다 */}
-        {(!isPriceLoaded || searchOpen) && (
-          <div id="analyze-stock-search" className={cn(ANALYZE_WIDTH, styles.searchRow, "flex items-center gap-2")}>
-            <div className={cn("flex-1 min-w-0", styles.searchField)}>
-              <SearchAutocomplete
-                onEscape={() => { setSearchOpen(false); document.querySelector<HTMLButtonElement>('[data-page-input-trigger]')?.focus(); }}
-                autoFocus={searchOpen}
-                placeHolder="종목명·티커 검색"
-                onSearchButton={handleSearch}
-                validCorpNameArray={staticStockData.allTickers}
-                stockNames={staticStockData.usStocks}
-                onSearchStateChange={() => {}}
-              />
-            </div>
-
-          </div>
-        )}
+        <PageSearch>
+          <SearchAutocomplete
+            placeHolder="종목명·티커 검색"
+            onSearchButton={handleSearch}
+            validCorpNameArray={staticStockData.allTickers}
+            stockNames={staticStockData.usStocks}
+          />
+        </PageSearch>
 
         {/* 인기 종목 + 최근 검색 — 검색 화면에서만 보여준다 */}
         {!isPriceLoaded && (popularStocks.length > 0 || krMarketHistory.length > 0) && (

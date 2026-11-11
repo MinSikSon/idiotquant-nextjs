@@ -600,3 +600,13 @@ html:has(.navigation-header [data-page-tabs]) { --navigation-h: 92px; }
 [data-page-tabs] :is(.navigation-strategy-tabs, [data-compact-tabs]) :is([aria-pressed="true"], [aria-current="page"]) { border-bottom-color: rgb(var(--brand-ink)); color: rgb(var(--brand-ink)); }
 
 [data-page-secondary-actions] > button > span.hidden { display: inline; }
+
+/* 검색은 고정 도구 줄에, 모바일 브랜드·제목은 본문 스크롤에 둔다. */
+.navigation-search:has([data-page-search]) > a { display: none; }
+.navigation-popover:has([data-search-content]) { width: 480px; }
+[data-search-content] { padding: 4px; }
+[data-search-content] input { font-size: 16px; }
+@media (max-width: 767px) {
+  .navigation-identity { padding-top: var(--navigation-h, 48px); }
+  .navigation-identity ~ main { padding-top: 0; }
+}

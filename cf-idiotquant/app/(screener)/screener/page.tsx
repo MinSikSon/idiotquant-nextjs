@@ -2,6 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
+import { PageSearch } from "@/components/page-search";
 import GuestDiscovery from "./components/GuestDiscovery";
 import { ComparisonCheckbox, type ComparisonChoice } from "@/components/comparison-checkbox";
 import { analysisHref, comparisonHref, PENDING_WATCH_KEY, toggleComparisonSelection } from "@/lib/investmentFlow";
@@ -1410,7 +1411,7 @@ function ScreenerContent() {
                 </div>
             )}
 
-            {/* 전략 조건과 검색·정렬·필터는 본문과 함께 스크롤한다. */}
+            {/* 검색은 상단바에, 전략 조건·정렬·필터는 본문에 둔다. */}
             <div className={cn(
                 "bg-white/95 dark:bg-surface-dark/95",
                 "border-b border-neutral-200 dark:border-surface-dark-border",
@@ -1476,6 +1477,7 @@ function ScreenerContent() {
                     <div className="flex flex-col gap-2 pb-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2 sm:pb-3">
                         <div className="flex items-center gap-2 min-w-0 w-full sm:w-auto sm:flex-1">
                         {/* 검색 */}
+                        {isLoggedIn && <PageSearch label="발굴 종목 검색">
                         <div className="relative flex-1 min-w-0 sm:min-w-[180px]">
                             <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-300 dark:text-neutral-600 pointer-events-none" />
                             <input
@@ -1490,6 +1492,7 @@ function ScreenerContent() {
                                 className="min-h-[44px] w-full pl-8 pr-3 py-2 text-xs font-medium bg-surface-canvas dark:bg-surface-dark-card border border-neutral-200 dark:border-surface-dark-border rounded-lg outline-none focus:border-brand focus:ring-2 focus:ring-brand/15 placeholder:text-neutral-400 dark:placeholder:text-neutral-600"
                             />
                         </div>
+                        </PageSearch>}
 
                         {/* 표 헤더를 열지 않아도 어떤 보기에서나 정렬을 바꿀 수 있다. */}
                         <select

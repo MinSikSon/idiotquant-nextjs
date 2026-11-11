@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { useViewAsUser, setViewAsUser } from "@/lib/viewAsUser";
 import {
   CircleUserRound,
+  Home,
   Filter,
   Search,
   Calculator,
@@ -44,6 +45,7 @@ type NavItem = {
 
 // 순서·아이콘을 홈 온보딩 설명 순서에 맞춤: 발굴(🥇) → 분석(💎).
 const MAIN_NAV: NavItem[] = [
+  { label: "홈", href: "/", icon: Home, exact: true },
   { label: "종목 발굴", href: "/screener",    icon: Filter,     emoji: "🥇", badge: "Pro" },
   { label: "종목 비교", href: "/compare",     icon: GitCompareArrows },
   { label: "종목 분석", href: "/analyze",     icon: Search,     emoji: "💎"   },
@@ -248,6 +250,14 @@ export function NavbarWithSimpleLinks() {
   const { data: session, status } = useSession();
   const pathname = usePathname();
   const pageHeader = useMobilePageHeader();
+  const [mobile, setMobile] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 767px)");
+    const update = () => setMobile(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
 
   // 관리자가 일반 사용자 화면을 보는 중인가. **권한이 아니라 표시**만 접는다 —
   // 주소를 치면 그대로 열리고, 서버는 이 값을 아예 모른다(lib/viewAsUser.ts).
@@ -459,25 +469,30 @@ export function NavbarWithSimpleLinks() {
 
       {!inGame && <header data-navigation-header className="navigation-header fixed inset-x-0 top-0 z-40 border-b border-neutral-300/50 bg-surface-canvas/95 backdrop-blur-[12px] dark:border-neutral-700/60 dark:bg-surface-dark-canvas/95 md:sticky">
         <div className="navigation-main flex h-12 items-center gap-2 px-3 md:gap-4 md:px-6">
-          <Link href="/" aria-label="idiotquant 홈" className="shrink-0 text-lg font-bold tracking-tight text-neutral-900 dark:text-white">
+          <Link href="/" aria-label="idiotquant 홈" className="hidden md:block shrink-0 text-lg font-bold tracking-tight text-neutral-900 dark:text-white">
             idiot<span className="text-brand-ink">quant</span>
           </Link>
           <nav aria-label="주요 서비스" className="hidden shrink-0 items-center gap-1 md:flex">
             {MAIN_NAV.map(item => (
               <Link key={item.href} href={item.href} aria-label={item.label}
-                aria-current={active(pathname, item.href) ? "page" : undefined}
+                aria-current={active(pathname, item.href, item.href === "/") ? "page" : undefined}
                 className={cn("inline-flex min-h-11 items-center rounded-lg px-2 text-xs font-medium lg:px-3 lg:text-sm",
-                  active(pathname, item.href)
+                  active(pathname, item.href, item.href === "/")
                     ? "bg-brand-light text-brand-ink dark:bg-brand-muted/50"
                     : "text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800")}>
-                <span className="hidden lg:inline">종목&nbsp;</span>{item.label.replace("종목 ", "")}
+                {item.href !== "/" && <span className="hidden lg:inline">종목&nbsp;</span>}{item.label.replace("종목 ", "")}
               </Link>
             ))}
           </nav>
-          <div ref={pageHeader?.setTitleTarget} className={cn("min-w-0 flex-1", !pageHeader?.active && "hidden")} />
-          {!pageHeader?.active && <span className="min-w-0 flex-1 truncate text-sm font-semibold">{pathname === "/" ? null : mobilePageTitle}</span>}
+          <div ref={!mobile ? pageHeader?.setTitleTarget : undefined} className={cn("hidden min-w-0 flex-1 md:block", !pageHeader?.active && "md:hidden")} />
+          {!pageHeader?.active && <span className="hidden min-w-0 flex-1 truncate text-sm font-semibold md:block">{pathname === "/" ? null : mobilePageTitle}</span>}
+          <div className="flex-1 md:hidden" />
           <div ref={pageHeader?.setActionsTarget} data-navigation-actions className="shrink-0" />
-          <div className="hidden shrink-0 md:block">
+          <div className="navigation-search flex shrink-0 items-center">
+            <div ref={pageHeader?.setSearchTarget} />
+            <Link href="/analyze" aria-label="종목 검색" className="navigation-icon"><Search size={21} /></Link>
+          </div>
+          <div className="shrink-0">
             <NavigationPopover label="사용자 및 서비스 메뉴" trigger={<button type="button" aria-label="사용자 및 서비스 메뉴" className="navigation-icon"><CircleUserRound size={21} /></button>}>
               {serviceMenu(false)}
             </NavigationPopover>
@@ -485,6 +500,14 @@ export function NavbarWithSimpleLinks() {
         </div>
         <div ref={pageHeader?.setTabsTarget} />
       </header>}
+
+      {!inGame && <div className="navigation-identity bg-surface-canvas dark:bg-surface-dark-canvas md:hidden">
+        <div className="flex min-h-14 items-center gap-3 px-3 py-2">
+          <Link href="/" className="shrink-0 text-xl font-bold tracking-tight text-neutral-900 dark:text-white">idiot<span className="text-brand-ink">quant</span></Link>
+          <div ref={mobile ? pageHeader?.setTitleTarget : undefined} className={cn("min-w-0 flex-1", !pageHeader?.active && "hidden")} />
+          {!pageHeader?.active && pathname !== "/" && <span className="truncate text-base font-semibold">{mobilePageTitle}</span>}
+        </div>
+      </div>}
 
       {/* 게임 전용 모바일 헤더는 기존 구성을 유지한다. */}
       {inGame && <header data-navigation-header data-mobile-header data-page-active={pageHeader?.active || undefined} className={cn("navigation-mobile-header md:hidden fixed top-0 left-0 right-0 z-40 border-b",
@@ -512,6 +535,7 @@ export function NavbarWithSimpleLinks() {
       <nav ref={bottomNav} aria-label="하단 메뉴" data-bottom-navigation data-hidden={bottomHidden && !moreSheet || undefined}
         onFocusCapture={() => setBottomHidden(false)}
         className={cn(inGame ? "hidden" : "md:hidden fixed bottom-0 left-0 right-0 z-40 border-t flex items-center px-3 bg-surface-canvas/95 backdrop-blur-[12px] dark:bg-surface-dark-canvas/95 border-neutral-300/50 dark:border-neutral-700/60")}>
+        <TabItem href="/" label="홈" icon={Home} isActive={pathname === "/"} />
         {/* 게임(Rogue)은 아래쪽 탭이 아니라 "메뉴" 안에 있다(MORE_NAV) */}
         <TabItem href="/screener"   label="발굴"   icon={Filter}     emoji="🥇" isActive={pathname.startsWith("/screener")} />
         <TabItem href="/compare"    label="비교"   icon={GitCompareArrows} isActive={pathname.startsWith("/compare")} />

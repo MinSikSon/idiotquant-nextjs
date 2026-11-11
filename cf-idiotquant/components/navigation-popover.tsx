@@ -32,7 +32,7 @@ export function NavigationPopover({ label, trigger, children, side = "bottom", o
     if (!content || !trigger) return;
     const position = () => {
       const rect = trigger.getBoundingClientRect();
-      content.style.right = `${Math.max(12, window.innerWidth - rect.right)}px`;
+      content.style.right = `${Math.max(12, Math.min(window.innerWidth - rect.right, window.innerWidth - content.offsetWidth - 12))}px`;
       if (side === "top") {
         content.style.bottom = "calc(var(--bottombar-h) + 4px)";
         content.style.maxHeight = "calc(100dvh - var(--bottombar-h) - 16px)";

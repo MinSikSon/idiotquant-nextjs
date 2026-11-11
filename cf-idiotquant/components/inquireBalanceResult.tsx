@@ -1,5 +1,6 @@
 "use client";
 
+import { PageSearch } from "@/components/page-search";
 import { DetailHelp } from "@/components/balance/detailHelp";
 import React, { useEffect, useState, useMemo } from "react";
 import {
@@ -225,11 +226,14 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
 
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                     {/* 🔍 실시간 신규 종목 검색 및 주문 컴포넌트 */}
+                    <PageSearch label="잔고 종목 검색">
                     <div className="relative w-full min-w-0 sm:min-w-[260px]">
                         <div className="relative">
                             <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
                             <input
                                 type="text"
+                                data-page-input
+                                aria-label="잔고 종목 검색"
                                 value={searchQuery}
                                 onFocus={() => setIsDropdownOpen(true)}
                                 onChange={(e) => {
@@ -281,6 +285,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                             </>
                         )}
                     </div>
+                    </PageSearch>
 
                     <div className="flex items-center gap-2">
                         <span className="px-2 py-1 bg-neutral-200 dark:bg-surface-dark-muted rounded text-[10px] font-semibold text-neutral-600 dark:text-neutral-400 shrink-0">
