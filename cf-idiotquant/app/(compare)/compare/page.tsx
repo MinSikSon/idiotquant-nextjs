@@ -1,5 +1,6 @@
 'use client';
 
+import { PageSearch } from "@/components/page-search";
 import { SecondarySection } from "@/components/secondary-section";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -373,6 +374,7 @@ function ComparePageContent() {
             <Trash2 size={15} aria-hidden="true" /><span>전체 비우기</span>
           </button>
         </div>
+        <PageSearch label="비교할 종목 검색">
         <form onSubmit={submit} className="relative mt-4 flex gap-3">
           <div className="relative min-w-0 flex-1">
             <Search aria-hidden size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-600 dark:text-neutral-400" />
@@ -381,6 +383,7 @@ function ComparePageContent() {
           </div>
           <button disabled={sessionLoading || loading || dateLoading || stocks.length >= limits.stocks || !query.trim()} aria-label="종목 추가" className={cn(PAGE_PRIMARY_ACTION_CLS, "h-11")}>{loading ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}<span>종목 추가</span></button>
         </form>
+        </PageSearch>
         <p className="mt-2 text-xs text-neutral-600 dark:text-neutral-400">종목 {stocks.length}/{limits.stocks}개 · 국내와 미국 종목을 함께 볼 수 있습니다. PER·PBR 등 재무지표는 현재 기준입니다.</p>
         {sessionStatus === 'unauthenticated' && <p className="mt-2 text-xs text-neutral-600 dark:text-neutral-400">로그인 없이 {GUEST_LIMITS.stocks}종목·{GUEST_LIMITS.dates}개 날짜까지, 로그인하면 {MEMBER_LIMITS.stocks}종목·{MEMBER_LIMITS.dates}개 날짜까지 비교할 수 있습니다.</p>}
         {importProgress && <p role="status" className="mt-2 text-xs text-neutral-600 dark:text-neutral-400">스크리너 종목을 불러오는 중 · {importProgress.loaded}/{importProgress.total}</p>}

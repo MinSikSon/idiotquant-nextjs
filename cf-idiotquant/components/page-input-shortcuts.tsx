@@ -60,6 +60,12 @@ export default function PageInputShortcuts() {
         return;
       }
       if (event.key !== "/" || event.shiftKey || event.repeat || editing(active)) return;
+      const search = document.querySelector<HTMLButtonElement>("[data-page-search] [data-page-input-trigger]");
+      if (search && visible(search)) {
+        event.preventDefault();
+        search.click();
+        return;
+      }
       if (focusInput()) { event.preventDefault(); return; }
       // 페이지 도구는 상단바로 이동하며 좁은 화면에서는 닫힌 메뉴 안에 있다.
       const trigger = document.querySelector<HTMLButtonElement>("[data-page-actions] [data-page-input-trigger], main [data-page-input-trigger]");

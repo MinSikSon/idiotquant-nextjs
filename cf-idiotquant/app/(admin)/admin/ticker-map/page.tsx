@@ -1,5 +1,6 @@
 "use client";
 
+import { PageSearch } from "@/components/page-search";
 import { useSession } from "next-auth/react";
 import { useEffect, useState, useCallback, useRef } from "react";
 import {
@@ -306,16 +307,18 @@ export default function TickerMapPage() {
             ))}
           </div>
 
+          <PageSearch label="티커 매핑 검색">
           <div className="flex items-center gap-1.5 flex-1 min-w-[180px] max-w-[300px] bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-xl px-3 py-1.5">
             <Search size={12} className="text-neutral-400 shrink-0" />
             <input
               value={q}
               onChange={e => handleSearch(e.target.value)}
-              placeholder="티커 또는 종목명 검색..."
+              data-page-input aria-label="티커 또는 종목명 검색" placeholder="티커 또는 종목명 검색..."
               className="flex-1 text-xs bg-transparent focus:outline-none dark:text-white placeholder:text-neutral-300 dark:placeholder:text-neutral-600"
             />
             {q && <button onClick={() => { setQ(""); load(1); }} className="text-neutral-400 hover:text-neutral-600"><X size={11} /></button>}
           </div>
+          </PageSearch>
 
           <button
             onClick={() => load(page)}
