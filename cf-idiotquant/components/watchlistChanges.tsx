@@ -29,8 +29,14 @@ export default function WatchlistChanges({ items, userId, country }: { items: Li
     }, [items, key, country]);
     if (!result) return null;
 
-    return <section aria-label="관심종목 변화" className="mb-5 rounded-xl border border-neutral-200 p-4 dark:border-neutral-700">
-        <h2 className="text-sm font-semibold">지난 조회 이후 관심종목 변화{result.changes.length > 0 && ` · ${result.changes.length}종목`}</h2>
+    return <details aria-label="관심종목 변화" className="group/watch-changes mb-5 rounded-xl border border-neutral-200 p-4 dark:border-neutral-700">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand [&::-webkit-details-marker]:hidden">
+            <h2 className="font-semibold">지난 조회 이후 관심종목 변화{result.changes.length > 0 && ` · ${result.changes.length}종목`}</h2>
+            <span className="shrink-0 text-xs text-neutral-500">
+                <span className="group-open/watch-changes:hidden">더 보기</span>
+                <span className="hidden group-open/watch-changes:inline">접기</span>
+            </span>
+        </summary>
         <p className="mt-1 text-xs leading-5 text-neutral-500">
             {result.failed ? "브라우저 저장을 사용할 수 없어 다음 조회와 비교하지 못할 수 있습니다." : result.first
                 ? "첫 조회 기준을 이 브라우저에 저장했습니다. 다음 조회부터 전략 편입·이탈과 지표 변화를 보여드립니다."
@@ -48,5 +54,5 @@ export default function WatchlistChanges({ items, userId, country }: { items: Li
                 </tr>)}</tbody>
             </table>
         </div>}
-    </section>;
+    </details>;
 }
