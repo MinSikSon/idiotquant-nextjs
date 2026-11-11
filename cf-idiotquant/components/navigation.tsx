@@ -492,7 +492,7 @@ export function NavbarWithSimpleLinks() {
             <div ref={pageHeader?.setSearchTarget} />
             <Link href="/analyze" aria-label="종목 검색" className="navigation-icon"><Search size={21} /></Link>
           </div>
-          <div className="shrink-0">
+          <div className="hidden shrink-0 md:block">
             <NavigationPopover label="사용자 및 서비스 메뉴" trigger={<button type="button" aria-label="사용자 및 서비스 메뉴" className="navigation-icon"><CircleUserRound size={21} /></button>}>
               {serviceMenu(false)}
             </NavigationPopover>
