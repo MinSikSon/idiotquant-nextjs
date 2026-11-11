@@ -502,7 +502,7 @@ export function NavbarWithSimpleLinks() {
       </header>}
 
       {!inGame && <div className="navigation-identity bg-surface-canvas dark:bg-surface-dark-canvas md:hidden">
-        <div className="flex min-h-14 items-center gap-3 px-3 py-2">
+        <div className="flex min-h-10 items-center gap-3 px-3 py-1">
           <Link href="/" className="shrink-0 text-xl font-bold tracking-tight text-neutral-900 dark:text-white">idiot<span className="text-brand-ink">quant</span></Link>
           <div ref={mobile ? pageHeader?.setTitleTarget : undefined} className={cn("min-w-0 flex-1", !pageHeader?.active && "hidden")} />
           {!pageHeader?.active && pathname !== "/" && <span className="truncate text-base font-semibold">{mobilePageTitle}</span>}
@@ -534,7 +534,7 @@ export function NavbarWithSimpleLinks() {
       {/* ══ MOBILE BOTTOM TAB BAR ════════════════════════════════════ */}
       <nav ref={bottomNav} aria-label="하단 메뉴" data-bottom-navigation data-hidden={bottomHidden && !moreSheet || undefined}
         onFocusCapture={() => setBottomHidden(false)}
-        className={cn(inGame ? "hidden" : "md:hidden fixed bottom-0 left-0 right-0 z-40 border-t flex items-center px-3 bg-surface-canvas/95 backdrop-blur-[12px] dark:bg-surface-dark-canvas/95 border-neutral-300/50 dark:border-neutral-700/60")}>
+        className={cn(inGame ? "hidden" : "md:hidden fixed bottom-0 left-0 right-0 z-40 flex items-center px-3 bg-surface-canvas/95 backdrop-blur-[12px] dark:bg-surface-dark-canvas/95")}>
         <TabItem href="/" label="홈" icon={Home} isActive={pathname === "/"} />
         {/* 게임(Rogue)은 아래쪽 탭이 아니라 "메뉴" 안에 있다(MORE_NAV) */}
         <TabItem href="/screener"   label="발굴"   icon={Filter}     emoji="🥇" isActive={pathname.startsWith("/screener")} />
