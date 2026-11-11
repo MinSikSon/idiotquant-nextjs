@@ -13,7 +13,6 @@ import { cn } from "@/lib/utils";
 import { useViewAsUser, setViewAsUser } from "@/lib/viewAsUser";
 import {
   CircleUserRound,
-  Home,
   Filter,
   Search,
   Calculator,
@@ -45,7 +44,6 @@ type NavItem = {
 
 // 순서·아이콘을 홈 온보딩 설명 순서에 맞춤: 발굴(🥇) → 분석(💎).
 const MAIN_NAV: NavItem[] = [
-  { label: "홈",        href: "/",           icon: Home,       exact: true  },
   { label: "종목 발굴", href: "/screener",    icon: Filter,     emoji: "🥇", badge: "Pro" },
   { label: "종목 비교", href: "/compare",     icon: GitCompareArrows },
   { label: "종목 분석", href: "/analyze",     icon: Search,     emoji: "💎"   },
@@ -80,6 +78,7 @@ const MOBILE_PAGE_TITLES = [
   { href: "/admin/ticker-map", label: "종목 매핑" },
   { href: "/ledger/join", label: "가계부 초대" },
   { href: "/games/crafting-prototype", label: "제작 게임" },
+  { href: "/", label: "홈" },
   ...MAIN_NAV,
   ...MORE_NAV,
   ...PORTFOLIO_NAV,
@@ -460,11 +459,11 @@ export function NavbarWithSimpleLinks() {
 
       {!inGame && <header data-navigation-header className="navigation-header fixed inset-x-0 top-0 z-40 border-b border-neutral-300/50 bg-surface-canvas/95 backdrop-blur-[12px] dark:border-neutral-700/60 dark:bg-surface-dark-canvas/95 md:sticky">
         <div className="navigation-main flex h-12 items-center gap-2 px-3 md:gap-4 md:px-6">
-          <Link href="/" className={cn("shrink-0 text-lg font-bold tracking-tight text-neutral-900 dark:text-white", pathname !== "/" && "hidden md:block")}>
+          <Link href="/" aria-label="idiotquant 홈" className="shrink-0 text-lg font-bold tracking-tight text-neutral-900 dark:text-white">
             idiot<span className="text-brand-ink">quant</span>
           </Link>
           <nav aria-label="주요 서비스" className="hidden shrink-0 items-center gap-1 md:flex">
-            {MAIN_NAV.filter(item => item.href !== "/").map(item => (
+            {MAIN_NAV.map(item => (
               <Link key={item.href} href={item.href} aria-label={item.label}
                 aria-current={active(pathname, item.href) ? "page" : undefined}
                 className={cn("inline-flex min-h-11 items-center rounded-lg px-2 text-xs font-medium lg:px-3 lg:text-sm",
@@ -513,7 +512,6 @@ export function NavbarWithSimpleLinks() {
       <nav ref={bottomNav} aria-label="하단 메뉴" data-bottom-navigation data-hidden={bottomHidden && !moreSheet || undefined}
         onFocusCapture={() => setBottomHidden(false)}
         className={cn(inGame ? "hidden" : "md:hidden fixed bottom-0 left-0 right-0 z-40 border-t flex items-center px-3 bg-surface-canvas/95 backdrop-blur-[12px] dark:bg-surface-dark-canvas/95 border-neutral-300/50 dark:border-neutral-700/60")}>
-        <TabItem href="/"           label="홈"     icon={Home}       isActive={pathname === "/"} />
         {/* 게임(Rogue)은 아래쪽 탭이 아니라 "메뉴" 안에 있다(MORE_NAV) */}
         <TabItem href="/screener"   label="발굴"   icon={Filter}     emoji="🥇" isActive={pathname.startsWith("/screener")} />
         <TabItem href="/compare"    label="비교"   icon={GitCompareArrows} isActive={pathname.startsWith("/compare")} />
