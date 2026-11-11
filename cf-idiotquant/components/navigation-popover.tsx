@@ -7,18 +7,19 @@ import { cloneElement, useEffect, useLayoutEffect, useSyncExternalStore, useId, 
 const subscribe = () => () => {};
 
 /** 닫힌 동안에도 공유 대화상자·빠른 이동의 상태와 단축키를 유지한다. */
-export function NavigationPopover({ label, trigger, children, side = "bottom", onOpenChange }: {
+export function NavigationPopover({ label, trigger, children, side = "bottom", defaultOpen = false, onOpenChange }: {
   label: string;
   trigger: ReactElement;
   children: ReactNode;
   side?: "top" | "bottom";
+  defaultOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
 }) {
   const pathname = usePathname();
   const id = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
-  const [state, setState] = useState({ pathname, open: false });
+  const [state, setState] = useState({ pathname, open: defaultOpen });
   if (state.pathname !== pathname) setState({ pathname, open: false });
   const mounted = useSyncExternalStore(subscribe, () => true, () => false);
   const open = state.pathname === pathname && state.open;
@@ -42,7 +43,19 @@ export function NavigationPopover({ label, trigger, children, side = "bottom", o
       }
     };
     position();
-    (content.querySelector<HTMLElement>('button:not(:disabled), a[href], input, select, summary, [tabindex="0"]') ?? content).focus({ preventScroll: true });
+    const focusTarget = () => {
+      const target = content.querySelector<HTMLElement>('button:not(:disabled), a[href], input, select, summary, [tabindex="0"]');
+      target?.focus({ preventScroll: true });
+      return !!target;
+    };
+    // 동적으로 불러오는 검색 입력창은 로딩이 끝난 뒤 포커스한다.
+    const observer = new MutationObserver(() => {
+      if (focusTarget()) observer.disconnect();
+    });
+    if (!focusTarget()) {
+      content.focus({ preventScroll: true });
+      observer.observe(content, { childList: true, subtree: true });
+    }
     const outside = (event: Event) => {
       const target = event.target;
       if (!(target instanceof Element) || content.contains(target) || trigger.contains(target) || target.closest('dialog[open], [data-radix-popper-content-wrapper]')) return;
@@ -62,13 +75,14 @@ export function NavigationPopover({ label, trigger, children, side = "bottom", o
     window.addEventListener("resize", position);
     window.addEventListener("scroll", position, true);
     return () => {
+      observer.disconnect();
       document.removeEventListener("pointerdown", outside);
       document.removeEventListener("focusin", outside);
       document.removeEventListener("keydown", keydown);
       window.removeEventListener("resize", position);
       window.removeEventListener("scroll", position, true);
     };
-  }, [open, pathname, side]);
+  }, [open, pathname, side, mounted]);
 
   return <>
     {cloneElement(trigger as ReactElement<Record<string, unknown>>, {
