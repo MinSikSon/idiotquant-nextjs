@@ -75,22 +75,22 @@
 }
 
 .cardGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); gap: 12px; }
-.candidate { position: relative; display: grid; grid-template-columns: 56px minmax(0, 1fr); grid-template-areas: "logo company" "logo price"; align-items: center; gap: 4px 12px; min-width: 0; padding: 14px; border: 1px solid var(--home-line); border-radius: 8px; background: var(--home-panel); }
+.candidate { position: relative; display: grid; grid-template-columns: calc(56px * 2 / 3) minmax(0, 1fr); grid-template-areas: "logo company" "logo price"; align-items: center; gap: 4px 12px; min-width: 0; padding: 0 14px; border: 1px solid var(--home-line); border-radius: 8px; background: var(--home-panel); }
 .candidateLink { position: absolute; inset: 0; border-radius: inherit; }
 .candidateLink:hover { background: var(--home-hover); opacity: .3; }
 .candidateLink:focus-visible { outline: 2px solid rgb(var(--brand-ink)); outline-offset: 2px; }
 .logo { grid-area: logo; }
 .logo:has(button) { position: relative; z-index: 1; }
-.logo > :global(span), .logo > :global(button) { width: 56px; height: 56px; border-radius: 8px; font-size: 22px; }
+.logo > :global(span), .logo > :global(button) { width: calc(56px * 2 / 3); height: calc(56px * 2 / 3); border-radius: 8px; font-size: calc(22px * 2 / 3); }
 .company { grid-area: company; min-width: 0; font-size: 15px; font-weight: 600; overflow-wrap: anywhere; }
 .price { grid-area: price; font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -.03em; }
 @media (max-width: 767px) {
   .cardGrid { grid-template-columns: 1fr; gap: 8px; }
-  .candidate { grid-template-columns: 56px minmax(0, 1fr) auto; grid-template-areas: "logo company price"; gap: 10px; padding: 12px; }
+  .candidate { grid-template-columns: calc(56px * 2 / 3) minmax(0, 1fr) auto; grid-template-areas: "logo company price"; gap: 10px; padding: 0 12px; }
   .company { font-size: 14px; }
   .price { font-size: 16px; white-space: nowrap; }
 }
 @media (max-width: 359px) {
-  .candidate { grid-template-columns: 48px minmax(0, 1fr); grid-template-areas: "logo company" "logo price"; }
-  .logo > :global(span), .logo > :global(button) { width: 48px; height: 48px; }
+  .candidate { grid-template-columns: 32px minmax(0, 1fr); grid-template-areas: "logo company" "logo price"; }
+  .logo > :global(span), .logo > :global(button) { width: 32px; height: 32px; }
 }
