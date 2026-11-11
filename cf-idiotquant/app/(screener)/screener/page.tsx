@@ -341,12 +341,12 @@ const TableRow = memo(function TableRow({ item, onClick, isLiked, onToggleLike, 
             <div className="min-w-0 flex items-center gap-2">
                 <ComparisonCheckbox choice={comparison} name={item.name} />
                 <div className="min-w-0 flex-1">
-                    <p className="break-words font-semibold text-xs text-neutral-900 dark:text-white sm:text-sm" title={item.name}>{item.name}</p>
-                    <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
-                        <span className="text-[10px] text-neutral-400 font-mono">{item.ticker}</span>
-                        <LiquidityBadge item={item} />
+                    <p className="truncate font-semibold text-xs text-neutral-900 dark:text-white sm:text-sm" title={item.name}>{item.name}</p>
+                    <div className="mt-0.5 flex h-5 min-w-0 items-center gap-1 overflow-hidden whitespace-nowrap">
+                        {item.ticker !== item.name && <span className="min-w-0 truncate text-[10px] text-neutral-400 font-mono" title={item.ticker}>{item.ticker}</span>}
+                        <span className="shrink-0"><LiquidityBadge item={item} /></span>
+                        <span className="min-w-0 overflow-hidden"><FinancialFreshnessNotice compact periods={scanFinancialPeriods(item)} source={item.financial_source} collectionDate={scanCollectionDate(item)} /></span>
                     </div>
-                    <div className="mt-1"><FinancialFreshnessNotice compact periods={scanFinancialPeriods(item)} source={item.financial_source} collectionDate={scanCollectionDate(item)} /></div>
                 </div>
             </div>
 
