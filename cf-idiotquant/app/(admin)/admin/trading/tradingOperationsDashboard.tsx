@@ -86,26 +86,30 @@ export default function TradingOperationsDashboard() {
             setError(failed?.status === 'rejected' ? (failed.reason instanceof Error ? failed.reason.message : '조회 실패') : null);
             setLoading(false);
         }
-        const visibility = () => { if (!document.hidden) void load(); };
+        const visibility = () => { if (!document.hidden && !cursor) void load(); };
         void load();
-        const timer = setInterval(() => { if (!document.hidden) void load(); }, 5000);
+        const timer = setInterval(() => { if (!document.hidden && !cursor) void load(); }, 30_000);
         document.addEventListener('visibilitychange', visibility);
         return () => { active = false; controller?.abort(); clearInterval(timer); document.removeEventListener('visibilitychange', visibility); };
-    }, [country, query, refresh]);
+    }, [country, query, cursor, refresh]);
 
     useEffect(() => {
         if (!id) return;
         let active = true;
         let controller: AbortController | null = null;
         let inFlight = false;
+        let finished = false;
         async function load() {
-            if (inFlight) return;
+            if (inFlight || finished) return;
             inFlight = true;
             controller?.abort();
             controller = new AbortController();
             try {
                 const data = await fetchOperations<OperationDetail>(`runs/${encodeURIComponent(id)}`, controller.signal);
-                if (active && !controller.signal.aborted) { setDetail(data); setDetailError(null); }
+                if (active && !controller.signal.aborted) {
+                    finished = data.finished_at != null;
+                    setDetail(data); setDetailError(null);
+                }
             } catch (failure) {
                 if (active && !controller.signal.aborted) setDetailError(failure instanceof Error ? failure.message : '실행 상세 조회 실패');
             } finally { inFlight = false; }
