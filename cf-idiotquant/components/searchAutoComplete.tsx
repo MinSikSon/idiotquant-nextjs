@@ -127,6 +127,7 @@ const SearchAutocomplete = ({ className, validCorpNameArray, stockNames, onSearc
         <div className={cn("relative w-full z-20", className)}>
             {/* 검색 아키텍처 입력 폼 바디 */}
             <div 
+                data-search-field
                 className={cn(
                     "relative flex items-center gap-2.5 w-full px-3.5 py-2 pb-1.5 rounded-xl border transition-colors duration-150",
                     "bg-white dark:bg-surface-dark-card border-neutral-500 dark:border-neutral-500",

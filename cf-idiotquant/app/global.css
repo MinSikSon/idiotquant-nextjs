@@ -605,7 +605,53 @@ html:has(.navigation-header [data-page-tabs]) { --navigation-h: 92px; }
 .navigation-search:has([data-page-search]) > a { display: none; }
 .navigation-popover:has([data-search-content]) { width: 480px; }
 [data-search-content] { padding: 4px; }
-[data-search-content] input { font-size: 16px; }
+[data-page-search] .navigation-icon { width: 44px; min-width: 44px; max-width: 44px; padding: 0; }
+[data-search-content] > form { margin-top: 0; align-items: center; }
+[data-search-content] :is(input[data-page-input], [data-search-field]) {
+  height: 44px;
+  min-height: 44px;
+  border: 1px solid rgb(229 229 229);
+  border-radius: var(--radius-input);
+  background: white;
+}
+[data-search-content] input[data-page-input] {
+  font-size: 16px;
+  font-weight: 500;
+  padding-block: 0;
+}
+[data-search-content] [data-search-field] { padding: 0 12px; gap: 8px; }
+[data-search-content] [data-search-field] input[data-page-input] {
+  height: 42px;
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.dark [data-search-content] :is(input[data-page-input], [data-search-field]) {
+  border-color: rgb(64 64 64);
+  background: #1c1c20;
+}
+.dark [data-search-content] [data-search-field] input[data-page-input] { border: 0; background: transparent; }
+[data-search-content] :is(input[data-page-input]:focus, [data-search-field]:focus-within) {
+  outline: none;
+  border-color: rgb(var(--brand-ink));
+  box-shadow: 0 0 0 2px rgb(var(--brand-ink) / 15%);
+}
+[data-search-content] [data-search-field] input[data-page-input]:focus { box-shadow: none; }
+[data-search-content] > form > button,
+[data-search-content] [data-search-field] > button[aria-label="종목 검색 실행"] {
+  flex: 0 0 auto;
+  width: auto;
+  height: 44px;
+  padding: 0 12px;
+  justify-content: center;
+  border-radius: var(--radius-control);
+}
+@media (max-width: 639px) {
+  [data-search-content] > form > button,
+  [data-search-content] [data-search-field] > button[aria-label="종목 검색 실행"] { width: 44px; max-width: 44px; padding: 0; }
+}
 @media (max-width: 767px) {
   .navigation-identity { padding-top: var(--navigation-h, 48px); }
   .navigation-identity ~ main { padding-top: 0; }
