@@ -13,29 +13,9 @@
 .toolbar h2 { font-size: 22px; font-weight: 600; letter-spacing: -.03em; }
 .toolbar h2 span { color: var(--home-secondary); margin-left: 6px; font-size: 16px; }
 .toolbar p { margin-top: 4px; font-size: 13px; color: var(--home-secondary); }
-.workspace { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; align-items: start; }
+.workspace { min-width: 0; }
 .results { min-width: 0; }
-.mobilePick { display: none; }
-.recommendation { position: sticky; top: 72px; border-top: 3px solid var(--home-text); background: var(--home-panel); border-radius: 0 0 8px 8px; padding: 24px; }
-.recommendationLabel { display: flex; align-items: center; gap: 7px; color: var(--home-secondary); font-size: 11px; }
-.todayDot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-.recommendation h2 { font-size: 22px; font-weight: 600; letter-spacing: -.03em; margin-top: 8px; }
-.recommendationContext { font-size: 12px; color: var(--home-secondary); margin-top: 6px; }
-.pickCompany { display: flex; align-items: center; gap: 12px; margin-top: 28px; }
-.pickCompany h3 { font-size: 18px; font-weight: 600; overflow-wrap: anywhere; }
-.pickCompany p { font-size: 12px; color: var(--home-secondary); margin-top: 4px; }
-.pickPrice { display: block; font-size: 30px; font-weight: 600; font-variant-numeric: tabular-nums; margin-top: 16px; letter-spacing: -.03em; }
-.pickReason { margin-top: 12px; color: var(--home-secondary); font-size: 13px; }
-.pickFacts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
-.pickFacts span { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; }
-.pickAction { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px; margin-top: 24px; padding: 10px 14px; border-radius: 4px; background: var(--home-action); color: white; font-size: 13px; font-weight: 600; }
-.pickAction:hover { background: var(--home-action-hover); }
-.method { margin-top: 16px; border-top: 1px solid var(--home-line); font-size: 12px; }
-.method summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; text-decoration: underline; text-underline-offset: 4px; }
-.method p { color: var(--home-secondary); margin-bottom: 10px; }
-.pickNote { color: var(--home-secondary); font-size: 11px; border-top: 1px solid var(--home-line); padding-top: 12px; }
-.recommendationEmpty { padding: 24px 0; font-size: 13px; color: var(--home-secondary); }
-.recommendationEmpty h3 { color: var(--home-text); font-weight: 600; margin: 10px 0; }
+.selectionHint { margin-top: 12px; color: rgb(var(--brand-ink)); font-size: 12px; }
 .resultsFooter { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 16px 0; }
 .resultsFooter p { font-size: 12px; color: var(--home-secondary); }
 .resultsFooter a { display: flex; align-items: center; gap: 8px; min-height: 44px; font-size: 13px; color: rgb(var(--brand-ink)); text-decoration: underline; text-underline-offset: 4px; }
@@ -43,18 +23,7 @@
 .empty h3 { font-weight: 600; }
 .empty p { color: var(--home-secondary); margin-top: 10px; }
 .empty button { min-height: 44px; text-decoration: underline; margin-top: 12px; }
-@media (max-width: 1279px) {
-  .workspace { grid-template-columns: minmax(0, 1fr) 280px; gap: 20px; }
-}
 @media (max-width: 767px) {
-  .workspace { display: flex; flex-direction: column; gap: 24px; }
-  .results, .recommendation { width: 100%; }
-  .mobilePick { display: flex; order: -1; width: 100%; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border-left: 3px solid var(--home-text); background: var(--home-panel); }
-  .mobilePick span { display: block; font-size: 10px; color: var(--home-secondary); }
-  .mobilePick strong { display: block; font-size: 14px; font-weight: 600; margin-top: 3px; }
-  .mobilePick small { font-size: 10px; color: var(--home-secondary); }
-  .mobilePick a { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-size: 16px; font-weight: 600; white-space: nowrap; text-decoration: underline; text-underline-offset: 4px; }
-  .recommendation { position: static; padding: 20px; }
   .discovery { padding-bottom: 32px; }
   .filterLine { gap: 0; flex-wrap: nowrap; }
   .filterLine :global(.discovery-filters) > button { padding-inline: 10px; }
@@ -94,3 +63,5 @@
   .candidate { grid-template-columns: 32px minmax(0, 1fr); grid-template-areas: "logo company" "logo price"; }
   .logo > :global(span), .logo > :global(button) { width: 32px; height: 32px; }
 }
+
+.candidate[data-selected] { border-color: rgb(var(--brand-ink)); box-shadow: inset 0 0 0 1px rgb(var(--brand-ink)); }
