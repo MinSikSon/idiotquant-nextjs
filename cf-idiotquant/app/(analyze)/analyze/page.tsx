@@ -648,7 +648,7 @@ function AnalyzeContent() {
 
         </> : undefined}
       >
-        <PageSearch>
+        <PageSearch defaultOpen={searchParams.get('search') === '1'}>
           <SearchAutocomplete
             placeHolder="종목명·티커 검색"
             onSearchButton={handleSearch}
