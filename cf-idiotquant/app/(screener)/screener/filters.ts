@@ -10,7 +10,7 @@
 import { isValuationEligible } from "@/lib/utils/stockValuationEligibility";
 import { STRATEGY_PRESETS_CLIENT as STRATEGY_PRESETS } from "@/lib/constants/strategies";
 import { isHalted, isManaged, isDelisting, w52Position } from "@/lib/utils/stockRisk";
-import { profitableScanStock, scanMarketCap, scanRoePercent, scanTradingAmount } from "@/lib/utils/scanFinancials";
+import { profitableScanStock, scanIncomeTax, scanMarketCap, scanRoePercent, scanTradingAmount } from "@/lib/utils/scanFinancials";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const safeNum = (v: any): number => { const n = Number(v); return isNaN(n) ? 0 : n; };
@@ -90,6 +90,8 @@ export interface ScreenerFilters {
     maxPer: number;
     minRoe: number;
     minNcav: number;
+    minIncomeTax?: number | null;
+    maxIncomeTax?: number | null;
 }
 
 // 필터 그룹 — 서랍 카드 순서와 1:1. 누적 카운트(→N)는 이 순서대로 쌓아 계산한다.
@@ -100,7 +102,7 @@ export const GROUP_DEFAULTS: Record<FilterGroupKey, Partial<ScreenerFilters>> = 
     pbr:     { maxPbr: 0 },
     per:     { maxPer: 0 },
     ncav:    { minNcav: 0 },
-    profit:  { minRoe: 0, excludeDeficit: false },
+    profit:  { minRoe: 0, excludeDeficit: false, minIncomeTax: null, maxIncomeTax: null },
     market:    { markets: new Set<string>() },
     sector:    { sectors: new Set<string>() },
     w52:       { maxW52Pos: 0 },
@@ -145,6 +147,12 @@ export function applyFilters(list: Record<string, any>[], f: ScreenerFilters): R
     if (f.maxPer > 0)  out = out.filter(item => safeNum(item.per) > 0 && safeNum(item.per) <= f.maxPer && (country !== "US" || profitableScanStock(item)));
     if (f.minNcav > 0) out = out.filter(item => safeNum(item.ncav_ratio) >= f.minNcav);
     if (f.minRoe > 0)  out = out.filter(item => roeOf(item) >= f.minRoe);
+
+    if (f.minIncomeTax != null || f.maxIncomeTax != null) out = out.filter(item => {
+        const value = scanIncomeTax(item, country);
+        return value !== null && (f.minIncomeTax == null || value >= f.minIncomeTax)
+            && (f.maxIncomeTax == null || value <= f.maxIncomeTax);
+    });
 
     if (f.sectors.size > 0) out = out.filter(item => f.sectors.has(sectorOf(item)));
     if (f.markets.size > 0) out = out.filter(item => f.markets.has(marketOf(item)));
@@ -192,4 +200,11 @@ export function sortList(list: Record<string, any>[], sortKey: DiscoverySortKey,
         return sortOrder === "asc" ? va - vb : vb - va;
     });
     return list;
+}
+
+// 0·음수도 유효한 금액 조건이며, 빈 값은 미적용이다.
+export function parseIncomeTaxBound(raw: unknown): number | null {
+    if (raw == null || String(raw).trim() === "") return null;
+    const value = Number(raw);
+    return Number.isFinite(value) ? value : null;
 }

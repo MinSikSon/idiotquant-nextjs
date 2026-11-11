@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { buildUsBars } from '@/app/(search)/search/components/financialBarsData';
+import { buildKrBars, buildUsBars } from '@/app/(search)/search/components/financialBarsData';
 
 const report = (values: Record<string, number>) => [{
   endDate: '2024-12-31 00:00:00',
@@ -64,5 +64,51 @@ test('앞선 공시 항목이 결측이면 다음 별칭을 확인하고 실제 
       ] },
     }]);
     assert.deepEqual(bs?.groups[0].items.find(item => item.label === '매출·수취채권')?.values, [value]);
+  }
+});
+
+
+test('국내 특별손익을 반영한 세전손익과 법인세 등 차액을 최신순으로 표시한다', () => {
+  const { is } = buildKrBars(null, { output: [
+    { stac_yymm: '202503', op_prfi: '80', spec_prfi: '0', spec_loss: '0', thtr_ntin: '80' },
+    { stac_yymm: '202603', op_prfi: '100', spec_prfi: '20', spec_loss: '5', thtr_ntin: '90', bsop_non_ernn: '30', bsop_non_expn: '10' },
+  ] });
+  const items = is?.groups.flatMap(group => group.items);
+  assert.deepEqual(items?.find(item => item.label === '세전손익(계산)')?.values, [115, 80]);
+  assert.deepEqual(items?.find(item => item.label === '법인세 등(차액)')?.values, [25, 0]);
+  assert.equal(items?.find(item => item.label === '법인세 등(차액)')?.hideDelta, true);
+  assert.deepEqual(items?.find(item => item.label === '영업외수익')?.values, [30, null]);
+  assert.deepEqual(items?.find(item => item.label === '영업외비용')?.values, [10, null]);
+});
+
+test('국내 차액은 필요한 항목이 없으면 계산하지 않고 세금 혜택의 음수도 보존한다', () => {
+  const rows = [
+    { stac_yymm: '202603', op_prfi: '100', spec_prfi: '0', spec_loss: '0', thtr_ntin: '120' },
+    { stac_yymm: '202503', op_prfi: '100', spec_prfi: '', spec_loss: '0', thtr_ntin: '90' },
+    { stac_yymm: '202403', op_prfi: '100', spec_prfi: '0', spec_loss: '0' },
+    { stac_yymm: '202303', op_prfi: 'invalid', spec_prfi: '0', spec_loss: '0', thtr_ntin: '90' },
+  ];
+  const { is } = buildKrBars(null, { output: rows });
+  const items = is?.groups.flatMap(group => group.items);
+  assert.deepEqual(items?.find(item => item.label === '법인세 등(차액)')?.values, [-20, null, null, null]);
+  assert.deepEqual(items?.find(item => item.label === '세전손익(계산)')?.values, [100, null, 100, null]);
+});
+
+test('미국 법인세 공시 별칭과 0·세금 혜택·결측을 보존한다', () => {
+  for (const prefix of ['', 'us-gaap_']) {
+    for (const pretax of ['IncomeLossFromContinuingOperationsBeforeIncomeTaxExpenseBenefit', 'IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest']) {
+      const { is } = buildUsBars([0, -25, null].map((tax, index) => ({
+        endDate: `${2026 - index}-06-30`,
+        report: { ic: [
+          { concept: `${prefix}${pretax}`, value: 100 },
+          { concept: `${prefix}IncomeTaxExpenseBenefit`, value: tax },
+          { concept: `${prefix}NetIncomeLoss`, value: 100 },
+        ] },
+      })));
+      const items = is?.groups.flatMap(group => group.items);
+      assert.deepEqual(items?.find(item => item.label === '세전이익(계속영업)')?.values, [100, 100, 100]);
+      assert.deepEqual(items?.find(item => item.label === '법인세비용(혜택)')?.values, [0, -25, null]);
+      assert.equal(items?.find(item => item.label === '법인세비용(혜택)')?.hideDelta, true);
+    }
   }
 });

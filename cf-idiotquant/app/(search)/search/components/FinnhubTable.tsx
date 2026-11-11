@@ -128,6 +128,17 @@ const IS_SECTIONS: SectionDef[] = [
                 description: "매출에서 매출원가·판관비를 뺀 본업 수익력 (EBIT)",
             },
             {
+                label: "세전이익(계속영업)",
+                concept: ["us-gaap_IncomeLossFromContinuingOperationsBeforeIncomeTaxExpenseBenefit", "IncomeLossFromContinuingOperationsBeforeIncomeTaxExpenseBenefit", "us-gaap_IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest", "IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest"],
+                isTotal: true,
+                description: "계속영업의 법인세 차감 전 손익 — 중단영업 등으로 최종 순이익과 범위가 다를 수 있습니다",
+            },
+            {
+                label: "법인세비용(혜택)",
+                concept: ["us-gaap_IncomeTaxExpenseBenefit", "IncomeTaxExpenseBenefit"],
+                description: "손익계산서에 공시된 법인세비용. 음수는 세금 혜택이며 실제 현금 납부액과 다를 수 있습니다",
+            },
+            {
                 label: "순이익",
                 concept: ["us-gaap_NetIncomeLoss", "NetIncomeLoss"],
                 isTotal: true,

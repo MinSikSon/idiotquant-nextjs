@@ -37,3 +37,9 @@ export function scanTradingAmount(item: Record<string, any>, country: "KR" | "US
     if (value === null) return null;
     return value / (country === "US" ? 1_000_000 : 100_000_000);
 }
+
+/** 법인세 등: KR 원 → 억원, US USD → 백만 달러. 미수집은 0으로 대체하지 않는다. */
+export function scanIncomeTax(item: Record<string, any>, country: "KR" | "US"): number | null {
+    const value = finiteNumber(item.income_tax);
+    return value === null ? null : value / (country === "US" ? 1_000_000 : 100_000_000);
+}

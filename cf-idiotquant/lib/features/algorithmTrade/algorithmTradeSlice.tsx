@@ -149,6 +149,7 @@ export interface NcavDailyItem {
     market_cap: number;
     last_price: number;
     net_income: number;
+    income_tax?: number | null;
     per: number;
     pbr: number;
     eps: number;
