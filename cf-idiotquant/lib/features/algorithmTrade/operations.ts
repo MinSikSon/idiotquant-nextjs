@@ -40,6 +40,7 @@ export interface OperationsOverview {
     scheduler_enabled: boolean;
     scheduler: OperationRun | null;
     scan_country: 'KR' | 'US';
+    background_task?: 'scan' | 'archive' | 'mixed';
     schedule: {
         trading_minutes: number[];
         archive_minutes: number[];
