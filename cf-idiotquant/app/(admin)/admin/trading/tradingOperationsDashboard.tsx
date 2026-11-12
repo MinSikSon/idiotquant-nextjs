@@ -166,7 +166,7 @@ export default function TradingOperationsDashboard() {
             <div className={styles.stats}>
                 <div className={styles.stat}><p>스케줄러</p><strong>{!meta ? '확인 중' : !meta.scheduler_enabled ? 'OFF' : !scheduler ? '실행 기록 없음' : schedulerStale ? '스케줄 진입 미확인' : 'ON · 매 분 확인'}</strong><small>마지막 진입 {time(scheduler?.started_at ?? null)} KST</small></div>
                 <div className={styles.stat}><p>{country} 매매 스케줄</p><strong>{currentWindow ? `${String(currentWindow.start).padStart(2, '0')}:00 ~ ${String(currentWindow.end).padStart(2, '0')}:00` : '확인 중'}</strong><small>5분 간격 · 스케줄 시간대이며 장 개장 여부와 다를 수 있습니다.</small></div>
-                <div className={styles.stat}><p>오늘 종목 수집 대상</p><strong>{meta ? `${meta.scan_country} 시장` : '확인 중'}</strong><small>매매·아카이브 분을 제외한 매 분 · 국장 1일 / 미장 2일</small></div>
+                <div className={styles.stat}><p>오늘 수집·아카이브 작업</p><strong>{meta ? `${meta.scan_country} ${meta.background_task === 'archive' ? '아카이브' : '수집'}` : '확인 중'}</strong><small>{meta?.schedule.scan ?? '운영일 확인 중'}</small></div>
             </div>
             <div className={styles.workbar}><div role="group" aria-label="관찰할 작업" className={styles.tabs}>{JOBS.map(item => <button key={item.id} aria-pressed={job === item.id} onClick={() => chooseJob(item.id)}>{item.label}</button>)}</div><div role="group" aria-label="시장 선택" className={styles.markets}>{(['KR', 'US'] as const).map(value => <button key={value} aria-pressed={country === value} onClick={() => chooseCountry(value)}>{value} {value === 'KR' ? '한국' : '미국'}</button>)}</div></div>
             <div className={styles.layout}>
