@@ -426,7 +426,7 @@ function AnalyzeContent() {
   const isLoaded =
     tickerFromUrl === name &&
     (
-      (krOrUs === 'KR' && data.kiChart.state === 'fulfilled' && data.kiBS.state === 'fulfilled') ||
+      (krOrUs === 'KR' && data.kiChart.state === 'fulfilled' && data.kiBS.state === 'fulfilled' && data.kiIS.state === 'fulfilled') ||
       (krOrUs === 'US' && usAvailability.priceReady && usAvailability.financialsReady)
     );
 
@@ -968,7 +968,7 @@ function AnalyzeContent() {
 
               </div>
               ) : (
-              krOrUs === 'US' && !waitResponse ? (
+              !waitResponse ? (
                 <div role="alert" className="rounded-xl border border-neutral-200 p-4 text-[15px] dark:border-neutral-700">
                   <p>재무정보를 불러오지 못했습니다. 시세 정보는 확인할 수 있습니다.</p>
                   <button type="button" onClick={() => onSearch(tickerFromUrl)} className={`${PAGE_ACTION_CLS} mt-3`}>다시 조회</button>

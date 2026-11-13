@@ -924,7 +924,11 @@ export const koreaInvestmentSlice = createAppSlice({
     // 기업 재무제표 대조표 조회
     reqGetBalanceSheet: create.asyncThunk(
       async ({ PDNO }: { PDNO: string }) => {
-        return await getBalanceSheet(PDNO);
+        const result = await getBalanceSheet(PDNO);
+        if (result?.success === false || (result?.rt_cd !== undefined && result.rt_cd !== "0") || !Array.isArray(result?.output)) {
+          throw new Error(result?.msg1 || result?.error || "재무 정보를 불러오지 못했습니다.");
+        }
+        return result;
       },
       {
         pending: (state) => {
@@ -949,7 +953,11 @@ export const koreaInvestmentSlice = createAppSlice({
     // 기업 손익계산서 조회
     reqGetIncomeStatement: create.asyncThunk(
       async ({ PDNO }: { PDNO: string }) => {
-        return await getIncomeStatement(PDNO);
+        const result = await getIncomeStatement(PDNO);
+        if (result?.success === false || (result?.rt_cd !== undefined && result.rt_cd !== "0") || !Array.isArray(result?.output)) {
+          throw new Error(result?.msg1 || result?.error || "재무 정보를 불러오지 못했습니다.");
+        }
+        return result;
       },
       {
         pending: (state) => {
