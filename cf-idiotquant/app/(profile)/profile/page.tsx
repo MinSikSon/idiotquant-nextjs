@@ -275,7 +275,7 @@ export default function ProfilePage() {
                         </div>
                         <div className="divide-y divide-neutral-100 dark:divide-border-subtle-dark">
                             <Link
-                                href="/balance-kr"
+                                href="/balance?country=kr"
                                 className="flex items-center gap-3 px-5 py-3.5 hover:bg-[#f5f1eb] dark:hover:bg-surface-dark-hover transition-colors group"
                             >
                                 <div className="w-8 h-8 rounded-xl bg-surface-canvas dark:bg-surface-dark-muted flex items-center justify-center shrink-0">
@@ -287,7 +287,7 @@ export default function ProfilePage() {
                                 <ChevronRight size={14} className="text-neutral-300 dark:text-neutral-600 group-hover:text-neutral-500 dark:group-hover:text-neutral-400 transition-colors" />
                             </Link>
                             <Link
-                                href="/balance-us"
+                                href="/balance?country=us"
                                 className="flex items-center gap-3 px-5 py-3.5 hover:bg-[#f5f1eb] dark:hover:bg-surface-dark-hover transition-colors group"
                             >
                                 <div className="w-8 h-8 rounded-xl bg-surface-canvas dark:bg-surface-dark-muted flex items-center justify-center shrink-0">
