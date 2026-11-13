@@ -1,6 +1,6 @@
 "use client";
 
-import { createPortal } from "react-dom";
+import { createPortal, flushSync } from "react-dom";
 import { usePathname } from "next/navigation";
 import { cloneElement, useEffect, useLayoutEffect, useSyncExternalStore, useId, useRef, useState, type ReactElement, type ReactNode } from "react";
 
@@ -87,7 +87,8 @@ export function NavigationPopover({ label, trigger, children, side = "bottom", d
   return <>
     {cloneElement(trigger as ReactElement<Record<string, unknown>>, {
       ref: triggerRef, "aria-expanded": open, "aria-controls": id, "aria-haspopup": "dialog",
-      onClick: () => { setState({ pathname, open: !open }); callback.current?.(!open); },
+      // 사용자 클릭 안에서 입력창까지 렌더링·포커스해야 iOS 키보드가 열린다.
+      onClick: () => { flushSync(() => setState({ pathname, open: !open })); callback.current?.(!open); },
     })}
     {mounted && createPortal(<div ref={contentRef} id={id} tabIndex={-1} role="dialog" aria-label={label} hidden={!open}
       onClick={event => {
