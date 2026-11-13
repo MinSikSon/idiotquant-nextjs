@@ -21,6 +21,68 @@ export default function PageInputShortcuts() {
   const pathname = usePathname();
 
   useEffect(() => {
+    let release: (() => void) | undefined;
+    const onClick = (event: MouseEvent) => {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      const link = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>('a[href]') : null;
+      if (!link || link.hasAttribute('download') || link.target && link.target !== '_self') return;
+      const url = new URL(link.href, window.location.href);
+      if (url.origin !== window.location.origin || url.pathname !== '/analyze' || url.searchParams.get('ticker')) return;
+      if (!window.matchMedia('(pointer: coarse)').matches) return;
+
+      release?.();
+      if (window.location.pathname === '/analyze') {
+        const trigger = document.querySelector<HTMLButtonElement>('[data-page-search] [data-page-input-trigger]');
+        if (trigger?.getAttribute('aria-expanded') === 'false') trigger.click();
+        const target = document.querySelector<HTMLInputElement>('[data-search-content] [data-page-input]');
+        if (target && visible(target)) {
+          target.focus({ preventScroll: true });
+          return;
+        }
+      }
+      // iOS에서는 페이지 로딩 후 focus()만 호출하면 키보드가 열리지 않는다.
+      // 클릭 중 입력 세션을 시작하고 검색창이 준비될 때까지 유지한다.
+      const input = document.createElement('input');
+      input.setAttribute('aria-label', '종목 검색 준비');
+      input.setAttribute('autocomplete', 'off');
+      input.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0.01;font-size:16px;pointer-events:none;';
+      document.body.append(input);
+      input.focus({ preventScroll: true });
+
+      const transfer = () => {
+        if (window.location.pathname !== '/analyze') return;
+        const target = document.querySelector<HTMLInputElement>('[data-search-content] [data-page-input]');
+        if (!target || !visible(target)) return;
+        // 느린 페이지 이동 중 먼저 입력한 글자도 실제 검색창에 전달한다.
+        if (input.value) {
+          Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(target, input.value);
+          target.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        target.focus({ preventScroll: true });
+        release?.();
+      };
+      const observer = new MutationObserver(transfer);
+      const timeout = setTimeout(() => release?.(), 10000);
+      const cancel = () => release?.();
+      release = () => {
+        observer.disconnect();
+        clearTimeout(timeout);
+        document.removeEventListener('pointerdown', cancel, true);
+        input.remove();
+        release = undefined;
+      };
+      observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden', 'class'] });
+      document.addEventListener('pointerdown', cancel, true);
+      transfer();
+    };
+    document.addEventListener('click', onClick, true);
+    return () => {
+      document.removeEventListener('click', onClick, true);
+      release?.();
+    };
+  }, []);
+
+  useEffect(() => {
     // 게임은 자체 키보드 조작을 사용한다.
     if (/^\/games?(\/|$)/.test(pathname)) return;
     const main = document.querySelector("main");
