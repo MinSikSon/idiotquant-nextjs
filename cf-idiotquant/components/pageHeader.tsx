@@ -50,6 +50,7 @@ export function PageHeader({
   icon,
   title,
   mobileTitle,
+  mobileTitleOnScroll = false,
   description,
   meta,
   compactMeta,
@@ -68,6 +69,8 @@ export function PageHeader({
   title: React.ReactNode;
   /** 고정 상단바에 사용할 짧은 제목. 생략하면 본문 제목을 그대로 쓴다. */
   mobileTitle?: string;
+  /** 본문 제목이 화면 위로 사라지면 모바일 고정 상단바에도 표시한다. */
+  mobileTitleOnScroll?: boolean;
   description?: React.ReactNode;
   meta?: React.ReactNode;
   /** 모바일 헤더에 남길 핵심 정보(예: 현재가). */
@@ -109,15 +112,18 @@ export function PageHeader({
     return () => setActive?.(false);
   }, [integrated, setActive]);
 
-  return (
-    <>
-    {integrated && createPortal(<div data-page-title className="flex min-w-0 items-center gap-2">
+  const titleContent = (<div data-page-title className="flex min-w-0 items-center gap-2">
       {icon && <span className="flex shrink-0 items-center [&>div]:!h-7 [&>div]:!w-7">{icon}</span>}
       <div className="min-w-0 flex-1">
         <h1 className="truncate text-base font-semibold tracking-tight text-neutral-900 dark:text-white md:text-sm">{mobile ? mobileTitle ?? title : title}</h1>
         {visibleMeta && <div data-page-title-meta className="flex max-h-4 items-center gap-1.5 overflow-hidden whitespace-nowrap text-[11px] leading-4 text-neutral-600 dark:text-neutral-400">{visibleMeta}</div>}
       </div>
-    </div>, titleTarget!)}
+    </div>);
+
+  return (
+    <>
+    {integrated && createPortal(titleContent, titleTarget!)}
+    {integrated && mobile && mobileTitleOnScroll && slots?.scrollTitleTarget && createPortal(titleContent, slots.scrollTitleTarget)}
     {integrated && createPortal(<div data-page-actions className="flex flex-nowrap items-center">
       {primaryAction && <div data-primary-action>{primaryAction}</div>}
       {(actions || description || meta) && <NavigationPopover label="페이지 도구" trigger={<button type="button" aria-label="페이지 도구" className={cn("inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1 rounded-lg px-2 text-xs font-medium text-neutral-600 hover:bg-neutral-200/70 dark:text-neutral-400 dark:hover:bg-surface-dark-hover", CONTROL_FOCUS_CLS)}><MoreHorizontal size={20} className="md:hidden" aria-hidden="true" /><span className="hidden md:inline">도구</span><ChevronDown size={14} className="hidden md:block" aria-hidden="true" /></button>}>

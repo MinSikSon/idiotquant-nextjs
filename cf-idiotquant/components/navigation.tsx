@@ -301,6 +301,8 @@ export function NavbarWithSimpleLinks() {
   if (gameScroll.pathname !== pathname) setGameScroll({ pathname, scrolled: false });
   const gameScrolled = gameScroll.scrolled;
   const bottomNav = useRef<HTMLElement>(null);
+  const identity = useRef<HTMLDivElement>(null);
+  const [identityScrolled, setIdentityScrolled] = useState(false);
   const mobilePageTitle = MOBILE_PAGE_TITLES.find(item => active(pathname, item.href, item.href === "/"))?.label;
   const showMore = moreOpen || moreActive;
 
@@ -315,6 +317,8 @@ export function NavbarWithSimpleLinks() {
     }
     let state: NavigationScrollState = { y: Math.max(0, window.scrollY), direction: 0, travel: 0, hidden: false };
     const onScroll = () => {
+      const header = document.querySelector('[data-navigation-header]');
+      setIdentityScrolled(!!identity.current && !!header && identity.current.getBoundingClientRect().bottom <= header.getBoundingClientRect().bottom);
       state = navigationScroll(state, window.scrollY,
         window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 2,
         moreSheet || !!bottomNav.current?.querySelector(":focus-visible"));
@@ -486,7 +490,9 @@ export function NavbarWithSimpleLinks() {
           </nav>
           <div ref={!mobile ? pageHeader?.setTitleTarget : undefined} className={cn("hidden min-w-0 flex-1 md:block", !pageHeader?.active && "md:hidden")} />
           {!pageHeader?.active && <span className="hidden min-w-0 flex-1 truncate text-sm font-semibold md:block">{pathname === "/" ? null : mobilePageTitle}</span>}
-          <div className="flex-1 md:hidden" />
+          <div className="min-w-0 flex-1 md:hidden">
+            <div ref={pageHeader?.setScrollTitleTarget} data-navigation-scroll-title hidden={!identityScrolled} />
+          </div>
           <div ref={pageHeader?.setActionsTarget} data-navigation-actions className="shrink-0" />
           <div className="navigation-search flex shrink-0 items-center">
             <div ref={pageHeader?.setSearchTarget} />
@@ -501,7 +507,7 @@ export function NavbarWithSimpleLinks() {
         <div ref={pageHeader?.setTabsTarget} />
       </header>}
 
-      {!inGame && <div className="navigation-identity bg-surface-canvas dark:bg-surface-dark-canvas md:hidden">
+      {!inGame && <div ref={identity} className="navigation-identity bg-surface-canvas dark:bg-surface-dark-canvas md:hidden">
         <div className="flex min-h-10 items-center gap-3 px-3 py-1">
           <Link href="/" className="shrink-0 text-xl font-bold tracking-tight text-neutral-900 dark:text-white">idiot<span className="text-brand-ink">quant</span></Link>
           <div ref={mobile ? pageHeader?.setTitleTarget : undefined} className={cn("min-w-0 flex-1", !pageHeader?.active && "hidden")} />

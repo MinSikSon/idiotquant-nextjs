@@ -612,6 +612,7 @@ function AnalyzeContent() {
           <span className="font-semibold tabular-nums text-neutral-900 dark:text-white">{headerPrice}</span>
         </> : undefined}
         mobileCompact
+        mobileTitleOnScroll={isPriceLoaded}
         tabs={isPriceLoaded && (
           <div className={cn(ANALYZE_WIDTH, styles.page, styles.tabsRow)}>
             <div data-analysis-tabs role="group" className={styles.tabStrip} aria-label="분석 보기 선택">
