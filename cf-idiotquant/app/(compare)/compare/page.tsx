@@ -377,7 +377,7 @@ function ComparePageContent() {
         <PageSearch label="비교할 종목 검색">
         <form onSubmit={submit} className="relative mt-4 flex gap-3">
           <div className="relative min-w-0 flex-1">
-            <Search aria-hidden size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-600 dark:text-neutral-400" />
+            <Search aria-hidden size={18} className="absolute left-3.5 top-[22px] -translate-y-1/2 text-neutral-600 dark:text-neutral-400" />
             <input data-page-input aria-label="비교할 종목 검색" aria-keyshortcuts="/ Escape" title="/ 검색창으로 이동 · Esc 입력 종료" value={query} onChange={e => dispatch(setQuery(e.target.value))} placeholder="예: 삼성전자, 클라우드플레어, NET" disabled={sessionLoading || loading || dateLoading || stocks.length >= limits.stocks} className={cn(CONTROL_INPUT_CLS, "h-11 w-full bg-white pl-10 pr-3 text-base outline-none disabled:opacity-50 dark:bg-surface-dark-card sm:text-sm")} />
             {suggestions.length > 0 && <ul className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-xl border border-neutral-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-surface-dark-card">{suggestions.map(s => <li key={s}><button type="button" onClick={() => void addStock(s)} disabled={loading || dateLoading} className="w-full px-4 py-2.5 text-left text-sm hover:bg-neutral-50 disabled:opacity-50 dark:hover:bg-neutral-800">{s}{companyNames.get(s) && <span className="ml-2 text-xs text-neutral-600 dark:text-neutral-400">{companyNames.get(s)!.koreanName ?? companyNames.get(s)!.name}</span>}</button></li>)}</ul>}
           </div>
@@ -425,7 +425,7 @@ function ComparePageContent() {
       </SecondarySection>
 
       {stocks.length === 0 ? <section className="mt-8 border-t border-neutral-200 px-0 py-8 dark:border-neutral-700">
-        <p className="text-sm font-medium">비교할 종목을 추가해 주세요.</p>
+        <p className="text-sm font-medium">우상단 검색 아이콘에서 비교할 종목을 추가해 주세요.</p>
         <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">종목을 추가하면 오늘과 1년 전 기준 가격으로 시작합니다. 날짜를 추가하면 다른 시점의 가격도 비교할 수 있습니다.</p>
       </section> : <section className="mt-5 sm:mt-8" aria-label="종목 비교 결과">
         <div className="space-y-2 md:hidden">

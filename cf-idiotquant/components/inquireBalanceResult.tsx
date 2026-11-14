@@ -257,7 +257,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                         {isDropdownOpen && searchQuery.trim() && (
                             <>
                                 <div className="fixed inset-0 z-10" onClick={() => setIsDropdownOpen(false)} />
-                                <div className="absolute left-0 right-0 mt-2 max-h-60 overflow-y-auto bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-2xl shadow-none z-20 divide-y divide-neutral-100 dark:divide-border-subtle-dark">
+                                <div data-search-results className="absolute left-0 right-0 mt-2 max-h-60 overflow-y-auto bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-2xl shadow-none z-20 divide-y divide-neutral-100 dark:divide-border-subtle-dark">
                                     {filteredSearchResults.length > 0 ? (
                                         filteredSearchResults.map((stock) => (
                                             <div

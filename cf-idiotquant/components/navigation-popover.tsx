@@ -7,12 +7,13 @@ import { cloneElement, useEffect, useLayoutEffect, useSyncExternalStore, useId, 
 const subscribe = () => () => {};
 
 /** 닫힌 동안에도 공유 대화상자·빠른 이동의 상태와 단축키를 유지한다. */
-export function NavigationPopover({ label, trigger, children, side = "bottom", defaultOpen = false, onOpenChange }: {
+export function NavigationPopover({ label, trigger, children, side = "bottom", defaultOpen = false, className = "", onOpenChange }: {
   label: string;
   trigger: ReactElement;
   children: ReactNode;
   side?: "top" | "bottom";
   defaultOpen?: boolean;
+  className?: string;
   onOpenChange?: (open: boolean) => void;
 }) {
   const pathname = usePathname();
@@ -44,7 +45,7 @@ export function NavigationPopover({ label, trigger, children, side = "bottom", d
     };
     position();
     const focusTarget = () => {
-      const target = content.querySelector<HTMLElement>('button:not(:disabled), a[href], input, select, summary, [tabindex="0"]');
+      const target = content.querySelector<HTMLElement>('[data-page-input]:not(:disabled), input:not(:disabled), button:not(:disabled), a[href], select, summary, [tabindex="0"]');
       target?.focus({ preventScroll: true });
       return !!target;
     };
@@ -94,7 +95,7 @@ export function NavigationPopover({ label, trigger, children, side = "bottom", d
       onClick={event => {
         if ((event.target as Element).closest('a[href]')) { setState({ pathname, open: false }); callback.current?.(false); }
       }}
-      className="navigation-popover fixed z-50 w-72 max-w-[calc(100vw-24px)] overflow-y-auto rounded-xl border border-neutral-200 bg-white p-2 text-sm text-neutral-700 shadow-xl dark:border-neutral-700 dark:bg-surface-dark-card dark:text-neutral-200">
+      className={`navigation-popover fixed z-50 w-72 max-w-[calc(100vw-24px)] overflow-y-auto rounded-xl border border-neutral-200 bg-white p-2 text-sm text-neutral-700 shadow-xl dark:border-neutral-700 dark:bg-surface-dark-card dark:text-neutral-200 ${className}`}>
       {children}
     </div>, document.body)}
   </>;

@@ -601,13 +601,13 @@ html:has(.navigation-header [data-page-tabs]) { --navigation-h: 92px; }
 
 [data-page-secondary-actions] > button > span.hidden { display: inline; }
 
-/* 상단 검색은 공통 검색 화면으로 이동하고, 페이지별 입력창은 본문에 둔다. */
+/* 페이지별 검색은 상단 검색 메뉴에서 같은 입력 규칙과 결과 목록을 사용한다. */
 [data-search-content] { padding: 4px; }
-[data-search-content] [role="listbox"] {
+[data-search-content] :is(ul, [data-search-results]) {
   position: static;
   max-height: min(19rem, 40dvh);
 }
-[data-search-content] > form { margin-top: 0; align-items: center; }
+[data-search-content] > form { margin-top: 0; align-items: flex-start; }
 [data-search-content] :is(input[data-page-input], [data-search-field]) {
   height: 44px;
   min-height: 44px;

@@ -120,6 +120,12 @@ export default function PageInputShortcuts() {
         return;
       }
       if (event.key !== "/" || event.shiftKey || event.repeat || editing(active)) return;
+      const search = document.querySelector<HTMLButtonElement>("[data-page-search-trigger]");
+      if (search && visible(search)) {
+        event.preventDefault();
+        search.click();
+        return;
+      }
       if (focusInput()) { event.preventDefault(); return; }
       // 페이지 도구는 상단바로 이동하며 좁은 화면에서는 닫힌 메뉴 안에 있다.
       const trigger = document.querySelector<HTMLButtonElement>("[data-page-actions] [data-page-input-trigger], main [data-page-input-trigger]");
@@ -131,8 +137,22 @@ export default function PageInputShortcuts() {
       }
     }
 
+    if (pathname === "/analyze" && new URLSearchParams(window.location.search).get("search") === "1") {
+      const openSearch = () => {
+        const trigger = document.querySelector<HTMLButtonElement>("[data-page-search-trigger]");
+        if (!trigger || !visible(trigger)) return false;
+        if (trigger.getAttribute("aria-expanded") !== "true") trigger.click();
+        return true;
+      };
+      if (!openSearch()) {
+        observer = new MutationObserver(() => { if (openSearch()) stopWaiting(); });
+        observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["hidden"] });
+        timeout = setTimeout(stopWaiting, 10000);
+      }
+    }
+
     // 지연 렌더링되는 검색창도 기다리되, 사용자가 조작하면 자동 포커스를 취소한다.
-    if (["/analyze", "/compare", "/calculator"].includes(pathname) && window.matchMedia("(hover: hover) and (pointer: fine)").matches && !modalOpen() && !editing(document.activeElement)) {
+    if (["/calculator"].includes(pathname) && window.matchMedia("(hover: hover) and (pointer: fine)").matches && !modalOpen() && !editing(document.activeElement)) {
       if (!focusInput(true)) waitForInput(true);
     }
     document.addEventListener("keydown", onKeyDown);
