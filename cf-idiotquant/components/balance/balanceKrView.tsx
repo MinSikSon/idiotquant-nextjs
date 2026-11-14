@@ -3,7 +3,7 @@
 import { postRebalancingPreview, requestRebalancingAction } from "@/lib/features/capital/capitalAPI";
 import type { RebalancingPolicy, RebalancingAction } from "@/lib/features/capital/rebalancing";
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   LayoutDashboard, ChevronRight, MapPin,
   Wallet, Coins, Percent,
@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import TradingAccountManager from "@/components/balance/tradingAccountManager";
 import { useSession } from "next-auth/react";
+import { useBalanceAccount } from "@/components/balance/useBalanceAccount";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import {
@@ -188,8 +189,6 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
   const { data: session, status } = useSession();
   const dispatch = useAppDispatch();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const pathname = usePathname();
 
   const kiBalance = useAppSelector(getKoreaInvestmentBalance) as unknown as KoreaInvestmentBalance;
   const krCapital = useAppSelector(selectKrCapital) as KrUsCapitalType;
@@ -214,7 +213,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
 
   const tradingStatus = useAppSelector(selectTradingStatus);
 
-  const [balanceKey, setBalanceKey] = useState(searchParams.get("key") || String(session?.user?.id || ""));
+  const [balanceKey, setBalanceKey] = useBalanceAccount(session?.user?.id);
   const [viewerTab, setViewerTab] = useState<"ccnl" | "nccs">("ccnl");
   const [mobileTab, setMobileTab] = useState("section-kpi");
   const [autoRefresh, setAutoRefresh] = useState(false);
@@ -299,21 +298,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
   }, [tradingStatus, dispatch, addToast, balanceKey]);
 
   useEffect(() => {
-    const urlKey = searchParams.get("key");
-    if (urlKey && urlKey !== balanceKey) setBalanceKey(urlKey);
-  }, [searchParams]);
-
-  useEffect(() => {
     if (!balanceKey || balanceKey === "undefined") return;
-    if (searchParams.get("key") !== balanceKey) {
-      const params = new URLSearchParams(searchParams.toString());
-      params.set("key", balanceKey);
-      // router.replace 는 라우트 이동이라 RSC 왕복이 일어나고 뷰가 통째로 재마운트된다
-      // (계좌를 바꿀 때마다 페이지가 새로고침되는 것처럼 보이던 원인). 여기서 필요한 건
-      // "URL 이 현재 계좌를 반영하는 것"뿐이므로 History API 로 주소만 갈아끼운다.
-      // Next 는 native History API 를 지원하므로 useSearchParams 도 그대로 따라온다.
-      window.history.replaceState(null, "", `${pathname}?${params.toString()}`);
-    }
     // 같은 키로 이미 조회했으면 재조회하지 않음 (URL 동기화/재렌더로 인한 불필요한 반복 refresh 방지)
     if (fetchedKeyRef.current === balanceKey) return;
     fetchedKeyRef.current = balanceKey;
@@ -329,10 +314,6 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
     if (!session || (session.user as any)?.role !== "admin") {
       router.replace("/");
       return;
-    }
-    if (session.user?.id && !searchParams.get("key")) {
-      // 잔고 조회는 balanceKey 확정 후 아래 effect 에서 1회 수행 (여기서 중복 조회하지 않음)
-      setBalanceKey(String(session.user.id));
     }
     // 같은 유저로 이미 불렀으면 재조회하지 않음 (session 객체 재생성으로 인한 중복 호출 방지)
     const userId = String(session.user?.id ?? "");

@@ -191,6 +191,7 @@ export interface NcavDailyDatesState {
 }
 
 export interface TradingStatusState {
+    requestIds: Partial<Record<"KR" | "US", string>>;
     KR: boolean | null;
     US: boolean | null;
     state: "init" | "pending" | "fulfilled" | "rejected";
@@ -273,7 +274,7 @@ const initialState: AlgorithmTradeType = {
     strategyLists: {},
     ncavDailyDates: { state: "init", dates: [], selectedDate: "latest", error: null },
     ncavDailyList: { state: "init", requestId: null, requestKey: null, receivedAt: null, refreshing: false, list: [], country: "KR", scanDate: null, prevDate: null, total: 0, scanningInProgress: false, error: null },
-    tradingStatus: { KR: null, US: null, state: "init" },
+    tradingStatus: { KR: null, US: null, state: "init", requestIds: {} },
 }
 
 export const algorithmTradeSlice = createAppSlice({
@@ -517,12 +518,19 @@ export const algorithmTradeSlice = createAppSlice({
                 return { country, value };
             },
             {
-                pending: (state) => { state.tradingStatus.state = "pending"; },
+                pending: (state, action) => {
+                    state.tradingStatus.requestIds[action.meta.arg.country] = action.meta.requestId;
+                    state.tradingStatus.state = "pending";
+                },
                 fulfilled: (state, action) => {
+                    if (state.tradingStatus.requestIds[action.meta.arg.country] !== action.meta.requestId) return;
                     state.tradingStatus[action.payload.country] = action.payload.value;
                     state.tradingStatus.state = "fulfilled";
                 },
-                rejected: (state) => { state.tradingStatus.state = "rejected"; },
+                rejected: (state, action) => {
+                    if (state.tradingStatus.requestIds[action.meta.arg.country] !== action.meta.requestId) return;
+                    state.tradingStatus.state = "rejected";
+                },
             }
         ),
         reqSetTradingActive: create.asyncThunk(
@@ -532,12 +540,19 @@ export const algorithmTradeSlice = createAppSlice({
                 return { country, isActive };
             },
             {
-                pending: (state) => { state.tradingStatus.state = "pending"; },
+                pending: (state, action) => {
+                    state.tradingStatus.requestIds[action.meta.arg.country] = action.meta.requestId;
+                    state.tradingStatus.state = "pending";
+                },
                 fulfilled: (state, action) => {
+                    if (state.tradingStatus.requestIds[action.meta.arg.country] !== action.meta.requestId) return;
                     state.tradingStatus[action.payload.country] = action.payload.isActive;
                     state.tradingStatus.state = "fulfilled";
                 },
-                rejected: (state) => { state.tradingStatus.state = "rejected"; },
+                rejected: (state, action) => {
+                    if (state.tradingStatus.requestIds[action.meta.arg.country] !== action.meta.requestId) return;
+                    state.tradingStatus.state = "rejected";
+                },
             }
         ),
         reqDiscoverNcavDates: create.asyncThunk(

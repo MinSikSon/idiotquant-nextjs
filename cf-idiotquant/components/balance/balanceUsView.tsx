@@ -3,7 +3,7 @@
 import { postRebalancingPreview, requestRebalancingAction } from "@/lib/features/capital/capitalAPI";
 import type { RebalancingPolicy, RebalancingAction } from "@/lib/features/capital/rebalancing";
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   Globe, ChevronRight, DollarSign, Building2,
   Wallet, TrendingUp, BarChart3, RefreshCw,
@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import TradingAccountManager from "@/components/balance/tradingAccountManager";
 import { useSession } from "next-auth/react";
+import { useBalanceAccount } from "@/components/balance/useBalanceAccount";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import {
@@ -174,8 +175,6 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
   const { data: session, status } = useSession();
   const dispatch = useAppDispatch();
   const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
 
   const kiBalance = useAppSelector(getKoreaInvestmentUsMaretPresentBalance) as KoreaInvestmentOverseasPresentBalance;
   const kiCcnl = useAppSelector(getKoreaInvestmentUsMaretCcnl) as KoreaInvestmentOverseasCcnl;
@@ -230,7 +229,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
 
   const tradingStatus = useAppSelector(selectTradingStatus);
 
-  const [balanceKey, setBalanceKey] = useState(searchParams.get("key") || "");
+  const [balanceKey, setBalanceKey] = useBalanceAccount(session?.user?.id);
   const [viewerTab, setViewerTab] = useState<"ccnl" | "nccs">("ccnl");
   const [mobileTab, setMobileTab] = useState("section-kpi");
   const [autoRefresh, setAutoRefresh] = useState(false);
@@ -274,14 +273,6 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
     }
   }, [balanceKey, dispatch, addToast]);
 
-  useEffect(() => {
-    const urlKey = searchParams.get("key");
-    if (urlKey) {
-      setBalanceKey(urlKey);
-    } else if (session?.user?.id) {
-      setBalanceKey(String(session.user.id));
-    }
-  }, [session?.user?.id, searchParams]);
 
   useEffect(() => {
     if (status === "loading") return;
@@ -313,15 +304,6 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
 
   useEffect(() => {
     if (!balanceKey || balanceKey === "undefined") return;
-    if (searchParams.get("key") !== balanceKey) {
-      const params = new URLSearchParams(searchParams.toString());
-      params.set("key", balanceKey);
-      // router.replace 는 라우트 이동이라 RSC 왕복이 일어나고 뷰가 통째로 재마운트된다
-      // (계좌를 바꿀 때마다 페이지가 새로고침되는 것처럼 보이던 원인). 여기서 필요한 건
-      // "URL 이 현재 계좌를 반영하는 것"뿐이므로 History API 로 주소만 갈아끼운다.
-      // Next 는 native History API 를 지원하므로 useSearchParams 도 그대로 따라온다.
-      window.history.replaceState(null, "", `${pathname}?${params.toString()}`);
-    }
     // 같은 키로 이미 조회했으면 재조회하지 않음 (URL 동기화/재렌더로 인한 불필요한 반복 refresh 방지)
     if (fetchedKeyRef.current === balanceKey) return;
     fetchedKeyRef.current = balanceKey;
