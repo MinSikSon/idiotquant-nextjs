@@ -646,15 +646,14 @@ function AnalyzeContent() {
 
         </> : undefined}
       >
-        {!tickerFromUrl && <div className={cn(ANALYZE_WIDTH, "py-4")}><PageSearch>
+        <PageSearch>
           <SearchAutocomplete
-            autoFocus
             placeHolder="종목명·티커 검색"
             onSearchButton={handleSearch}
             validCorpNameArray={staticStockData.allTickers}
             stockNames={staticStockData.usStocks}
           />
-        </PageSearch></div>}
+        </PageSearch>
 
         {/* 인기 종목 + 최근 검색 — 검색 화면에서만 보여준다 */}
         {!isPriceLoaded && (popularStocks.length > 0 || krMarketHistory.length > 0) && (
