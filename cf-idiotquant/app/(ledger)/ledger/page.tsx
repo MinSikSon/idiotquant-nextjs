@@ -489,7 +489,7 @@ export default function LedgerPage() {
                         ? <><span>{members.length}명과 함께 쓰는 중</span><span aria-hidden>·</span><span>내 계정에 저장됩니다</span></>
                         : <><span>로그인 사용자 전용</span><span aria-hidden>·</span><span>내 계정에만 저장됩니다</span></>
             }
-            containerClassName="max-w-3xl lg:max-w-none mx-auto px-4 sm:px-6"
+            containerClassName="service-container"
             actions={
                 <button
                     type="button"
@@ -507,7 +507,7 @@ export default function LedgerPage() {
         return (
             <div className="min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas">
                 {header}
-                <div className="max-w-3xl lg:max-w-none mx-auto px-4 sm:px-6 py-6">
+                <div className="service-container py-6">
                     <div className={cn(CARD_CLS, "py-12 px-4 text-center")}>
                         <p className="text-[13px] font-bold text-neutral-700 dark:text-neutral-300">
                             로그인이 풀렸습니다.
@@ -540,7 +540,7 @@ export default function LedgerPage() {
                 </div>
             )}
 
-            <div className="max-w-3xl lg:max-w-none mx-auto px-4 sm:px-6 desktop-panel-grid py-6 space-y-6 lg:space-y-0">
+            <div className="service-container desktop-panel-grid py-6 space-y-6 lg:space-y-0">
 
                 {/* ⓪ 가계부 전환 — 볼 수 있는 가계부가 둘 이상일 때만 나온다.
                     혼자 쓰는 사람에게는 없던 UI 가 생기지 않는다. */}

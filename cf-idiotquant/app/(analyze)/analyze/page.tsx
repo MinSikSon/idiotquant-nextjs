@@ -636,7 +636,7 @@ function AnalyzeContent() {
 
         </> : undefined}
       >
-        <PageSearch onSelect={handleSearch} />
+        <PageSearch purpose="analyze" onSelect={handleSearch} />
 
         {/* 인기 종목 + 최근 검색 — 검색 화면에서만 보여준다 */}
         {!isPriceLoaded && (popularStocks.length > 0 || krMarketHistory.length > 0) && (

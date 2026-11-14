@@ -8,7 +8,7 @@ import { buildStockSearchIndex, findStockSuggestions } from '../lib/utils/stockS
 type Element = { type: string; props: Record<string, any> };
 
 // 브라우저 경계만 대체해 실제 입력·초기화·선택 핸들러를 실행한다.
-function render(value: string) {
+function render(value: string, inModal = false) {
     const changes: string[] = [];
     const searches: string[] = [];
     let hook = 0;
@@ -22,6 +22,7 @@ function render(value: string) {
             useRef: () => ({ current: { blur() {}, focus() {} } }),
         },
         'react/jsx-runtime': { jsx, jsxs: jsx },
+        'react-dom': { createPortal: (children: unknown) => jsx('portal', { children }) },
         '@/lib/utils': { cn: (...args: unknown[]) => args.filter(Boolean).join(' ') },
         '@/lib/ui-controls': { CONTROL_ICON_BUTTON_CLS: '' },
         '@/components/pageHeader': { PAGE_PRIMARY_ACTION_CLS: '' },
@@ -36,6 +37,7 @@ function render(value: string) {
         require: (name: string) => { assert.ok(name in modules, name); return modules[name]; },
     });
     const tree = output.exports.default({
+        resultsTarget: inModal ? {} : undefined,
         value, onQueryChange: (next: string) => changes.push(next),
         onSearchButton: (next: string) => searches.push(next),
         validCorpNameArray: ['005930', '006660', 'AAPL'],
@@ -75,4 +77,11 @@ test('스크리너 자동완성에서 국문·영문 종목명을 고르면 해�
         assert.deepEqual(result.changes, [ticker]);
         assert.deepEqual(result.searches, [ticker]);
     }
+});
+
+test('모달에서도 결과 영역으로 보낸 자동완성을 선택하면 같은 종목을 전달한다', () => {
+    const result = render('애플', true);
+    assert.ok(result.nodes.some(node => node.type === 'portal'));
+    result.nodes.find(node => node.props.role === 'option')!.props.onMouseDown();
+    assert.deepEqual(result.searches, ['AAPL']);
 });

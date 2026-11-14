@@ -209,7 +209,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
 
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                     {/* 🔍 실시간 신규 종목 검색 및 주문 컴포넌트 */}
-                    <PageSearch label="잔고 종목 검색" market={isUs ? "US" : "KR"} options={searchOptions} requireSelection
+                    <PageSearch purpose="balance" label="잔고 종목 검색" market={isUs ? "US" : "KR"} options={searchOptions} requireSelection
                         onSelect={value => {
                             const stock = MARKET_STOCK_MASTER.find(item => item.pdno.toLowerCase() === value.toLowerCase() || item.prdt_name.toLowerCase() === value.toLowerCase());
                             if (stock) handleOpenOrderModal(stock);

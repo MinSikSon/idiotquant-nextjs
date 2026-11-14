@@ -4,6 +4,26 @@
 
 /* ── Layout tokens ── */
 :root {
+  --service-canvas-rgb: 250 250 249;
+  --service-canvas: rgb(var(--service-canvas-rgb));
+  --service-panel-rgb: 255 255 255;
+  --service-panel: rgb(var(--service-panel-rgb));
+  --service-ink-rgb: 38 37 45;
+  --service-ink: rgb(var(--service-ink-rgb));
+  --service-muted-rgb: 98 94 109;
+  --service-muted: rgb(var(--service-muted-rgb));
+  --service-line-rgb: 222 220 229;
+  --service-line: rgb(var(--service-line-rgb));
+  --service-soft-rgb: 245 244 247;
+  --service-soft: rgb(var(--service-soft-rgb));
+  --service-action-rgb: 116 89 180;
+  --service-action: rgb(var(--service-action-rgb));
+  --service-action-hover-rgb: 98 70 158;
+  --service-action-hover: rgb(var(--service-action-hover-rgb));
+  --service-accent-rgb: 240 235 249;
+  --service-accent: rgb(var(--service-accent-rgb));
+  --service-accent-ink-rgb: 99 69 153;
+  --service-accent-ink: rgb(var(--service-accent-ink-rgb));
   --font-sans: "Pretendard Variable", ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-mono: var(--font-sans);
   --font-serif-latin: var(--font-sans);
@@ -20,6 +40,16 @@
 }
 
 html.dark {
+  --service-canvas-rgb: 23 23 27;
+  --service-panel-rgb: 30 30 36;
+  --service-ink-rgb: 238 237 244;
+  --service-muted-rgb: 181 177 193;
+  --service-line-rgb: 61 59 70;
+  --service-soft-rgb: 37 37 46;
+  --service-action-rgb: 116 84 175;
+  --service-action-hover-rgb: 99 68 156;
+  --service-accent-rgb: 48 39 63;
+  --service-accent-ink-rgb: 200 177 237;
   --brand-ink: 201 176 239;
   --brand-ink-hover: 221 204 250;
 }
@@ -601,89 +631,90 @@ html:has(.navigation-header [data-page-tabs]) { --navigation-h: 92px; }
 
 [data-page-secondary-actions] > button > span.hidden { display: inline; }
 
-/* 페이지별 검색은 상단 검색 메뉴에서 같은 입력 규칙과 결과 목록을 사용한다. */
-[data-search-content] { padding: 4px; }
-[data-search-content] :is(ul, [data-search-results]) {
-  position: static;
-  max-height: min(19rem, 40dvh);
-}
-[data-search-content] > form { margin-top: 0; align-items: flex-start; }
-[data-search-content] :is(input[data-page-input], [data-search-field]) {
-  height: 44px;
-  min-height: 44px;
-  border: 1px solid rgb(229 229 229);
-  border-radius: var(--radius-input);
-  background: white;
-}
-[data-search-content] input[data-page-input] {
-  font-size: 16px;
-  font-weight: 500;
-  padding-block: 0;
-}
-[data-search-content] [data-search-field] { padding: 0 12px; gap: 8px; }
-[data-search-content] [data-search-field] input[data-page-input] {
-  height: 42px;
-  min-height: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-}
-.dark [data-search-content] :is(input[data-page-input], [data-search-field]) {
-  border-color: rgb(64 64 64);
-  background: #1c1c20;
-}
-.dark [data-search-content] [data-search-field] input[data-page-input] { border: 0; background: transparent; }
-[data-search-content] :is(input[data-page-input]:focus, [data-search-field]:focus-within) {
-  outline: none;
-  border-color: rgb(var(--brand-ink));
-  box-shadow: 0 0 0 2px rgb(var(--brand-ink) / 15%);
-}
-[data-search-content] [data-search-field] input[data-page-input]:focus { box-shadow: none; }
-[data-search-content] > form > button,
-[data-search-content] [data-search-field] > button[aria-label="종목 검색 실행"] {
-  flex: 0 0 auto;
-  width: auto;
-  height: 44px;
-  padding: 0 12px;
-  justify-content: center;
-  border-radius: var(--radius-control);
-}
-@media (max-width: 639px) {
-  [data-search-content] > form > button,
-  [data-search-content] [data-search-field] > button[aria-label="종목 검색 실행"] { width: 44px; max-width: 44px; padding: 0; }
-}
 @media (max-width: 767px) {
   .navigation-header .navigation-main { border-bottom-width: 0; }
   .navigation-identity { padding-top: var(--navigation-h, 48px); }
   .navigation-identity ~ main { padding-top: 0; }
 }
 
-/* 검색창은 네이티브 모달의 포커스 제한과 배경 비활성화를 사용한다. */
+/* 분석 화면의 폭·여백을 모든 서비스 화면에서 공유한다. */
+.service-container { width: 100%; max-width: 1440px; margin-inline: auto; padding-inline: 16px; font-size: 15px; line-height: 1.65; }
+.service-content { padding-block: 24px; }
+.service-container-reading { max-width: 896px; }
+@media (min-width: 640px) { .service-container { padding-inline: 24px; } }
+@media (min-width: 1024px) { .service-container-reading { max-width: 1440px; } }
+
+/* 검색은 페이지와 같은 표면·서체를 쓰고, 모바일에서는 한 화면으로 펼친다. */
 .stock-search-modal {
   position: fixed;
   inset: var(--search-viewport-top, 0px) 0 auto;
   margin: 0;
-  width: 100%;
-  max-width: none;
-  height: var(--search-viewport-height, 100dvh);
-  max-height: none;
-  padding: 0;
-  border: 0;
-  overflow: hidden;
-  overscroll-behavior: contain;
+  width: 100%; max-width: none;
+  height: var(--search-viewport-height, 100dvh); max-height: none;
+  padding: 0; border: 0; background: transparent;
+  color: var(--service-ink);
+  overflow: hidden; overscroll-behavior: contain;
+  font-size: 15px; line-height: 1.65; word-break: keep-all; overflow-wrap: anywhere;
 }
 .stock-search-modal::backdrop { background: rgb(0 0 0 / 45%); }
-.stock-search-modal [data-search-content] { padding-bottom: max(16px, env(safe-area-inset-bottom)) !important; }
-.stock-search-modal [data-search-content] [role="listbox"] { margin-bottom: 1rem; }
-.stock-search-modal [data-search-content] [role="option"] { min-height: 44px; font-size: 14px; }
-@media (min-width: 768px) {
-  .stock-search-modal {
-    inset: 0;
-    margin: auto;
-    width: min(48rem, calc(100vw - 48px));
-    height: min(48rem, calc(var(--search-viewport-height, 100dvh) - 48px));
-    border-radius: 16px;
-    box-shadow: 0 24px 80px rgb(0 0 0 / 25%);
-  }
+.stock-search-surface {
+  display: flex; flex-direction: column; height: 100%; min-height: 0;
+  background: var(--service-canvas);
+  transform: translate3d(var(--search-swipe-offset, 0px), 0, 0);
+  transition: transform 180ms ease-out;
+  touch-action: pan-y pinch-zoom;
 }
+.stock-search-surface[data-swiping] { transition: none; }
+.stock-search-header[data-search-content] {
+  display: flex; align-items: flex-start; flex-shrink: 0; gap: 8px;
+  padding: max(12px, env(safe-area-inset-top)) 16px 12px 8px;
+}
+.stock-search-back {
+  display: flex; flex-shrink: 0; align-items: center; justify-content: center;
+  min-width: 44px; min-height: 52px; border-radius: 12px; color: var(--service-ink);
+}
+.stock-search-back:hover { background: var(--service-soft); }
+.stock-search-modal [data-search-field] {
+  height: 52px; border: 1px solid transparent; border-radius: 16px;
+  background: var(--service-soft); padding-inline: 14px; box-shadow: none;
+}
+.stock-search-modal [data-search-field]:focus-within { border-color: var(--service-accent-ink); box-shadow: none; }
+.stock-search-modal [data-search-field] input[data-page-input] {
+  height: 48px; min-height: 44px; background: transparent; color: var(--service-ink);
+  font-size: 16px; font-weight: 400; letter-spacing: 0;
+}
+.stock-search-modal [data-search-field] input::placeholder { color: var(--service-muted); opacity: 1; }
+.stock-search-modal [data-search-field] > svg { color: var(--service-muted); }
+.stock-search-body[data-search-content] {
+  display: flex; flex-direction: column; min-height: 0; flex: 1;
+  overflow-y: auto; overscroll-behavior: contain;
+  padding: 12px 16px max(24px, env(safe-area-inset-bottom));
+}
+.stock-search-results:empty { display: none; }
+.stock-search-modal [role="listbox"] { position: static; margin: 0 0 24px; border: 0; padding: 0; box-shadow: none; background: transparent; max-height: min(24rem, 45dvh); }
+.stock-search-modal [role="option"] { min-height: 56px; padding: 12px; font-size: 15px; border-radius: 12px; }
+.stock-search-modal [role="option"][aria-selected="true"] { background: var(--service-accent); color: var(--service-accent-ink); box-shadow: none; transform: none; }
+.stock-search-guidance > h3 { margin: 12px 0 8px; font-size: 20px; line-height: 1.5; font-weight: 600; letter-spacing: -.025em; }
+.stock-search-description, .stock-search-status { color: var(--service-muted); font-size: 14px; line-height: 1.8; margin-bottom: 20px; }
+.stock-search-error { color: #b42318; font-size: 14px; margin-bottom: 16px; }
+html.dark .stock-search-error { color: #fca5a5; }
+.stock-search-guidance > div { background: transparent; }
+.stock-search-steps { display: flex; flex-direction: column; gap: 16px; margin: 8px 0 32px; }
+.stock-search-steps > li { display: flex; gap: 12px; align-items: flex-start; font-size: 15px; }
+.stock-search-steps > li > span { flex-shrink: 0; color: var(--service-muted); font-variant-numeric: tabular-nums; }
+.stock-search-note { margin-top: auto; padding-top: 24px; border-top: 1px solid var(--service-line); color: var(--service-muted); font-size: 13px; line-height: 1.8; }
+.stock-search-modal :is(button, a, summary):focus-visible { outline: 2px solid var(--service-accent-ink); outline-offset: 2px; }
+@media (max-width: 639px) {
+  .stock-search-modal [data-search-field] > button[aria-label="종목 검색 실행"] { display: none; }
+}
+@media (min-width: 768px) {
+  .stock-search-modal { inset: 0; margin: auto; width: min(48rem, calc(100vw - 48px)); height: min(48rem, calc(var(--search-viewport-height, 100dvh) - 48px)); border-radius: 16px; box-shadow: 0 24px 80px rgb(0 0 0 / 25%); }
+  .stock-search-header[data-search-content] { padding: 24px 24px 16px 16px; }
+  .stock-search-body[data-search-content] { padding: 8px 24px 24px; }
+}
+@media (prefers-reduced-motion: reduce) { .stock-search-surface { transition: none; } }
+
+.stock-search-modal .guide-quick-search { min-height: 44px; padding: 8px 14px; border-radius: 999px; background: var(--service-soft); color: var(--service-ink); font-size: 14px; font-weight: 400; }
+.stock-search-modal .guide-quick-search:hover { background: var(--service-accent); }
+.stock-search-modal .guide-quick-search > svg { display: none; }
+.stock-search-modal .guide-quick-label { flex-basis: 100%; margin-bottom: 4px; font-size: 13px; color: var(--service-muted); }
