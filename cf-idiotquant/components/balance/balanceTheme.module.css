@@ -1,23 +1,14 @@
-/* Shared by KR/US and every balance tab; the rest of the site keeps its theme. */
+/* KR/US 잔고와 검색 모달은 분석 화면에서 정한 공통 서비스 표면을 따른다. */
 .page {
-  --brand-ink: 41 40 39;
-  --brand-ink-hover: 66 64 61;
-  --balance-separator: #e3e0dc;
-  --balance-kpi: #ffffff;
+  --balance-separator: var(--service-line);
+  --balance-kpi: var(--service-panel);
   min-height: 100vh;
-  background: #f2f0eb;
-  color: #292827;
+  background: var(--service-canvas);
+  color: var(--service-ink);
   font-variant-numeric: tabular-nums;
 }
 
-:global(.dark) .page {
-  --brand-ink: 238 236 231;
-  --brand-ink-hover: 255 255 255;
-  --balance-separator: #393638;
-  --balance-kpi: #242122;
-  background: #1b1819;
-  color: #eeece7;
-}
+
 
 .page :is(h1, h2) {
   font-weight: 600;

@@ -8,7 +8,11 @@ import { StockSearchModal } from "@/components/stock-search-modal";
 
 import type { StockSearchName } from "@/lib/utils/stockSuggestions";
 
+import type { StockSearchPurpose } from "@/lib/stock-search-guidance";
+
 export type PageSearchConfig = {
+  purpose?: StockSearchPurpose;
+  disabledMessage?: string;
   label?: string;
   market?: "KR" | "US";
   options?: string[];
@@ -62,7 +66,7 @@ export function StockSearchProvider({ children }: { children: ReactNode }) {
     [register, openSearch, label, open]);
   return <Context.Provider value={context}>
     {children}
-    <StockSearchModal open={open} label={label} market={config?.market} options={config?.options} stockNames={config?.stockNames} requireSelection={config?.requireSelection}
+    <StockSearchModal purpose={config?.purpose ?? "analyze"} disabledMessage={config?.disabledMessage} open={open} label={label} market={config?.market} options={config?.options} stockNames={config?.stockNames} requireSelection={config?.requireSelection}
       disabled={config?.disabled} onSelect={select} onClose={close} trigger={trigger} />
   </Context.Provider>;
 }

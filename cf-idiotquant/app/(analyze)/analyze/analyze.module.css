@@ -1,16 +1,16 @@
 /* 분석 화면에서 먼저 검증하는 서비스 UI 기준. 공통 탐색 높이는 그대로 따른다. */
 .page {
-  --analysis-canvas: #fafaf9;
-  --analysis-panel: #fff;
-  --analysis-ink: #26252d;
-  --analysis-muted: #625e6d;
-  --analysis-line: #dedce5;
-  --analysis-control-line: #85818d;
-  --analysis-soft: #f5f4f7;
-  --analysis-action: #7459b4;
-  --analysis-action-hover: #62469e;
-  --analysis-lilac: #f0ebf9;
-  --analysis-lilac-ink: #634599;
+  --analysis-canvas: var(--service-canvas);
+  --analysis-panel: var(--service-panel);
+  --analysis-ink: var(--service-ink);
+  --analysis-muted: var(--service-muted);
+  --analysis-line: var(--service-line);
+  --analysis-control-line: var(--service-muted);
+  --analysis-soft: var(--service-soft);
+  --analysis-action: var(--service-action);
+  --analysis-action-hover: var(--service-action-hover);
+  --analysis-lilac: var(--service-accent);
+  --analysis-lilac-ink: var(--service-accent-ink);
   background: var(--analysis-canvas);
   color: var(--analysis-ink);
   font-size: 15px;
@@ -18,18 +18,7 @@
   word-break: keep-all;
   overflow-wrap: anywhere;
 }
-:global(html.dark) .page {
-  --analysis-canvas: #17171b;
-  --analysis-panel: #1e1e24;
-  --analysis-ink: #eeedf4;
-  --analysis-muted: #b5b1c1;
-  --analysis-line: #3d3b46;
-  --analysis-soft: #25252e;
-  --analysis-action: #7454af;
-  --analysis-action-hover: #63449c;
-  --analysis-lilac: #30273f;
-  --analysis-lilac-ink: #c8b1ed;
-}
+
 .page .container { max-width: 1440px; }
 .page .header { background: var(--analysis-panel); border-color: var(--analysis-line); }
 .page .header h1 { font-size: 26px; font-weight: 600; line-height: 1.4; letter-spacing: -.025em; color: var(--analysis-ink); }

@@ -21,8 +21,8 @@ import { useMobilePageHeader } from "@/components/mobile-page-header";
    헤더와 본문이 **같은 프리셋**을 써야 한다. 페이지에서 <main> 을 직접 감쌀
    때도 PAGE_WIDTH[width] 를 그대로 가져다 쓴다. */
 export const PAGE_WIDTH = {
-  content: "max-w-4xl lg:max-w-none mx-auto px-3 sm:px-6",  // 읽는 화면 — 프로필 · 관리자 · 약관
-  data: "w-full mx-auto px-3 sm:px-6",     // 표 · 그리드 화면 — 분석 · 비교 · 발굴 · 계산기 · 백테스트 · 가계부 · 잔고
+  content: "service-container service-container-reading",  // 읽는 화면 — 프로필 · 관리자 · 약관
+  data: "service-container",     // 표 · 그리드 화면 — 분석 · 비교 · 발굴 · 계산기 · 백테스트 · 가계부 · 잔고
 } as const;
 
 export type PageWidth = keyof typeof PAGE_WIDTH;
@@ -43,7 +43,7 @@ export const PAGE_ACTION_CLS =
 // 다크 채움은 흰 글자 4.5:1과 캔버스 대비 3:1을 함께 확보한다.
 export const PAGE_PRIMARY_ACTION_CLS =
   "inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 rounded-lg px-3.5 py-2.5 text-xs font-semibold transition-colors " +
-  "bg-brand text-white hover:bg-brand-hover dark:bg-[#a15669] dark:hover:bg-[#a85b6e] " +
+  "bg-brand text-white hover:bg-brand-hover " +
   CONTROL_FOCUS_CLS + " " + CONTROL_DISABLED_CLS;
 
 export function PageHeader({

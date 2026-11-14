@@ -355,7 +355,7 @@ function ComparePageContent() {
       mobileCompact
       actions={<ResultShare getSnapshot={() => compareSnapshot(stocks, dates)} disabled={loading || dateLoading || !stocks.length} />}
     />
-    <main className={`${PAGE_WIDTH.data} py-6 sm:py-8`}>
+    <main className={`${PAGE_WIDTH.data} service-content`}>
       <section aria-label="비교 종목 추가">
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-sm font-semibold">비교 종목</h2>
@@ -365,8 +365,9 @@ function ComparePageContent() {
             <Trash2 size={15} aria-hidden="true" /><span>전체 비우기</span>
           </button>
         </div>
-        <PageSearch label="비교할 종목 검색" onSelect={addStock}
-          disabled={!comparisonReady || sessionLoading || loading || dateLoading || stocks.length >= limits.stocks} />
+        <PageSearch purpose="compare" label="비교할 종목 검색" onSelect={addStock}
+          disabled={!comparisonReady || sessionLoading || loading || dateLoading || stocks.length >= limits.stocks}
+          disabledMessage={stocks.length >= limits.stocks ? `비교 종목은 최대 ${limits.stocks}개까지 추가할 수 있어요. 기존 종목을 지운 뒤 다시 선택해 주세요.` : "현재 비교 자료를 준비하고 있어요. 조회가 끝나면 종목을 추가할 수 있어요."} />
         <p className="mt-2 text-xs text-neutral-600 dark:text-neutral-400">종목 {stocks.length}/{limits.stocks}개 · 국내와 미국 종목을 함께 볼 수 있습니다. PER·PBR 등 재무지표는 현재 기준입니다.</p>
         {sessionStatus === 'unauthenticated' && <p className="mt-2 text-xs text-neutral-600 dark:text-neutral-400">로그인 없이 {GUEST_LIMITS.stocks}종목·{GUEST_LIMITS.dates}개 날짜까지, 로그인하면 {MEMBER_LIMITS.stocks}종목·{MEMBER_LIMITS.dates}개 날짜까지 비교할 수 있습니다.</p>}
         {importProgress && <p role="status" className="mt-2 text-xs text-neutral-600 dark:text-neutral-400">스크리너 종목을 불러오는 중 · {importProgress.loaded}/{importProgress.total}</p>}

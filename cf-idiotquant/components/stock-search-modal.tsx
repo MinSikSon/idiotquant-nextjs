@@ -1,15 +1,19 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
-import { X } from "lucide-react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent, type RefObject } from "react";
+import { ChevronLeft } from "lucide-react";
 import SearchAutocomplete from "@/components/searchAutoComplete";
 import { SearchGuide } from "@/app/(search)/search/components/SearchGuide";
 import { loadStaticStockData, type StaticStockData } from "@/lib/utils/stockSearchData";
 
+import { backSwipe, type SwipePoint } from "@/lib/back-swipe";
+import { STOCK_SEARCH_GUIDANCE, type StockSearchPurpose } from "@/lib/stock-search-guidance";
 import type { StockSearchName } from "@/lib/utils/stockSuggestions";
 
-export function StockSearchModal({ open, label, market, options, stockNames, requireSelection, disabled, onSelect, onClose, trigger }: {
+export function StockSearchModal({ open, label, purpose = "analyze", disabledMessage, market, options, stockNames, requireSelection, disabled, onSelect, onClose, trigger }: {
   open: boolean;
+  purpose?: StockSearchPurpose;
+  disabledMessage?: string;
   label: string;
   market?: "KR" | "US";
   options?: string[];
@@ -21,6 +25,10 @@ export function StockSearchModal({ open, label, market, options, stockNames, req
   trigger: RefObject<HTMLElement | null>;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
+  const surface = useRef<HTMLDivElement>(null);
+  const swipe = useRef<(SwipePoint & { pointerId: number }) | null>(null);
+  const [resultsTarget, setResultsTarget] = useState<HTMLDivElement | null>(null);
+  const guidance = STOCK_SEARCH_GUIDANCE[purpose];
   const [data, setData] = useState<StaticStockData | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [error, setError] = useState("");
@@ -84,25 +92,65 @@ export function StockSearchModal({ open, label, market, options, stockNames, req
     onSelect(value);
   };
 
-  return <dialog ref={dialog} id="stock-search-modal" aria-labelledby="stock-search-title" aria-modal="true"
-    className="stock-search-modal bg-surface-canvas text-neutral-900 dark:bg-surface-dark-canvas dark:text-neutral-100"
+  const resetSwipe = () => {
+    swipe.current = null;
+    surface.current?.style.removeProperty("--search-swipe-offset");
+    if (surface.current) delete surface.current.dataset.swiping;
+  };
+  const point = (event: PointerEvent) => ({ x: event.clientX, y: event.clientY, time: event.timeStamp });
+  const startSwipe = (event: PointerEvent<HTMLDivElement>) => {
+    resetSwipe();
+    if (event.pointerType !== "touch" || !event.isPrimary) return;
+    const target = event.target;
+    if (target instanceof Element && target.closest('input, textarea, select, button, a, summary, [contenteditable="true"], [role="option"], [role="listbox"], [data-swipe-ignore]')) return;
+    swipe.current = { ...point(event), pointerId: event.pointerId };
+  };
+  const moveSwipe = (event: PointerEvent<HTMLDivElement>) => {
+    const start = swipe.current;
+    if (!start || start.pointerId !== event.pointerId) return;
+    const gesture = backSwipe(start, point(event), event.currentTarget.clientWidth);
+    if (gesture.cancelled) { resetSwipe(); return; }
+    if (gesture.offset) {
+      event.currentTarget.setPointerCapture(event.pointerId);
+      event.currentTarget.dataset.swiping = "true";
+      event.currentTarget.style.setProperty("--search-swipe-offset", `${gesture.offset}px`);
+    }
+  };
+  const finishSwipe = (event: PointerEvent<HTMLDivElement>) => {
+    const start = swipe.current;
+    const dismiss = start?.pointerId === event.pointerId && backSwipe(start, point(event), event.currentTarget.clientWidth).dismiss;
+    resetSwipe();
+    if (dismiss) onClose();
+  };
+
+  return <dialog ref={dialog} id="stock-search-modal" aria-labelledby="stock-search-title" aria-describedby="stock-search-note" aria-modal="true"
+    className="stock-search-modal"
     onCancel={event => { event.preventDefault(); onClose(); }}
     onClick={event => { if (event.target === event.currentTarget) onClose(); }}>
-    {open && <div className="flex h-full min-h-0 flex-col" onClick={event => event.stopPropagation()}>
-      <header className="flex shrink-0 items-center justify-between border-b border-neutral-200 px-4 pb-3 pt-[max(12px,env(safe-area-inset-top))] dark:border-neutral-700">
-        <h2 id="stock-search-title" className="text-base font-semibold">{label}</h2>
-        <button type="button" onClick={onClose} aria-label="검색창 닫기" className="flex min-h-11 min-w-11 items-center justify-center rounded-xl hover:bg-neutral-200 dark:hover:bg-neutral-800"><X size={22} /></button>
+    {open && <div ref={surface} className="stock-search-surface" onClick={event => event.stopPropagation()}
+      onPointerDownCapture={startSwipe} onPointerMoveCapture={moveSwipe} onPointerUpCapture={finishSwipe} onPointerCancelCapture={resetSwipe}>
+      <h2 id="stock-search-title" className="sr-only">{label}</h2>
+      <header className="stock-search-header" data-search-content>
+        <button type="button" onClick={onClose} aria-label="검색창 닫기" title="뒤로" className="stock-search-back"><ChevronLeft size={26} strokeWidth={1.8} /></button>
+        <div className="min-w-0 flex-1">
+          <SearchAutocomplete validCorpNameArray={values} onSearchButton={select} autoFocus onEscape={onClose} stockNames={searchNames} resultsTarget={resultsTarget}
+            placeHolder={market === "US" ? "미국 종목명 또는 티커 검색" : guidance.placeholder} />
+        </div>
       </header>
-      <div data-search-content className="min-h-0 flex-1 overflow-y-auto overscroll-contain !p-4" role="search" aria-label={label}>
-        <SearchAutocomplete validCorpNameArray={values} onSearchButton={select} autoFocus onEscape={onClose} stockNames={searchNames}
-          placeHolder={market === "US" ? "미국 티커 입력" : market === "KR" ? "국내 종목명 또는 코드 입력" : "국내 종목명 또는 미국 티커 입력"} />
-        {!data && !options && <p role="status" className="mt-2 text-xs text-neutral-500">{loadError ? "자동완성 목록을 불러오지 못했습니다. 종목명이나 티커를 입력해 검색할 수 있습니다." : "종목 목록을 불러오는 중…"}</p>}
-        {disabled && <p role="status" className="mt-2 text-sm text-neutral-500">현재 페이지에서는 종목을 선택할 수 없습니다. 종목 수 제한이나 진행 중인 작업을 확인해 주세요.</p>}
-        {error && <p role="alert" className="mt-2 text-sm text-rose-600 dark:text-rose-400">{error}</p>}
-        <section className="mt-5" aria-label="종목 검색 가이드">
-          <h3 className="mb-3 text-sm font-semibold">종목 검색 가이드</h3>
-          <SearchGuide market={market} onSelect={select} />
+      <div className="stock-search-body" data-search-content role="search" aria-label={label}>
+        <div ref={setResultsTarget} className="stock-search-results" />
+        {!data && !options && <p role="status" className="stock-search-status">{loadError ? "자동완성 목록을 불러오지 못했어요. 종목명이나 티커를 직접 입력해 검색해 주세요." : "종목 목록을 불러오는 중이에요."}</p>}
+        {disabled && <p role="status" className="stock-search-status">{disabledMessage ?? "종목 정보를 준비하고 있어요. 현재 작업이 끝나면 선택할 수 있어요."}</p>}
+        {error && <p role="alert" className="stock-search-error">{error}</p>}
+        <section className="stock-search-guidance" aria-label={`${label} 가이드`}>
+          <h3>{guidance.title}</h3>
+          <p className="stock-search-description">{guidance.description}</p>
+          <SearchGuide market={market} onSelect={select} showAnalysis={purpose === "analyze"} />
+          {purpose !== "analyze" && <ol className="stock-search-steps">
+            {guidance.steps.map((step, index) => <li key={step}><span aria-hidden="true">{index + 1}</span><p>{step}</p></li>)}
+          </ol>}
         </section>
+        <footer id="stock-search-note" className="stock-search-note"><p>{guidance.note}</p></footer>
       </div>
     </div>}
   </dialog>;

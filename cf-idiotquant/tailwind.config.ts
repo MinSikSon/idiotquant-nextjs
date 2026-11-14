@@ -95,8 +95,8 @@ const config = {
 
         // 브랜드 채움색과 테마별 글자색을 분리해 흰 버튼 글자의 대비를 유지한다.
         brand: {
-          DEFAULT: "#421d24",
-          hover: "#5a2a33",
+          DEFAULT: "rgb(var(--service-action-rgb) / <alpha-value>)",
+          hover: "rgb(var(--service-action-hover-rgb) / <alpha-value>)",
           light: "#eee7fa",
           muted: "#3a3048",
           ink: "rgb(var(--brand-ink) / <alpha-value>)",
@@ -106,7 +106,7 @@ const config = {
 
         // 라이트 모드 표면
         surface: {
-          canvas: "#f2f0eb",
+          canvas: "rgb(var(--service-canvas-rgb) / <alpha-value>)",
           card: "#ffffff",
           muted: "#f4f4f5",
           "muted-hover": "#f7f7f8",
@@ -114,21 +114,21 @@ const config = {
 
         // 다크 모드 표면 (7단계 계층)
         "surface-dark": {
-          canvas: "#1b1819",
+          canvas: "rgb(var(--service-canvas-rgb) / <alpha-value>)",
           DEFAULT: "#18181b",
-          card: "#1c1c20",
+          card: "rgb(var(--service-panel-rgb) / <alpha-value>)",
           hover: "#252529",
           muted: "#2d2d33",
           // 테두리는 아래 border-subtle.dark 와 같은 값이다. 이름이 둘인 것은
           // 역사적 이유이고, 값이 갈라지면 안 된다 — 아래 주석 참고.
-          border: "#35353b",
+          border: "rgb(var(--service-line-rgb) / <alpha-value>)",
           elevated: "#52525b",
         },
 
         // 카드·패널의 테두리는 surface-dark.border와 같은 값을 쓴다.
         "border-subtle": {
           DEFAULT: "#e5e5e5",
-          dark: "#35353b",
+          dark: "rgb(var(--service-line-rgb) / <alpha-value>)",
         },
       },
     },

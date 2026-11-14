@@ -305,7 +305,7 @@ export default function TickerMapPage() {
             ))}
           </div>
 
-          <PageSearch label="티커 매핑 검색" market={country === "KR" || country === "US" ? country : undefined} onSelect={handleSearch} />
+          <PageSearch purpose="ticker-map" label="티커 매핑 검색" market={country === "KR" || country === "US" ? country : undefined} onSelect={handleSearch} />
           {q && <button type="button" onClick={() => { setQ(""); void load(1, ""); }} className="min-h-11 px-2 text-xs text-neutral-500">검색 해제: {q}</button>}
 
           <button

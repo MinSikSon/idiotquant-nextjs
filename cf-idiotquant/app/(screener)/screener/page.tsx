@@ -1326,13 +1326,13 @@ function ScreenerContent() {
             />
 
             {!showLikedOnly && ncavDailyList.country === country && (ncavDailyList.refreshing || (ncavDailyList.receivedAt !== null && ncavDailyList.error)) && (
-                <div className="w-full mx-auto px-4 sm:px-6">
+                <div className="service-container">
                     <ScanRefreshNotice refreshing={ncavDailyList.refreshing} error={ncavDailyList.error} onRetry={handleRefresh} />
                 </div>
             )}
 
             <div className="border-b border-neutral-200 bg-white dark:border-surface-dark-border dark:bg-surface-dark-card">
-                <div className="w-full mx-auto flex items-center gap-2 px-4 sm:px-6">
+                <div className="service-container flex items-center gap-2">
                     {isLoggedIn && <ScreenerStep number={1} label="시장 선택" compact={isAdmin} />}
                     <div className="flex gap-1" data-compact-tabs role="group" aria-label="발굴 시장">
                         {([['KR', '국내'], ['US', '미국']] as const).map(([value, label]) => (
@@ -1409,7 +1409,7 @@ function ScreenerContent() {
             {/* ── 수집 중 안내 배너 ── */}
             {isLoggedIn && scanningInProgress && !showLikedOnly && (
                 <div className="bg-amber-50 dark:bg-amber-950/20 border-b border-amber-200/70 dark:border-amber-800/30">
-                    <div className="w-full mx-auto px-4 sm:px-6 py-2.5 flex items-center gap-2">
+                    <div className="service-container py-2.5 flex items-center gap-2">
                         <Clock size={13} className="text-amber-500 dark:text-amber-400 shrink-0" />
                         <p className="min-w-0 truncate whitespace-nowrap text-xs text-amber-700 dark:text-amber-400 font-medium">
                             최근 발굴 종목 수집 중 — 아직 스캔되지 않은 종목은{formattedPrevDate ? ` 이전(${formattedPrevDate})` : " 이전"} 데이터로 보완됩니다.
@@ -1424,7 +1424,7 @@ function ScreenerContent() {
                 "border-b border-neutral-200 dark:border-surface-dark-border",
                 !isLoggedIn && "hidden"
             )}>
-                <div className="w-full mx-auto px-4 sm:px-6">
+                <div className="service-container">
 
                     {/* 첫째 줄: 전략 격자.
                         칩(가변 폭)을 격자(고정 폭)로 바꾼 이유 — 칩은 이름 길이대로 폭이 달라져서
@@ -1484,7 +1484,7 @@ function ScreenerContent() {
                     <div className="flex flex-col gap-2 pb-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2 sm:pb-3">
                         <div className="flex items-center gap-2 min-w-0 w-full sm:w-auto sm:flex-1">
                         {/* 검색 */}
-                        {isLoggedIn && <PageSearch label="발굴 종목 검색" market={country} options={searchTickers} stockNames={searchStocks}
+                        {isLoggedIn && <PageSearch purpose="screener" label="발굴 종목 검색" market={country} options={searchTickers} stockNames={searchStocks}
                             onSelect={value => { setSearchQuery(value); setDisplayCount(DAILY_PAGE_SIZE); }} />}
 
 
@@ -1631,7 +1631,7 @@ function ScreenerContent() {
             {/* ── 필터 서랍 ── */}
             {filterOpen && (
                 <div aria-label="상세 필터" className="fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-[#f8faf8] dark:bg-surface-dark sm:static sm:overflow-visible sm:bg-brand-light sm:dark:bg-brand-muted/25 sm:border-b sm:border-brand-light sm:dark:border-brand/40">
-                    <div className="w-full mx-auto px-4 sm:px-6 pt-4 sm:pt-5 pb-5 sm:pb-[18px]">
+                    <div className="service-container pt-4 sm:pt-5 pb-5 sm:pb-[18px]">
 
                         <div className="flex items-center justify-between gap-3 mb-4">
                             <div className="min-w-0">
@@ -1970,7 +1970,7 @@ function ScreenerContent() {
                    기존에는 전략 이름만 있고 판정 기준이 화면 어디에도 없었다. ── */}
             {bannerPreset && (
                 <div className="bg-brand-light dark:bg-brand-muted/25 border-b border-brand-light dark:border-brand/40">
-                    <div className="w-full mx-auto px-4 sm:px-6 py-2.5 flex items-start gap-2">
+                    <div className="service-container py-2.5 flex items-start gap-2">
                         <span className={cn(
                             "shrink-0 mt-px px-1.5 py-0.5 rounded-md text-[10px] font-extrabold",
                             STRATEGY_BADGE[bannerPreset.id] ?? "bg-brand-light text-brand-ink-hover"
@@ -1988,7 +1988,7 @@ function ScreenerContent() {
             {/* ── 전략 가이드 패널 ── */}
             {showGuide && (
                 <div className="bg-white dark:bg-surface-dark-card border-b border-neutral-200 dark:border-border-subtle-dark">
-                    <div className="w-full mx-auto px-4 sm:px-6 py-5">
+                    <div className="service-container py-5">
                         <div className="flex items-center justify-between mb-4">
                             <h2 className="text-sm font-black text-neutral-900 dark:text-white">전략 설명</h2>
                             <button
@@ -2040,7 +2040,7 @@ function ScreenerContent() {
             {/* ── 종목 리스트 ── */}
             {showLikedOnly && likesState === "fulfilled" && session?.user?.id && <WatchlistChanges key={`${session.user.id}:${country}`} items={likedList} userId={session.user.id} country={country} />}
 
-            <div className="w-full mx-auto px-4 sm:px-6 pt-2 sm:pt-5 pb-20">
+            <div className="service-container pt-2 sm:pt-5 pb-20">
                 {isLoggedIn && <h2 className="mb-3"><ScreenerStep number={4} label="결과 확인" /></h2>}
 
                 {isLoading && (
