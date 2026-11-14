@@ -377,7 +377,6 @@ function AnalyzeContent() {
   const returnTo = screenerReturnPath(searchParams.get('returnTo')) ?? (searchParams.get('from') === 'screener' ? '/screener' : null);
   const resumeStarted = useRef(false);
   const [watchSaving, setWatchSaving] = useState(false);
-  const [likeStatsRevision, setLikeStatsRevision] = useState(0);
   const likedList = useAppSelector(selectLikedList);
   const togglePending = useAppSelector(selectTogglePending);
   const likesState = useAppSelector(selectLikesState);
@@ -460,7 +459,6 @@ function AnalyzeContent() {
     setWatchSaving(true);
     try {
       await dispatch(reqToggleLike({ ticker: watchStock.isUs ? watchStock.ticker : watchStock.name, name: watchStock.name, isUs: watchStock.isUs })).unwrap();
-      setLikeStatsRevision(value => value + 1);
       addToast('success', isInWatchlist ? '관심 종목에서 해제했습니다.' : '관심 종목에 저장했습니다.');
     } catch {
       await dispatch(reqGetMyLikes());
@@ -485,7 +483,6 @@ function AnalyzeContent() {
           () => sessionStorage.removeItem(PENDING_WATCH_KEY),
           stock => dispatch(reqToggleLike({ ticker: stock.isUs ? stock.ticker : stock.name, name: stock.name, isUs: stock.isUs })).unwrap(),
         );
-        setLikeStatsRevision(value => value + 1);
         addToast('success', '관심 종목에 저장했습니다.');
       } catch {
         await dispatch(reqGetMyLikes());
@@ -716,14 +713,11 @@ function AnalyzeContent() {
         </nav>}
 
 
-        {(!tickerFromUrl || isPriceLoaded) && <StockLikeStats
-          country={isPriceLoaded ? krOrUs : undefined}
-          ticker={isPriceLoaded ? tickerLabel : undefined}
-          revision={likeStatsRevision}
-        />}
-
         {!tickerFromUrl ? (
-          <AnalysisIntro onSearch={handleSearch} />
+          <>
+            <StockLikeStats />
+            <AnalysisIntro onSearch={handleSearch} />
+          </>
         ) : (
           <>
             {waitResponse && !isPriceLoaded && <ResultSkeleton />}
