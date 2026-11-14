@@ -439,6 +439,7 @@ export interface KiOverseasInquirePeriodProfitResponseBodyOutput2 {
 }
 
 interface KoreaInvestmentUsMaretType {
+    accountRequests: Record<string, string>;
     state: "init"
     | "pending" | "fulfilled" | "rejected"
     | "order-cash"
@@ -458,6 +459,7 @@ interface KoreaInvestmentUsMaretType {
 }
 
 const initialState: KoreaInvestmentUsMaretType = {
+    accountRequests: {},
     state: "init",
     searchInfo: {
         state: "init",
@@ -801,15 +803,18 @@ export const koreaInvestmentUsMarketSlice = createAppSlice({
                 return await getOverseasStockTradingInquirePresentBalance(key);
             },
             {
-                pending: (state) => {
+                pending: (state, action) => {
+                    state.accountRequests.reqGetOverseasStockTradingInquirePresentBalance = action.meta.requestId;
                     // console.log(`[reqGetOverseasStockTradingInquirePresentBalance] pending`);
                     state.presentBalance.state = "pending";
                 },
                 fulfilled: (state, action) => {
+                    if (state.accountRequests.reqGetOverseasStockTradingInquirePresentBalance !== action.meta.requestId) return;
                     // console.log(`[reqGetOverseasStockTradingInquirePresentBalance] fulfilled`, `action.payload`, action.payload);
                     state.presentBalance = { ...action.payload, state: "fulfilled" };
                 },
-                rejected: (state) => {
+                rejected: (state, action) => {
+                    if (state.accountRequests.reqGetOverseasStockTradingInquirePresentBalance !== action.meta.requestId) return;
                     console.log(`[reqGetOverseasStockTradingInquirePresentBalance] rejected`);
                     state.presentBalance.state = "rejected";
                 },
@@ -839,15 +844,18 @@ export const koreaInvestmentUsMarketSlice = createAppSlice({
                 return await getOverseasStockTradingInquireBalance(key);
             },
             {
-                pending: (state) => {
+                pending: (state, action) => {
+                    state.accountRequests.reqGetOverseasStockTradingInquireBalance = action.meta.requestId;
                     // console.log(`[reqGetOverseasStockTradingInquireBalance] pending`);
                     state.balance.state = "pending";
                 },
                 fulfilled: (state, action) => {
+                    if (state.accountRequests.reqGetOverseasStockTradingInquireBalance !== action.meta.requestId) return;
                     // console.log(`[reqGetOverseasStockTradingInquireBalance] fulfilled`, `action.payload`, action.payload);
                     state.balance = { ...action.payload, state: "fulfilled" };
                 },
-                rejected: (state) => {
+                rejected: (state, action) => {
+                    if (state.accountRequests.reqGetOverseasStockTradingInquireBalance !== action.meta.requestId) return;
                     console.log(`[reqGetOverseasStockTradingInquireBalance] rejected`);
                     state.balance.state = "rejected";
                 },
@@ -858,15 +866,18 @@ export const koreaInvestmentUsMarketSlice = createAppSlice({
                 return await getOverseasStockTradingInquireCcnl(key);
             },
             {
-                pending: (state) => {
+                pending: (state, action) => {
+                    state.accountRequests.reqGetOverseasStockTradingInquireCcnl = action.meta.requestId;
                     // console.log(`[reqGetOverseasStockTradingInquireCcnl] pending`);
                     state.ccnl.state = "pending";
                 },
                 fulfilled: (state, action) => {
+                    if (state.accountRequests.reqGetOverseasStockTradingInquireCcnl !== action.meta.requestId) return;
                     // console.log(`[reqGetOverseasStockTradingInquireCcnl] fulfilled`, `action.payload`, action.payload);
                     state.ccnl = { ...action.payload, state: "fulfilled" };
                 },
-                rejected: (state) => {
+                rejected: (state, action) => {
+                    if (state.accountRequests.reqGetOverseasStockTradingInquireCcnl !== action.meta.requestId) return;
                     // console.log(`[reqGetOverseasStockTradingInquireCcnl] rejected`);
                     state.ccnl.state = "rejected";
                 },
@@ -877,15 +888,18 @@ export const koreaInvestmentUsMarketSlice = createAppSlice({
                 return await getOverseasStockTradingInquireNccs(key);
             },
             {
-                pending: (state) => {
+                pending: (state, action) => {
+                    state.accountRequests.reqGetOverseasStockTradingInquireNccs = action.meta.requestId;
                     // console.log(`[reqGetOverseasStockTradingInquireNccs] pending`);
                     state.nccs.state = "pending";
                 },
                 fulfilled: (state, action) => {
+                    if (state.accountRequests.reqGetOverseasStockTradingInquireNccs !== action.meta.requestId) return;
                     // console.log(`[reqGetOverseasStockTradingInquireNccs] fulfilled`, `action.payload`, action.payload);
                     state.nccs = { ...action.payload, state: "fulfilled" };
                 },
-                rejected: (state) => {
+                rejected: (state, action) => {
+                    if (state.accountRequests.reqGetOverseasStockTradingInquireNccs !== action.meta.requestId) return;
                     // console.log(`[reqGetOverseasStockTradingInquireNccs] rejected`);
                     state.nccs.state = "rejected";
                 },

@@ -513,6 +513,7 @@ export interface KoreaInvestmentInquireNccs {
 // =========================================================================
 
 interface KoreaInvestmentInfo {
+    accountRequests: Record<string, string>;
   state: "init"
   | "fulfilled"
   | "get-rejected"
@@ -546,6 +547,7 @@ interface KoreaInvestmentInfo {
 }
 
 const initialState: KoreaInvestmentInfo = {
+    accountRequests: {},
   state: "init",
   id: "",
   nickName: "",
@@ -750,10 +752,12 @@ export const koreaInvestmentSlice = createAppSlice({
         return await getInquireBalanceApi(key);
       },
       {
-        pending: (state) => {
+        pending: (state, action) => {
+            state.accountRequests.reqGetInquireBalance = action.meta.requestId;
           state.koreaInvestmentBalance.state = "pending";
         },
         fulfilled: (state, action) => {
+            if (state.accountRequests.reqGetInquireBalance !== action.meta.requestId) return;
           if (action.payload?.output1 !== undefined) {
             state.koreaInvestmentBalance = {
               ...state.koreaInvestmentBalance,
@@ -763,7 +767,8 @@ export const koreaInvestmentSlice = createAppSlice({
             state.state = "inquire-balance";
           }
         },
-        rejected: (state) => {
+        rejected: (state, action) => {
+            if (state.accountRequests.reqGetInquireBalance !== action.meta.requestId) return;
           state.koreaInvestmentBalance.state = "rejected";
         }
       }
@@ -992,11 +997,13 @@ export const koreaInvestmentSlice = createAppSlice({
         }
       },
       {
-        pending: (state) => {
+        pending: (state, action) => {
+            state.accountRequests.reqGetInquireCcnl = action.meta.requestId;
           state.koreaInvestmentInquireKrCcnl.state = "pending";
           state.koreaInvestmentInquireKrCcnl.error = null;
         },
         fulfilled: (state, action) => {
+            if (state.accountRequests.reqGetInquireCcnl !== action.meta.requestId) return;
           state.state = "inquire-kr-ccnl";
           state.koreaInvestmentInquireKrCcnl = {
             ...state.koreaInvestmentInquireKrCcnl,
@@ -1006,6 +1013,7 @@ export const koreaInvestmentSlice = createAppSlice({
           };
         },
         rejected: (state, action) => {
+            if (state.accountRequests.reqGetInquireCcnl !== action.meta.requestId) return;
           state.koreaInvestmentInquireKrCcnl.state = "rejected";
           state.koreaInvestmentInquireKrCcnl.error = action.payload || "알 수 없는 에러";
         }
@@ -1026,11 +1034,13 @@ export const koreaInvestmentSlice = createAppSlice({
         }
       },
       {
-        pending: (state) => {
+        pending: (state, action) => {
+            state.accountRequests.reqGetInquireNccs = action.meta.requestId;
           state.koreaInvestmentInquireKrNccs.state = "pending";
           state.koreaInvestmentInquireKrNccs.error = null;
         },
         fulfilled: (state, action) => {
+            if (state.accountRequests.reqGetInquireNccs !== action.meta.requestId) return;
           state.state = "inquire-kr-nccs";
           state.koreaInvestmentInquireKrNccs = {
             ...state.koreaInvestmentInquireKrNccs,
@@ -1040,6 +1050,7 @@ export const koreaInvestmentSlice = createAppSlice({
           };
         },
         rejected: (state, action) => {
+            if (state.accountRequests.reqGetInquireNccs !== action.meta.requestId) return;
           state.koreaInvestmentInquireKrNccs.state = "rejected";
           state.koreaInvestmentInquireKrNccs.error = action.payload || "알 수 없는 에러";
         }

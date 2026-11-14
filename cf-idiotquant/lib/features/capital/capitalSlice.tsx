@@ -164,6 +164,7 @@ export interface TradingActivityState {
 }
 
 export interface CapitalType {
+    accountRequests: Record<string, string>;
     state: "init" | "pending" | "fulfilled" | "rejected";
     krCapital: KrUsCapitalType;
     usCapital: KrUsCapitalType;
@@ -189,6 +190,7 @@ export interface CapitalType {
 }
 
 const initialState: CapitalType = {
+    accountRequests: {},
     state: "init",
     krCapital: {
         state: "init",
@@ -291,16 +293,19 @@ export const capitalSlice = createAppSlice({
                 return await getKrCapital(key);
             },
             {
-                pending: (state) => {
+                pending: (state, action) => {
+                    state.accountRequests.reqGetKrCapital = action.meta.requestId;
                     // console.log(`[reqGetKrCapital] pending`);
                     state.krCapital.state = "pending"
                 },
                 fulfilled: (state, action) => {
+                    if (state.accountRequests.reqGetKrCapital !== action.meta.requestId) return;
                     // console.log(`[reqGetKrCapital] fulfilled`, `, typeof action.payload:`, typeof action.payload, `, action.payload:`, action.payload);
                     const json = action.payload;
                     state.krCapital = { ...json, state: "fulfilled" };
                 },
-                rejected: (state) => {
+                rejected: (state, action) => {
+                    if (state.accountRequests.reqGetKrCapital !== action.meta.requestId) return;
                     // console.log(`[reqGetKrCapital] rejected`);
                     state.krCapital.state = "rejected"
                 }
@@ -311,12 +316,15 @@ export const capitalSlice = createAppSlice({
                 return await getKrCapitalActivity(key);
             },
             {
-                pending: (state) => { state.krActivity.state = "pending"; },
+                pending: (state, action) => {
+                    state.accountRequests.reqGetKrTradingActivity = action.meta.requestId; state.krActivity.state = "pending"; },
                 fulfilled: (state, action) => {
+                    if (state.accountRequests.reqGetKrTradingActivity !== action.meta.requestId) return;
                     const json = action.payload;
                     state.krActivity = { state: "fulfilled", logs: Array.isArray(json?.logs) ? json.logs : [] };
                 },
-                rejected: (state) => { state.krActivity.state = "rejected"; }
+                rejected: (state, action) => {
+                    if (state.accountRequests.reqGetKrTradingActivity !== action.meta.requestId) return; state.krActivity.state = "rejected"; }
             }
         ),
         reqGetUsTradingActivity: create.asyncThunk(
@@ -324,12 +332,15 @@ export const capitalSlice = createAppSlice({
                 return await getUsCapitalActivity(key);
             },
             {
-                pending: (state) => { state.usActivity.state = "pending"; },
+                pending: (state, action) => {
+                    state.accountRequests.reqGetUsTradingActivity = action.meta.requestId; state.usActivity.state = "pending"; },
                 fulfilled: (state, action) => {
+                    if (state.accountRequests.reqGetUsTradingActivity !== action.meta.requestId) return;
                     const json = action.payload;
                     state.usActivity = { state: "fulfilled", logs: Array.isArray(json?.logs) ? json.logs : [] };
                 },
-                rejected: (state) => { state.usActivity.state = "rejected"; }
+                rejected: (state, action) => {
+                    if (state.accountRequests.reqGetUsTradingActivity !== action.meta.requestId) return; state.usActivity.state = "rejected"; }
             }
         ),
         reqPostKrCapitalTokenPlusAll: create.asyncThunk(
@@ -439,16 +450,19 @@ export const capitalSlice = createAppSlice({
                 return await getUsCapital(key);
             },
             {
-                pending: (state) => {
+                pending: (state, action) => {
+                    state.accountRequests.reqGetUsCapital = action.meta.requestId;
                     // console.log(`[reqGetUsCapital] pending`);
                     state.usCapital.state = "pending"
                 },
                 fulfilled: (state, action) => {
+                    if (state.accountRequests.reqGetUsCapital !== action.meta.requestId) return;
                     // console.log(`[reqGetUsCapital] fulfilled`, `, typeof action.payload:`, typeof action.payload, `, action.payload:`, action.payload);
                     const json = action.payload;
                     state.usCapital = { ...json, state: "fulfilled" };
                 },
-                rejected: (state) => {
+                rejected: (state, action) => {
+                    if (state.accountRequests.reqGetUsCapital !== action.meta.requestId) return;
                     // console.log(`[reqGetUsCapital] rejected`);
                     state.usCapital.state = "rejected"
                 }
@@ -667,8 +681,10 @@ export const capitalSlice = createAppSlice({
         reqGetKrQuantRule: create.asyncThunk(
             async (key?: string) => getKrQuantRule(key),
             {
-                pending: (state) => { state.krQuantRule.state = "pending"; },
+                pending: (state, action) => {
+                    state.accountRequests.reqGetKrQuantRule = action.meta.requestId; state.krQuantRule.state = "pending"; },
                 fulfilled: (state, action) => {
+                    if (state.accountRequests.reqGetKrQuantRule !== action.meta.requestId) return;
                     const p = action.payload ?? {};
                     state.krQuantRule = {
                         ...state.krQuantRule,
@@ -680,7 +696,8 @@ export const capitalSlice = createAppSlice({
                         desc: p.desc ?? {},
                     };
                 },
-                rejected: (state) => { state.krQuantRule.state = "rejected"; },
+                rejected: (state, action) => {
+                    if (state.accountRequests.reqGetKrQuantRule !== action.meta.requestId) return; state.krQuantRule.state = "rejected"; },
             }
         ),
         reqPostKrQuantRule: create.asyncThunk(
@@ -699,8 +716,10 @@ export const capitalSlice = createAppSlice({
         reqGetUsQuantRule: create.asyncThunk(
             async (key?: string) => getUsQuantRule(key),
             {
-                pending: (state) => { state.usQuantRule.state = "pending"; },
+                pending: (state, action) => {
+                    state.accountRequests.reqGetUsQuantRule = action.meta.requestId; state.usQuantRule.state = "pending"; },
                 fulfilled: (state, action) => {
+                    if (state.accountRequests.reqGetUsQuantRule !== action.meta.requestId) return;
                     const p = action.payload ?? {};
                     state.usQuantRule = {
                         ...state.usQuantRule,
@@ -712,7 +731,8 @@ export const capitalSlice = createAppSlice({
                         desc: p.desc ?? {},
                     };
                 },
-                rejected: (state) => { state.usQuantRule.state = "rejected"; },
+                rejected: (state, action) => {
+                    if (state.accountRequests.reqGetUsQuantRule !== action.meta.requestId) return; state.usQuantRule.state = "rejected"; },
             }
         ),
         reqPostUsQuantRule: create.asyncThunk(
@@ -733,8 +753,10 @@ export const capitalSlice = createAppSlice({
         reqGetKrCapitalBudget: create.asyncThunk(
             async (key?: string) => getKrCapitalBudget(key),
             {
-                pending: (state) => { state.krBudget.state = "pending"; },
+                pending: (state, action) => {
+                    state.accountRequests.reqGetKrCapitalBudget = action.meta.requestId; state.krBudget.state = "pending"; },
                 fulfilled: (state, action) => {
+                    if (state.accountRequests.reqGetKrCapitalBudget !== action.meta.requestId) return;
                     const p = action.payload ?? {};
                     state.krBudget = {
                         ...state.krBudget,
@@ -749,7 +771,8 @@ export const capitalSlice = createAppSlice({
                         monthly_per_stock: p.monthly_per_stock ?? 0,
                     };
                 },
-                rejected: (state) => { state.krBudget.state = "rejected"; },
+                rejected: (state, action) => {
+                    if (state.accountRequests.reqGetKrCapitalBudget !== action.meta.requestId) return; state.krBudget.state = "rejected"; },
             }
         ),
         reqPostKrCapitalBudget: create.asyncThunk(
