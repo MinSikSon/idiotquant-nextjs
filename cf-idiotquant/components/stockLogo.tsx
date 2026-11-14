@@ -28,9 +28,9 @@ export function StockLogo({ ticker, name, isUs }: { ticker: string; name: string
   }, [isAdmin, isUs, ticker]);
 
   const logo = failed ? (name.trim() || ticker || "?").charAt(0).toUpperCase() : (
-    <Image src={version ? `${src}?v=${version}` : src} alt="" fill unoptimized className="object-contain p-1" onError={() => setFailed(true)} />
+    <Image src={version ? `${src}?v=${version}` : src} alt="" fill unoptimized className="object-contain" onError={() => setFailed(true)} />
   );
-  const className = "relative grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-lg border border-neutral-200 bg-white text-sm font-bold text-neutral-600 sm:h-9 sm:w-9";
+  const className = "relative grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-lg text-sm font-bold text-neutral-600 sm:h-9 sm:w-9" + (failed ? " bg-neutral-100 dark:bg-neutral-800 dark:text-neutral-300" : "");
 
   return (
     <>
