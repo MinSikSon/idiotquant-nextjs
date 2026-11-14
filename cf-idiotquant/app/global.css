@@ -601,11 +601,12 @@ html:has(.navigation-header [data-page-tabs]) { --navigation-h: 92px; }
 
 [data-page-secondary-actions] > button > span.hidden { display: inline; }
 
-/* 검색은 고정 도구 줄에, 모바일 브랜드·제목은 본문 스크롤에 둔다. */
-.navigation-search:has([data-page-search]) > a { display: none; }
-.navigation-popover:has([data-search-content]) { width: 480px; }
+/* 상단 검색은 공통 검색 화면으로 이동하고, 페이지별 입력창은 본문에 둔다. */
 [data-search-content] { padding: 4px; }
-[data-page-search] .navigation-icon { width: 44px; min-width: 44px; max-width: 44px; padding: 0; }
+[data-search-content] [role="listbox"] {
+  position: static;
+  max-height: min(19rem, 40dvh);
+}
 [data-search-content] > form { margin-top: 0; align-items: center; }
 [data-search-content] :is(input[data-page-input], [data-search-field]) {
   height: 44px;

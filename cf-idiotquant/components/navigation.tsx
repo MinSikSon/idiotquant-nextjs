@@ -495,7 +495,6 @@ export function NavbarWithSimpleLinks() {
           </div>
           <div ref={pageHeader?.setActionsTarget} data-navigation-actions className="shrink-0" />
           <div className="navigation-search flex shrink-0 items-center">
-            <div ref={pageHeader?.setSearchTarget} />
             <Link href="/analyze?search=1" aria-label="종목 검색" className="navigation-icon"><Search size={21} /></Link>
           </div>
           <div className="hidden shrink-0 md:block">

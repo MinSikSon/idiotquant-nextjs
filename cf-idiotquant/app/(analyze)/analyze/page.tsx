@@ -594,8 +594,8 @@ function AnalyzeContent() {
         icon={isPriceLoaded ? <StockLogo key={tickerLabel} ticker={tickerLabel} name={displayName} isUs={krOrUs === 'US'} /> : undefined}
         className={cn(styles.header, !tickerFromUrl && styles.emptyHeader)}
         containerClassName={ANALYZE_WIDTH}
-        title={isPriceLoaded ? <StockName key={tickerFromUrl} name={displayName || tickerLabel} /> : '종목 분석'}
-        mobileTitle={isPriceLoaded ? displayName || tickerLabel : '종목 분석'}
+        title={isPriceLoaded ? <StockName key={tickerFromUrl} name={displayName || tickerLabel} /> : !tickerFromUrl ? '종목 검색' : '종목 분석'}
+        mobileTitle={isPriceLoaded ? displayName || tickerLabel : !tickerFromUrl ? '종목 검색' : '종목 분석'}
         description={!isPriceLoaded ? '기업의 숫자를 읽고, 가치의 근거를 찾아보세요.' : undefined}
         meta={tickerFromUrl ? <>
           <div className="flex min-w-0 items-center gap-1.5" aria-label="현재 종목 시세">
@@ -646,14 +646,15 @@ function AnalyzeContent() {
 
         </> : undefined}
       >
-        <PageSearch defaultOpen={!tickerFromUrl || searchParams.get('search') === '1'}>
+        {!tickerFromUrl && <div className={cn(ANALYZE_WIDTH, "py-4")}><PageSearch>
           <SearchAutocomplete
+            autoFocus
             placeHolder="종목명·티커 검색"
             onSearchButton={handleSearch}
             validCorpNameArray={staticStockData.allTickers}
             stockNames={staticStockData.usStocks}
           />
-        </PageSearch>
+        </PageSearch></div>}
 
         {/* 인기 종목 + 최근 검색 — 검색 화면에서만 보여준다 */}
         {!isPriceLoaded && (popularStocks.length > 0 || krMarketHistory.length > 0) && (
