@@ -2,6 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
+import SearchAutocomplete from "@/components/searchAutoComplete";
 import { PageSearch } from "@/components/page-search";
 import GuestDiscovery from "./components/GuestDiscovery";
 import { ComparisonCheckbox, type ComparisonChoice } from "@/components/comparison-checkbox";
@@ -945,6 +946,13 @@ function ScreenerContent() {
         })) : list;
     }, [showLikedOnly, normalizedLikedList, ncavDailyList.list, country, usEnglishNames]);
 
+    const searchStocks = useMemo(() => baseList.map((item: Record<string, any>) => ({
+        symbol: String(item.ticker ?? ""),
+        name: String(item.eng_name || item.name || item.ticker || ""),
+        koreanName: String(item.name || ""),
+    })).filter(item => item.symbol), [baseList]);
+    const searchTickers = useMemo(() => searchStocks.map(item => item.symbol), [searchStocks]);
+
     const filteredList = useMemo(() => {
         return sortList([...applyFilters(baseList, filters)], sortKey, sortOrder);
     }, [baseList, filters, sortKey, sortOrder]);
@@ -1478,20 +1486,14 @@ function ScreenerContent() {
                         <div className="flex items-center gap-2 min-w-0 w-full sm:w-auto sm:flex-1">
                         {/* 검색 */}
                         {isLoggedIn && <PageSearch label="발굴 종목 검색">
-                        <div className="relative flex-1 min-w-0 sm:min-w-[180px]">
-                            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-300 dark:text-neutral-600 pointer-events-none" />
-                            <input
-                                type="text"
-                                data-page-input
-                                aria-label="종목명 또는 코드로 검색"
-                                aria-keyshortcuts="/ Escape"
-                                title="/ 검색창으로 이동 · Esc 입력 종료"
-                                value={searchQuery}
-                                onChange={e => { setSearchQuery(e.target.value); setDisplayCount(DAILY_PAGE_SIZE); }}
-                                placeholder="종목명 또는 코드로 검색"
-                                className="min-h-[44px] w-full pl-8 pr-3 py-2 text-xs font-medium bg-surface-canvas dark:bg-surface-dark-card border border-neutral-200 dark:border-surface-dark-border rounded-lg outline-none focus:border-brand focus:ring-2 focus:ring-brand/15 placeholder:text-neutral-400 dark:placeholder:text-neutral-600"
-                            />
-                        </div>
+                        <SearchAutocomplete
+                            value={searchQuery}
+                            onQueryChange={value => { setSearchQuery(value); setDisplayCount(DAILY_PAGE_SIZE); }}
+                            onSearchButton={value => { setSearchQuery(value); setDisplayCount(DAILY_PAGE_SIZE); }}
+                            validCorpNameArray={searchTickers}
+                            stockNames={searchStocks}
+                            placeHolder="종목명 또는 코드로 검색"
+                        />
                         </PageSearch>}
 
                         {/* 표 헤더를 열지 않아도 어떤 보기에서나 정렬을 바꿀 수 있다. */}

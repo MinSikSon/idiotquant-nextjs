@@ -9,6 +9,8 @@ import { Search, CornerDownLeft, AlertCircle, X } from "lucide-react";
 
 interface SearchAutocompleteProps {
     className?: string;
+    value?: string;
+    onQueryChange?: (value: string) => void;
     validCorpNameArray: string[];
     stockNames?: StockSearchName[];
     onSearchButton: (value: string) => void;
@@ -44,8 +46,13 @@ const HighlightText = ({ text, query }: { text: string; query: string }) => {
     );
 };
 
-const SearchAutocomplete = ({ className, validCorpNameArray, stockNames, onSearchButton, placeHolder, onSearchStateChange, autoFocus = false, onEscape }: SearchAutocompleteProps) => {
-    const [query, setQuery] = useState("");
+const SearchAutocomplete = ({ value, onQueryChange, className, validCorpNameArray, stockNames, onSearchButton, placeHolder, onSearchStateChange, autoFocus = false, onEscape }: SearchAutocompleteProps) => {
+    const [localQuery, setLocalQuery] = useState("");
+    const query = value ?? localQuery;
+    const setQuery = (next: string) => {
+        setLocalQuery(next);
+        onQueryChange?.(next);
+    };
     const [isFocused, setIsFocused] = useState(false);
     const [selectedIndex, setSelectedIndex] = useState(0);
     const inputRef = useRef<HTMLInputElement>(null);
