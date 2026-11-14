@@ -4,7 +4,7 @@ import { PageSearch } from "@/components/page-search";
 import { useSession } from "next-auth/react";
 import { useEffect, useState, useCallback, useRef } from "react";
 import {
-  Search, Plus, Trash2, RefreshCw, AlertCircle, BookOpen,
+  Plus, Trash2, RefreshCw, AlertCircle, BookOpen,
   ChevronLeft, ChevronRight, Edit3, Check, X, Filter,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -41,7 +41,6 @@ export default function TickerMapPage() {
   const [source, setSource] = useState<"all" | "hardcoded" | "overrides">("all");
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
-  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [addTicker, setAddTicker] = useState("");
@@ -85,7 +84,7 @@ export default function TickerMapPage() {
     }
   }, []);
 
-  const load = useCallback(async (p = 1) => {
+  const load = useCallback(async (p = 1, search = q) => {
     setLoading(true);
     setError(null);
     try {
@@ -120,7 +119,7 @@ export default function TickerMapPage() {
           }
         }
 
-        const lq = q.trim().toLowerCase();
+        const lq = search.trim().toLowerCase();
         if (lq) {
           items = items.filter(
             item => item.ticker.toLowerCase().includes(lq) || item.name.toLowerCase().includes(lq)
@@ -134,7 +133,7 @@ export default function TickerMapPage() {
         setPage(p);
       } else {
         // Server-side pagination for KR and all
-        const result = await fetchTickerMap({ country, q: q || undefined, page: p, limit: PAGE_LIMIT, source });
+        const result = await fetchTickerMap({ country, q: search || undefined, page: p, limit: PAGE_LIMIT, source });
         setRows(result.data);
         setMeta(result.meta);
         setPage(p);
@@ -158,8 +157,7 @@ export default function TickerMapPage() {
 
   const handleSearch = (val: string) => {
     setQ(val);
-    if (searchTimer.current) clearTimeout(searchTimer.current);
-    searchTimer.current = setTimeout(() => load(1), 400);
+    void load(1, val);
   };
 
   const handleAdd = async () => {
@@ -307,18 +305,8 @@ export default function TickerMapPage() {
             ))}
           </div>
 
-          <PageSearch label="티커 매핑 검색">
-          <div className="flex items-center gap-1.5 flex-1 min-w-[180px] max-w-[300px] bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-xl px-3 py-1.5">
-            <Search size={12} className="text-neutral-400 shrink-0" />
-            <input
-              value={q}
-              onChange={e => handleSearch(e.target.value)}
-              data-page-input aria-label="티커 또는 종목명 검색" placeholder="티커 또는 종목명 검색..."
-              className="flex-1 text-xs bg-transparent focus:outline-none dark:text-white placeholder:text-neutral-300 dark:placeholder:text-neutral-600"
-            />
-            {q && <button onClick={() => { setQ(""); load(1); }} className="text-neutral-400 hover:text-neutral-600"><X size={11} /></button>}
-          </div>
-          </PageSearch>
+          <PageSearch label="티커 매핑 검색" market={country === "KR" || country === "US" ? country : undefined} onSelect={handleSearch} />
+          {q && <button type="button" onClick={() => { setQ(""); void load(1, ""); }} className="min-h-11 px-2 text-xs text-neutral-500">검색 해제: {q}</button>}
 
           <button
             onClick={() => load(page)}

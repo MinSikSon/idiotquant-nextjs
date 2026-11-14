@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import ThemeChanger from "@/components/theme_changer";
 import { useMobilePageHeader } from "@/components/mobile-page-header";
+import { StockSearchTrigger } from "@/components/stock-search-provider";
 import { NavigationPopover } from "@/components/navigation-popover";
 import { navigationScroll, type NavigationScrollState } from "@/lib/navigation-scroll";
 import QuickNavigation from "@/components/quick-navigation";
@@ -494,16 +495,7 @@ export function NavbarWithSimpleLinks() {
             <div ref={pageHeader?.setScrollTitleTarget} data-navigation-scroll-title hidden={!identityScrolled} />
           </div>
           <div ref={pageHeader?.setActionsTarget} data-navigation-actions className="shrink-0" />
-          <div className="navigation-search flex shrink-0 items-center">
-            <div hidden={!pageHeader?.searchLabel}>
-              <NavigationPopover label={pageHeader?.searchLabel ?? "종목 검색"} className="!w-[36rem] !p-3"
-                trigger={<button type="button" data-page-search-trigger data-page-input-trigger aria-label={pageHeader?.searchLabel ?? "종목 검색"} className="navigation-icon"><Search size={21} /></button>}>
-                <div className="mb-3 text-sm font-semibold">{pageHeader?.searchLabel}</div>
-                <div ref={pageHeader?.setSearchTarget} />
-              </NavigationPopover>
-            </div>
-            {!pageHeader?.searchLabel && <Link href="/analyze?search=1" aria-label="종목 검색" className="navigation-icon"><Search size={21} /></Link>}
-          </div>
+          <div className="navigation-search flex shrink-0 items-center"><StockSearchTrigger /></div>
           <div className="hidden shrink-0 md:block">
             <NavigationPopover label="사용자 및 서비스 메뉴" trigger={<button type="button" aria-label="사용자 및 서비스 메뉴" className="navigation-icon"><CircleUserRound size={21} /></button>}>
               {serviceMenu(false)}
@@ -535,6 +527,7 @@ export function NavbarWithSimpleLinks() {
             ))}
           </div>
           <div className="navigation-service-actions flex shrink-0 items-center gap-1">
+            <StockSearchTrigger />
             {!pageHeader?.active && <QuickNavigation compact items={[...MAIN_NAV, ...utilityNav]} />}
             <ThemeChanger compact />
             <MiniSession session={session} status={status} />

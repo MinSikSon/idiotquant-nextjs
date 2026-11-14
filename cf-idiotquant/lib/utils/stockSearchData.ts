@@ -2,6 +2,8 @@ import type { StockSearchName } from './stockSuggestions';
 
 export interface StaticStockData {
   allTickers: string[];
+  krTickers: string[];
+  usTickers: string[];
   usStocks: StockSearchName[];
   corpCodeJson: Record<string, any>;
 }
@@ -37,7 +39,10 @@ export const loadStaticStockData = (): Promise<StaticStockData> => {
         usStocks.push({ symbol: entry.ticker.toUpperCase(), name: entry.name });
       }
     }
+    const krOverrides = (overrides.data ?? []).filter((entry: any) => entry.country === 'KR').flatMap((entry: any) => [entry.ticker, entry.name].filter(Boolean));
     cachedStaticData = {
+      krTickers: [...new Set([...corpCode.default, ...corpName.default, ...krOverrides])],
+      usTickers: [...new Set(usStocks.map(stock => stock.symbol))],
       allTickers: [...new Set([
         ...usStocks.map(stock => stock.symbol),
         ...corpCode.default, ...corpName.default,
@@ -47,7 +52,7 @@ export const loadStaticStockData = (): Promise<StaticStockData> => {
       corpCodeJson: corpCodeData.default,
     };
     return cachedStaticData;
-  });
+  }).catch(error => { staticDataPromise = null; throw error; });
 
   return staticDataPromise;
 };

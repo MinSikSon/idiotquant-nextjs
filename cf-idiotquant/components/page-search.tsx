@@ -1,19 +1,19 @@
 "use client";
 
-import { useEffect, type ReactNode } from "react";
-import { createPortal } from "react-dom";
-import { useMobilePageHeader } from "@/components/mobile-page-header";
+import { useLayoutEffect, useRef } from "react";
+import { Search } from "lucide-react";
+import { useStockSearchModal, type PageSearchConfig } from "@/components/stock-search-provider";
 
-/** 페이지의 검색 상태와 동작을 유지하면서 입력창을 공통 검색 메뉴로 보낸다. */
-export function PageSearch({ children, label = "종목 검색" }: { children: ReactNode; label?: string }) {
-  const slots = useMobilePageHeader();
-  const setSearchLabel = slots?.setSearchLabel;
-  useEffect(() => {
-    setSearchLabel?.(label);
-    return () => setSearchLabel?.(null);
-  }, [label, setSearchLabel]);
+/** 페이지의 선택 동작을 등록하고 입력 UI는 공통 모달에서 제공한다. */
+export function PageSearch({ label = "종목 검색", onSelect, market, options, stockNames, requireSelection, disabled = false }: PageSearchConfig) {
+  const { register, openSearch, open } = useStockSearchModal();
+  const callback = useRef(onSelect);
+  useLayoutEffect(() => { callback.current = onSelect; }, [onSelect]);
+  useLayoutEffect(() => register({ label, market, options, stockNames, requireSelection, disabled, onSelect: value => callback.current(value) }),
+    [register, label, market, options, stockNames, requireSelection, disabled]);
 
-  const content = <div data-page-search data-search-content role="search" aria-label={label} className="w-full min-w-0">{children}</div>;
-  if (!slots) return content;
-  return slots.searchTarget ? createPortal(content, slots.searchTarget) : null;
+  return <button type="button" data-page-search data-page-input-trigger aria-haspopup="dialog" aria-controls="stock-search-modal" aria-expanded={open} onClick={openSearch}
+    className="my-2 inline-flex min-h-11 items-center gap-2 rounded-xl border border-neutral-300 bg-white px-4 text-sm font-medium disabled:opacity-50 dark:border-neutral-700 dark:bg-surface-dark-card">
+    <Search size={18} aria-hidden="true" />{label}
+  </button>;
 }

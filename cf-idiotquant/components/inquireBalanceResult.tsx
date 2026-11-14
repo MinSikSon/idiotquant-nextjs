@@ -15,8 +15,6 @@ import {
     ChevronsUpDown,
     X,
     Loader2,
-    Search,
-    PlusCircle,
     FolderOpen,
     AlertCircle,
     ArrowDownRight,
@@ -135,10 +133,6 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
     const [orderInitialMode, setOrderInitialMode] = useState<"buy" | "sell">("buy");
     const [orderInitialQty, setOrderInitialQty] = useState<string>("1");
 
-    // 검색 제어 상태 관리
-    const [searchQuery, setSearchQuery] = useState("");
-    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
     // 시장에 맞는 종목 마스터만 구성 (국내/미국 분리)
     const MARKET_STOCK_MASTER = useMemo(() => {
         if (isUs) {
@@ -168,7 +162,6 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
         if (props.kiOrderCash?.state === "fulfilled") {
             const serverMsg = props.kiOrderCash?.data?.msg1 || props.kiOrderCash?.data?.rt_msg || "주문 요청이 완료되었습니다.";
             setIsOrderModalOpen(false);
-            setSearchQuery("");
             if (props.onOrderResult) {
                 props.onOrderResult("success", `[주문 완료] ${serverMsg}`);
             } else {
@@ -193,19 +186,9 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
         setOrderInitialMode(mode);
         setOrderInitialQty(qty ?? "1");
         setIsOrderModalOpen(true);
-        setIsDropdownOpen(false);
     };
 
-    // 실시간 다이내믹 검색 필터 로직 (티커 또는 종목명 매칭)
-    const filteredSearchResults = useMemo(() => {
-        if (!searchQuery.trim()) return [];
-        const query = searchQuery.toLowerCase().trim();
-        return MARKET_STOCK_MASTER.filter(
-            (stock) =>
-                stock.pdno.toLowerCase().includes(query) ||
-                stock.prdt_name.toLowerCase().includes(query)
-        );
-    }, [searchQuery, MARKET_STOCK_MASTER]);
+    const searchOptions = useMemo(() => [...new Set(MARKET_STOCK_MASTER.flatMap(stock => [stock.prdt_name, stock.pdno]))], [MARKET_STOCK_MASTER]);
 
     return (
         <div className="space-y-2 md:space-y-6">
@@ -226,66 +209,11 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
 
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                     {/* 🔍 실시간 신규 종목 검색 및 주문 컴포넌트 */}
-                    <PageSearch label="잔고 종목 검색">
-                    <div className="relative w-full min-w-0 sm:min-w-[260px]">
-                        <div className="relative">
-                            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
-                            <input
-                                type="text"
-                                data-page-input
-                                aria-label="잔고 종목 검색"
-                                value={searchQuery}
-                                onFocus={() => setIsDropdownOpen(true)}
-                                onChange={(e) => {
-                                    setSearchQuery(e.target.value);
-                                    setIsDropdownOpen(true);
-                                }}
-                                placeholder={isUs ? "티커 또는 미국 ETF 검색..." : "종목코드 또는 국내 주식 검색..."}
-                                className="w-full pl-10 pr-10 py-2 bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-neutral-500 dark:focus:ring-neutral-400 focus:border-transparent dark:text-white"
-                            />
-                            {searchQuery && (
-                                <button 
-                                    onClick={() => setSearchQuery("")}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 hover:bg-surface-muted-hover dark:hover:bg-surface-dark-muted rounded-full text-neutral-400"
-                                >
-                                    <X size={12} />
-                                </button>
-                            )}
-                        </div>
-
-                        {/* 검색 결과 드롭다운 파넬 */}
-                        {isDropdownOpen && searchQuery.trim() && (
-                            <>
-                                <div className="fixed inset-0 z-10" onClick={() => setIsDropdownOpen(false)} />
-                                <div data-search-results className="absolute left-0 right-0 mt-2 max-h-60 overflow-y-auto bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-2xl shadow-none z-20 divide-y divide-neutral-100 dark:divide-border-subtle-dark">
-                                    {filteredSearchResults.length > 0 ? (
-                                        filteredSearchResults.map((stock) => (
-                                            <div
-                                                key={stock.pdno}
-                                                onClick={() => handleOpenOrderModal(stock)}
-                                                className="flex items-center justify-between p-3.5 hover:bg-[#f5f1eb] dark:hover:bg-surface-dark-muted/50 cursor-pointer transition-colors group"
-                                            >
-                                                <div className="flex flex-col">
-                                                    <span className="text-xs font-semibold dark:text-neutral-200 group-hover:text-neutral-900 dark:group-hover:text-neutral-100 transition-colors">
-                                                        {stock.prdt_name}
-                                                    </span>
-                                                    <span className="text-[10px] tabular-nums text-neutral-400 mt-0.5">
-                                                        {stock.pdno} {stock.ovrs_excg_cd ? `• ${stock.ovrs_excg_cd}` : ""}
-                                                    </span>
-                                                </div>
-                                                <PlusCircle size={16} className="text-neutral-400 group-hover:text-neutral-900 dark:group-hover:text-neutral-100 transition-colors" />
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <div className="p-4 text-center text-xs font-medium text-neutral-400">
-                                            검색 결과가 없습니다.
-                                        </div>
-                                    )}
-                                </div>
-                            </>
-                        )}
-                    </div>
-                    </PageSearch>
+                    <PageSearch label="잔고 종목 검색" market={isUs ? "US" : "KR"} options={searchOptions} requireSelection
+                        onSelect={value => {
+                            const stock = MARKET_STOCK_MASTER.find(item => item.pdno.toLowerCase() === value.toLowerCase() || item.prdt_name.toLowerCase() === value.toLowerCase());
+                            if (stock) handleOpenOrderModal(stock);
+                        }} />
 
                     <div className="flex items-center gap-2">
                         <span className="px-2 py-1 bg-neutral-200 dark:bg-surface-dark-muted rounded text-[10px] font-semibold text-neutral-600 dark:text-neutral-400 shrink-0">

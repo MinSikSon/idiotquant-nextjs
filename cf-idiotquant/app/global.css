@@ -658,3 +658,32 @@ html:has(.navigation-header [data-page-tabs]) { --navigation-h: 92px; }
   .navigation-identity { padding-top: var(--navigation-h, 48px); }
   .navigation-identity ~ main { padding-top: 0; }
 }
+
+/* 검색창은 네이티브 모달의 포커스 제한과 배경 비활성화를 사용한다. */
+.stock-search-modal {
+  position: fixed;
+  inset: var(--search-viewport-top, 0px) 0 auto;
+  margin: 0;
+  width: 100%;
+  max-width: none;
+  height: var(--search-viewport-height, 100dvh);
+  max-height: none;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+.stock-search-modal::backdrop { background: rgb(0 0 0 / 45%); }
+.stock-search-modal [data-search-content] { padding-bottom: max(16px, env(safe-area-inset-bottom)) !important; }
+.stock-search-modal [data-search-content] [role="listbox"] { margin-bottom: 1rem; }
+.stock-search-modal [data-search-content] [role="option"] { min-height: 44px; font-size: 14px; }
+@media (min-width: 768px) {
+  .stock-search-modal {
+    inset: 0;
+    margin: auto;
+    width: min(48rem, calc(100vw - 48px));
+    height: min(48rem, calc(var(--search-viewport-height, 100dvh) - 48px));
+    border-radius: 16px;
+    box-shadow: 0 24px 80px rgb(0 0 0 / 25%);
+  }
+}
