@@ -11,6 +11,7 @@ export const viewport: Viewport = {
   ],
 };
 import { StoreProvider } from "./StoreProvider";
+import { StockSearchProvider } from "@/components/stock-search-provider";
 import PageInputShortcuts from "@/components/page-input-shortcuts";
 import NavbarWithSimpleLinks from "@/components/navigation";
 import { ThemeProviderClient } from "./ThemeProviderClient";
@@ -166,6 +167,7 @@ export default function RootLayout({
         <StoreProvider>
           <ThemeProviderClient>
             <AuthProvider>
+              <StockSearchProvider>
               <MobilePageHeaderProvider>
               <NavbarWithSimpleLinks />
               {/* 모바일 상단 헤더 + 하단 탭바. 데스크톱 헤더는 문서 흐름 안에 있다. */}
@@ -185,6 +187,7 @@ export default function RootLayout({
                 {children}
               </main>
               </MobilePageHeaderProvider>
+              </StockSearchProvider>
             </AuthProvider>
           </ThemeProviderClient>
         </StoreProvider>

@@ -87,11 +87,6 @@ const FinancialBars = dynamic(
   { ssr: false }
 );
 
-const SearchAutocomplete = dynamic(
-  () => import('@/components/searchAutoComplete'),
-  { loading: () => <SearchSkeleton /> }
-);
-
 const AnalysisIntro = dynamic(() => import('./components/AnalysisIntro'));
 
 import { loadStaticStockData, type StaticStockData } from '@/lib/utils/stockSearchData';
@@ -172,11 +167,6 @@ const ValuationSkeleton = memo(() => (
   </div>
 ));
 ValuationSkeleton.displayName = 'ValuationSkeleton';
-
-const SearchSkeleton = memo(() => (
-  <div className="w-full h-11 bg-neutral-200 dark:bg-surface-dark-elevated rounded-xl animate-pulse" />
-));
-SearchSkeleton.displayName = 'SearchSkeleton';
 
 // 실제 화면과 같은 구성·높이로 자리를 잡는다. 모양이 다르면 데이터가 도착할 때 화면이 재배치된다.
 const ResultSkeleton = memo(() => (
@@ -382,7 +372,7 @@ function AnalyzeContent() {
   const likesState = useAppSelector(selectLikesState);
 
   const [hasMounted, setHasMounted] = useState(false);
-  const [staticStockData, setStaticStockData] = useState<StaticStockData>({ allTickers: [], usStocks: [], corpCodeJson: {} });
+  const [staticStockData, setStaticStockData] = useState<StaticStockData>({ allTickers: [], krTickers: [], usTickers: [], usStocks: [], corpCodeJson: {} });
   const [activeTab, setActiveTab] = useState<DetailTab>('strategy');
   // 모바일 종합 판단 — 한 줄 요약을 눌러 지표 4개(기준·값·충족 여부)를 펼친다
   const [verdictOpen, setVerdictOpen] = useState(false);
@@ -646,14 +636,7 @@ function AnalyzeContent() {
 
         </> : undefined}
       >
-        <PageSearch>
-          <SearchAutocomplete
-            placeHolder="종목명·티커 검색"
-            onSearchButton={handleSearch}
-            validCorpNameArray={staticStockData.allTickers}
-            stockNames={staticStockData.usStocks}
-          />
-        </PageSearch>
+        <PageSearch onSelect={handleSearch} />
 
         {/* 인기 종목 + 최근 검색 — 검색 화면에서만 보여준다 */}
         {!isPriceLoaded && (popularStocks.length > 0 || krMarketHistory.length > 0) && (

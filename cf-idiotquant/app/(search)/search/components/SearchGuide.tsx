@@ -43,7 +43,7 @@ const MOCK_VALUATION = [
   { model: "PBR",   target: "79,800", ret: "+4.5%",  pct: 28, up: true },
 ];
 
-export const SearchGuide = () => {
+export const SearchGuide = ({ onSelect, market }: { onSelect?: (value: string) => void; market?: "KR" | "US" }) => {
   const [selectedModel, setSelectedModel] = useState<string | null>(null);
   const [hoveredModel, setHoveredModel] = useState<string | null>(null);
 
@@ -54,20 +54,12 @@ export const SearchGuide = () => {
         <div className="max-w-2xl">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-[11px] text-neutral-400 font-medium">바로 검색:</span>
-            {QUICK_SEARCHES.map(q => (
-              <Link
-                key={q.ticker}
-                href={`/analyze?ticker=${encodeURIComponent(q.ticker)}`}
-                className={cn(
-                  "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-colors",
-                  "bg-transparent text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-surface-dark-hover"
-                )}
-              >
-                <span className="text-[9px] font-semibold opacity-50 uppercase tracking-wider">{q.market}</span>
-                {q.label}
-                <ChevronRight className="w-3 h-3 opacity-40" />
-              </Link>
-            ))}
+            {QUICK_SEARCHES.filter(q => !market || q.market === market).map(q => {
+              const content = <><span className="text-[9px] font-semibold opacity-50 uppercase tracking-wider">{q.market}</span>{q.label}<ChevronRight className="w-3 h-3 opacity-40" /></>;
+              const className = cn("inline-flex min-h-11 items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-colors", "bg-transparent text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-surface-dark-hover");
+              return onSelect ? <button type="button" key={q.ticker} onClick={() => onSelect(q.ticker)} className={className}>{content}</button>
+                : <Link key={q.ticker} href={`/analyze?ticker=${encodeURIComponent(q.ticker)}`} className={className}>{content}</Link>;
+            })}
           </div>
         </div>
       </section>

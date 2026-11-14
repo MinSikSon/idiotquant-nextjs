@@ -141,7 +141,10 @@ export default function PageInputShortcuts() {
       const openSearch = () => {
         const trigger = document.querySelector<HTMLButtonElement>("[data-page-search-trigger]");
         if (!trigger || !visible(trigger)) return false;
-        if (trigger.getAttribute("aria-expanded") !== "true") trigger.click();
+        // 자동 진입은 React effect 이후에 열어 모달의 동기 포커스와 충돌하지 않게 한다.
+        if (trigger.getAttribute("aria-expanded") !== "true") queueMicrotask(() => {
+          if (trigger.isConnected && trigger.getAttribute("aria-expanded") !== "true") trigger.click();
+        });
         return true;
       };
       if (!openSearch()) {

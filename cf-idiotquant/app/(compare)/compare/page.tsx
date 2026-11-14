@@ -4,7 +4,6 @@ import { PageSearch } from "@/components/page-search";
 import { SecondarySection } from "@/components/secondary-section";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import type { FormEvent } from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { CONTROL_INPUT_CLS, CONTROL_ICON_BUTTON_CLS } from '@/lib/ui-controls';
@@ -12,9 +11,8 @@ import { PageHeader, PAGE_WIDTH, PAGE_ACTION_CLS, PAGE_PRIMARY_ACTION_CLS } from
 import ResultShare from '@/components/result-share';
 import { compareSnapshot } from '@/lib/share/builders';
 import { useSession } from 'next-auth/react';
-import { ArrowRight, ChevronDown, Loader2, Plus, Search, Trash2, X } from 'lucide-react';
+import { ArrowRight, ChevronDown, Loader2, Plus, Trash2, X } from 'lucide-react';
 import corpCodes from '@/public/data/validCorpCode.json';
-import corpNames from '@/public/data/validCorpNameArray.json';
 import nasdaq from '@/public/data/usStockSymbols/nasdaq_tickers.json';
 import nyse from '@/public/data/usStockSymbols/nyse_tickers.json';
 import amex from '@/public/data/usStockSymbols/amex_tickers.json';
@@ -25,7 +23,6 @@ import { historicalPrice } from './historicalPrice';
 import { getScanDailyByTicker } from '@/lib/features/algorithmTrade/algorithmTradeAPI';
 import { comparisonPrices, historicalMarketCap } from '@/lib/features/compare/pricing';
 import { getExternalMarketCap } from '@/lib/features/compare/marketCap';
-import { buildStockSearchIndex, findStockSuggestions } from '@/lib/utils/stockSuggestions';
 import { loadStaticStockData, type StaticStockData } from '@/lib/utils/stockSearchData';
 import { isUsTicker, resolveStockSearchInput } from '@/lib/utils/stockSearchInput';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
@@ -257,11 +254,6 @@ function ComparePageContent() {
     if (sessionLoading) return;
     dispatch(applyLimits(limits));
   }, [sessionLoading, limits.dates, limits.stocks, dispatch]);
-  const searchIndex = useMemo(() => buildStockSearchIndex(
-    searchData?.allTickers ?? [...corpNames, ...usTickers], searchData?.usStocks,
-  ), [searchData]);
-  const companyNames = useMemo(() => new Map(searchData?.usStocks.map(stock => [stock.symbol, stock])), [searchData]);
-  const suggestions = useMemo(() => findStockSuggestions(searchIndex, query), [searchIndex, query]);
   const pricesByStock = useMemo(() => new Map(stocks.map(stock => [stock.id, comparisonPrices(stock, dates)])), [stocks, dates]);
   const priceReturns = useMemo(() => calculatePriceReturns(stocks.flatMap(stock => dates.map(date => ({
     id: `${stock.id}:${date}`, ticker: stock.ticker, market: stock.market,
@@ -304,7 +296,6 @@ function ComparePageContent() {
     finally { dispatch(stockLoadFinished()); }
   }
 
-  function submit(e: FormEvent) { e.preventDefault(); void addStock(suggestions[0] ?? query); }
 
   async function addDate() {
     const date = dateInput;
@@ -374,16 +365,8 @@ function ComparePageContent() {
             <Trash2 size={15} aria-hidden="true" /><span>전체 비우기</span>
           </button>
         </div>
-        <PageSearch label="비교할 종목 검색">
-        <form onSubmit={submit} className="relative mt-4 flex gap-3">
-          <div className="relative min-w-0 flex-1">
-            <Search aria-hidden size={18} className="absolute left-3.5 top-[22px] -translate-y-1/2 text-neutral-600 dark:text-neutral-400" />
-            <input data-page-input aria-label="비교할 종목 검색" aria-keyshortcuts="/ Escape" title="/ 검색창으로 이동 · Esc 입력 종료" value={query} onChange={e => dispatch(setQuery(e.target.value))} placeholder="예: 삼성전자, 클라우드플레어, NET" disabled={sessionLoading || loading || dateLoading || stocks.length >= limits.stocks} className={cn(CONTROL_INPUT_CLS, "h-11 w-full bg-white pl-10 pr-3 text-base outline-none disabled:opacity-50 dark:bg-surface-dark-card sm:text-sm")} />
-            {suggestions.length > 0 && <ul className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-xl border border-neutral-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-surface-dark-card">{suggestions.map(s => <li key={s}><button type="button" onClick={() => void addStock(s)} disabled={loading || dateLoading} className="w-full px-4 py-2.5 text-left text-sm hover:bg-neutral-50 disabled:opacity-50 dark:hover:bg-neutral-800">{s}{companyNames.get(s) && <span className="ml-2 text-xs text-neutral-600 dark:text-neutral-400">{companyNames.get(s)!.koreanName ?? companyNames.get(s)!.name}</span>}</button></li>)}</ul>}
-          </div>
-          <button disabled={sessionLoading || loading || dateLoading || stocks.length >= limits.stocks || !query.trim()} aria-label="종목 추가" className={cn(PAGE_PRIMARY_ACTION_CLS, "h-11")}>{loading && <Loader2 size={16} className="animate-spin" />}<span>종목 추가</span></button>
-        </form>
-        </PageSearch>
+        <PageSearch label="비교할 종목 검색" onSelect={addStock}
+          disabled={!comparisonReady || sessionLoading || loading || dateLoading || stocks.length >= limits.stocks} />
         <p className="mt-2 text-xs text-neutral-600 dark:text-neutral-400">종목 {stocks.length}/{limits.stocks}개 · 국내와 미국 종목을 함께 볼 수 있습니다. PER·PBR 등 재무지표는 현재 기준입니다.</p>
         {sessionStatus === 'unauthenticated' && <p className="mt-2 text-xs text-neutral-600 dark:text-neutral-400">로그인 없이 {GUEST_LIMITS.stocks}종목·{GUEST_LIMITS.dates}개 날짜까지, 로그인하면 {MEMBER_LIMITS.stocks}종목·{MEMBER_LIMITS.dates}개 날짜까지 비교할 수 있습니다.</p>}
         {importProgress && <p role="status" className="mt-2 text-xs text-neutral-600 dark:text-neutral-400">스크리너 종목을 불러오는 중 · {importProgress.loaded}/{importProgress.total}</p>}

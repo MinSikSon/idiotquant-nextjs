@@ -2,7 +2,6 @@
 
 export const dynamic = 'force-dynamic';
 
-import SearchAutocomplete from "@/components/searchAutoComplete";
 import { PageSearch } from "@/components/page-search";
 import GuestDiscovery from "./components/GuestDiscovery";
 import { ComparisonCheckbox, type ComparisonChoice } from "@/components/comparison-checkbox";
@@ -1485,16 +1484,9 @@ function ScreenerContent() {
                     <div className="flex flex-col gap-2 pb-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2 sm:pb-3">
                         <div className="flex items-center gap-2 min-w-0 w-full sm:w-auto sm:flex-1">
                         {/* 검색 */}
-                        {isLoggedIn && <PageSearch label="발굴 종목 검색">
-                        <SearchAutocomplete
-                            value={searchQuery}
-                            onQueryChange={value => { setSearchQuery(value); setDisplayCount(DAILY_PAGE_SIZE); }}
-                            onSearchButton={value => { setSearchQuery(value); setDisplayCount(DAILY_PAGE_SIZE); }}
-                            validCorpNameArray={searchTickers}
-                            stockNames={searchStocks}
-                            placeHolder="종목명 또는 코드로 검색"
-                        />
-                        </PageSearch>}
+                        {isLoggedIn && <PageSearch label="발굴 종목 검색" market={country} options={searchTickers} stockNames={searchStocks}
+                            onSelect={value => { setSearchQuery(value); setDisplayCount(DAILY_PAGE_SIZE); }} />}
+
 
                         {/* 표 헤더를 열지 않아도 어떤 보기에서나 정렬을 바꿀 수 있다. */}
                         <select
