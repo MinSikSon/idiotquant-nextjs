@@ -998,6 +998,7 @@ function AnalyzeContent() {
             본 서비스의 분석 결과는 투자 참고 목적의 정량적 자료이며, 투자 권유를 목적으로 하지 않습니다.
             실제 투자 결정은 본인의 판단과 책임 하에 이루어져야 합니다.
           </p>
+          {krOrUs === 'KR' && <p className="text-[13px] text-neutral-500">국내 재무정보 출처: <a href="https://opendart.fss.or.kr/" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">금융감독원 OpenDART</a> · 공시자료를 가공하여 제공합니다.</p>}
           <span className="text-[13px] font-mono text-neutral-500 dark:text-neutral-500">© 2026 IdiotQuant</span>
         </div>
       </footer>

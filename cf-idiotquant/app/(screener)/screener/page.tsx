@@ -2340,6 +2340,7 @@ function ScreenerContent() {
                     </>
                 )}
             </div>
+            {country === 'KR' && <p className="mt-6 text-xs leading-relaxed text-neutral-500">국내 재무정보 출처: <a href="https://opendart.fss.or.kr/" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">금융감독원 OpenDART</a> · 공시자료를 가공하여 제공합니다.</p>}
             {isLoggedIn && <FactorWorkbench items={ncavDailyList.country === country ? filteredList : []} scanDate={ncavDailyList.country === country ? ncavDailyList.scanDate : null} country={country} isAdmin={isAdmin} availableDates={availableDates} />}
         </div>
         </Tooltip.Provider>
