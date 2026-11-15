@@ -49,7 +49,7 @@ describe('프록시 JWT → Worker → 로컬 D1 통합', { skip: !workerRoot ||
             '0004_stock_data_universal.sql', '0006_stock_likes.sql', '0013_stock_info.sql', '0014_risk_flags.sql',
             '0024_ledger_entries.sql', '0025_ledger_categories.sql', '0026_ledger_sharing.sql',
             '0027_ledger_category_refs.sql', '0028_ledger_entry_authors.sql', '0029_ledger_entry_position.sql',
-            '0040_trading_operations.sql', '0041_operation_snapshots.sql',
+            '0035_us_screener.sql', '0040_trading_operations.sql', '0041_operation_snapshots.sql', '0047_watchlist_reviews.sql',
         ];
         for (const name of migrations) {
             const sql = readFileSync(join(workerRoot!, 'migrations', name), 'utf8').replace(/--.*$/gm, '');
@@ -96,6 +96,64 @@ describe('프록시 JWT → Worker → 로컬 D1 통합', { skip: !workerRoot ||
         assert.deepEqual(change.entered, ['low_pbr']);
         assert.deepEqual(change.exited, ['ncav']);
         assert.ok(Math.abs(change.pricePercent! - 10) < 1e-8);
+    });
+
+    test('관심종목 확인은 GET으로 갱신되지 않고 명시적 완료 후 다른 기기에 반영된다', async () => {
+        const read = async (person = user) => (await (await request('/user/likes/review', person)).json()).data;
+        const initial = await read();
+        assert.equal(initial.baseline.revision, 0);
+        const displayed = watchSnapshot(initial.items);
+        const save = await request('/user/likes/review', user, { method: 'POST', body: JSON.stringify({ revision: 0, items: displayed }) });
+        assert.equal(save.status, 200);
+        const saved = (await save.json()).data;
+        assert.equal(saved.revision, 1);
+        assert.deepEqual(saved.items, displayed);
+        await db.prepare('UPDATE stock_data_daily SET last_price = ? WHERE ticker = ?').bind(70000, '005930').run();
+        for (let i = 0; i < 2; i++) {
+            const otherDevice = await read();
+            assert.deepEqual(otherDevice.baseline, saved);
+            assert.equal(watchChanges(saved.items, watchSnapshot(otherDevice.items)).length, 1);
+        }
+        const unrelated = await read({ id: 'integration-other', role: 'user' });
+        assert.equal(unrelated.baseline.revision, 0);
+        assert.deepEqual(unrelated.items, []);
+        assert.equal((await request('/user/likes/review', null)).status, 401);
+        assert.equal((await request('/user/likes/review', null, { method: 'POST', body: '{}' })).status, 401);
+    });
+
+    test('동시 확인은 하나만 성공하고 오래된 기기는 최신 기준을 덮어쓰지 못한다', async () => {
+        const data = (await (await request('/user/likes/review')).json()).data;
+        const payload = JSON.stringify({ revision: data.baseline.revision, items: watchSnapshot(data.items) });
+        const saves = await Promise.all([1, 2].map(() => request('/user/likes/review', user, { method: 'POST', body: payload })));
+        assert.deepEqual(saves.map(result => result.status).sort(), [200, 409]);
+        const final = (await (await request('/user/likes/review')).json()).data;
+        assert.equal(final.baseline.revision, data.baseline.revision + 1);
+        assert.equal(final.baseline.items[0].price, 70000);
+        const foreign = await request('/user/likes/review', { id: 'integration-other', role: 'user' }, { method: 'POST', body: JSON.stringify({ revision: 0, items: watchSnapshot(data.items) }) });
+        assert.equal(foreign.status, 400);
+        const failed = await request('/user/likes/review', user, { method: 'POST', body: '{invalid' });
+        assert.equal(failed.status, 400);
+        assert.deepEqual((await (await request('/user/likes/review')).json()).data.baseline, final.baseline);
+    });
+
+    test('과거·누락 데이터는 확인 기준을 잃지 않고 관심 해제는 다음 저장에 반영된다', async () => {
+        const read = async () => (await (await request('/user/likes/review')).json()).data;
+        const save = async (revision: number, items: unknown[]) => request('/user/likes/review', user, { method: 'POST', body: JSON.stringify({ revision, items }) });
+        const original = await read();
+        const older = { ...original.baseline.items[0], scanDate: '20261022', price: 100 };
+        assert.equal((await save(original.baseline.revision, [older])).status, 200);
+        const afterOld = await read();
+        assert.deepEqual(afterOld.baseline.items, original.baseline.items);
+        await db.prepare('DELETE FROM stock_data_daily WHERE ticker = ?').bind('005930').run();
+        const missing = await read();
+        assert.equal(missing.items.length, 1);
+        assert.equal(watchSnapshot(missing.items).length, 0);
+        assert.equal((await save(missing.baseline.revision, [])).status, 200);
+        const retained = await read();
+        assert.deepEqual(retained.baseline.items, original.baseline.items);
+        await request('/user/likes', user, { method: 'POST', body: JSON.stringify({ ticker: '005930' }) });
+        assert.equal((await save(retained.baseline.revision, [])).status, 200);
+        assert.deepEqual((await read()).baseline.items, []);
     });
 
     test('직접 보낸 위조 신원 헤더만으로는 로그인하지 못한다', async () => {

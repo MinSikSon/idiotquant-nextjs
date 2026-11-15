@@ -69,3 +69,10 @@ CREATE TABLE IF NOT EXISTS stock_likes (
     PRIMARY KEY (user_id, ticker),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+-- 6. 계정별 마지막 관심종목 확인본 (Worker migration 0047)
+CREATE TABLE IF NOT EXISTS watchlist_reviews (
+    user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    revision INTEGER NOT NULL,
+    items_json TEXT NOT NULL,
+    confirmed_at INTEGER NOT NULL
+);

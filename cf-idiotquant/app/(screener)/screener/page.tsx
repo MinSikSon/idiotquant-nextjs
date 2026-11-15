@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 import { PageSearch } from "@/components/page-search";
 import GuestDiscovery from "./components/GuestDiscovery";
 import { ComparisonCheckbox, type ComparisonChoice } from "@/components/comparison-checkbox";
-import { analysisHref, comparisonHref, PENDING_WATCH_KEY, toggleComparisonSelection } from "@/lib/investmentFlow";
+import { analysisHref, comparisonHref, matchesWatchStock, PENDING_WATCH_KEY, toggleComparisonSelection } from "@/lib/investmentFlow";
 import { SecondarySection } from "@/components/secondary-section";
 import { useEffect, useMemo, useState, useCallback, Suspense, memo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -266,17 +266,6 @@ function StrategyCell({ label, count, active, activeCls, title, onClick, compact
                 {count}
             </span>
         </button>
-    );
-}
-
-function ScreenerStep({ number, label, compact = false }: { number: number; label: string; compact?: boolean }) {
-    return (
-        <span className="inline-flex shrink-0 items-center gap-2 text-xs font-extrabold text-neutral-700 dark:text-neutral-200">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-light text-[11px] font-black tabular-nums text-brand-ink dark:bg-brand-muted/40">
-                <span className="sr-only">단계 </span>{number}
-            </span>
-            <span className={compact ? "sr-only sm:not-sr-only" : undefined}>{label}</span>
-        </span>
     );
 }
 
@@ -1112,6 +1101,11 @@ function ScreenerContent() {
         router.push(analysisHref(country === 'US' ? ticker : name, returnPath));
     };
 
+    // 국내 관심종목은 이름 또는 코드로 저장된 기존 자료가 모두 있다.
+    const watchTickerFor = (ticker: string, name: string) =>
+        likedList.find(item => matchesWatchStock(item, { ticker, name, isUs: country === 'US' }))?.ticker
+            ?? (country === 'US' ? ticker : name);
+
     const handleToggleLike = (ticker: string, name: string) => {
         if (!isLoggedIn) {
             const stock = { ticker: country === 'US' ? ticker : name, name, isUs: country === 'US', createdAt: Date.now() };
@@ -1119,7 +1113,7 @@ function ScreenerContent() {
             router.push(`/login?callbackUrl=${encodeURIComponent(analysisHref(stock.ticker, returnPath))}`);
             return;
         }
-        dispatch(reqToggleLike({ ticker: country === 'US' ? ticker : name, name, isUs: country === 'US' }));
+        dispatch(reqToggleLike({ ticker: watchTickerFor(ticker, name), name, isUs: country === 'US' }));
     };
 
     const scanDate = ncavDailyList.scanDate;
@@ -1313,16 +1307,7 @@ function ScreenerContent() {
                         <RefreshCw size={13} className={isLoading || ncavDailyList.refreshing ? "animate-spin" : ""} />
                         <span className="hidden sm:inline">새로고침</span>
                     </button>}
-                actions={<>
-                    <ResultShare disabled={isLoading || !(isLoggedIn ? filteredList.length : guestRecommendations.length)}
-                        getSnapshot={() => screenerSnapshot(
-                            isLoggedIn ? filteredList : guestRecommendations,
-                            `/screener${queryString ? `?${queryString}` : ''}`,
-                            ncavDailyList.scanDate, country,
-                            isLoggedIn ? activeConditions.map(condition => condition.label) : ['PER 0 초과·20 이하', '순유동자산 비율 순 상위 종목']
-                        )} />
 
-                </>}
             />
 
             {!showLikedOnly && ncavDailyList.country === country && (ncavDailyList.refreshing || (ncavDailyList.receivedAt !== null && ncavDailyList.error)) && (
@@ -1333,7 +1318,7 @@ function ScreenerContent() {
 
             <div className="border-b border-neutral-200 bg-white dark:border-surface-dark-border dark:bg-surface-dark-card">
                 <div className="service-container flex items-center gap-2">
-                    {isLoggedIn && <ScreenerStep number={1} label="시장 선택" compact={isAdmin} />}
+
                     <div className="flex gap-1" data-compact-tabs role="group" aria-label="발굴 시장">
                         {([['KR', '국내'], ['US', '미국']] as const).map(([value, label]) => (
                         <button
@@ -1434,10 +1419,9 @@ function ScreenerContent() {
                         받으므로 이 격자가 세는 것은 "오늘 이 전략에 몇 개" 가 아니라 "받아 온
                         열 줄 중 몇 개" 가 된다. 거짓 숫자를 그리는 것보다 없는 편이 낫다.
                         검색·정렬은 그대로 둔다 — 받은 열 줄 안에서 정확히 동작한다. */}
-                    {isLoggedIn && <>
+                    {isLoggedIn && <SecondarySection title={`전략 선택 · ${isAllActive ? "전체" : `${activeStrategyIds.size}개 선택`}`} className="my-3">
                     <div className="flex w-full items-center gap-2 py-2 sm:py-2.5">
                         <div className="min-w-0 flex-1 flex items-center gap-2 text-left">
-                            <ScreenerStep number={2} label="전략 선택" />
                             <span className="min-w-0 truncate text-[11px] font-bold text-brand-ink">
                                 {isAllActive ? '전체' : `${activeStrategyIds.size}개 선택`} · {filteredList.length}종목
                             </span>
@@ -1476,11 +1460,10 @@ function ScreenerContent() {
                             />
                         ))}
                     </div>
-                    </>}
+                    </SecondarySection>}
 
                     {/* 둘째 줄: 통합 툴바 — 검색·정렬·필터·관심을 한 줄로. 예전엔 세 줄로 흩어져
                         세로 공간만 먹고 무엇이 주된 조작인지 위계가 없었다. */}
-                    <div className="pb-2"><ScreenerStep number={3} label="검색·필터·정렬" /></div>
                     <div className="flex flex-col gap-2 pb-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2 sm:pb-3">
                         <div className="flex items-center gap-2 min-w-0 w-full sm:w-auto sm:flex-1">
                         {/* 검색 */}
@@ -2038,10 +2021,10 @@ function ScreenerContent() {
             )}
 
             {/* ── 종목 리스트 ── */}
-            {showLikedOnly && likesState === "fulfilled" && session?.user?.id && <WatchlistChanges key={`${session.user.id}:${country}`} items={likedList} userId={session.user.id} country={country} />}
+            {showLikedOnly && likesState === "fulfilled" && session?.user?.id && <WatchlistChanges />}
 
             <div className="service-container pt-2 sm:pt-5 pb-20">
-                {isLoggedIn && <h2 className="mb-3"><ScreenerStep number={4} label="결과 확인" /></h2>}
+
 
                 {isLoading && (
                     <div className="flex flex-col items-center justify-center py-24 gap-4">
@@ -2186,7 +2169,14 @@ function ScreenerContent() {
                                 {filteredList.find((item: any) => item.ticker === ticker)?.name ?? ticker} ×
                             </button>)}</div>
                         </div>}
-                        <SecondarySection title="보기 설정 · 묶기 · 복사" className="mb-3">
+                        <SecondarySection title="보기 설정 · 묶기 · 복사 · 공유" className="mb-3">
+                        <ResultShare disabled={isLoading || !(isLoggedIn ? filteredList.length : guestRecommendations.length)}
+                        getSnapshot={() => screenerSnapshot(
+                            isLoggedIn ? filteredList : guestRecommendations,
+                            `/screener${queryString ? `?${queryString}` : ''}`,
+                            ncavDailyList.scanDate, country,
+                            isLoggedIn ? activeConditions.map(condition => condition.label) : ['PER 0 초과·20 이하', '순유동자산 비율 순 상위 종목']
+                        )} />
                         <div className="flex flex-nowrap items-center gap-2 overflow-x-auto whitespace-nowrap">
                             <div role="group" aria-label="결과 묶기" className="shrink-0 flex items-center gap-0.5 p-0.5 rounded-lg bg-[#f2f0ec] dark:bg-surface-dark-hover">
                                 {([
@@ -2249,13 +2239,13 @@ function ScreenerContent() {
                                 <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
                                     <GroupedResults {...groupedProps} bodyClassName={GRID_BODY}
                                         renderRow={(item: any) => (
-                                            <StockRatioRow key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(country === 'US' ? item.ticker : item.name)} onToggleLike={handleToggleLike} comparison={comparisonFor(item)} />
+                                            <StockRatioRow key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(watchTickerFor(item.ticker, item.name))} onToggleLike={handleToggleLike} comparison={comparisonFor(item)} />
                                         )} />
                                 </div>
                             ) : (
                                 <div className={cn("grid grid-cols-1 sm:grid-cols-2 gap-3", styles.stockGrid)}>
                                     {visibleList.map((item: any) => (
-                                        <StockRatioRow key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(country === 'US' ? item.ticker : item.name)} onToggleLike={handleToggleLike} comparison={comparisonFor(item)} />
+                                        <StockRatioRow key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(watchTickerFor(item.ticker, item.name))} onToggleLike={handleToggleLike} comparison={comparisonFor(item)} />
                                     ))}
                                 </div>
                             )
@@ -2264,13 +2254,13 @@ function ScreenerContent() {
                                 <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
                                     <GroupedResults {...groupedProps} bodyClassName={CARD_GRID_BODY}
                                         renderRow={(item: any) => (
-                                            <StockGridCard key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(country === 'US' ? item.ticker : item.name)} onToggleLike={handleToggleLike} comparison={comparisonFor(item)} />
+                                            <StockGridCard key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(watchTickerFor(item.ticker, item.name))} onToggleLike={handleToggleLike} comparison={comparisonFor(item)} />
                                         )} />
                                 </div>
                             ) : (
                                 <div className={cn("grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-3", styles.stockGrid)}>
                                     {visibleList.map((item: any) => (
-                                        <StockGridCard key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(country === 'US' ? item.ticker : item.name)} onToggleLike={handleToggleLike} comparison={comparisonFor(item)} />
+                                        <StockGridCard key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(watchTickerFor(item.ticker, item.name))} onToggleLike={handleToggleLike} comparison={comparisonFor(item)} />
                                     ))}
                                 </div>
                             )
@@ -2288,13 +2278,13 @@ function ScreenerContent() {
                                 {groups ? (
                                     <GroupedResults {...groupedProps} bodyClassName=""
                                         renderRow={(item: any) => (
-                                            <TableRow key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(country === 'US' ? item.ticker : item.name)} onToggleLike={handleToggleLike} highlight={metricHighlight} comparison={comparisonFor(item)} />
+                                            <TableRow key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(watchTickerFor(item.ticker, item.name))} onToggleLike={handleToggleLike} highlight={metricHighlight} comparison={comparisonFor(item)} />
                                         )}
                                     />
                                 ) : (
                                     <div>
                                         {visibleList.map((item: any) => (
-                                            <TableRow key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(country === 'US' ? item.ticker : item.name)} onToggleLike={handleToggleLike} highlight={metricHighlight} comparison={comparisonFor(item)} />
+                                            <TableRow key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(watchTickerFor(item.ticker, item.name))} onToggleLike={handleToggleLike} highlight={metricHighlight} comparison={comparisonFor(item)} />
                                         ))}
                                     </div>
                                 )}

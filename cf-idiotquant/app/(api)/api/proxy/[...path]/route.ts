@@ -14,6 +14,7 @@ async function handleProxy(req: Request, { params }: { params: Promise<{ path: s
 
         const session = await auth();
         const isTradingOperations = pathArray[0] === 'admin' && pathArray[1] === 'trading';
+        const isWatchReview = path === 'user/likes/review';
         if (isTradingOperations &&
             (session?.user as { role?: string } | undefined)?.role !== 'admin') {
             return NextResponse.json({ success: false, error: "로그인 세션에 관리자 권한이 없습니다. 다시 로그인해 주세요.", code: "FRONTEND_ADMIN_REQUIRED" }, { status: 403, headers: { 'Cache-Control': 'no-store' } });
@@ -44,7 +45,7 @@ async function handleProxy(req: Request, { params }: { params: Promise<{ path: s
         const fetchOptions: RequestInit = {
             method,
             headers: backendHeaders,
-            ...(isTradingOperations ? { cache: 'no-store' as const } : {}),
+            ...((isTradingOperations || isWatchReview) ? { cache: 'no-store' as const } : {}),
         };
 
         /* 본문은 보낸 그대로 넘긴다.

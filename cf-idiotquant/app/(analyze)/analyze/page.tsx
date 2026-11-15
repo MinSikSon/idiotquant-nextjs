@@ -373,7 +373,6 @@ function AnalyzeContent() {
 
   const [hasMounted, setHasMounted] = useState(false);
   const [staticStockData, setStaticStockData] = useState<StaticStockData>({ allTickers: [], krTickers: [], usTickers: [], usStocks: [], corpCodeJson: {} });
-  const [activeTab, setActiveTab] = useState<DetailTab>('strategy');
   // 모바일 종합 판단 — 한 줄 요약을 눌러 지표 4개(기준·값·충족 여부)를 펼친다
   const [verdictOpen, setVerdictOpen] = useState(false);
   // 재무 탭 — 추이 그래프와 기간별 숫자표를 전환한다
@@ -600,41 +599,7 @@ function AnalyzeContent() {
         </> : undefined}
         mobileCompact
         mobileTitleOnScroll={isPriceLoaded}
-        tabs={isPriceLoaded && (
-          <div className={cn(ANALYZE_WIDTH, styles.page, styles.tabsRow)}>
-            <div data-analysis-tabs role="group" className={styles.tabStrip} aria-label="분석 보기 선택">
-              {DETAIL_TABS.map(({ key, label }) => (
-                <button
-                  key={key}
-                  onClick={() => setActiveTab(key)}
-                  aria-pressed={activeTab === key}
-                  className={cn(styles.tab, "text-[15px] font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2", activeTab === key && styles.tabActive)}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-        actions={isPriceLoaded ? <>
-          {gradeLabel && <GradeHelp key={tickerLabel} grade={gradeLabel} upside={stockData?.ncavRatio ?? 0} />}
-          <ResultShare disabled={!stockData || waitResponse} getSnapshot={() => {
-            const snapshot = analysisSnapshot({
-              title: displayName || tickerLabel, sourcePath: `/analyze?ticker=${encodeURIComponent(tickerFromUrl || tickerLabel)}`,
-              market: krOrUs, values: stockData!, ncav: ncavMultiple, roe, data, bars: technicalBars,
-              includeDetails: isLoggedIn && isLoaded, verdict,
-            });
-            if (isLoggedIn && isLoaded) {
-              const risk = document.querySelector('[data-share-risk]');
-              if (risk) {
-                snapshot.summary.push({ label: '상장유지 위험도', value: risk.getAttribute('data-share-overall') || '—' });
-                snapshot.tables.push({ title: '상장유지 위험도 확인', columns: ['항목', '판정', '값', '설명', '기준'], rows: Array.from(risk.querySelectorAll('[data-share-risk-row]')).map(row => ['label', 'status', 'value', 'note', 'law'].map(key => row.getAttribute(`data-share-${key}`) || '—')) });
-              }
-            }
-            return snapshot;
-          }} />
 
-        </> : undefined}
       >
         <PageSearch purpose="analyze" onSelect={handleSearch} />
 
@@ -686,7 +651,7 @@ function AnalyzeContent() {
           아니라 카드 쪽을 줄인다. */}
       <main className={cn(ANALYZE_WIDTH, styles.content, "pb-8")}>
         {isPriceLoaded && <nav aria-label="분석 다음 행동" className="mb-4 flex flex-wrap items-center gap-2">
-          {returnTo && <Link href={returnTo} aria-label="발굴 목록으로" className="inline-flex min-h-11 items-center gap-1 px-2 text-sm text-neutral-600 dark:text-neutral-300"><ChevronLeft size={16} /><span className="sm:hidden">목록</span><span className="hidden sm:inline">발굴 목록으로</span></Link>}
+          <Link href={returnTo || "/"} aria-label={returnTo ? "목록으로" : "오늘로"} className="inline-flex min-h-11 items-center gap-1 px-2 text-sm text-neutral-600 dark:text-neutral-300"><ChevronLeft size={16} /><span>{returnTo ? "목록으로" : "오늘로"}</span></Link>
           <button type="button" onClick={() => void handleToggleLike()} disabled={likeBusy}
             aria-label={isInWatchlist ? '관심 종목에서 빼기' : '관심 종목에 담기'} aria-pressed={isInWatchlist}
             className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-brand px-4 text-sm font-semibold text-white disabled:opacity-50">
@@ -717,7 +682,7 @@ function AnalyzeContent() {
                   종목 기본정보를 불러오지 못해 티커로 표시합니다. 조회된 시세와 재무정보는 계속 표시합니다.
                 </p>
               )}
-              {isLoaded && !(krOrUs === 'US' && activeTab === 'financials') && (
+              {isLoaded && (
                 <FinancialFreshnessNotice periods={analysisFinancialPeriods(data, krOrUs)} banner />
               )}
 
@@ -777,23 +742,20 @@ function AnalyzeContent() {
                 </div>
               )}
 
-              <details className={styles.tabGuide} aria-label={`${DETAIL_TABS.find(tab => tab.key === activeTab)?.label} 읽는 방법`}>
-                <summary className="flex items-center justify-between gap-2">{DETAIL_TABS.find(tab => tab.key === activeTab)?.label} 읽는 법<ChevronDown size={16} aria-hidden="true" /></summary>
-                <h2>{TAB_GUIDES[activeTab].title}</h2>
-                <p>{TAB_GUIDES[activeTab].description}</p>
-                <ol>
-                    {TAB_GUIDES[activeTab].steps.map((step, index) => (
-                      <li key={step}><span aria-hidden="true">{index + 1}</span>{step}</li>
-                    ))}
-                </ol>
+              <details className={styles.tabGuide}>
+                <summary className="flex items-center justify-between gap-2">분석 읽는 법<ChevronDown size={16} aria-hidden="true" /></summary>
+                {DETAIL_TABS.map(({ key }) => <div key={key} className="mt-4">
+                  <h2>{TAB_GUIDES[key].title}</h2><p>{TAB_GUIDES[key].description}</p>
+                  <ol>{TAB_GUIDES[key].steps.map((step, index) => <li key={step}><span>{index + 1}</span>{step}</li>)}</ol>
+                </div>)}
               </details>
 
               </aside>
               <div className={styles.detailContent}>
-              {/* 지표 탭 (1/2) — 종목 카드. 핵심 지표(NCAV·PBR·PER·ROE)를 카드가 크게 보여주고,
+              {/* 주요 지표 — 종목 카드. 핵심 지표(NCAV·PBR·PER·ROE)를 카드가 크게 보여주고,
                   아래 상세 지표 표가 나머지를 잇는다. 결론이 위, 근거가 아래.
                   카드는 시세만 있으면 그려지므로 재무 로딩(isLoaded) 밖에 둔다. */}
-              <div className={cn("mb-6", activeTab !== 'metrics' && 'hidden')}>
+              <div className="mb-6">
                 <StockCard
                   showLogo={false}
                   stock={krOrUs === 'US' ? {
@@ -831,10 +793,31 @@ function AnalyzeContent() {
                 />
               </div>
 
+              <SecondarySection title="공유 · 등급 기준" className="mb-4">
+          {gradeLabel && <GradeHelp key={tickerLabel} grade={gradeLabel} upside={stockData?.ncavRatio ?? 0} />}
+          <ResultShare disabled={!stockData || waitResponse} getSnapshot={() => {
+            const snapshot = analysisSnapshot({
+              title: displayName || tickerLabel, sourcePath: `/analyze?ticker=${encodeURIComponent(tickerFromUrl || tickerLabel)}`,
+              market: krOrUs, values: stockData!, ncav: ncavMultiple, roe, data, bars: technicalBars,
+              includeDetails: isLoggedIn && isLoaded, verdict,
+            });
+            if (isLoggedIn && isLoaded) {
+              const risk = document.querySelector('[data-share-risk]');
+              if (risk) {
+                snapshot.summary.push({ label: '상장유지 위험도', value: risk.getAttribute('data-share-overall') || '—' });
+                snapshot.tables.push({ title: '상장유지 위험도 확인', columns: ['항목', '판정', '값', '설명', '기준'], rows: Array.from(risk.querySelectorAll('[data-share-risk-row]')).map(row => ['label', 'status', 'value', 'note', 'law'].map(key => row.getAttribute(`data-share-${key}`) || '—')) });
+              }
+            }
+            return snapshot;
+          }} />
+
+
+              </SecondarySection>
+
               {/* 상세 분석 섹션 — 재무제표 포함 (isLoaded 이후 표시) */}
               {isLoaded ? (
               <div className="space-y-4 sm:space-y-6">
-                {activeTab === 'metrics' && <SecondarySection title="기술적 지표 더 보기"><TechnicalSummary bars={technicalBars} currency={currency} /></SecondarySection>}
+                <SecondarySection title="기술적 지표 더 보기"><TechnicalSummary bars={technicalBars} currency={currency} /></SecondarySection>
                 {/* 비로그인 안내 — 블러 구간에 들어가기 직전 한 번만.
                     예전엔 헤더 배지·블러 오버레이·페이지 맨 아래 CTA 로 같은 말이 흩어져 있었다. */}
                 {!isLoggedIn && (
@@ -859,17 +842,17 @@ function AnalyzeContent() {
                 )}
 
                 {/* 모델별 요약 (항상 공개) + 세부 카드 (블러) */}
-                <div className={cn(styles.panel, "min-w-0", activeTab !== 'strategy' && 'hidden')}>
+                <SecondarySection title="적정가치 분석">
                   <ValuationSection
                     data={data}
                     isUs={krOrUs === 'US'}
                     isLoggedIn={isLoggedIn}
                     loginHref={loginHref}
                   />
-                </div>
+                </SecondarySection>
 
-                {/* 지표 탭 (2/2) — 상세 지표 표 (블러). 위 카드와 같은 탭이다. */}
-                <div className={cn(activeTab !== 'metrics' && 'hidden')}>
+                {/* 상세 지표는 필요할 때 펼친다. */}
+                <div>
                   <SecondarySection title="상세 투자 지표 더 보기">
                     <BlurGate isLoggedIn={isLoggedIn} loginHref={loginHref}>
                       <StockMetrics data={data} isUs={krOrUs === 'US'} />
@@ -878,7 +861,9 @@ function AnalyzeContent() {
                 </div>
 
                 {/* 상장폐지 위험도 (블러) */}
-                <div className={cn(activeTab !== 'risk' && 'hidden')}>
+                <details className="group/risk rounded-xl border border-neutral-200 bg-white dark:border-surface-dark-border dark:bg-surface-dark-card">
+                  <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-neutral-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand dark:text-neutral-200 [&::-webkit-details-marker]:hidden">위험 점검<ChevronDown size={16} aria-hidden="true" className="shrink-0 transition-transform group-open/risk:rotate-180" /></summary>
+                  <div className="min-w-0 border-t border-neutral-100 p-3 dark:border-surface-dark-border sm:p-4">
                   {krOrUs === 'KR' && (
                     <BlurGate isLoggedIn={isLoggedIn} loginHref={loginHref}>
                       <DelistingRisk kiBS={data.kiBS} kiIS={data.kiIS} />
@@ -889,10 +874,11 @@ function AnalyzeContent() {
                       <UsDelistingRisk finnhubData={data.finnhubData} usDetail={data.usDetail} />
                     </BlurGate>
                   )}
-                </div>
+                  </div>
+                </details>
 
                 {/* 재무제표 (블러) — 추이 그래프와 기간별 숫자표. */}
-                <div className={cn(activeTab !== 'financials' && 'hidden')}>
+                <SecondarySection title="재무제표와 추이">
                   {krOrUs === 'US' && (
                     <FinancialFreshnessNotice periods={analysisFinancialPeriods(data, krOrUs)} source={data.finnhubData?.source} banner />
                   )}
@@ -941,7 +927,7 @@ function AnalyzeContent() {
                       </details>
                     </div>
                   </BlurGate>
-                </div>
+                </SecondarySection>
 
               </div>
               ) : (
