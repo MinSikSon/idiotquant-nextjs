@@ -1,0 +1,13 @@
+@media (max-width: 639px) {
+  .axis { display: block; }
+  .axisHeader { display: none; }
+  .modelRow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; }
+  .modelLabel { grid-column: 1 / -1; grid-row: 1; }
+  .modelLabel button { font-size: 14px; }
+  .price { grid-column: 1; grid-row: 2; text-align: left; font-size: 16px; overflow-wrap: anywhere; white-space: normal; }
+  .returnPct { grid-column: 2; grid-row: 2; align-self: center; font-size: 14px; }
+  .track { grid-column: 1 / -1; grid-row: 3; min-height: 28px; margin: 4px 8px; }
+  .track > :global(.w-px) { top: 0; bottom: 0; }
+  .notice { grid-column: 1 / -1; grid-row: 4; line-height: 1.6; }
+  .explanation { grid-column: 1 / -1; grid-row: 5; overflow-wrap: anywhere; }
+}

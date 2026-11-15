@@ -311,10 +311,10 @@ export function UsDelistingRisk({ finnhubData, usDetail }: Props) {
               <div key={c.label} data-share-risk-row data-share-label={c.label} data-share-status={c.status} data-share-value={c.value} data-share-note={c.note} data-share-law={c.law} className={cn("p-3 rounded-xl border break-keep", STATUS_ROW_CLS[c.status])}>
 
                 <div className="flex-1 min-w-0">
-                  <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2">
+                  <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
                     <span className="inline-flex min-w-0 items-center gap-2 text-[13px] font-bold text-neutral-700 dark:text-neutral-300"><Icon size={14} className={cn("shrink-0", STATUS_COLOR[c.status])} />{c.label}</span>
                   <span className={cn("shrink-0 whitespace-nowrap rounded-md px-2 py-0.5 text-[13px] font-semibold", STATUS_COLOR[c.status])}>{c.status === "—" ? "자료 없음" : c.status}</span>
-                    <span className={cn("shrink-0 whitespace-nowrap text-[13px] font-semibold font-mono tabular-nums", STATUS_COLOR[c.status])}>{c.value}</span>
+                    <span className={cn("col-span-2 min-w-0 break-words text-sm font-semibold font-mono tabular-nums sm:col-span-1 sm:text-[13px]", STATUS_COLOR[c.status])}>{c.value}</span>
                   </div>
                   <p className="text-[13px] text-neutral-500 dark:text-neutral-400 mt-0.5 leading-relaxed">{c.note}</p>
                   {c.law !== "참고지표" && (
