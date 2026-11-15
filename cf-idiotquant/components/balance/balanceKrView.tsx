@@ -381,7 +381,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
   const doTokenResetOne = useCallback((ticker: string) => { if (ticker) dispatch(reqPostKrCapitalTokenResetOne({ key: balanceKey, ticker })); }, [dispatch, balanceKey]);
 
   // 그룹 관리 핸들러
-  const doCreateGroup = useCallback((name: string, tickers?: string[]) => dispatch(reqPostKrCapitalGroupCreate({ key: balanceKey, name, tickers })), [dispatch, balanceKey]);
+  const doCreateGroup = useCallback((name: string, tickers?: string[]) => dispatch(reqPostKrCapitalGroupCreate({ key: balanceKey, name, tickers })).unwrap(), [dispatch, balanceKey]);
   const doRenameGroup = useCallback((groupId: string, name: string) => dispatch(reqPostKrCapitalGroupUpdate({ key: balanceKey, groupId, updates: { name } })), [dispatch, balanceKey]);
   const doToggleGroupTrading = useCallback((groupId: string, isActive: boolean) => dispatch(reqPostKrCapitalGroupUpdate({ key: balanceKey, groupId, updates: { is_trading_active: isActive } })), [dispatch, balanceKey]);
   const doDistributeGroupBudget = useCallback(async (groupId: string) => {
@@ -390,11 +390,11 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
     addToast("success", "그룹의 적립 예산을 균등 분배했습니다.");
   }, [dispatch, balanceKey, addToast]);
   const doDeleteGroup = useCallback((groupId: string) => dispatch(reqPostKrCapitalGroupDelete({ key: balanceKey, groupId })), [dispatch, balanceKey]);
-  const doMoveStock = useCallback((ticker: string, groupId: string | null) => dispatch(reqPostKrCapitalStockGroup({ key: balanceKey, ticker, groupId })), [dispatch, balanceKey]);
-  const doBulkMove = useCallback((tickers: string[], groupId: string | null) => dispatch(reqPostKrCapitalStocksGroup({ key: balanceKey, tickers, groupId })), [dispatch, balanceKey]);
-  const doCopyLikes = useCallback((tickers: string[], groupId: string | null) => dispatch(reqPostKrCapitalLikesCopy({ key: balanceKey, tickers, groupId })), [dispatch, balanceKey]);
+  const doMoveStock = useCallback((ticker: string, groupId: string | null) => dispatch(reqPostKrCapitalStockGroup({ key: balanceKey, ticker, groupId })).unwrap(), [dispatch, balanceKey]);
+  const doBulkMove = useCallback((tickers: string[], groupId: string | null) => dispatch(reqPostKrCapitalStocksGroup({ key: balanceKey, tickers, groupId })).unwrap(), [dispatch, balanceKey]);
+  const doCopyLikes = useCallback((tickers: string[], groupId: string | null) => dispatch(reqPostKrCapitalLikesCopy({ key: balanceKey, tickers, groupId })).unwrap(), [dispatch, balanceKey]);
   const doDeleteStock = useCallback((ticker: string) => dispatch(reqPostKrCapitalStockRemove({ key: balanceKey, ticker })), [dispatch, balanceKey]);
-  const doBulkRemove = useCallback((tickers: string[]) => dispatch(reqPostKrCapitalStocksRemove({ key: balanceKey, tickers })), [dispatch, balanceKey]);
+  const doBulkRemove = useCallback((tickers: string[]) => dispatch(reqPostKrCapitalStocksRemove({ key: balanceKey, tickers })).unwrap(), [dispatch, balanceKey]);
   const doRebalancingAction = useCallback((groupId: string, action: RebalancingAction, body?: Record<string, unknown>) => requestRebalancingAction("KR", balanceKey, groupId, action, body), [balanceKey]);
   const doPreviewRebalancing = useCallback((groupId: string, policy: RebalancingPolicy) => postRebalancingPreview("KR", balanceKey, groupId, policy), [balanceKey]);
   const doSaveGroupSettings = useCallback((groupId: string, settings: { quant_rule: QuantRule | null; budget_krw: number | null; side?: "buy" | "sell"; dca?: boolean; rebalancing?: RebalancingPolicy | null }) => dispatch(reqPostKrCapitalGroupUpdate({ key: balanceKey, groupId, updates: settings })).unwrap(), [dispatch, balanceKey]);

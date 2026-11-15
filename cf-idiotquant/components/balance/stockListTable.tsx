@@ -5,7 +5,7 @@ import { tradingCursorIndex } from "@/lib/features/capital/tradingSummary";
 import { DetailHelp } from "./detailHelp";
 import GroupStrategyEditor, { type GroupStrategySettings } from "./groupStrategyEditor";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef } from "react";
 import {
   Key,
   Minus,
@@ -165,16 +165,16 @@ interface Props {
   className?: string;
   session: any;
   // 그룹 관리
-  onCreateGroup?: (name: string, tickers?: string[]) => void;
+  onCreateGroup?: (name: string, tickers?: string[]) => Promise<unknown> | void;
   onRenameGroup?: (groupId: string, name: string) => void;
   onToggleGroupTrading?: (groupId: string, isActive: boolean) => void;
   onDeleteGroup?: (groupId: string) => void;
   onDistributeGroupBudget?: (groupId: string) => Promise<void>;
-  onMoveStock?: (ticker: string, groupId: string | null) => void;
-  onBulkMove?: (tickers: string[], groupId: string | null) => void;
-  onCopyLikes?: (tickers: string[], groupId: string | null) => void;
+  onMoveStock?: (ticker: string, groupId: string | null) => Promise<unknown> | void;
+  onBulkMove?: (tickers: string[], groupId: string | null) => Promise<unknown> | void;
+  onCopyLikes?: (tickers: string[], groupId: string | null) => Promise<unknown> | void;
   onDeleteStock?: (ticker: string) => void;
-  onBulkRemove?: (tickers: string[]) => void;
+  onBulkRemove?: (tickers: string[]) => Promise<unknown> | void;
   currency?: "KRW" | "USD";
   onRebalancingAction?: (groupId: string, action: RebalancingAction, body?: Record<string, unknown>) => ReturnType<RebalancingActionHandler>;
   onPreviewRebalancing?: (groupId: string, policy: RebalancingPolicy) => Promise<RebalancingPreview>;
@@ -287,6 +287,20 @@ function StockListTable({
   const [bulkTarget, setBulkTarget] = useState<string>("__select__");
   const [bulkAction, setBulkAction] = useState("move");
 
+  const [groupActionPending, setGroupActionPending] = useState(false);
+  const [groupActionError, setGroupActionError] = useState("");
+  const groupActionInFlight = useRef(false);
+
+  async function runGroupAction(operation: () => Promise<unknown> | void, onSuccess: () => void) {
+    if (groupActionInFlight.current) return;
+    groupActionInFlight.current = true;
+    setGroupActionPending(true);
+    setGroupActionError("");
+    try { await operation(); onSuccess(); }
+    catch (error) { setGroupActionError((error as { message?: string })?.message || "종목 작업에 실패했습니다. 선택을 유지했으니 다시 시도해 주세요."); }
+    finally { groupActionInFlight.current = false; setGroupActionPending(false); }
+  }
+
   // 관리자 여부 확인 (기존 로직 유지)
   const isMaster = useMemo(() =>
     session?.user?.name === process.env.NEXT_PUBLIC_MASTER,
@@ -381,10 +395,12 @@ function StockListTable({
     setEditingGroupId(null);
     setEditingName("");
   };
-  const commitCreate = () => {
-    if (newGroupName.trim()) onCreateGroup?.(newGroupName.trim());
-    setNewGroupName("");
-    setCreating(false);
+  const commitCreate = async () => {
+    if (!newGroupName.trim() || !onCreateGroup) return;
+    await runGroupAction(() => onCreateGroup(newGroupName.trim()), () => {
+      setNewGroupName("");
+      setCreating(false);
+    });
   };
 
   const toggleCollapse = (key: string) =>
@@ -414,6 +430,9 @@ function StockListTable({
     setBulkTarget("__select__");
   };
 
+  const clearSubmittedPick = (submitted: Set<string>) =>
+    setPicked(prev => new Set([...prev].filter(key => !submitted.has(key))));
+
   // 선택된 키에서 종목(symbol)만 추출(섹션 간 중복 제거) — 일괄 작업용
   const pickedSymbols = useMemo(
     () => Array.from(new Set(Array.from(picked).map(k => k.split(PICK_SEP)[1]))),
@@ -425,34 +444,36 @@ function StockListTable({
   const selectionAction = pickedOperatingSymbols.length === 0 ? "copy" : pickedInterestSymbols.length === 0 && bulkAction === "copy" ? "move" : bulkAction;
   const groupsSectionNumber = formatSectionNumber(2 + Number(isMaster) + Number(isMaster && picked.size > 0));
 
-  const doBulkMove = (groupId: string | null) => {
+  const doBulkMove = async (groupId: string | null) => {
     const tickers = pickedOperatingSymbols;
-    if (tickers.length === 0) return;
-    if (onBulkMove) onBulkMove(tickers, groupId);
-    else tickers.forEach(t => onMoveStock?.(t, groupId)); // 폴백
-    clearPick();
+    if (tickers.length === 0 || (!onBulkMove && !onMoveStock)) return;
+    const submitted = new Set([...picked].filter(key => !key.startsWith(`${LIKES_GROUP_ID}${PICK_SEP}`)));
+    await runGroupAction(async () => {
+      if (onBulkMove) await onBulkMove(tickers, groupId);
+      else for (const ticker of tickers) await onMoveStock?.(ticker, groupId);
+    }, () => clearSubmittedPick(submitted));
   };
-  const doCopyToGroup = (groupId: string | null) => {
+  const doCopyToGroup = async (groupId: string | null) => {
     const tickers = pickedInterestSymbols;
-    if (tickers.length === 0) return;
-    onCopyLikes?.(tickers, groupId);
-    clearPick();
+    if (tickers.length === 0 || !onCopyLikes) return;
+    const submitted = new Set([...picked].filter(key => key.startsWith(`${LIKES_GROUP_ID}${PICK_SEP}`)));
+    await runGroupAction(() => onCopyLikes(tickers, groupId), () => clearSubmittedPick(submitted));
   };
-  const doBulkRemove = () => {
+  const doBulkRemove = async () => {
     const tickers = pickedOperatingSymbols;
-    if (tickers.length === 0) return;
+    if (tickers.length === 0 || !onBulkRemove) return;
     if (window.confirm(`선택한 ${tickers.length}개 종목을 제거할까요?`)) {
-      onBulkRemove?.(tickers);
-      clearPick();
+      const submitted = new Set([...picked].filter(key => !key.startsWith(`${LIKES_GROUP_ID}${PICK_SEP}`)));
+      await runGroupAction(() => onBulkRemove(tickers), () => clearSubmittedPick(submitted));
     }
   };
-  const doCreateGroupFromPicked = () => {
+  const doCreateGroupFromPicked = async () => {
     const tickers = pickedOperatingSymbols;
-    if (tickers.length === 0) return;
+    if (tickers.length === 0 || !onCreateGroup || groupActionInFlight.current) return;
     const name = window.prompt(`선택한 ${tickers.length}개 종목으로 만들 그룹 이름을 입력하세요`);
     if (name && name.trim()) {
-      onCreateGroup?.(name.trim(), tickers);
-      clearPick();
+      const submitted = new Set([...picked].filter(key => !key.startsWith(`${LIKES_GROUP_ID}${PICK_SEP}`)));
+      await runGroupAction(() => onCreateGroup(name.trim(), tickers), () => clearSubmittedPick(submitted));
     }
   };
 
@@ -609,7 +630,7 @@ function StockListTable({
 
       {/* ===== 선택 종목 작업 ===== */}
       {isMaster && picked.size > 0 && (
-        <section aria-label="선택 종목 작업" className="sticky top-2 z-20 space-y-3 rounded-none border-0 border-y border-neutral-200 bg-white px-2 py-3 shadow-none dark:border-border-subtle-dark dark:bg-surface-dark-card sm:px-2 sm:py-3">
+        <fieldset disabled={groupActionPending} aria-busy={groupActionPending} aria-label="선택 종목 작업" className="sticky top-2 z-20 space-y-3 rounded-none border-0 border-y border-neutral-200 bg-white px-2 py-3 shadow-none dark:border-border-subtle-dark dark:bg-surface-dark-card sm:px-2 sm:py-3">
           <div className="flex items-center justify-between gap-2">
             <div className="min-w-0"><h3 className="flex items-center gap-2 text-xs font-semibold text-neutral-700 dark:text-neutral-200"><ComponentNumber value="03" />선택 종목 작업</h3><p className="mt-1 text-sm font-bold text-neutral-900 dark:text-neutral-100">{pickedSymbols.length}개 종목 선택됨</p></div>
             <button type="button" onClick={clearPick} className="flex min-h-11 items-center gap-1 px-2 text-xs text-neutral-500 dark:text-neutral-400"><X size={14} />선택 해제</button>
@@ -635,10 +656,10 @@ function StockListTable({
               </label>
             ) : <p className="text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">{selectionAction === "create" ? "실행하면 새 그룹 이름을 입력합니다." : "운용 목록에서만 제거하며 보유 주식을 매도하지 않습니다."}</p>}
             <button type="button" disabled={(selectionAction === "move" || selectionAction === "copy") && bulkTarget === "__select__"} onClick={() => {
-              if (selectionAction === "copy") doCopyToGroup(bulkTarget || null);
-              else if (selectionAction === "create") doCreateGroupFromPicked();
-              else if (selectionAction === "remove") doBulkRemove();
-              else doBulkMove(bulkTarget || null);
+              if (selectionAction === "copy") return doCopyToGroup(bulkTarget || null);
+              else if (selectionAction === "create") return doCreateGroupFromPicked();
+              else if (selectionAction === "remove") return doBulkRemove();
+              else return doBulkMove(bulkTarget || null);
             }} className={cn("col-span-2 flex min-h-11 items-center justify-center gap-1.5 rounded-lg px-4 text-sm font-bold sm:col-span-1 disabled:cursor-not-allowed disabled:opacity-40", selectionAction === "remove" ? "bg-red-600 text-white hover:bg-red-700" : "bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-neutral-100 dark:text-neutral-900")}>
               {selectionAction === "copy" ? <Copy size={16} /> : selectionAction === "create" ? <FolderPlus size={16} /> : selectionAction === "remove" ? <Trash2 size={16} /> : <ArrowRightLeft size={16} />}
               <span className="tabular-nums">3.</span>
@@ -646,8 +667,10 @@ function StockListTable({
             </button>
           </div>
           {selectionAction === "copy" && <p className="text-[11px] text-neutral-500 dark:text-neutral-400">좋아요는 그대로 유지하고 선택한 관심 종목을 대상 그룹에 추가합니다.</p>}
-        </section>
+        </fieldset>
       )}
+
+      {groupActionError && <p role="alert" className="text-sm text-rose-600">{groupActionError}</p>}
 
       <section aria-label="종목 그룹" className="space-y-1.5 md:space-y-3">
         <h2 className="flex items-center gap-2 px-2 py-3 text-sm font-semibold text-neutral-900 dark:text-neutral-100"><ComponentNumber value={groupsSectionNumber} />종목 그룹</h2>
