@@ -4,8 +4,9 @@ import { runInNewContext } from 'node:vm';
 import test from 'node:test';
 import ts from 'typescript';
 import * as changes from '../lib/features/stockLikes/changes.ts';
+import { scanValuationSummary } from '../lib/utils/valuationSummary.ts';
 
-const item = { ticker: '005930', stock_name: '삼성전자', is_us: 0, scan_date: '20261115', strategies: ['ncav'], last_price: 66000, per: 10, pbr: 1, ncav_ratio: 1.2 };
+const item = { ticker: '005930', stock_name: '삼성전자', is_us: 0, scan_date: '20261115', strategies: ['ncav'], last_price: 66000, per: 10, pbr: 1, ncav_ratio: 1.2, eps: 1000, bps: 5000, current_assets: 200, total_liabilities: 100, lstn_stcn: 1000000 };
 const baseline = { revision: 1, confirmedAt: 1, items: [{ ...changes.watchSnapshot([item])[0], price: 60000, scanDate: '20261114' }] };
 const source = ts.transpileModule(readFileSync(new URL('../components/home-watchlist.tsx', import.meta.url), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true },
@@ -21,7 +22,7 @@ function harness(initialBaseline = baseline, sampleRoot = false) {
     const posts: any[] = [];
     let saved = structuredClone(initialBaseline);
     let failure = 0;
-    let sample = async (): Promise<any> => ({ items: [item], previous: baseline.items, failed: 0 });
+    let sample = async (): Promise<any> => ({ items: [item], failed: 0 });
     let get = async () => ({ success: true, data: { items: [item], baseline: saved } });
     const equal = (a: any[], b: any[]) => a?.length === b?.length && a.every((value, index) => value === b[index]);
     const memo = (fn: () => unknown, deps: any[]) => {
@@ -56,6 +57,7 @@ function harness(initialBaseline = baseline, sampleRoot = false) {
             if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx, Fragment: 'fragment' };
             if (name === 'next/link') return { __esModule: true, default: 'a' };
             if (name === 'lucide-react') return {};
+            if (name.endsWith('/valuationSummary')) return { scanValuationSummary };
             if (name.endsWith('/sample')) return { getWatchlistSample: () => sample() };
             if (name.endsWith('/changes')) return changes;
             if (name.endsWith('/investmentFlow')) return { analysisHref: (ticker: string) => `/analyze?ticker=${ticker}`, WATCHLIST_HREF: '/screener?filter=liked' };
@@ -150,8 +152,9 @@ test('빈 관심목록에는 저장 동작 없는 실제 데이터 예시를 보
     h.getWith(async () => ({ success: true, data: { items: [], baseline } }));
     await h.settle();
     assert.match(h.text(), /실제 스캔 데이터/);
-    assert.match(h.text(), /최근 두 스캔 사이 변화 · 1종목/);
-    assert.match(h.text(), /가격 60,000 → 66,000/);
+    assert.match(h.text(), /전략별 적정주가/);
+    assert.match(h.text(), /PER 10배₩10,000/);
+    assert.doesNotMatch(h.text(), /최근 두 스캔 사이 변화/);
     assert.equal(h.nodes().some(node => node.type === 'a' && node.props.href?.includes('SAMPLE')), false);
     assert.equal(h.button(), undefined);
     h.focus(); await h.settle();
@@ -178,34 +181,38 @@ test('시장별 분류에서 전략별 분류로 전환하고 복수 전략과 �
 });
 
 
-test('실제 예시는 로딩 후 API의 종목·날짜·가격으로 링크와 변화율을 표시한다', async () => {
+test('실제 예시는 API의 종목·날짜·기준가와 세 전략의 적정주가를 표시한다', async () => {
     const h = harness(baseline, true);
     assert.match(h.text(), /불러오는 중/);
     await h.settle();
     assert.match(h.text(), /삼성전자/);
-    assert.match(h.text(), /2026.11.14 → 2026.11.15/);
-    assert.match(h.text(), /가격 \+10.00%/);
+    assert.match(h.text(), /스캔 2026.11.15/);
+    assert.match(h.text(), /스캔 기준가₩66,000/);
+    assert.match(h.text(), /NCAV 1배₩10,000/);
+    assert.match(h.text(), /PER 10배₩10,000/);
+    assert.match(h.text(), /PBR 1배₩5,000/);
+    assert.match(h.text(), /-84.8%/);
     assert.ok(h.nodes().some(node => node.type === 'a' && node.props.href === '/analyze?ticker=005930'));
     assert.equal(h.posts.length, 0);
 });
 
-test('예시 조회 실패는 임의 값 없이 재시도하고 과거 데이터 부재를 안내한다', async () => {
+test('예시 조회 실패는 재시도하고 재무 수치 부재를 계산 불가로 표시한다', async () => {
     const h = harness(baseline, true);
-    h.sampleWith(async () => ({ items: [], previous: [], failed: 2 }));
+    h.sampleWith(async () => ({ items: [], failed: 2 }));
     await h.settle();
     assert.match(h.text(), /불러오지 못했습니다/);
     assert.doesNotMatch(h.text(), /가격.*%/);
-    h.sampleWith(async () => ({ items: [item], previous: [], failed: 0 }));
+    h.sampleWith(async () => ({ items: [{ ...item, eps: null, bps: null, lstn_stcn: null }], failed: 0 }));
     h.nodes().find(node => node.type === 'button').props.onClick();
     h.render(); await h.settle();
-    assert.match(h.text(), /이전 스캔이 없는 종목은 최신 값만 표시/);
+    assert.equal((h.text().match(/계산 불가/g) ?? []).length, 3);
     assert.doesNotMatch(h.text(), /가격.*%/);
     assert.equal(h.posts.length, 0);
 });
 
 test('스캔이 비어 있으면 빈 상태를 보여준다', async () => {
     const h = harness(baseline, true);
-    h.sampleWith(async () => ({ items: [], previous: [], failed: 0 }));
+    h.sampleWith(async () => ({ items: [], failed: 0 }));
     await h.settle();
     assert.match(h.text(), /아직 표시할 스캔 데이터가 없습니다/);
     assert.equal(h.posts.length, 0);

@@ -6,6 +6,7 @@ import { ArrowRight, Check, Heart, Plus, RefreshCw } from 'lucide-react';
 import { analysisHref, WATCHLIST_HREF } from '@/lib/investmentFlow';
 import { watchChanges, watchSnapshot, watchKey, scanDateLabel, watchChangeLabel, type WatchChange } from '@/lib/features/stockLikes/changes';
 import { confirmWatchReview, getWatchReview, type WatchReview } from '@/lib/features/stockLikes/review';
+import { scanValuationSummary } from '@/lib/utils/valuationSummary';
 import { getWatchlistSample, type WatchlistSampleData } from '@/lib/features/stockLikes/sample';
 import type { LikedStockItem } from '@/lib/features/stockLikes/stockLikesSlice';
 import { STRATEGY_LABEL } from '@/lib/constants/strategies';
@@ -175,20 +176,22 @@ export function WatchlistSample() {
         void getWatchlistSample().then(result => { if (active) setData(result); });
         return () => { active = false; };
     }, [attempt]);
-    const changes = watchChanges(data?.previous ?? [], watchSnapshot(data?.items ?? []));
     return <section aria-label="관심종목 사용 예시" className="space-y-3 rounded-xl border border-dashed border-brand/40 bg-brand/5 p-3 sm:p-4">
-        <div><span className="rounded bg-brand/10 px-2 py-1 text-xs font-semibold text-brand-ink">실제 데이터 예시</span><h3 className="mt-3 text-sm font-semibold">관심종목을 담으면 이렇게 보여요</h3><p className="mt-1 text-xs leading-5 text-neutral-500">삼성전자·SK하이닉스의 실제 스캔 데이터입니다. 내 관심종목에는 저장되지 않습니다.</p></div>
+        <div><span className="rounded bg-brand/10 px-2 py-1 text-xs font-semibold text-brand-ink">실제 데이터 예시</span><h3 className="mt-3 text-sm font-semibold">전략별 적정주가를 한눈에</h3><p className="mt-1 text-xs leading-5 text-neutral-500">실제 스캔 데이터로 계산한 예시입니다. 내 관심종목에는 저장되지 않습니다.</p></div>
         {!data ? <p role="status" className="py-3 text-sm text-neutral-500">실제 종목 데이터를 불러오는 중…</p> : <>
             {data.failed > 0 && <div role="alert" className="text-xs leading-5 text-neutral-500"><p>일부 종목 데이터를 불러오지 못했습니다.</p><button type="button" className="min-h-11 underline" onClick={() => { setData(null); setAttempt(value => value + 1); }}>다시 불러오기</button></div>}
             {data.items.length > 0 ? <>
-                <div className="rounded-xl bg-white p-3 dark:bg-surface-dark-card">
-                    <p className="text-sm font-semibold">최근 두 스캔 사이 변화 · {changes.length}종목</p>
-                    <p className="mt-1 text-xs leading-5 text-neutral-500">예시에서는 최신·직전 스캔을 비교합니다. 내 관심종목은 마지막 확인 이후를 비교합니다. 실시간 시세나 전일 대비 등락률이 아닙니다.</p>
-                    {changes.map(change => <div key={watchKey(change.after)} className="mt-1"><WatchChangeDetails change={change} /></div>)}
-                    {!changes.length && data.previous.length > 0 && <p className="mt-2 text-xs text-neutral-500">비교 가능한 스캔에서 달라진 내용이 없습니다.</p>}
-                    {data.previous.length < data.items.length && <p className="mt-2 text-xs leading-5 text-neutral-500">이전 스캔이 없는 종목은 최신 값만 표시합니다.</p>}
-                </div>
-                <div><p className="mb-2 text-sm font-semibold">예시 관심종목 · {data.items.length}</p><WatchlistItems items={data.items} /></div>
+                {data.items.map(item => <article key={item.ticker} className="rounded-xl bg-white p-3 dark:bg-surface-dark-card">
+                    <Link href={analysisHref(item.ticker)} className="flex min-h-11 items-center justify-between gap-3 rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand">
+                        <div className="min-w-0"><h4 className="truncate text-sm font-semibold">{item.stock_name || item.ticker}</h4><p className="text-[11px] text-neutral-500">스캔 {scanDateLabel(item.scan_date!)} · 분석 →</p></div>
+                        <div className="shrink-0 text-right"><p className="text-[11px] text-neutral-500">스캔 기준가</p><p className="text-sm font-medium tabular-nums">{item.last_price === null ? '—' : `₩${metric(item.last_price)}`}</p></div>
+                    </Link>
+                    <dl className="mt-2 divide-y divide-neutral-100 text-xs dark:divide-neutral-800">{scanValuationSummary(item).map(model => <div key={model.label} className="flex items-center justify-between gap-2 py-2">
+                        <dt className="text-neutral-500">{model.label} <span className="text-[11px]">{model.basis}</span></dt>
+                        <dd className="flex items-baseline gap-2 tabular-nums"><span className="font-medium">{model.targetPrice === null ? '계산 불가' : `₩${metric(model.targetPrice)}`}</span>{model.gapPercent !== null && <span className="text-[11px] text-neutral-500">{model.gapPercent > 0 ? '+' : ''}{model.gapPercent.toFixed(1)}%</span>}</dd>
+                    </div>)}</dl>
+                </article>)}
+                <p className="text-[11px] leading-5 text-neutral-500">스캔 재무 기준 추정치 · %는 기준가 대비 차이입니다. NCAV=(유동자산−총부채)÷주식 수, PER=EPS×10, PBR=BPS×1.</p>
             </> : !data.failed && <p className="py-3 text-sm text-neutral-500">아직 표시할 스캔 데이터가 없습니다.</p>}
         </>}
     </section>;

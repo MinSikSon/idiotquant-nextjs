@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { valuationModels } from '@/lib/utils/valuationModels';
-import { valuationSummary } from '@/lib/utils/valuationSummary';
+import { valuationSummary, scanValuationSummary } from '@/lib/utils/valuationSummary';
 import type { ValuationResult } from '@/lib/utils/financeCalc';
 
 const model = (type: string, targetPrice: number, returnPct = 10) => ({
@@ -55,4 +55,37 @@ test('가격은 유효해도 괴리율이 무효면 퍼센트를 표시하지 �
     const [row] = valuationSummary([model('PBR', 6506, NaN)]);
     assert.equal(row.targetPrice, 6506);
     assert.equal(row.returnPct, null);
+});
+
+
+const scan = { last_price: 10000, eps: 1200, bps: 8000, current_assets: 200, total_liabilities: 50, lstn_stcn: 1000000 };
+
+test('스캔 적정가는 NCAV 억원 환산·PER 10배·PBR 1배와 기준가 대비 차이를 계산한다', () => {
+    const rows = scanValuationSummary(scan);
+    assert.equal(rows[0].targetPrice, 15000);
+    assert.equal(rows[1].targetPrice, 12000);
+    assert.equal(rows[2].targetPrice, 8000);
+    assert.equal(rows[0].gapPercent, 50);
+    assert.ok(Math.abs(rows[1].gapPercent! - 20) < 0.0001);
+    assert.ok(Math.abs(rows[2].gapPercent! + 20) < 0.0001);
+});
+
+test('스캔 적정가는 적자·음수 순자산·결측 및 잘못된 주식 수를 계산 불가로 남긴다', () => {
+    for (const patch of [
+        { eps: -1, bps: -1, current_assets: 10 },
+        { eps: null, bps: null, lstn_stcn: null },
+        { eps: NaN, bps: Infinity, lstn_stcn: 0 },
+    ]) {
+        const rows = scanValuationSummary({ ...scan, ...patch });
+        assert.ok(rows.every(row => row.targetPrice === null && row.gapPercent === null));
+    }
+    assert.equal(scanValuationSummary({ ...scan, total_liabilities: null })[0].targetPrice, null);
+    assert.equal(scanValuationSummary({ ...scan, total_liabilities: 0 })[0].targetPrice, 20000);
+});
+
+test('기준가가 없으면 적정가만 표시하고 차이율을 만들지 않는다', () => {
+    for (const last_price of [null, 0, NaN, Infinity]) {
+        const rows = scanValuationSummary({ ...scan, last_price });
+        assert.ok(rows.every(row => row.targetPrice !== null && row.gapPercent === null));
+    }
 });
