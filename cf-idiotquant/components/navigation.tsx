@@ -282,6 +282,7 @@ export function NavbarWithSimpleLinks() {
 
      `/game` Rogue는 DOM이라 앱 테마를 따른다. */
   const inGame = pathname.startsWith("/games");
+  const fixedAnalysisIdentity = pathname === "/analyze";
   // 게임 안에서는 금융 서비스 이름 대신 게임 묶음의 이름을 쓴다. 공통 헤더지만
   // 경로에 따라 한 단어만 바꾸므로, 게임 바의 색·배치는 그대로 유지된다.
   const brandSuffix = inGame ? "GAMES" : "QUANT";
@@ -491,7 +492,7 @@ export function NavbarWithSimpleLinks() {
           <div ref={!mobile ? pageHeader?.setTitleTarget : undefined} className={cn("hidden min-w-0 flex-1 md:block", !pageHeader?.active && "md:hidden")} />
           {!pageHeader?.active && <span className="hidden min-w-0 flex-1 truncate text-sm font-semibold md:block">{pathname === "/" ? null : mobilePageTitle}</span>}
           <div className="min-w-0 flex-1 md:hidden">
-            <div ref={pageHeader?.setScrollTitleTarget} data-navigation-scroll-title hidden={!identityScrolled} />
+            <div ref={pageHeader?.setScrollTitleTarget} data-navigation-scroll-title hidden={fixedAnalysisIdentity || !identityScrolled} />
           </div>
           <div ref={pageHeader?.setActionsTarget} data-navigation-actions className="shrink-0" />
           <div className="navigation-search flex shrink-0 items-center"><StockSearchTrigger /></div>
@@ -501,10 +502,17 @@ export function NavbarWithSimpleLinks() {
             </NavigationPopover>
           </div>
         </div>
+        {fixedAnalysisIdentity && (
+        <div ref={identity} className="navigation-analysis-identity flex h-[56px] items-center gap-3 px-3 py-1 md:hidden">
+          <Link href="/" className="shrink-0 text-xl font-bold tracking-tight text-neutral-900 dark:text-white">idiot<span className="text-brand-ink">quant</span></Link>
+          <div ref={mobile ? pageHeader?.setTitleTarget : undefined} className={cn("min-w-0 flex-1", !pageHeader?.active && "hidden")} />
+          {!pageHeader?.active && <span className="truncate text-base font-semibold">{mobilePageTitle}</span>}
+        </div>
+        )}
         <div ref={pageHeader?.setTabsTarget} />
       </header>}
 
-      {!inGame && <div ref={identity} className="navigation-identity bg-surface-canvas dark:bg-surface-dark-canvas md:hidden">
+      {!inGame && !fixedAnalysisIdentity && <div ref={identity} className="navigation-identity bg-surface-canvas dark:bg-surface-dark-canvas md:hidden">
         <div className="flex min-h-10 items-center gap-3 px-3 py-1">
           <Link href="/" className="shrink-0 text-xl font-bold tracking-tight text-neutral-900 dark:text-white">idiot<span className="text-brand-ink">quant</span></Link>
           <div ref={mobile ? pageHeader?.setTitleTarget : undefined} className={cn("min-w-0 flex-1", !pageHeader?.active && "hidden")} />
