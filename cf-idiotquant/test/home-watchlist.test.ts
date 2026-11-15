@@ -76,13 +76,13 @@ function harness(initialBaseline = baseline) {
     });
     const render = () => { cursor = 0; tree = output.exports.HomeWatchlist(); return tree; };
     const text = (node: any): string => node == null || typeof node === 'boolean' ? ''
-        : typeof node !== 'object' ? String(node) : Array.isArray(node) ? node.map(text).join('') : text(node.props?.children);
+        : typeof node !== 'object' ? String(node) : Array.isArray(node) ? node.map(text).join('') : typeof node.type === 'function' ? text(node.type(node.props)) : text(node.props?.children);
     const nodes = (node: any): any[] => node == null || typeof node !== 'object' ? []
-        : Array.isArray(node) ? node.flatMap(nodes) : [node, ...nodes(node.props?.children)];
+        : Array.isArray(node) ? node.flatMap(nodes) : typeof node.type === 'function' ? nodes(node.type(node.props)) : [node, ...nodes(node.props?.children)];
     const settle = async () => { while (effects.length) effects.shift()!(); await new Promise(resolve => setImmediate(resolve)); render(); };
     const button = () => nodes(tree).find(node => node.type === 'button' && text(node).includes('확인 완료'));
     render();
-    return { render, settle, text: () => text(tree), button, posts,
+    return { render, settle, text: () => text(tree), nodes: () => nodes(tree), button, posts,
         focus: () => listeners.get('focus')?.(), fail: (status: number) => { failure = status; },
         saved: () => saved,
         getWith: (fn: typeof get) => { get = fn; },
@@ -139,4 +139,36 @@ test('늦게 도착한 이전 조회는 새 응답을 덮어쓰지 못한다', a
     await h.settle();
     h.button().props.onClick(); await h.settle();
     assert.equal(h.posts[0].items[0].price, 70000);
+});
+
+
+test('빈 관심목록에는 저장 동작 없는 가상 샘플을 보여준다', async () => {
+    const h = harness();
+    h.getWith(async () => ({ success: true, data: { items: [], baseline } }));
+    await h.settle();
+    assert.match(h.text(), /사용 방법을 보여주는 가상 종목/);
+    assert.match(h.text(), /가격 ₩12,000 → ₩12,500/);
+    assert.equal(h.nodes().some(node => node.type === 'a' && node.props.href?.includes('SAMPLE')), false);
+    assert.equal(h.button(), undefined);
+    h.focus(); await h.settle();
+    assert.equal(h.posts.length, 0);
+});
+
+test('시장별 분류에서 전략별 분류로 전환하고 복수 전략과 미분류 종목을 포함한다', async () => {
+    const h = harness();
+    h.getWith(async () => ({ success: true, data: { items: [
+        { ...item, strategies: ['ncav', 'low_pbr'] },
+        { ...item, ticker: 'US-TEST', stock_name: '미국 샘플', is_us: 1, strategies: [] },
+    ], baseline } }));
+    await h.settle();
+    const stockLinks = () => h.nodes().filter(node => node.type === 'a' && node.props.href === '/analyze?ticker=005930' && node.props.className?.includes('py-1.5'));
+    assert.equal(stockLinks().length, 1);
+    assert.match(h.text(), /국내1종목/);
+    assert.match(h.text(), /미국1종목/);
+    h.nodes().find(node => node.type === 'select').props.onChange({ target: { value: 'strategy' } });
+    h.render();
+    assert.equal(stockLinks().length, 2);
+    assert.match(h.text(), /해당 전략 없음1종목/);
+    assert.match(h.text(), /여러 전략에 해당하면 중복 표시됩니다/);
+    assert.equal(h.posts.length, 0);
 });
