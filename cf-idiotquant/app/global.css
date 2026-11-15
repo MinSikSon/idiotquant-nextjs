@@ -718,3 +718,9 @@ html.dark .stock-search-error { color: #fca5a5; }
 .stock-search-modal .guide-quick-search:hover { background: var(--service-accent); }
 .stock-search-modal .guide-quick-search > svg { display: none; }
 .stock-search-modal .guide-quick-label { flex-basis: 100%; margin-bottom: 4px; font-size: 13px; color: var(--service-muted); }
+
+/* 모바일 분석은 종목 정보 다음에 탭을 고정하고 본문 공간을 확보한다. */
+@media (max-width: 767px) {
+  html:has(.navigation-analysis-identity) { --navigation-h: 104px; }
+  html:has(.navigation-analysis-identity):has(.navigation-header [data-page-tabs]) { --navigation-h: 148px; }
+}
