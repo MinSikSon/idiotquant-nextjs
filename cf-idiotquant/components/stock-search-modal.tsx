@@ -110,6 +110,13 @@ export function StockSearchModal({ open, label, purpose = "analyze", disabledMes
     if (!start || start.pointerId !== event.pointerId) return;
     const gesture = backSwipe(start, point(event), event.currentTarget.clientWidth);
     if (gesture.cancelled) { resetSwipe(); return; }
+    // iOS 가장자리 제스처는 pointerup 대신 pointercancel로 끝날 수 있다.
+    // 닫기 거리를 넘긴 순간 완료해 손을 뗄 때의 이벤트에 의존하지 않는다.
+    if (gesture.dismiss) {
+      resetSwipe();
+      onClose();
+      return;
+    }
     if (gesture.offset) {
       event.currentTarget.setPointerCapture(event.pointerId);
       event.currentTarget.dataset.swiping = "true";
@@ -128,7 +135,7 @@ export function StockSearchModal({ open, label, purpose = "analyze", disabledMes
     onCancel={event => { event.preventDefault(); onClose(); }}
     onClick={event => { if (event.target === event.currentTarget) onClose(); }}>
     {open && <div ref={surface} className="stock-search-surface" onClick={event => event.stopPropagation()}
-      onPointerDownCapture={startSwipe} onPointerMoveCapture={moveSwipe} onPointerUpCapture={finishSwipe} onPointerCancelCapture={resetSwipe}>
+      onPointerDownCapture={startSwipe} onPointerMoveCapture={moveSwipe} onPointerUpCapture={finishSwipe} onPointerCancelCapture={resetSwipe} onLostPointerCapture={resetSwipe}>
       <h2 id="stock-search-title" className="sr-only">{label}</h2>
       <header className="stock-search-header" data-search-content>
         <button type="button" onClick={onClose} aria-label="검색창 닫기" title="뒤로" className="stock-search-back"><ChevronLeft size={26} strokeWidth={1.8} /></button>
