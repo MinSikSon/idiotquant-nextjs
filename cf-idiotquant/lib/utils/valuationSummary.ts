@@ -17,3 +17,25 @@ export function valuationSummary(models: { type: string; result: ValuationResult
         return { type, targetPrice, returnPct, notice };
     });
 }
+
+/** 일별 스캔에서 확인할 수 있는 세 모델의 기준 평가액. KR 자산·부채는 억원이다. */
+export function scanValuationSummary(item: {
+    last_price: number | null; eps: number | null; bps: number | null;
+    current_assets: number | null; total_liabilities: number | null; lstn_stcn: number | null;
+}) {
+    const positive = (value: number | null): value is number => value !== null && Number.isFinite(value) && value > 0;
+    const hasAssets = item.current_assets !== null && Number.isFinite(item.current_assets) && item.current_assets >= 0;
+    const hasLiabilities = item.total_liabilities !== null && Number.isFinite(item.total_liabilities) && item.total_liabilities >= 0;
+    const models = [
+        { label: 'NCAV', basis: '1배', target: hasAssets && hasLiabilities && positive(item.lstn_stcn)
+            ? (item.current_assets! - item.total_liabilities!) * 100_000_000 / item.lstn_stcn : null },
+        { label: 'PER', basis: '10배', target: positive(item.eps) ? item.eps * 10 : null },
+        { label: 'PBR', basis: '1배', target: positive(item.bps) ? item.bps : null },
+    ];
+    return models.map(({ label, basis, target }) => {
+        const targetPrice = positive(target) && Math.round(target) > 0 ? Math.round(target) : null;
+        const gapPercent = targetPrice !== null && positive(item.last_price)
+            ? (targetPrice / item.last_price - 1) * 100 : null;
+        return { label, basis, targetPrice, gapPercent };
+    });
+}
