@@ -1,6 +1,7 @@
 "use client";
 
 import Link from 'next/link';
+import { WatchlistSample } from '@/components/home-watchlist';
 import { ArrowRight, Heart, Search } from 'lucide-react';
 import { useStockSearchModal } from '@/components/stock-search-provider';
 
@@ -17,6 +18,7 @@ export default function GuestLanding() {
       </div>
       <p className="mt-3 text-xs text-neutral-500">검색과 발굴은 가입 없이 시작할 수 있습니다.</p>
     </section>
+    <div className="mt-8"><WatchlistSample /></div>
     <section aria-labelledby="save-title" className="mt-12 rounded-2xl border border-neutral-200 bg-white p-5 dark:border-surface-dark-border dark:bg-surface-dark-card sm:p-6">
       <h2 id="save-title" className="flex items-center gap-2 font-semibold"><Heart size={18} aria-hidden="true" />내 관심종목으로 시작하세요</h2>
       <p className="mt-3 text-sm leading-6 text-neutral-600 dark:text-neutral-300">분석 화면에서 하트를 눌러 저장하세요. 로그인하면 휴대폰과 PC에서 같은 관심종목과 확인 기준이 이어집니다.</p>
