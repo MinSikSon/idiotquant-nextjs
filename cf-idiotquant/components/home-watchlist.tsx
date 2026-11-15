@@ -4,8 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Check, Heart, Plus, RefreshCw } from 'lucide-react';
 import { analysisHref, WATCHLIST_HREF } from '@/lib/investmentFlow';
-import { watchChanges, watchSnapshot, watchKey, scanDateLabel, watchChangeLabel } from '@/lib/features/stockLikes/changes';
+import { watchChanges, watchSnapshot, watchKey, scanDateLabel, watchChangeLabel, type WatchChange } from '@/lib/features/stockLikes/changes';
 import { confirmWatchReview, getWatchReview, type WatchReview } from '@/lib/features/stockLikes/review';
+import { getWatchlistSample, type WatchlistSampleData } from '@/lib/features/stockLikes/sample';
 import type { LikedStockItem } from '@/lib/features/stockLikes/stockLikesSlice';
 import { STRATEGY_LABEL } from '@/lib/constants/strategies';
 import { useStockSearchModal } from '@/components/stock-search-provider';
@@ -95,19 +96,7 @@ export function HomeWatchlist() {
                     <p className="mt-1 text-xs leading-5 text-neutral-500">최신 스캔 기준 · 가격 변화는 전일 대비가 아닙니다.</p>
                     {!first && !changes.length && !added.length && <p className="py-2 text-sm">{unavailable || outdated ? '비교 가능한 종목에서 달라진 내용이 없습니다.' : '달라진 내용이 없습니다.'}</p>}
                     {!first && <ul className="mt-3 divide-y divide-neutral-100 dark:divide-neutral-800">{changes.map(change => <li key={watchKey(change.after)} className="py-3">
-                        <details>
-                            <summary className="flex min-h-11 cursor-pointer flex-wrap items-center justify-between gap-2 rounded-lg text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand">
-                                <span className="min-w-0 break-all font-semibold">{change.after.name} <span className="font-normal text-neutral-500">{change.after.market}</span></span>
-                                <span className="text-xs text-neutral-500">{watchChangeLabel(change)} · 자세히</span>
-                            </summary>
-                            <div className="space-y-2 py-2 text-sm">
-                                <p className="text-xs text-neutral-500">스캔 {scanDateLabel(change.before.scanDate)} → {scanDateLabel(change.after.scanDate)}</p>
-                                {(['price', 'per', 'pbr', 'ncav'] as const).filter(field => change.before[field] !== null && change.after[field] !== null && change.before[field] !== change.after[field]).map(field => <p key={field}>{({ price: '가격', per: 'PER', pbr: 'PBR', ncav: 'NCAV' })[field]} {metric(change.before[field])} → {metric(change.after[field])}</p>)}
-                                {change.entered.map(id => <p key={`in-${id}`}>{STRATEGY_LABEL[id] || id} 조건 충족</p>)}
-                                {change.exited.map(id => <p key={`out-${id}`}>{STRATEGY_LABEL[id] || id} 조건에서 제외</p>)}
-                                <Link href={analysisHref(change.after.ticker)} className="inline-flex min-h-11 items-center gap-2 text-brand-ink">종목 분석<ArrowRight size={14} aria-hidden="true" /></Link>
-                            </div>
-                        </details>
+                        <WatchChangeDetails change={change} />
                     </li>)}{added.map(item => <li key={watchKey(item)} className="py-3 text-sm"><Link href={analysisHref(item.ticker)} className="flex min-h-11 items-center justify-between gap-3"><span className="min-w-0 break-all">{item.name}</span><span className="shrink-0 text-xs text-neutral-500">새로 추가됨</span></Link></li>)}</ul>}
                     {unavailable > 0 && <p className="mt-1 text-xs leading-5 text-neutral-500">스캔 미제공 {unavailable}종목 · 기존 확인 기준 유지</p>}
                     {outdated > 0 && <p className="my-3 text-xs leading-5 text-neutral-500">{outdated}종목은 확인 기준보다 과거 데이터여서 비교에서 제외했습니다.</p>}
@@ -144,7 +133,7 @@ function AddStock({ onSearch }: { onSearch: () => void }) {
 
 type WatchlistDisplayItem = Pick<LikedStockItem, 'ticker' | 'stock_name' | 'is_us' | 'scan_date' | 'strategies' | 'last_price'>;
 
-function WatchlistItems({ items, grouping = 'market', sample = false }: { items: WatchlistDisplayItem[]; grouping?: 'market' | 'strategy'; sample?: boolean }) {
+function WatchlistItems({ items, grouping = 'market' }: { items: WatchlistDisplayItem[]; grouping?: 'market' | 'strategy' }) {
     const groups = new Map<string, WatchlistDisplayItem[]>();
     for (const item of items) {
         const keys = grouping === 'market' ? [item.is_us ? 'US' : 'KR'] : item.strategies.length ? [...new Set(item.strategies)] : ['unclassified'];
@@ -157,23 +146,50 @@ function WatchlistItems({ items, grouping = 'market', sample = false }: { items:
         <ul className="divide-y divide-neutral-100 px-3 dark:divide-neutral-800">{stocks.map(item => {
             const row = <><div className="min-w-0"><p className="truncate text-sm font-medium" title={item.stock_name || item.ticker}>{item.stock_name || item.ticker}</p><p className="text-[11px] leading-4 text-neutral-500">{item.ticker} · {item.scan_date ? scanDateLabel(item.scan_date) : '스캔 없음'}</p></div><span className="shrink-0 text-sm tabular-nums">{item.last_price == null ? '—' : `${item.is_us ? '$' : '₩'}${metric(item.last_price)}`}</span></>;
             const rowClass = 'flex min-h-11 items-center justify-between gap-3 rounded-lg py-1.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand';
-            return <li key={`${item.is_us}:${item.ticker}`}>{sample ? <div className={rowClass}>{row}</div> : <Link href={analysisHref(item.ticker)} className={rowClass}>{row}</Link>}</li>;
+            return <li key={`${item.is_us}:${item.ticker}`}><Link href={analysisHref(item.ticker)} className={rowClass}>{row}</Link></li>;
         })}</ul>
     </details>)}</div>;
 }
 
-export function WatchlistSample() {
-    const items = [
-        { ticker: 'SAMPLE-KR', stock_name: '샘플 제조', is_us: 0, scan_date: '20261116', strategies: ['low_pbr'], last_price: 12500 },
-        { ticker: 'SAMPLE-US', stock_name: '샘플 테크', is_us: 1, scan_date: '20261116', strategies: ['quality_value'], last_price: 84.5 },
-    ];
-    return <section aria-label="관심종목 사용 예시" className="space-y-3 rounded-xl border border-dashed border-brand/40 bg-brand/5 p-3 sm:p-4">
-        <div><span className="rounded bg-brand/10 px-2 py-1 text-xs font-semibold text-brand-ink">샘플</span><h3 className="mt-3 text-sm font-semibold">관심종목을 담으면 이렇게 보여요</h3><p className="mt-1 text-xs leading-5 text-neutral-500">사용 방법을 보여주는 가상 종목과 수치입니다. 내 관심종목에는 저장되지 않습니다.</p></div>
-        <div className="rounded-xl bg-white p-3 dark:bg-surface-dark-card">
-            <p className="text-sm font-semibold">지난 확인 이후 변화 · 1종목</p>
-            <details className="mt-1"><summary className="flex min-h-11 cursor-pointer flex-wrap items-center justify-between gap-2 text-sm"><span>샘플 제조</span><span className="text-xs text-brand-ink">가격 +4.17% · 전략 조건 · 자세히</span></summary><div className="space-y-1 pb-2 text-xs leading-5 text-neutral-600 dark:text-neutral-300"><p>스캔 2026.11.13 → 2026.11.16</p><p>가격 ₩12,000 → ₩12,500</p><p>저PBR 조건 충족</p></div></details>
-            <p className="text-xs leading-5 text-neutral-500">가격 변화는 지난 확인 때의 스캔 값과 비교합니다. 확인 완료를 누르면 다음 비교 기준으로 저장됩니다.</p>
+function WatchChangeDetails({ change }: { change: WatchChange }) {
+    return <details>
+        <summary className="flex min-h-11 cursor-pointer flex-wrap items-center justify-between gap-2 rounded-lg text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand">
+            <span className="min-w-0 break-all font-semibold">{change.after.name} <span className="font-normal text-neutral-500">{change.after.market}</span></span>
+            <span className="text-xs text-neutral-500">{watchChangeLabel(change)} · 자세히</span>
+        </summary>
+        <div className="space-y-2 py-2 text-sm">
+            <p className="text-xs text-neutral-500">스캔 {scanDateLabel(change.before.scanDate)} → {scanDateLabel(change.after.scanDate)}</p>
+            {(['price', 'per', 'pbr', 'ncav'] as const).filter(field => change.before[field] !== null && change.after[field] !== null && change.before[field] !== change.after[field]).map(field => <p key={field}>{({ price: '가격', per: 'PER', pbr: 'PBR', ncav: 'NCAV' })[field]} {metric(change.before[field])} → {metric(change.after[field])}</p>)}
+            {change.entered.map(id => <p key={`in-${id}`}>{STRATEGY_LABEL[id] || id} 조건 충족</p>)}
+            {change.exited.map(id => <p key={`out-${id}`}>{STRATEGY_LABEL[id] || id} 조건에서 제외</p>)}
+            <Link href={analysisHref(change.after.ticker)} className="inline-flex min-h-11 items-center gap-2 text-brand-ink">종목 분석<ArrowRight size={14} aria-hidden="true" /></Link>
         </div>
-        <div><p className="mb-2 text-sm font-semibold">관심종목 · 2</p><WatchlistItems items={items} sample /></div>
+    </details>;
+}
+
+export function WatchlistSample() {
+    const [data, setData] = useState<WatchlistSampleData | null>(null);
+    const [attempt, setAttempt] = useState(0);
+    useEffect(() => {
+        let active = true;
+        void getWatchlistSample().then(result => { if (active) setData(result); });
+        return () => { active = false; };
+    }, [attempt]);
+    const changes = watchChanges(data?.previous ?? [], watchSnapshot(data?.items ?? []));
+    return <section aria-label="관심종목 사용 예시" className="space-y-3 rounded-xl border border-dashed border-brand/40 bg-brand/5 p-3 sm:p-4">
+        <div><span className="rounded bg-brand/10 px-2 py-1 text-xs font-semibold text-brand-ink">실제 데이터 예시</span><h3 className="mt-3 text-sm font-semibold">관심종목을 담으면 이렇게 보여요</h3><p className="mt-1 text-xs leading-5 text-neutral-500">삼성전자·SK하이닉스의 실제 스캔 데이터입니다. 내 관심종목에는 저장되지 않습니다.</p></div>
+        {!data ? <p role="status" className="py-3 text-sm text-neutral-500">실제 종목 데이터를 불러오는 중…</p> : <>
+            {data.failed > 0 && <div role="alert" className="text-xs leading-5 text-neutral-500"><p>일부 종목 데이터를 불러오지 못했습니다.</p><button type="button" className="min-h-11 underline" onClick={() => { setData(null); setAttempt(value => value + 1); }}>다시 불러오기</button></div>}
+            {data.items.length > 0 ? <>
+                <div className="rounded-xl bg-white p-3 dark:bg-surface-dark-card">
+                    <p className="text-sm font-semibold">최근 두 스캔 사이 변화 · {changes.length}종목</p>
+                    <p className="mt-1 text-xs leading-5 text-neutral-500">예시에서는 최신·직전 스캔을 비교합니다. 내 관심종목은 마지막 확인 이후를 비교합니다. 실시간 시세나 전일 대비 등락률이 아닙니다.</p>
+                    {changes.map(change => <div key={watchKey(change.after)} className="mt-1"><WatchChangeDetails change={change} /></div>)}
+                    {!changes.length && data.previous.length > 0 && <p className="mt-2 text-xs text-neutral-500">비교 가능한 스캔에서 달라진 내용이 없습니다.</p>}
+                    {data.previous.length < data.items.length && <p className="mt-2 text-xs leading-5 text-neutral-500">이전 스캔이 없는 종목은 최신 값만 표시합니다.</p>}
+                </div>
+                <div><p className="mb-2 text-sm font-semibold">예시 관심종목 · {data.items.length}</p><WatchlistItems items={data.items} /></div>
+            </> : !data.failed && <p className="py-3 text-sm text-neutral-500">아직 표시할 스캔 데이터가 없습니다.</p>}
+        </>}
     </section>;
 }

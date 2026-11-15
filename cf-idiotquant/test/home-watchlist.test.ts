@@ -12,7 +12,7 @@ const source = ts.transpileModule(readFileSync(new URL('../components/home-watch
 }).outputText;
 
 // 홈 컴포넌트를 실행하고 네트워크와 React 상태 경계만 제어한다.
-function harness(initialBaseline = baseline) {
+function harness(initialBaseline = baseline, sampleRoot = false) {
     const slots: any[] = [];
     let cursor = 0;
     let tree: any;
@@ -21,6 +21,7 @@ function harness(initialBaseline = baseline) {
     const posts: any[] = [];
     let saved = structuredClone(initialBaseline);
     let failure = 0;
+    let sample = async (): Promise<any> => ({ items: [item], previous: baseline.items, failed: 0 });
     let get = async () => ({ success: true, data: { items: [item], baseline: saved } });
     const equal = (a: any[], b: any[]) => a?.length === b?.length && a.every((value, index) => value === b[index]);
     const memo = (fn: () => unknown, deps: any[]) => {
@@ -46,8 +47,8 @@ function harness(initialBaseline = baseline) {
             if (!slots[index] || !equal(slots[index], deps)) { slots[index] = deps; effects.push(fn); }
         },
     };
-    const jsx = (type: unknown, props: unknown) => ({ type, props });
-    const output = { exports: {} as { HomeWatchlist: () => any } };
+    const jsx = (type: any, props: unknown): any => typeof type === 'function' ? type(props) : ({ type, props });
+    const output = { exports: {} as { HomeWatchlist: () => any; WatchlistSample: () => any } };
     runInNewContext(source, { exports: output.exports, module: output,
         window: { addEventListener: (name: string, fn: () => void) => listeners.set(name, fn), removeEventListener: (name: string) => listeners.delete(name) },
         require(name: string) {
@@ -55,6 +56,7 @@ function harness(initialBaseline = baseline) {
             if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx, Fragment: 'fragment' };
             if (name === 'next/link') return { __esModule: true, default: 'a' };
             if (name === 'lucide-react') return {};
+            if (name.endsWith('/sample')) return { getWatchlistSample: () => sample() };
             if (name.endsWith('/changes')) return changes;
             if (name.endsWith('/investmentFlow')) return { analysisHref: (ticker: string) => `/analyze?ticker=${ticker}`, WATCHLIST_HREF: '/screener?filter=liked' };
             if (name.endsWith('/strategies')) return { STRATEGY_LABEL: {} };
@@ -74,18 +76,19 @@ function harness(initialBaseline = baseline) {
             throw new Error(`Unexpected module: ${name}`);
         },
     });
-    const render = () => { cursor = 0; tree = output.exports.HomeWatchlist(); return tree; };
+    const render = () => { cursor = 0; tree = sampleRoot ? output.exports.WatchlistSample() : output.exports.HomeWatchlist(); return tree; };
     const text = (node: any): string => node == null || typeof node === 'boolean' ? ''
         : typeof node !== 'object' ? String(node) : Array.isArray(node) ? node.map(text).join('') : typeof node.type === 'function' ? text(node.type(node.props)) : text(node.props?.children);
     const nodes = (node: any): any[] => node == null || typeof node !== 'object' ? []
         : Array.isArray(node) ? node.flatMap(nodes) : typeof node.type === 'function' ? nodes(node.type(node.props)) : [node, ...nodes(node.props?.children)];
-    const settle = async () => { while (effects.length) effects.shift()!(); await new Promise(resolve => setImmediate(resolve)); render(); };
+    const settle = async () => { do { while (effects.length) effects.shift()!(); await new Promise(resolve => setImmediate(resolve)); render(); } while (effects.length); };
     const button = () => nodes(tree).find(node => node.type === 'button' && text(node).includes('확인 완료'));
     render();
     return { render, settle, text: () => text(tree), nodes: () => nodes(tree), button, posts,
         focus: () => listeners.get('focus')?.(), fail: (status: number) => { failure = status; },
         saved: () => saved,
         getWith: (fn: typeof get) => { get = fn; },
+        sampleWith: (fn: typeof sample) => { sample = fn; },
     };
 }
 
@@ -142,12 +145,13 @@ test('늦게 도착한 이전 조회는 새 응답을 덮어쓰지 못한다', a
 });
 
 
-test('빈 관심목록에는 저장 동작 없는 가상 샘플을 보여준다', async () => {
+test('빈 관심목록에는 저장 동작 없는 실제 데이터 예시를 보여준다', async () => {
     const h = harness();
     h.getWith(async () => ({ success: true, data: { items: [], baseline } }));
     await h.settle();
-    assert.match(h.text(), /사용 방법을 보여주는 가상 종목/);
-    assert.match(h.text(), /가격 ₩12,000 → ₩12,500/);
+    assert.match(h.text(), /실제 스캔 데이터/);
+    assert.match(h.text(), /최근 두 스캔 사이 변화 · 1종목/);
+    assert.match(h.text(), /가격 60,000 → 66,000/);
     assert.equal(h.nodes().some(node => node.type === 'a' && node.props.href?.includes('SAMPLE')), false);
     assert.equal(h.button(), undefined);
     h.focus(); await h.settle();
@@ -170,5 +174,39 @@ test('시장별 분류에서 전략별 분류로 전환하고 복수 전략과 �
     assert.equal(stockLinks().length, 2);
     assert.match(h.text(), /해당 전략 없음1종목/);
     assert.match(h.text(), /여러 전략에 해당하면 중복 표시됩니다/);
+    assert.equal(h.posts.length, 0);
+});
+
+
+test('실제 예시는 로딩 후 API의 종목·날짜·가격으로 링크와 변화율을 표시한다', async () => {
+    const h = harness(baseline, true);
+    assert.match(h.text(), /불러오는 중/);
+    await h.settle();
+    assert.match(h.text(), /삼성전자/);
+    assert.match(h.text(), /2026.11.14 → 2026.11.15/);
+    assert.match(h.text(), /가격 \+10.00%/);
+    assert.ok(h.nodes().some(node => node.type === 'a' && node.props.href === '/analyze?ticker=005930'));
+    assert.equal(h.posts.length, 0);
+});
+
+test('예시 조회 실패는 임의 값 없이 재시도하고 과거 데이터 부재를 안내한다', async () => {
+    const h = harness(baseline, true);
+    h.sampleWith(async () => ({ items: [], previous: [], failed: 2 }));
+    await h.settle();
+    assert.match(h.text(), /불러오지 못했습니다/);
+    assert.doesNotMatch(h.text(), /가격.*%/);
+    h.sampleWith(async () => ({ items: [item], previous: [], failed: 0 }));
+    h.nodes().find(node => node.type === 'button').props.onClick();
+    h.render(); await h.settle();
+    assert.match(h.text(), /이전 스캔이 없는 종목은 최신 값만 표시/);
+    assert.doesNotMatch(h.text(), /가격.*%/);
+    assert.equal(h.posts.length, 0);
+});
+
+test('스캔이 비어 있으면 빈 상태를 보여준다', async () => {
+    const h = harness(baseline, true);
+    h.sampleWith(async () => ({ items: [], previous: [], failed: 0 }));
+    await h.settle();
+    assert.match(h.text(), /아직 표시할 스캔 데이터가 없습니다/);
     assert.equal(h.posts.length, 0);
 });
