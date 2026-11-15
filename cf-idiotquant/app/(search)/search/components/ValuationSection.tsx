@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import styles from "./ValuationSection.module.css";
 import Link from "next/link";
 import {
   Calculator, BarChart3, TrendingUp, ChevronDown, ChevronUp,
@@ -244,14 +245,17 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
             </p>
           )}
 
+          <p className="mb-2 text-sm font-semibold tabular-nums text-neutral-700 dark:text-neutral-200 sm:hidden">
+            현재가 {currency}{axis.curPrice.toLocaleString(undefined, { maximumFractionDigits: isUs ? 2 : 0 })}
+          </p>
           {/* 모델별 트랙 — 축과 목록을 한 줄에 합친다. 점과 이름이 같은 행에 있으면
               "이 점이 어느 모델인지" 를 색으로 되짚을 필요가 없다.
               모든 행이 같은 min~max 스케일을 쓰므로 세로로 곧장 비교된다. */}
-          <div className={cn(AXIS_GRID, "overflow-hidden")}>
+          <div className={cn(AXIS_GRID, styles.axis, "overflow-hidden")}>
             {/* 눈금 — 트랙 열 위에만 올린다. 그리드 정의를 행과 똑같이 맞춰야 라벨이 실제 위치를 가리킨다.
                 축 양 끝값(min·max)은 찍지 않는다. 실제 목표가가 아니라 가장 바깥 점이 잘리지 않게
                 12% 여백을 붙인 눈금 경계일 뿐인데, 현재가 옆에 나란히 서면 또 하나의 가격으로 읽힌다. */}
-            <div className={cn(AXIS_ROW, "px-0 sm:px-4 pt-2 pb-1")}>
+            <div className={cn(AXIS_ROW, styles.axisHeader, "px-0 sm:px-4 pt-2 pb-1")}>
               <div />
               <div className="relative h-4">
                 {axis.curPrice > 0 && (
@@ -283,9 +287,9 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
                   key={r.type}
                   onPointerEnter={event => { if (event.pointerType === "mouse") setHoveredModel(r.type); }}
                   onPointerLeave={event => { if (event.pointerType === "mouse") setHoveredModel(null); }}
-                  className={cn(AXIS_ROW, "px-0 sm:px-4 py-2.5 bg-transparent sm:bg-white dark:sm:bg-surface-dark-card border-t border-neutral-100 dark:border-border-subtle-dark")}
+                  className={cn(AXIS_ROW, styles.modelRow, "px-0 sm:px-4 py-2.5 bg-transparent sm:bg-white dark:sm:bg-surface-dark-card border-t border-neutral-100 dark:border-border-subtle-dark")}
                 >
-                  <div className="min-w-0">
+                  <div className={cn(styles.modelLabel, "min-w-0")}>
                     <button
                       type="button"
                       onClick={() => {
@@ -299,14 +303,14 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
                       aria-controls={isExplained ? `model-explanation-${r.type}` : undefined}
                       className="inline-flex min-h-11 w-full items-center gap-1 text-left text-[13px] font-medium text-neutral-900 dark:text-neutral-100 hover:text-neutral-600 dark:hover:text-neutral-300 focus-visible:outline-2 focus-visible:outline-brand rounded-sm"
                     >
-                      <span className="whitespace-nowrap sm:hidden">{r.config.name.split(" ")[0]}</span><span className="hidden sm:inline">{r.config.name}</span><ChevronDown size={12} aria-hidden="true" className={cn("shrink-0 text-neutral-600 dark:text-neutral-300 transition-transform", isExplained && "rotate-180")} />
+                      <span>{r.config.name}</span><ChevronDown size={12} aria-hidden="true" className={cn("shrink-0 text-neutral-600 dark:text-neutral-300 transition-transform", isExplained && "rotate-180")} />
                     </button>
                     <p className="hidden sm:block text-[13px] leading-6 text-neutral-600 dark:text-neutral-300 break-keep">{r.config.description.short}</p>
                   </div>
 
                   {/* self-stretch — 셀이 행 높이를 꽉 채워야 현재가 세로선이 행 사이에서 끊기지 않는다.
                       행 패딩(py-2.5)은 -inset-y-2.5 로 넘겨 다음 행 선과 맞붙는다. */}
-                  <div className="relative self-stretch min-h-4">
+                  <div className={cn(styles.track, "relative self-stretch min-h-4")}>
                     {target !== null && <div className="absolute left-0 right-0 top-1/2 -mt-px h-0.5 rounded-full bg-[#f2f0ec] dark:bg-surface-dark-hover" />}
                     {axis.curPrice > 0 && target !== null && (
                       <>
@@ -334,22 +338,23 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
                     />}
                   </div>
 
-                  <span className="whitespace-nowrap text-[14px] font-semibold tabular-nums text-neutral-900 dark:text-neutral-100 text-right">
+                  <span className={cn(styles.price, "whitespace-nowrap text-[14px] font-semibold tabular-nums text-neutral-900 dark:text-neutral-100 text-right")}>
                     {r.targetPrice !== null ? `${currency}${r.targetPrice.toLocaleString()}` : "산출 불가"}
                   </span>
                   <span className={cn(
+                    styles.returnPct,
                     "whitespace-nowrap text-[13px] font-semibold font-mono tabular-nums text-right",
                     r.returnPct === null ? "text-neutral-500 dark:text-neutral-400" : isPositive ? "text-emerald-700 dark:text-emerald-300" : "text-red-500 dark:text-red-400"
                   )}>
                     {r.returnPct !== null ? `${isPositive ? "+" : ""}${r.returnPct.toFixed(0)}%` : "—"}
                   </span>
-                  <p className={cn("col-span-4 text-[15px] leading-normal text-neutral-600 dark:text-neutral-300 break-keep", !r.notice && "sm:hidden")}>
+                  <p className={cn(styles.notice, "col-span-4 text-[15px] leading-normal text-neutral-600 dark:text-neutral-300 break-keep", !r.notice && "sm:hidden")}>
                     {r.notice ?? r.config.description.short}
                   </p>
                   {isExplained && (
                     <div
                       id={`model-explanation-${r.type}`}
-                      className="col-span-4 rounded-lg bg-surface-canvas dark:bg-surface-dark-canvas p-3 text-[15px] leading-relaxed text-neutral-700 dark:text-neutral-300 break-keep"
+                      className={cn(styles.explanation, "col-span-4 rounded-lg bg-surface-canvas dark:bg-surface-dark-canvas p-3 text-[15px] leading-relaxed text-neutral-700 dark:text-neutral-300 break-keep")}
                     >
                       <p><strong className="text-neutral-900 dark:text-white">계산 방식</strong> · {r.config.description.detail}</p>
                       {r.config.description.caution && (

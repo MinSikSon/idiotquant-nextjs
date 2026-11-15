@@ -306,10 +306,10 @@ export function DelistingRisk({ kiBS, kiIS }: DelistingRiskProps) {
             <div key={c.label} data-share-risk-row data-share-label={c.label} data-share-status={c.status} data-share-value={c.value} data-share-note={c.note} data-share-law={c.law} className={cn("flex items-start gap-3 px-3.5 py-3 rounded-xl border", STATUS_ROW_CLS[c.status])}>
               <Icon size={14} className={cn("mt-0.5 shrink-0", STATUS_COLOR[c.status])} />
               <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2 mb-1.5 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
                   <span className="text-[13px] font-bold text-neutral-700 dark:text-neutral-300">{c.label}</span>
                   <span className={cn("rounded-md px-2 py-0.5 text-[13px] font-semibold", STATUS_COLOR[c.status])}>{c.status === "—" ? "자료 없음" : c.status}</span>
-                  <span className={cn("text-[13px] font-semibold font-mono tabular-nums shrink-0", STATUS_COLOR[c.status])}>{c.value}</span>
+                  <span className={cn("col-span-2 min-w-0 break-words text-sm font-semibold font-mono tabular-nums sm:col-span-1 sm:text-[13px]", STATUS_COLOR[c.status])}>{c.value}</span>
                 </div>
                 <p className="text-[13px] text-neutral-500 dark:text-neutral-400 leading-relaxed">{c.note}</p>
                 <details className="mt-2 text-[13px] leading-relaxed text-neutral-500 dark:text-neutral-400"><summary className="cursor-pointer py-1 font-medium">판정 기준 보기</summary><p className="mt-1">{c.law}</p></details>
