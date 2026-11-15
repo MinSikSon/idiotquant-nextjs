@@ -1,5 +1,3 @@
-import { format, subYears } from 'date-fns';
-
 export function localToday(now = new Date()): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 }
@@ -12,5 +10,5 @@ export function isComparisonDate(value: unknown, today = localToday()): value is
 }
 
 export function defaultComparisonDates(today = new Date()): string[] {
-  return [format(subYears(today, 1), 'yyyy-MM-dd'), localToday(today)];
+  return [localToday(today)];
 }

@@ -1,58 +1,30 @@
 "use client";
 
-import Link from "next/link";
-import type { ReactNode } from "react";
-import { HOME_FAQ } from "@/lib/seo-content";
-import { ArrowRight, SlidersHorizontal, ChartNoAxesCombined, Heart, ArrowUpRight } from "lucide-react";
-import styles from "./home.module.css";
-import HomeCandidates from "./HomeCandidates";
+import Link from 'next/link';
+import { ArrowRight, Heart, Search } from 'lucide-react';
+import { useStockSearchModal } from '@/components/stock-search-provider';
 
-type GuestLandingProps = {
-  backgroundArt: ReactNode;
-  isLoggedIn?: boolean;
-};
-
-const tools = [
-  { href: "/screener", icon: SlidersHorizontal, number: "01", title: "기준으로 발굴", description: "NCAV, 저PBR, 저PER. 숫자로 후보를 좁혀보세요.", action: "종목 발굴" },
-  { href: "/analyze", icon: ChartNoAxesCombined, number: "02", title: "근거까지 분석", description: "발굴한 종목을 눌러 지표와 기업 가치를 확인하세요. 상세 재무·위험도는 로그인 후 볼 수 있습니다.", action: "종목 분석" },
-  { href: "/screener?filter=liked", icon: Heart, number: "03", title: "담고 다시 확인", description: "관심종목을 저장하고 변화와 분석을 이어서 확인하세요.", action: "관심종목" },
-];
-
-export default function GuestLanding({ backgroundArt, isLoggedIn = false }: GuestLandingProps) {
-  return (
-    <div id="public-home" className={styles.home}>
-      <div className={styles.container}>
-        <section className={styles.hero}>
-          <div className={styles.heroArt} aria-hidden="true">{backgroundArt}</div>
-          <div className={styles.heroContent}>
-            <p className={styles.eyebrow}>잠깐의 탐색, 내일의 투자 후보</p>
-            <h1>내일 살펴볼 종목,<br className={styles.mobileBreak} /> 지금 비교해보세요.</h1>
-            <p className={styles.intro}>국장·미장 가격과 재무 조건부터 전략 충족 여부까지.</p>
-
-          </div>
-        </section>
-
-        <HomeCandidates isLoggedIn={isLoggedIn} />
-
-        <section id="features" className={styles.features} aria-labelledby="tools-title">
-          <div className={styles.sectionHeading}><div><p className={styles.eyebrow}>이용 순서</p><h2 id="tools-title">생각의 흐름을 끊지 않도록.</h2></div><p>찾고, 이해하고, 다시 확인하세요.</p></div>
-          <div className={styles.toolGrid}>{tools.map(({ href, icon: Icon, number, title, description, action }) => (
-            <Link href={href.includes("filter=liked") && !isLoggedIn ? `/login?callbackUrl=${encodeURIComponent(href)}` : href} key={href} className={styles.tool} aria-label={action}>
-              <div className={styles.toolTop}><Icon size={21} strokeWidth={2} aria-hidden="true" /><span>{number}</span></div>
-              <h3>{title}</h3><p>{description}</p><span className={styles.toolAction}>{action} <ArrowRight size={15} aria-hidden="true" /></span>
-            </Link>
-          ))}</div>
-          <p className={styles.note}>후보가 여러 개라면 <Link href="/compare" className="underline underline-offset-4">종목 비교</Link>에서 나란히 살펴보세요.</p>
-        </section>
-
-        <section id="faq" className={styles.faq} aria-labelledby="faq-title">
-          <div><p className={styles.eyebrow}>이용 안내</p><h2 id="faq-title">처음이라면,<br />여기서 시작하세요.</h2><Link href="/quant" className={styles.guideLink}>퀀트 투자와 전략 안내 <ArrowUpRight size={14} aria-hidden="true" /></Link></div>
-          <div className={styles.questions}>{HOME_FAQ.map(({ q, a }) => (
-            <details key={q}><summary>{q}<span aria-hidden="true">＋</span></summary><p>{a}</p></details>
-          ))}</div>
-        </section>
+export default function GuestLanding() {
+  const { openSearch } = useStockSearchModal();
+  return <div className="mx-auto w-full max-w-3xl px-4 py-10 text-neutral-900 dark:text-neutral-100 sm:px-6 sm:py-20">
+    <section aria-labelledby="home-title">
+      <p className="text-sm font-medium text-brand-ink">내 관심종목, 매일 짧게</p>
+      <h1 id="home-title" className="mt-4 text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">지난번 확인 이후,<br />무엇이 달라졌을까요?</h1>
+      <p className="mt-5 max-w-lg text-sm leading-7 text-neutral-600 dark:text-neutral-300">관심종목을 담고 가격과 투자 지표의 변화를 확인하세요.<br className="hidden sm:block" />궁금한 종목만 자세히 살펴보고, 오늘의 확인을 마치면 됩니다.</p>
+      <div className="mt-7 flex flex-wrap gap-3">
+        <button type="button" onClick={openSearch} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-brand px-5 text-sm font-semibold text-white hover:bg-brand-hover"><Search size={17} aria-hidden="true" />종목 검색</button>
+        <Link href="/screener" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-neutral-300 px-5 text-sm font-medium dark:border-neutral-700">종목 발굴<ArrowRight size={16} aria-hidden="true" /></Link>
       </div>
-      <footer className={styles.footer}><div className={styles.container}><span>© 2026 IdiotQuant</span><p>본 서비스는 투자 참고 정보이며 투자 판단과 결과는 이용자에게 있습니다.</p><div><Link href="/terms">이용약관</Link><Link href="/privacy">개인정보 처리방침</Link></div></div></footer>
-    </div>
-  );
+      <p className="mt-3 text-xs text-neutral-500">검색과 발굴은 가입 없이 시작할 수 있습니다.</p>
+    </section>
+    <section aria-labelledby="save-title" className="mt-12 rounded-2xl border border-neutral-200 bg-white p-5 dark:border-surface-dark-border dark:bg-surface-dark-card sm:p-6">
+      <h2 id="save-title" className="flex items-center gap-2 font-semibold"><Heart size={18} aria-hidden="true" />내 관심종목으로 시작하세요</h2>
+      <p className="mt-3 text-sm leading-6 text-neutral-600 dark:text-neutral-300">분석 화면에서 하트를 눌러 저장하세요. 로그인하면 휴대폰과 PC에서 같은 관심종목과 확인 기준이 이어집니다.</p>
+      <Link href="/login?callbackUrl=%2F" className="mt-3 inline-flex min-h-11 items-center gap-2 text-sm font-medium text-brand-ink">로그인하고 시작<ArrowRight size={15} aria-hidden="true" /></Link>
+    </section>
+    <footer className="mt-12 space-y-3 text-xs leading-5 text-neutral-500">
+      <p>본 서비스는 투자 참고 정보이며 투자 판단과 결과는 이용자에게 있습니다.</p>
+      <div className="flex flex-wrap gap-5"><span>© 2026 IdiotQuant</span><Link href="/terms">이용약관</Link><Link href="/privacy">개인정보 처리방침</Link></div>
+    </footer>
+  </div>;
 }

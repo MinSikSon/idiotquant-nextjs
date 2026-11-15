@@ -13,7 +13,6 @@ import QuickNavigation from "@/components/quick-navigation";
 import { cn } from "@/lib/utils";
 import { useViewAsUser, setViewAsUser } from "@/lib/viewAsUser";
 import {
-  CircleUserRound,
   Home,
   Filter,
   Search,
@@ -46,14 +45,14 @@ type NavItem = {
 
 // 순서·아이콘을 홈 온보딩 설명 순서에 맞춤: 발굴(🥇) → 분석(💎).
 const MAIN_NAV: NavItem[] = [
-  { label: "홈", href: "/", icon: Home, exact: true },
+  { label: "오늘", href: "/", icon: Home, exact: true },
   { label: "종목 발굴", href: "/screener",    icon: Filter,     emoji: "🥇", badge: "Pro" },
-  { label: "종목 비교", href: "/compare",     icon: GitCompareArrows },
-  { label: "종목 분석", href: "/analyze",     icon: Search,     emoji: "💎"   },
 ];
 
 // '더 보기'로 숨기는 보조 메뉴
 const MORE_NAV: NavItem[] = [
+  { label: "종목 분석", href: "/analyze", icon: Search },
+  { label: "종목 비교", href: "/compare", icon: GitCompareArrows },
   { label: "내 관심종목", href: "/screener?filter=liked", icon: Heart, authOnly: true },
   { label: "수익 계산", href: "/calculator",  icon: Calculator              },
   { label: "가계부",    href: "/ledger",      icon: NotebookText, authOnly: true },
@@ -81,7 +80,7 @@ const MOBILE_PAGE_TITLES = [
   { href: "/admin/ticker-map", label: "종목 매핑" },
   { href: "/ledger/join", label: "가계부 초대" },
   { href: "/games/crafting-prototype", label: "제작 게임" },
-  { href: "/", label: "홈" },
+  { href: "/", label: "오늘" },
   ...MAIN_NAV,
   ...MORE_NAV,
   ...PORTFOLIO_NAV,
@@ -497,7 +496,7 @@ export function NavbarWithSimpleLinks() {
           <div ref={pageHeader?.setActionsTarget} data-navigation-actions className="shrink-0" />
           <div className="navigation-search flex shrink-0 items-center"><StockSearchTrigger /></div>
           <div className="hidden shrink-0 md:block">
-            <NavigationPopover label="사용자 및 서비스 메뉴" trigger={<button type="button" aria-label="사용자 및 서비스 메뉴" className="navigation-icon"><CircleUserRound size={21} /></button>}>
+            <NavigationPopover label="사용자 및 서비스 메뉴" trigger={<button type="button" aria-label="사용자 및 서비스 메뉴" className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-sm text-neutral-600 dark:text-neutral-300"><MoreHorizontal size={20} aria-hidden="true" />더 보기</button>}>
               {serviceMenu(false)}
             </NavigationPopover>
           </div>
@@ -540,14 +539,12 @@ export function NavbarWithSimpleLinks() {
       <nav ref={bottomNav} aria-label="하단 메뉴" data-bottom-navigation data-hidden={bottomHidden && !moreSheet || undefined}
         onFocusCapture={() => setBottomHidden(false)}
         className={cn(inGame ? "hidden" : "md:hidden fixed bottom-0 left-0 right-0 z-40 flex items-center px-3 bg-surface-canvas/95 backdrop-blur-[12px] dark:bg-surface-dark-canvas/95")}>
-        <TabItem href="/" label="홈" icon={Home} isActive={pathname === "/"} />
+        <TabItem href="/" label="오늘" icon={Home} isActive={pathname === "/"} />
         {/* 게임(Rogue)은 아래쪽 탭이 아니라 "메뉴" 안에 있다(MORE_NAV) */}
         <TabItem href="/screener"   label="발굴"   icon={Filter}     emoji="🥇" isActive={pathname.startsWith("/screener")} />
-        <TabItem href="/compare"    label="비교"   icon={GitCompareArrows} isActive={pathname.startsWith("/compare")} />
-        <TabItem href="/analyze"    label="분석"   icon={Search}     emoji="💎" isActive={pathname.startsWith("/analyze")} />
         <NavigationPopover label="서비스 메뉴" side="top" onOpenChange={open => { setMoreSheet(open); setBottomHidden(false); }} trigger={
           <button type="button" className={cn("flex h-full min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-[3px] text-neutral-600 dark:text-neutral-400", moreActive && "text-brand-ink dark:text-brand-ink")}>
-            <LayoutGrid size={20} aria-hidden="true" /><span className={cn("text-[10px] font-semibold leading-none", moreActive && "underline decoration-2 underline-offset-4")}>메뉴</span>
+            <LayoutGrid size={20} aria-hidden="true" /><span className={cn("text-[10px] font-semibold leading-none", moreActive && "underline decoration-2 underline-offset-4")}>더 보기</span>
           </button>
         }>{!inGame && serviceMenu(true)}</NavigationPopover>
       </nav>

@@ -386,7 +386,7 @@ function ComparePageContent() {
         </div>
       </section>}
 
-      <p className="mt-4 text-xs text-neutral-600 dark:text-neutral-400">{dates.length ? `비교 기준일: ${dates.map(date => formatDate(date.replaceAll('-', ''))).join(', ')}` : '종목을 추가하면 오늘과 1년 전 기준 가격으로 비교합니다.'}</p>
+      <p className="mt-4 text-xs text-neutral-600 dark:text-neutral-400">{dates.length ? `비교 기준일: ${dates.map(date => formatDate(date.replaceAll('-', ''))).join(', ')}` : '종목을 추가하면 최근 거래일 가격으로 비교합니다.'}</p>
       <SecondarySection title="비교 날짜 추가·변경" className="mt-4">
         <p className="mt-2 text-xs text-neutral-600 dark:text-neutral-400">날짜 하나로 환산가를 나란히 보고, 서로 다른 거래일을 두 개 이상 추가하면 가장 이른 거래일 대비 변화율도 비교할 수 있습니다.</p>
         <div className="mt-4 grid min-w-0 gap-3 sm:flex sm:items-end">
@@ -410,7 +410,7 @@ function ComparePageContent() {
 
       {stocks.length === 0 ? <section className="mt-8 border-t border-neutral-200 px-0 py-8 dark:border-neutral-700">
         <p className="text-sm font-medium">우상단 검색 아이콘에서 비교할 종목을 추가해 주세요.</p>
-        <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">종목을 추가하면 오늘과 1년 전 기준 가격으로 시작합니다. 날짜를 추가하면 다른 시점의 가격도 비교할 수 있습니다.</p>
+        <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">종목을 추가하면 최근 거래일 가격으로 시작합니다. 날짜를 추가하면 다른 시점의 가격도 비교할 수 있습니다.</p>
       </section> : <section className="mt-5 sm:mt-8" aria-label="종목 비교 결과">
         <div className="space-y-2 md:hidden">
           {stocks.map(stock => {

@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import ui from "@/components/research/research-ui.module.css";
 import { TrendingUp, TrendingDown, Activity, AlertTriangle, HelpCircle } from "lucide-react";
 import LineChart from "@/components/LineChart";
+import { SecondarySection } from "@/components/secondary-section";
 import { CopyStockButtons } from "@/components/copyStockButtons";
 
 // =========================================================================
@@ -300,7 +301,7 @@ export const StockCard = ({ stock, chartConfig, chartNotice, showLogo = true }: 
       </div>
 
       {/* ── 미니 차트 ── */}
-      {hasChart ? (
+      {hasChart ? <SecondarySection title="가격 차트 더 보기" className="mx-0 mb-4 sm:mx-5">
         <div className={ui.chart}>
           <div className="flex items-center gap-1.5 mb-2">
             <Activity size={9} className="text-neutral-600 dark:text-neutral-300" />
@@ -319,7 +320,7 @@ export const StockCard = ({ stock, chartConfig, chartNotice, showLogo = true }: 
             />
           </div>
         </div>
-      ) : chartNotice ? (
+      </SecondarySection> : chartNotice ? (
         <div className={ui.chart}>
           <div className={cn(
             "flex items-start gap-2 px-3 py-2.5 rounded-xl border",
@@ -351,7 +352,8 @@ export const StockCard = ({ stock, chartConfig, chartNotice, showLogo = true }: 
       </div>
 
       {/* ── 복사 ── 카드가 이미 종목명·티커·지표를 다 들고 있어 복사 대상도 여기서 만든다 */}
-      <div className="border-t border-neutral-100 dark:border-border-subtle-dark px-4 py-2 flex items-center justify-end gap-2">
+      <SecondarySection title="종목 정보 복사" className="mt-3">
+      <div className="flex flex-wrap items-center gap-2">
         <span className="text-[13px] text-neutral-600 dark:text-neutral-300 font-medium">복사</span>
         <CopyStockButtons rows={[{
           name: stock?.name,
@@ -360,6 +362,7 @@ export const StockCard = ({ stock, chartConfig, chartNotice, showLogo = true }: 
           per: stock?.per,
         }]} />
       </div>
+      </SecondarySection>
     </div>
   );
 };

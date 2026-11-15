@@ -20,11 +20,11 @@ test('자정 전후에는 사용자의 로컬 날짜로 미래 여부를 판단�
     assert.equal(isComparisonDate('2026-11-05', localToday(after)), true);
 });
 
-test('기본 비교 날짜는 현지 날짜 기준 1년 전과 오늘이다', () => {
-    assert.deepEqual(defaultComparisonDates(new Date(2026, 10, 9)), ['2025-11-09', '2026-11-09']);
-    assert.deepEqual(defaultComparisonDates(new Date(2026, 0, 1)), ['2025-01-01', '2026-01-01']);
+test('기본 비교는 현지 날짜 기준 오늘 하나로 시작한다', () => {
+    assert.deepEqual(defaultComparisonDates(new Date(2026, 10, 9)), ['2026-11-09']);
+    assert.deepEqual(defaultComparisonDates(new Date(2026, 0, 1)), ['2026-01-01']);
 });
 
-test('윤년 2월 29일의 1년 전은 2월 28일로 맞춘다', () => {
-    assert.deepEqual(defaultComparisonDates(new Date(2024, 1, 29)), ['2023-02-28', '2024-02-29']);
+test('윤년에도 선택한 날짜 하나를 유지한다', () => {
+    assert.deepEqual(defaultComparisonDates(new Date(2024, 1, 29)), ['2024-02-29']);
 });
