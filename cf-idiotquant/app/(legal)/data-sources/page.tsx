@@ -3,6 +3,8 @@ import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import { DATA_SOURCES } from '@/lib/data-sources';
 
+export const runtime = 'edge';
+
 export const metadata: Metadata = { title: '데이터 출처', alternates: { canonical: '/data-sources' }, robots: { index: false, follow: false } };
 
 export default async function DataSourcesPage() {

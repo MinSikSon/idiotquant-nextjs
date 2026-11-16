@@ -1,8 +1,10 @@
-import Link from "next/link";
-import { auth } from "@/auth";
+"use client";
 
-export default async function LegalLayout({ children }: { children: React.ReactNode }) {
-    const session = await auth();
+import Link from "next/link";
+import { useSession } from "next-auth/react";
+
+export default function LegalLayout({ children }: { children: React.ReactNode }) {
+    const { data: session } = useSession();
     const isAdmin = (session?.user as { role?: string } | undefined)?.role === "admin";
     return (
         <div className="min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas px-4 py-10 md:py-16">
