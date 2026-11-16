@@ -8,6 +8,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Explain results in Korean.** While thinking in English, write explanations and responses to the user in Korean.
 
+**Read the UI rules before UI work.** Before creating or changing financial screen layouts, headers, buttons, spacing, or collapsible panels, read [반복 UI 수정 방지 규칙](cf-idiotquant/docs/ui-request-rules.md) and apply it alongside existing design guidelines. Preserve these rules during later UI changes; update the relevant rule when the user repeats a design correction. New explicit user requests take precedence.
+
 **Do not print diffs.** To save tokens, never output `git diff` contents in progress updates or final responses. Report only a file + line-count summary (`git diff --stat`) and reference relevant code as `path:line`. Show a full diff only when the user explicitly asks for it.
 
 **Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
