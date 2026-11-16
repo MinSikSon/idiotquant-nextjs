@@ -295,6 +295,7 @@ export const capitalSlice = createAppSlice({
             {
                 pending: (state, action) => {
                     state.accountRequests.reqGetKrCapital = action.meta.requestId;
+                    state.accountRequests.reqGetKrCapitalKey = action.meta.arg ?? "";
                     // console.log(`[reqGetKrCapital] pending`);
                     state.krCapital.state = "pending"
                 },
@@ -452,6 +453,7 @@ export const capitalSlice = createAppSlice({
             {
                 pending: (state, action) => {
                     state.accountRequests.reqGetUsCapital = action.meta.requestId;
+                    state.accountRequests.reqGetUsCapitalKey = action.meta.arg ?? "";
                     // console.log(`[reqGetUsCapital] pending`);
                     state.usCapital.state = "pending"
                 },
@@ -801,35 +803,91 @@ export const capitalSlice = createAppSlice({
 
         // ── 미지정 종목 제거 ──
         reqPostKrCapitalStockRemove: create.asyncThunk(
-            async ({ key, ticker }: { key?: string, ticker: string }) => postKrCapitalStockRemove(key, ticker),
+            async ({ key, ticker }: { key?: string, ticker: string }) => {
+                const result = await postKrCapitalStockRemove(key, ticker);
+                if (result?.success === false) throw new Error(result.error || "종목 제거에 실패했습니다.");
+                return result;
+            },
             {
-                pending: (state) => { state.krGroupOp.state = "pending"; },
-                fulfilled: (state) => { state.krGroupOp.state = "fulfilled"; },
+                pending: (state, action) => {
+                    state.krGroupOp.state = "pending";
+                    state.accountRequests.krCapitalRemoval = action.meta.requestId;
+                },
+                fulfilled: (state, action) => {
+                    if (state.accountRequests.krCapitalRemoval !== action.meta.requestId) return;
+                    state.krGroupOp.state = "fulfilled";
+                    if (state.accountRequests.reqGetKrCapitalKey !== (action.meta.arg.key ?? "")) return;
+                    state.krCapital = { ...action.payload, state: "fulfilled" };
+                    // 제거 전에 시작된 조회가 늦게 도착해 종목을 복원하지 않도록 무효화한다.
+                    state.accountRequests.reqGetKrCapital = "";
+                },
                 rejected: (state, action) => { state.krGroupOp.state = "rejected"; state.krGroupOp.error = action.error?.message; },
             }
         ),
         reqPostUsCapitalStockRemove: create.asyncThunk(
-            async ({ key, ticker }: { key?: string, ticker: string }) => postUsCapitalStockRemove(key, ticker),
+            async ({ key, ticker }: { key?: string, ticker: string }) => {
+                const result = await postUsCapitalStockRemove(key, ticker);
+                if (result?.success === false) throw new Error(result.error || "종목 제거에 실패했습니다.");
+                return result;
+            },
             {
-                pending: (state) => { state.usGroupOp.state = "pending"; },
-                fulfilled: (state) => { state.usGroupOp.state = "fulfilled"; },
+                pending: (state, action) => {
+                    state.usGroupOp.state = "pending";
+                    state.accountRequests.usCapitalRemoval = action.meta.requestId;
+                },
+                fulfilled: (state, action) => {
+                    if (state.accountRequests.usCapitalRemoval !== action.meta.requestId) return;
+                    state.usGroupOp.state = "fulfilled";
+                    if (state.accountRequests.reqGetUsCapitalKey !== (action.meta.arg.key ?? "")) return;
+                    state.usCapital = { ...action.payload, state: "fulfilled" };
+                    // 제거 전에 시작된 조회가 늦게 도착해 종목을 복원하지 않도록 무효화한다.
+                    state.accountRequests.reqGetUsCapital = "";
+                },
                 rejected: (state, action) => { state.usGroupOp.state = "rejected"; state.usGroupOp.error = action.error?.message; },
             }
         ),
         // ── 종목 일괄 제거 ──
         reqPostKrCapitalStocksRemove: create.asyncThunk(
-            async ({ key, tickers }: { key?: string, tickers: string[] }) => postKrCapitalStocksRemove(key, tickers),
+            async ({ key, tickers }: { key?: string, tickers: string[] }) => {
+                const result = await postKrCapitalStocksRemove(key, tickers);
+                if (result?.success === false) throw new Error(result.error || "종목 제거에 실패했습니다.");
+                return result;
+            },
             {
-                pending: (state) => { state.krGroupOp.state = "pending"; },
-                fulfilled: (state) => { state.krGroupOp.state = "fulfilled"; },
+                pending: (state, action) => {
+                    state.krGroupOp.state = "pending";
+                    state.accountRequests.krCapitalRemoval = action.meta.requestId;
+                },
+                fulfilled: (state, action) => {
+                    if (state.accountRequests.krCapitalRemoval !== action.meta.requestId) return;
+                    state.krGroupOp.state = "fulfilled";
+                    if (state.accountRequests.reqGetKrCapitalKey !== (action.meta.arg.key ?? "")) return;
+                    state.krCapital = { ...action.payload, state: "fulfilled" };
+                    // 제거 전에 시작된 조회가 늦게 도착해 종목을 복원하지 않도록 무효화한다.
+                    state.accountRequests.reqGetKrCapital = "";
+                },
                 rejected: (state, action) => { state.krGroupOp.state = "rejected"; state.krGroupOp.error = action.error?.message; },
             }
         ),
         reqPostUsCapitalStocksRemove: create.asyncThunk(
-            async ({ key, tickers }: { key?: string, tickers: string[] }) => postUsCapitalStocksRemove(key, tickers),
+            async ({ key, tickers }: { key?: string, tickers: string[] }) => {
+                const result = await postUsCapitalStocksRemove(key, tickers);
+                if (result?.success === false) throw new Error(result.error || "종목 제거에 실패했습니다.");
+                return result;
+            },
             {
-                pending: (state) => { state.usGroupOp.state = "pending"; },
-                fulfilled: (state) => { state.usGroupOp.state = "fulfilled"; },
+                pending: (state, action) => {
+                    state.usGroupOp.state = "pending";
+                    state.accountRequests.usCapitalRemoval = action.meta.requestId;
+                },
+                fulfilled: (state, action) => {
+                    if (state.accountRequests.usCapitalRemoval !== action.meta.requestId) return;
+                    state.usGroupOp.state = "fulfilled";
+                    if (state.accountRequests.reqGetUsCapitalKey !== (action.meta.arg.key ?? "")) return;
+                    state.usCapital = { ...action.payload, state: "fulfilled" };
+                    // 제거 전에 시작된 조회가 늦게 도착해 종목을 복원하지 않도록 무효화한다.
+                    state.accountRequests.reqGetUsCapital = "";
+                },
                 rejected: (state, action) => { state.usGroupOp.state = "rejected"; state.usGroupOp.error = action.error?.message; },
             }
         ),
