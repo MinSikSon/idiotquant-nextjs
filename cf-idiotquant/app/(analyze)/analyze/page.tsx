@@ -637,6 +637,7 @@ function AnalyzeContent() {
           <span data-analyze-ticker>{tickerLabel}</span>
           <span className="font-semibold tabular-nums text-neutral-900 dark:text-white">{headerPrice}</span>
         </> : undefined}
+        primaryAction={isPriceLoaded ? <Link href={comparisonHref(krOrUs, [tickerLabel], new Date().toLocaleDateString('sv-SE'))} className="inline-flex min-h-11 items-center px-2 text-xs text-neutral-500 underline-offset-4 hover:text-brand-ink hover:underline dark:text-neutral-400">비교에 추가</Link> : undefined}
         actions={isPriceLoaded ? <div className="flex min-w-0 flex-col gap-3">
           <button type="button" onClick={() => void handleToggleLike()} disabled={likeBusy}
             aria-label={isInWatchlist ? '관심 종목에서 빼기' : '관심 종목에 담기'} aria-pressed={isInWatchlist}
@@ -717,11 +718,6 @@ function AnalyzeContent() {
           시작선이 다른 쪽이 더 크게 걸린다. 카드 여백이 다시 두꺼워지면 여기가
           아니라 카드 쪽을 줄인다. */}
       <main className={cn(ANALYZE_WIDTH, styles.content, "pb-8")}>
-        {isPriceLoaded && <nav aria-label="분석 다음 행동" className="mb-2 flex justify-end">
-          <Link href={comparisonHref(krOrUs, [tickerLabel], new Date().toLocaleDateString('sv-SE'))} className="inline-flex min-h-11 items-center px-2 text-xs text-neutral-500 underline-offset-4 hover:text-brand-ink hover:underline dark:text-neutral-400">비교에 추가</Link>
-        </nav>}
-
-
         {!tickerFromUrl ? (
           <>
             <StockLikeStats />
@@ -754,7 +750,7 @@ function AnalyzeContent() {
                   모바일은 한 줄(충족 개수 + 결론 문장)만 남긴다. 지표 4개는 세로로 쌓이면서
                   화면 첫 장을 다 먹었는데, 같은 값이 바로 아래 '카드' 탭에도 있다. */}
               {verdict && (
-                <div className={styles.verdict} data-tone={verdict.tone}>
+                <div className={styles.verdict} data-tone={verdict.tone} data-open={verdictOpen}>
                   {/* 종합 판단은 짧게 보여주고, 클릭하면 근거 지표를 펼친다. */}
                   <button
                     type="button"
