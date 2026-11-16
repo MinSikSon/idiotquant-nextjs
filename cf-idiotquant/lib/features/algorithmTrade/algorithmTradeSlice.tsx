@@ -150,6 +150,10 @@ export interface NcavDailyItem {
     last_price: number;
     net_income: number;
     income_tax?: number | null;
+    /** 상장 시장(country)과 구별되는 본사 소재지 ISO 코드. */
+    headquarters_country?: string | null;
+    /** 최신 연간 영업현금흐름. 분기 누적값은 포함하지 않는다. */
+    operating_cash_flow_history?: { fiscal_year: number; value: number | null }[] | null;
     per: number;
     pbr: number;
     eps: number;

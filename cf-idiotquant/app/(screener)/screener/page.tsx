@@ -614,6 +614,9 @@ function ScreenerContent() {
     const [excludeHoldings, setExcludeHoldings] = useState(() => initExclude('holdings'));
     const [excludeDeficit, setExcludeDeficit] = useState(() => initExclude('deficit'));
     const [excludePreferred, setExcludePreferred] = useState(() => initExclude('preferred'));
+    const [excludeChinaSmall, setExcludeChinaSmall] = useState(() => initExclude('china-small'));
+    const [excludeLowLiquidity, setExcludeLowLiquidity] = useState(() => initExclude('low-liquidity'));
+    const [excludeCashBurn, setExcludeCashBurn] = useState(() => initExclude('cash-burn'));
     const [excludeAdr, setExcludeAdr] = useState(() => initExclude('adr'));
     const [excludeHalted, setExcludeHalted] = useState(() => initExclude('halted'));
     const [excludeManaged, setExcludeManaged] = useState(() => initExclude('managed'));
@@ -743,6 +746,10 @@ function ScreenerContent() {
             excludeDeficit ? 'deficit' : null,
             excludePreferred ? 'preferred' : null,
             country === 'US' && excludeAdr ? 'adr' : null,
+            excludeChinaSmall ? 'china-small' : null,
+            excludeLowLiquidity ? 'low-liquidity' : null,
+            excludeCashBurn ? 'cash-burn' : null,
+
             excludeHalted ? 'halted' : null,
             excludeManaged ? 'managed' : null,
             excludeDelisting ? 'delisting' : null,
@@ -763,7 +770,7 @@ function ScreenerContent() {
         if (groupMode !== 'none') params.set('group', groupMode);
         if (viewMode !== DEFAULT_VIEW) params.set('view', viewMode);
         return params.toString();
-    }, [country, activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludePreferred, excludeAdr, excludeHalted, excludeManaged, excludeDelisting, sectors, markets, maxW52Pos, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav, minIncomeTax, maxIncomeTax, showLikedOnly, groupMode, viewMode]);
+    }, [country, activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludePreferred, excludeAdr, excludeChinaSmall, excludeLowLiquidity, excludeCashBurn, excludeHalted, excludeManaged, excludeDelisting, sectors, markets, maxW52Pos, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav, minIncomeTax, maxIncomeTax, showLikedOnly, groupMode, viewMode]);
 
     // 필터 상태 → URL 동기화 + localStorage 저장 (페이지 이동 후 재진입 시에도 전체 필터 유지)
     useEffect(() => {
@@ -783,6 +790,10 @@ function ScreenerContent() {
             excludeDeficit ? 'deficit' : null,
             excludePreferred ? 'preferred' : null,
             country === 'US' && excludeAdr ? 'adr' : null,
+            excludeChinaSmall ? 'china-small' : null,
+            excludeLowLiquidity ? 'low-liquidity' : null,
+            excludeCashBurn ? 'cash-burn' : null,
+
             excludeHalted ? 'halted' : null,
             excludeManaged ? 'managed' : null,
             excludeDelisting ? 'delisting' : null,
@@ -812,7 +823,7 @@ function ScreenerContent() {
         localStorage.removeItem('screener:filterMode');
         }, 300);
         return () => clearTimeout(debounce);
-    }, [queryString, country, activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludePreferred, excludeAdr, excludeHalted, excludeManaged, excludeDelisting, sectors, markets, maxW52Pos, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav, minIncomeTax, maxIncomeTax, showLikedOnly, groupMode, viewMode, router]);
+    }, [queryString, country, activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludePreferred, excludeAdr, excludeChinaSmall, excludeLowLiquidity, excludeCashBurn, excludeHalted, excludeManaged, excludeDelisting, sectors, markets, maxW52Pos, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav, minIncomeTax, maxIncomeTax, showLikedOnly, groupMode, viewMode, router]);
 
     const handleRefresh = useCallback(() => {
         dispatch(reqGetNcavDailyList({ date: requestedDate, weeklyPeriod, limit: isLoggedIn ? undefined : PREVIEW_SIZE, country }));
@@ -851,7 +862,7 @@ function ScreenerContent() {
         setSortOrder('desc');
         setExcludeHoldings(false);
         setExcludeDeficit(false);
-        setExcludePreferred(false); setExcludeAdr(false);
+        setExcludePreferred(false); setExcludeAdr(false); setExcludeChinaSmall(false); setExcludeLowLiquidity(false); setExcludeCashBurn(false);
         setExcludeHalted(false);
         setExcludeManaged(false);
         setExcludeDelisting(false);
@@ -905,10 +916,10 @@ function ScreenerContent() {
         strategies: activeStrategyIds,
         mode: filterMode,
         q: '',
-        excludeHoldings, excludeDeficit, excludePreferred, excludeAdr: country === 'US' && excludeAdr, excludeHalted, excludeManaged, excludeDelisting,
+        excludeHoldings, excludeDeficit, excludePreferred, excludeAdr: country === 'US' && excludeAdr, excludeChinaSmall, excludeLowLiquidity, excludeCashBurn, excludeHalted, excludeManaged, excludeDelisting,
         sectors, markets, maxW52Pos, minTrAmt,
         minMarketCap, maxPbr, maxPer, minRoe, minNcav, minIncomeTax, maxIncomeTax,
-    }), [country, activeStrategyIds, filterMode, excludeHoldings, excludeDeficit, excludePreferred, excludeAdr, excludeHalted, excludeManaged, excludeDelisting, sectors, markets, maxW52Pos, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav, minIncomeTax, maxIncomeTax]);
+    }), [country, activeStrategyIds, filterMode, excludeHoldings, excludeDeficit, excludePreferred, excludeAdr, excludeChinaSmall, excludeLowLiquidity, excludeCashBurn, excludeHalted, excludeManaged, excludeDelisting, sectors, markets, maxW52Pos, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav, minIncomeTax, maxIncomeTax]);
 
     const [usEnglishNames, setUsEnglishNames] = useState<Map<string, string> | null>(null);
     useEffect(() => {
@@ -1031,7 +1042,7 @@ function ScreenerContent() {
         const none: ScreenerFilters = {
             country,
             strategies: new Set(), mode: 'OR', q: '',
-            excludeHoldings: false, excludeDeficit: false, excludePreferred: false, excludeAdr: false, excludeHalted: false, excludeManaged: false, excludeDelisting: false,
+            excludeHoldings: false, excludeDeficit: false, excludePreferred: false, excludeAdr: false, excludeChinaSmall: false, excludeLowLiquidity: false, excludeCashBurn: false, excludeHalted: false, excludeManaged: false, excludeDelisting: false,
             sectors: new Set<string>(), markets: new Set<string>(), maxW52Pos: 0, minTrAmt: 0,
             minMarketCap: 0, maxPbr: 0, maxPer: 0, minRoe: 0, minNcav: 0,
         };
@@ -1039,7 +1050,7 @@ function ScreenerContent() {
             { label: '전체',      patch: {} },
             { label: '전략',      patch: { strategies: filters.strategies, mode: filters.mode } },
             { label: '가치 지표', patch: { minMarketCap: filters.minMarketCap, maxPbr: filters.maxPbr, maxPer: filters.maxPer, minNcav: filters.minNcav } },
-            { label: '수익·제외', patch: { minRoe: filters.minRoe, minIncomeTax: filters.minIncomeTax, maxIncomeTax: filters.maxIncomeTax, excludeDeficit: filters.excludeDeficit, excludeHoldings: filters.excludeHoldings, excludePreferred: filters.excludePreferred, excludeAdr: filters.excludeAdr } },
+            { label: '수익·제외', patch: { minRoe: filters.minRoe, minIncomeTax: filters.minIncomeTax, maxIncomeTax: filters.maxIncomeTax, excludeDeficit: filters.excludeDeficit, excludeHoldings: filters.excludeHoldings, excludePreferred: filters.excludePreferred, excludeAdr: filters.excludeAdr, excludeChinaSmall: filters.excludeChinaSmall, excludeLowLiquidity: filters.excludeLowLiquidity, excludeCashBurn: filters.excludeCashBurn } },
             { label: '시장·업종', patch: { markets: filters.markets, sectors: filters.sectors } },
             { label: '위치·유동성', patch: { maxW52Pos: filters.maxW52Pos, minTrAmt: filters.minTrAmt, excludeHalted: filters.excludeHalted, excludeManaged: filters.excludeManaged, excludeDelisting: filters.excludeDelisting } },
         ];
@@ -1123,9 +1134,9 @@ function ScreenerContent() {
         : null;
     const scanningInProgress = ncavDailyList.scanningInProgress;
 
-    const activeFilterCount = [excludeHoldings, excludeDeficit, excludePreferred, country === 'US' && excludeAdr, excludeHalted, excludeManaged, excludeDelisting, sectors.size > 0, markets.size > 0, maxW52Pos > 0, minTrAmt > 0, minMarketCap > 0, maxPbr > 0, maxPer > 0, minRoe > 0, minNcav > 0, minIncomeTax !== null, maxIncomeTax !== null].filter(Boolean).length;
+    const activeFilterCount = [excludeHoldings, excludeDeficit, excludePreferred, country === 'US' && excludeAdr, excludeChinaSmall, excludeLowLiquidity, excludeCashBurn, excludeHalted, excludeManaged, excludeDelisting, sectors.size > 0, markets.size > 0, maxW52Pos > 0, minTrAmt > 0, minMarketCap > 0, maxPbr > 0, maxPer > 0, minRoe > 0, minNcav > 0, minIncomeTax !== null, maxIncomeTax !== null].filter(Boolean).length;
     const isAllActive = activeStrategyIds.size === 0;
-    const hasActiveFilters = activeStrategyIds.size > 0 || excludeHoldings || excludeDeficit || excludePreferred || (country === 'US' && excludeAdr) || excludeHalted || excludeManaged || excludeDelisting || sectors.size > 0 || markets.size > 0 || maxW52Pos > 0 || minTrAmt > 0 || minMarketCap > 0 || maxPbr > 0 || maxPer > 0 || minRoe > 0 || minNcav > 0 || minIncomeTax !== null || maxIncomeTax !== null || sortKey !== DEFAULT_SORT || sortOrder !== 'desc' || showLikedOnly;
+    const hasActiveFilters = activeStrategyIds.size > 0 || excludeHoldings || excludeDeficit || excludePreferred || (country === 'US' && excludeAdr) || excludeChinaSmall || excludeLowLiquidity || excludeCashBurn || excludeHalted || excludeManaged || excludeDelisting || sectors.size > 0 || markets.size > 0 || maxW52Pos > 0 || minTrAmt > 0 || minMarketCap > 0 || maxPbr > 0 || maxPer > 0 || minRoe > 0 || minNcav > 0 || minIncomeTax !== null || maxIncomeTax !== null || sortKey !== DEFAULT_SORT || sortOrder !== 'desc' || showLikedOnly;
     const isFiltered = !showLikedOnly && filteredList.length !== ncavDailyList.list.length;
     // 업종 묶기는 응답에 sector/industry 가 있을 때만. 없으면 세그먼트에서 비활성.
     const hasSectorData = ncavDailyList.list.some((i: any) => i.sector ?? i.industry);
@@ -1187,6 +1198,9 @@ function ScreenerContent() {
         excludeHoldings  && { label: '홀딩스 제외',              override: { excludeHoldings: false } as Partial<ScreenerFilters>,  clear: () => setExcludeHoldings(false) },
         excludePreferred && { label: '우선주 제외',              override: { excludePreferred: false } as Partial<ScreenerFilters>, clear: () => setExcludePreferred(false) },
         country === 'US' && excludeAdr && { label: 'ADR 제외', override: { excludeAdr: false } as Partial<ScreenerFilters>, clear: () => setExcludeAdr(false) },
+        excludeChinaSmall && { label: '중국 소재 소형주 제외', override: { excludeChinaSmall: false } as Partial<ScreenerFilters>, clear: () => setExcludeChinaSmall(false) },
+        excludeLowLiquidity && { label: '저유동성 제외', override: { excludeLowLiquidity: false } as Partial<ScreenerFilters>, clear: () => setExcludeLowLiquidity(false) },
+        excludeCashBurn && { label: '지속 현금 소진 제외', override: { excludeCashBurn: false } as Partial<ScreenerFilters>, clear: () => setExcludeCashBurn(false) },
         excludeHalted    && { label: '거래정지 제외',             override: { excludeHalted: false } as Partial<ScreenerFilters>,    clear: () => setExcludeHalted(false) },
         excludeManaged   && { label: '관리종목 제외',             override: { excludeManaged: false } as Partial<ScreenerFilters>,   clear: () => setExcludeManaged(false) },
         excludeDelisting && { label: '정리매매 제외',             override: { excludeDelisting: false } as Partial<ScreenerFilters>, clear: () => setExcludeDelisting(false) },
@@ -1195,7 +1209,7 @@ function ScreenerContent() {
         sectors.size > 0 && { label: `업종 ${sectors.size}개`,    override: { sectors: new Set<string>() } as Partial<ScreenerFilters>, clear: () => setSectors(new Set()) },
         markets.size > 0 && { label: `시장 ${Array.from(markets).join('·')}`, override: { markets: new Set<string>() } as Partial<ScreenerFilters>, clear: () => setMarkets(new Set()) },
     ].filter(Boolean) as { label: string; override: Partial<ScreenerFilters>; clear: () => void }[]),
-    [country, minMarketCap, maxPbr, maxPer, minNcav, minRoe, minIncomeTax, maxIncomeTax, excludeDeficit, excludeHoldings, excludePreferred, excludeAdr, excludeHalted, excludeManaged, excludeDelisting, minTrAmt, maxW52Pos, sectors, markets]);
+    [country, minMarketCap, maxPbr, maxPer, minNcav, minRoe, minIncomeTax, maxIncomeTax, excludeDeficit, excludeHoldings, excludePreferred, excludeAdr, excludeChinaSmall, excludeLowLiquidity, excludeCashBurn, excludeHalted, excludeManaged, excludeDelisting, minTrAmt, maxW52Pos, sectors, markets]);
 
     // 결과가 0개일 때 — "무엇을 풀면 몇 개가 돌아오는지"를 짚어준다. 그냥 "없습니다"로 끝내면
     // 어떤 조건이 결과를 죽였는지 사용자가 하나씩 꺼보며 찾아야 한다.
@@ -1211,7 +1225,7 @@ function ScreenerContent() {
     const clearDetailFilters = useCallback(() => {
         setMinMarketCap(0); setMaxPbr(0); setMaxPer(0); setMinRoe(0); setMinNcav(0);
         setMinIncomeTax(null); setMaxIncomeTax(null);
-        setExcludeHoldings(false); setExcludeDeficit(false); setExcludePreferred(false); setExcludeAdr(false);
+        setExcludeHoldings(false); setExcludeDeficit(false); setExcludePreferred(false); setExcludeAdr(false); setExcludeChinaSmall(false); setExcludeLowLiquidity(false); setExcludeCashBurn(false);
         setExcludeHalted(false); setExcludeManaged(false); setExcludeDelisting(false);
         setSectors(new Set()); setMarkets(new Set()); setMaxW52Pos(0); setMinTrAmt(0);
         setDisplayCount(DAILY_PAGE_SIZE);
@@ -1241,6 +1255,10 @@ function ScreenerContent() {
         setExcludeDeficit(ex.includes('deficit'));
         setExcludePreferred(ex.includes('preferred'));
         setExcludeAdr(ex.includes('adr'));
+        setExcludeChinaSmall(ex.includes('china-small'));
+        setExcludeLowLiquidity(ex.includes('low-liquidity'));
+        setExcludeCashBurn(ex.includes('cash-burn'));
+
         setExcludeHalted(ex.includes('halted'));
         setExcludeManaged(ex.includes('managed'));
         setExcludeDelisting(ex.includes('delisting'));
@@ -1334,7 +1352,7 @@ function ScreenerContent() {
                                 setMinMarketCap(0);
                                 setMinTrAmt(0);
                                 setMinIncomeTax(null); setMaxIncomeTax(null);
-                                setExcludeAdr(false);
+                                setExcludeAdr(false); setExcludeChinaSmall(false); setExcludeLowLiquidity(false); setExcludeCashBurn(false);
                                 setExcludeHalted(false);
                                 setExcludeManaged(false);
                                 setExcludeDelisting(false);
@@ -1594,6 +1612,9 @@ function ScreenerContent() {
                         if (excludeDeficit)  chips.push({ key: 'def',  label: '적자 제외',  clear: () => setExcludeDeficit(false) });
                         if (excludePreferred) chips.push({ key: 'pref', label: '우선주 제외', clear: () => setExcludePreferred(false) });
                         if (country === 'US' && excludeAdr) chips.push({ key: 'adr', label: 'ADR 제외', clear: () => setExcludeAdr(false) });
+                        if (excludeChinaSmall) chips.push({ key: 'china-small', label: '중국 소재 소형주 제외', clear: () => setExcludeChinaSmall(false) });
+                        if (excludeLowLiquidity) chips.push({ key: 'low-liquidity', label: '저유동성 제외', clear: () => setExcludeLowLiquidity(false) });
+                        if (excludeCashBurn) chips.push({ key: 'cash-burn', label: '지속 현금 소진 제외', clear: () => setExcludeCashBurn(false) });
                         if (excludeHalted)   chips.push({ key: 'halt', label: '거래정지 제외', clear: () => setExcludeHalted(false) });
                         if (excludeManaged)  chips.push({ key: 'mang', label: '관리종목 제외', clear: () => setExcludeManaged(false) });
                         if (excludeDelisting) chips.push({ key: 'slt', label: '정리매매 제외', clear: () => setExcludeDelisting(false) });
@@ -1898,6 +1919,27 @@ function ScreenerContent() {
                                                 : filteredList.length - countWith({ excludeAdr: true })}
                                         />
                                     )}
+                                    <DrawerCheck
+                                        checked={excludeChinaSmall}
+                                        onChange={v => { setExcludeChinaSmall(v); setDisplayCount(DAILY_PAGE_SIZE); }}
+                                        label="중국 소재 소형주 제외"
+                                        delta={excludeChinaSmall ? countWith({ excludeChinaSmall: false }) - filteredList.length : filteredList.length - countWith({ excludeChinaSmall: true })}
+                                    />
+                                    <DrawerCheck
+                                        checked={excludeLowLiquidity}
+                                        onChange={v => { setExcludeLowLiquidity(v); setDisplayCount(DAILY_PAGE_SIZE); }}
+                                        label="저유동성 제외"
+                                        delta={excludeLowLiquidity ? countWith({ excludeLowLiquidity: false }) - filteredList.length : filteredList.length - countWith({ excludeLowLiquidity: true })}
+                                    />
+                                    <DrawerCheck
+                                        checked={excludeCashBurn}
+                                        onChange={v => { setExcludeCashBurn(v); setDisplayCount(DAILY_PAGE_SIZE); }}
+                                        label="지속 현금 소진 제외"
+                                        delta={excludeCashBurn ? countWith({ excludeCashBurn: false }) - filteredList.length : filteredList.length - countWith({ excludeCashBurn: true })}
+                                    />
+                                    <p className="px-2 py-1 text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">
+                                        중국 소재 소형주: 미국 상장·본사 중국·시총 3억 달러 미만. 저유동성: 일 거래대금 국내 3억원·미국 10만 달러 미만. 현금 소진: 최근 3개 연도 영업현금흐름 연속 음수. 미확인 종목은 제외하지 않습니다.
+                                    </p>
                                     {hasHaltData && (
                                         <DrawerCheck
                                             checked={excludeHalted}

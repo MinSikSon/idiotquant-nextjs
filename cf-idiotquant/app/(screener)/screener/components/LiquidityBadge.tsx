@@ -11,14 +11,14 @@ import {
     trAmtEok, isHalted, isManaged, isDelisting,
     isCautionAdvised, isOverheated, marketWarn, w52Position, LOW_TR_AMT_EOK,
 } from "@/lib/utils/stockRisk";
-import { scanTradingAmount } from "@/lib/utils/scanFinancials";
+import { screenerRisks } from "../risk";
 
 export {
     trAmtEok, isHalted, isManaged, isDelisting,
     isCautionAdvised, isOverheated, marketWarn, w52Position, LOW_TR_AMT_EOK,
 };
 
-// 정상 종목에는 아무것도 붙이지 않는다 — 모든 행에 배지가 달리면 신호가 아니라 잡음이 된다.
+// 확인된 위험과 자료 부족을 구별한다. 누락된 자료를 정상 판정으로 숨기지 않는다.
 // 표에 열을 새로 만들지 않은 이유: 데스크탑 표는 이미 7열 고정폭이라 한 열을 더하면 좁은
 // 노트북에서 눌리고, 카드 뷰에는 그 열이 아예 없어 같은 정보가 한쪽에만 생긴다.
 const ROSE = "px-1.5 py-0.5 rounded text-[9.5px] font-black bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400 whitespace-nowrap";
@@ -40,17 +40,24 @@ export function LiquidityBadge({ item }: { item: any }) {
     if (isCautionAdvised(item)) return <span className={AMBER}>투자유의</span>;
     if (isOverheated(item)) return <span className={AMBER} title="단기과열 지정 — 주가가 단기간에 급등한 상태입니다">단기과열</span>;
 
-    const us = item.country === "US";
-    const v = scanTradingAmount(item, us ? "US" : "KR");
-    const limit = us ? 0.1 : LOW_TR_AMT_EOK;
-    if (v === null || v >= limit) return null;
-    const amount = us ? `$${v.toFixed(2)}M` : `${v.toFixed(1)}억`;
-    return (
-        <span
-            title={`하루 거래대금 약 ${amount} — 원하는 수량을 한 번에 담기 어렵습니다`}
-            className={AMBER}
-        >
-            거래 {amount}
-        </span>
-    );
+    const risk = screenerRisks(item);
+    const labels = [
+        risk.chinaSmall === true && "중국 소재 소형주",
+        risk.lowLiquidity === true && "저유동성",
+        risk.cashBurn === true && "지속 현금 소진",
+    ].filter(Boolean) as string[];
+    const unknown = [
+        risk.chinaSmall === null && "본사 소재지·시총",
+        risk.lowLiquidity === null && "거래대금",
+        risk.cashBurn === null && "최근 3개 연도 영업현금흐름",
+    ].filter(Boolean);
+    const title = [
+        ...labels,
+        unknown.length > 0 && `미확인: ${unknown.join(", ")}`,
+        "중국 소재 소형주: 미국 상장·본사 중국·시총 3억 달러 미만. 저유동성: 일 거래대금 국내 3억원·미국 10만 달러 미만. 현금 소진: 최근 3개 연도 영업현금흐름 연속 음수.",
+    ].filter(Boolean).join(" · ");
+    if (!labels.length && !unknown.length) return null;
+    return <span className={labels.length ? AMBER : "px-1.5 py-0.5 rounded text-[9.5px] text-neutral-500 dark:text-neutral-400 whitespace-nowrap"} title={title} aria-label={title}>
+        {labels.length ? `${labels[0]}${labels.length > 1 ? ` +${labels.length - 1}` : ""}` : "위험정보 미확인"}
+    </span>;
 }
