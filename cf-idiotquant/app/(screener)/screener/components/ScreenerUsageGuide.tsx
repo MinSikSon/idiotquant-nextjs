@@ -19,26 +19,23 @@ const steps = [
 
 export default function ScreenerUsageGuide() {
     return (
-        <div className="mx-auto max-w-[1600px] lg:max-w-none px-4 py-3 sm:px-6">
-            <details className="group rounded-xl border border-neutral-200 bg-white dark:border-surface-dark-border dark:bg-surface-dark-card">
-                <summary className="flex min-h-11 cursor-pointer list-none flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 marker:hidden [&::-webkit-details-marker]:hidden">
-                    <span className="text-sm font-bold">스크리너 사용 가이드</span>
-                    <span className="text-xs text-neutral-500 dark:text-neutral-400">전략 선택 → 필터 조정 → 분석·저장 → 비교</span>
-                    <span aria-hidden="true" className="ml-auto text-xs text-neutral-500 group-open:hidden">펼치기 ＋</span>
-                    <span aria-hidden="true" className="ml-auto hidden text-xs text-neutral-500 group-open:inline">접기 −</span>
-                </summary>
-                <ol className="grid gap-4 border-t border-neutral-200 px-4 py-4 dark:border-surface-dark-border sm:grid-cols-2 xl:grid-cols-4">
-                    {steps.map((step, index) => (
-                        <li key={step.title}>
-                            <h2 className="text-xs font-bold"><span className="mr-1.5 text-brand-ink">{index + 1}.</span>{step.title}</h2>
-                            <p className="mt-2 text-xs leading-relaxed text-neutral-600 dark:text-neutral-400">{step.description}</p>
-                        </li>
-                    ))}
-                </ol>
-                <p className="px-4 pb-4 text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">
-                    결과가 없다면 적용 조건의 ×로 조건을 하나씩 풀거나 ‘전체 해제’로 다시 시작하세요. 조건에 맞는 종목도 상세 분석에서 재무와 위험도를 함께 확인하세요.
-                </p>
-            </details>
-        </div>
+        <details className="group">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100 focus-visible:outline-brand-ink dark:text-neutral-200 dark:hover:bg-surface-dark-hover [&::-webkit-details-marker]:hidden">
+                스크리너 사용 가이드
+                <span aria-hidden="true" className="text-neutral-400 group-open:hidden">＋</span>
+                <span aria-hidden="true" className="hidden text-neutral-400 group-open:inline">−</span>
+            </summary>
+            <ol className="grid gap-4 px-3 py-3">
+                {steps.map((step, index) => (
+                    <li key={step.title}>
+                        <h2 className="text-sm font-semibold"><span className="mr-1.5 text-brand-ink">{index + 1}.</span>{step.title}</h2>
+                        <p className="mt-2 text-sm leading-relaxed text-neutral-600 dark:text-neutral-400">{step.description}</p>
+                    </li>
+                ))}
+            </ol>
+            <p className="px-3 pb-3 text-sm leading-relaxed text-neutral-500 dark:text-neutral-400">
+                결과가 없다면 적용 조건의 ×로 조건을 하나씩 풀거나 ‘전체 해제’로 다시 시작하세요. 조건에 맞는 종목도 상세 분석에서 재무와 위험도를 함께 확인하세요.
+            </p>
+        </details>
     );
 }
