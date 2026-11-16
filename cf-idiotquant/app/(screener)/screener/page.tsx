@@ -1299,6 +1299,7 @@ function ScreenerContent() {
                         </>
                     )
                 )}
+                actions={isLoggedIn && <ScreenerUsageGuide />}
                 primaryAction={isLoggedIn && <button onClick={handleRefresh} disabled={isLoading || ncavDailyList.refreshing} className={PAGE_ACTION_CLS} title="목록 새로고침" aria-label="목록 새로고침">
                         <RefreshCw size={13} className={isLoading || ncavDailyList.refreshing ? "animate-spin" : ""} />
                         <span className="hidden sm:inline">새로고침</span>
@@ -1384,8 +1385,6 @@ function ScreenerContent() {
                     )}
                 </div>
             </div>
-
-            {isLoggedIn && filterMethod === 'manual' && <ScreenerUsageGuide />}
 
             {/* ── 수집 중 안내 배너 ── */}
             {isLoggedIn && scanningInProgress && !showLikedOnly && filterMethod === 'manual' && (
