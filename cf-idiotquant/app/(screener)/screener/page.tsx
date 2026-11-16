@@ -610,7 +610,6 @@ function ScreenerContent() {
     const [sortOrder, setSortOrder] = useState<SortOrder>(() =>
         (searchParams.get('order') ?? saved.order) === 'asc' ? 'asc' : 'desc'
     );
-    const [searchQuery, setSearchQuery] = useState(() => searchParams.get('q') ?? saved.q ?? "");
     const [displayCount, setDisplayCount] = useState(DAILY_PAGE_SIZE);
     const [excludeHoldings, setExcludeHoldings] = useState(() => initExclude('holdings'));
     const [excludeDeficit, setExcludeDeficit] = useState(() => initExclude('deficit'));
@@ -761,11 +760,10 @@ function ScreenerContent() {
         if (minIncomeTax !== null) params.set('mintax', String(minIncomeTax));
         if (maxIncomeTax !== null) params.set('maxtax', String(maxIncomeTax));
         if (showLikedOnly) params.set('filter', 'liked');
-        if (searchQuery.trim()) params.set('q', searchQuery.trim());
         if (groupMode !== 'none') params.set('group', groupMode);
         if (viewMode !== DEFAULT_VIEW) params.set('view', viewMode);
         return params.toString();
-    }, [country, activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludePreferred, excludeAdr, excludeHalted, excludeManaged, excludeDelisting, sectors, markets, maxW52Pos, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav, minIncomeTax, maxIncomeTax, showLikedOnly, searchQuery, groupMode, viewMode]);
+    }, [country, activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludePreferred, excludeAdr, excludeHalted, excludeManaged, excludeDelisting, sectors, markets, maxW52Pos, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav, minIncomeTax, maxIncomeTax, showLikedOnly, groupMode, viewMode]);
 
     // 필터 상태 → URL 동기화 + localStorage 저장 (페이지 이동 후 재진입 시에도 전체 필터 유지)
     useEffect(() => {
@@ -802,7 +800,6 @@ function ScreenerContent() {
         if (minIncomeTax !== null) snapshot.mintax = minIncomeTax;
         if (maxIncomeTax !== null) snapshot.maxtax = maxIncomeTax;
         if (showLikedOnly) snapshot.filter = 'liked';
-        if (searchQuery.trim()) snapshot.q = searchQuery.trim();
         if (groupMode !== 'none') snapshot.group = groupMode;
         if (viewMode !== DEFAULT_VIEW) snapshot.view = viewMode;
         if (Object.keys(snapshot).length > 0) {
@@ -815,7 +812,7 @@ function ScreenerContent() {
         localStorage.removeItem('screener:filterMode');
         }, 300);
         return () => clearTimeout(debounce);
-    }, [queryString, country, activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludePreferred, excludeAdr, excludeHalted, excludeManaged, excludeDelisting, sectors, markets, maxW52Pos, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav, minIncomeTax, maxIncomeTax, showLikedOnly, searchQuery, groupMode, viewMode, router]);
+    }, [queryString, country, activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludePreferred, excludeAdr, excludeHalted, excludeManaged, excludeDelisting, sectors, markets, maxW52Pos, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav, minIncomeTax, maxIncomeTax, showLikedOnly, groupMode, viewMode, router]);
 
     const handleRefresh = useCallback(() => {
         dispatch(reqGetNcavDailyList({ date: requestedDate, weeklyPeriod, limit: isLoggedIn ? undefined : PREVIEW_SIZE, country }));
@@ -852,7 +849,6 @@ function ScreenerContent() {
         setFilterMode('OR');
         setSortKey('ncav_ratio');
         setSortOrder('desc');
-        setSearchQuery('');
         setExcludeHoldings(false);
         setExcludeDeficit(false);
         setExcludePreferred(false); setExcludeAdr(false);
@@ -908,11 +904,11 @@ function ScreenerContent() {
         country,
         strategies: activeStrategyIds,
         mode: filterMode,
-        q: searchQuery,
+        q: '',
         excludeHoldings, excludeDeficit, excludePreferred, excludeAdr: country === 'US' && excludeAdr, excludeHalted, excludeManaged, excludeDelisting,
         sectors, markets, maxW52Pos, minTrAmt,
         minMarketCap, maxPbr, maxPer, minRoe, minNcav, minIncomeTax, maxIncomeTax,
-    }), [country, activeStrategyIds, filterMode, searchQuery, excludeHoldings, excludeDeficit, excludePreferred, excludeAdr, excludeHalted, excludeManaged, excludeDelisting, sectors, markets, maxW52Pos, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav, minIncomeTax, maxIncomeTax]);
+    }), [country, activeStrategyIds, filterMode, excludeHoldings, excludeDeficit, excludePreferred, excludeAdr, excludeHalted, excludeManaged, excludeDelisting, sectors, markets, maxW52Pos, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav, minIncomeTax, maxIncomeTax]);
 
     const [usEnglishNames, setUsEnglishNames] = useState<Map<string, string> | null>(null);
     useEffect(() => {
@@ -1042,7 +1038,6 @@ function ScreenerContent() {
         const steps: { label: string; patch: Partial<ScreenerFilters> }[] = [
             { label: '전체',      patch: {} },
             { label: '전략',      patch: { strategies: filters.strategies, mode: filters.mode } },
-            { label: '검색',      patch: { q: filters.q } },
             { label: '가치 지표', patch: { minMarketCap: filters.minMarketCap, maxPbr: filters.maxPbr, maxPer: filters.maxPer, minNcav: filters.minNcav } },
             { label: '수익·제외', patch: { minRoe: filters.minRoe, minIncomeTax: filters.minIncomeTax, maxIncomeTax: filters.maxIncomeTax, excludeDeficit: filters.excludeDeficit, excludeHoldings: filters.excludeHoldings, excludePreferred: filters.excludePreferred, excludeAdr: filters.excludeAdr } },
             { label: '시장·업종', patch: { markets: filters.markets, sectors: filters.sectors } },
@@ -1260,7 +1255,6 @@ function ScreenerContent() {
         setMinNcav(safeNum(p.get('minncav')));
         setMinIncomeTax(parseIncomeTaxBound(p.get('mintax')));
         setMaxIncomeTax(parseIncomeTaxBound(p.get('maxtax')));
-        setSearchQuery(p.get('q') ?? '');
         setShowLikedOnly(p.get('filter') === 'liked');
         const group = p.get('group');
         setGroupMode(group === 'sector' || group === 'strategy' ? group : 'none');
@@ -1493,8 +1487,8 @@ function ScreenerContent() {
                     <div className="flex flex-col gap-2 pb-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2 sm:pb-3">
                         <div className="flex items-center gap-2 min-w-0 w-full sm:w-auto sm:flex-1">
                         {/* 검색 */}
-                        {isLoggedIn && <PageSearch purpose="screener" label="발굴 종목 검색" market={country} options={searchTickers} stockNames={searchStocks}
-                            onSelect={value => { setSearchQuery(value); setDisplayCount(DAILY_PAGE_SIZE); }} />}
+                        {isLoggedIn && <PageSearch purpose="analyze" label="발굴 종목 검색" market={country} options={searchTickers} stockNames={searchStocks}
+                            onSelect={value => router.push(analysisHref(value, returnPath))} />}
 
 
                         {/* 표 헤더를 열지 않아도 어떤 보기에서나 정렬을 바꿀 수 있다. */}
@@ -1592,7 +1586,6 @@ function ScreenerContent() {
                         const chips: { key: string; label: string; clear: () => void }[] = [];
                         if (minIncomeTax !== null) chips.push({ key: 'mintax', label: `법인세 등 ≥ ${minIncomeTax}${country === 'US' ? 'M달러' : '억'}`, clear: () => setMinIncomeTax(null) });
                         if (maxIncomeTax !== null) chips.push({ key: 'maxtax', label: `법인세 등 ≤ ${maxIncomeTax}${country === 'US' ? 'M달러' : '억'}`, clear: () => setMaxIncomeTax(null) });
-                        if (searchQuery)     chips.push({ key: 'q',   label: `검색 "${searchQuery}"`, clear: () => { setSearchQuery(''); setDisplayCount(DAILY_PAGE_SIZE); } });
                         if (minMarketCap > 0) chips.push({ key: 'cap', label: `시총 ${country === 'US' ? `${minMarketCap}M달러+` : (MKTCAP_PRESETS.find(p => p.value === minMarketCap)?.label ?? `${minMarketCap}억+`)}`, clear: () => { setMinMarketCap(0); setDisplayCount(DAILY_PAGE_SIZE); } });
                         if (minNcav > 0)     chips.push({ key: 'ncav', label: `NCAV ≥ ${minNcav}`, clear: () => { setMinNcav(0); setDisplayCount(DAILY_PAGE_SIZE); } });
                         if (maxPbr > 0)      chips.push({ key: 'pbr', label: `PBR ≤ ${maxPbr}`, clear: () => { setMaxPbr(0); setDisplayCount(DAILY_PAGE_SIZE); } });
@@ -2091,7 +2084,7 @@ function ScreenerContent() {
                             ) : (
                                 <>
                                     <p className="text-sm font-bold text-neutral-700 dark:text-neutral-300">조건에 맞는 종목이 없습니다</p>
-                                    <p className="text-xs text-neutral-400 mt-1">전략 필터를 조정하거나 검색어를 변경해보세요.</p>
+                                    <p className="text-xs text-neutral-400 mt-1">전략이나 필터 조건을 조정해보세요.</p>
                                 </>
                             )}
                         </div>
