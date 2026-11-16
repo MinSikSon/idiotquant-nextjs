@@ -67,7 +67,7 @@ function EvidenceRows({ market, kiBS, kiIS, finnhubData }: Props) {
       <div role="region" aria-label="재무 원본 값 표" tabIndex={0} className="max-h-96 overflow-auto rounded-lg border border-neutral-200 dark:border-neutral-700">
         <table className="w-full text-left text-xs">
           <caption className="sr-only">{source.name} 재무 원본 값과 데이터 경로</caption>
-          <thead className="sticky top-0 bg-neutral-100 dark:bg-neutral-800"><tr>
+          <thead className="sticky top-[0px] bg-neutral-100 dark:bg-neutral-800"><tr>
             {['기준 기간·공시', '항목', '원본 경로·필드', '수신 값', '단위'].map(label => <th key={label} scope="col" className="whitespace-nowrap p-3">{label}</th>)}
           </tr></thead>
           <tbody>{rows.slice(currentPage * 50, (currentPage + 1) * 50).map(row => <tr key={row.path} className="border-t border-neutral-200 dark:border-neutral-700">
