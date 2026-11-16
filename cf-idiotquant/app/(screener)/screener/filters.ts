@@ -1,3 +1,4 @@
+import { screenerRisks } from "./risk";
 /**
  * 스크리너의 판단부 — 어떤 종목을 남기고 어떤 순서로 세울 것인가.
  *
@@ -78,6 +79,9 @@ export interface ScreenerFilters {
     excludeDeficit: boolean;
     excludePreferred: boolean;
     excludeAdr: boolean;
+    excludeChinaSmall?: boolean;
+    excludeLowLiquidity?: boolean;
+    excludeCashBurn?: boolean;
     excludeHalted: boolean;
     excludeManaged: boolean;
     excludeDelisting: boolean;
@@ -107,7 +111,7 @@ export const GROUP_DEFAULTS: Record<FilterGroupKey, Partial<ScreenerFilters>> = 
     sector:    { sectors: new Set<string>() },
     w52:       { maxW52Pos: 0 },
     liquidity: { minTrAmt: 0 },
-    exclude:   { excludeHoldings: false, excludePreferred: false, excludeAdr: false, excludeHalted: false, excludeManaged: false, excludeDelisting: false },
+    exclude:   { excludeHoldings: false, excludePreferred: false, excludeAdr: false, excludeChinaSmall: false, excludeLowLiquidity: false, excludeCashBurn: false, excludeHalted: false, excludeManaged: false, excludeDelisting: false },
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -142,6 +146,12 @@ export function applyFilters(list: Record<string, any>[], f: ScreenerFilters): R
     if (country === "US" && f.excludeAdr) out = out.filter(item =>
         !/\bAmerican\s+depos(?:itary|itory)\s+(?:shares?|receipts?)\b|(?:^|\s)(?:ADRs?|ADSs?)(?=$|[\s(,.;])/i.test(filterNameOf(item, country))
     );
+    if (f.excludeChinaSmall || f.excludeLowLiquidity || f.excludeCashBurn) out = out.filter(item => {
+        const risk = screenerRisks(item, country);
+        return !(f.excludeChinaSmall && risk.chinaSmall === true)
+            && !(f.excludeLowLiquidity && risk.lowLiquidity === true)
+            && !(f.excludeCashBurn && risk.cashBurn === true);
+    });
     if (f.minMarketCap > 0) out = out.filter(item => scanMarketCap(item, country) >= f.minMarketCap);
     if (f.maxPbr > 0)  out = out.filter(item => safeNum(item.pbr) > 0 && safeNum(item.pbr) <= f.maxPbr);
     if (f.maxPer > 0)  out = out.filter(item => safeNum(item.per) > 0 && safeNum(item.per) <= f.maxPer && (country !== "US" || profitableScanStock(item)));
