@@ -21,6 +21,7 @@ export default auth((req: any) => {
     // admin 전용 페이지: 서버 단에서 차단 (페이지 코드가 비admin에게 전달되지 않음)
     const isAdminOnly =
         path.startsWith("/admin") ||
+        path === "/data-sources" ||
         path.startsWith("/balance");
     if (isAdminOnly) {
         if (!isLoggedIn) return Response.redirect(new URL("/login", req.nextUrl));

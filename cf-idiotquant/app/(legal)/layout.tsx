@@ -1,6 +1,11 @@
+"use client";
+
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 
 export default function LegalLayout({ children }: { children: React.ReactNode }) {
+    const { data: session } = useSession();
+    const isAdmin = (session?.user as { role?: string } | undefined)?.role === "admin";
     return (
         <div className="min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas px-4 py-10 md:py-16">
             <div className="mx-auto max-w-2xl lg:max-w-none">
@@ -23,6 +28,7 @@ export default function LegalLayout({ children }: { children: React.ReactNode })
 
                 {/* Footer nav */}
                 <div className="mt-6 flex justify-center gap-5 text-[12px] text-neutral-400 dark:text-neutral-500">
+                    {isAdmin && <Link href="/data-sources" className="hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors">데이터 출처</Link>}
                     <Link href="/terms" className="hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors">이용약관</Link>
                     <span className="text-neutral-200 dark:text-neutral-700">·</span>
                     <Link href="/privacy" className="hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors">개인정보 처리방침</Link>
