@@ -89,3 +89,20 @@ test('기준가가 없으면 적정가만 표시하고 차이율을 만들지 �
         assert.ok(rows.every(row => row.targetPrice !== null && row.gapPercent === null));
     }
 });
+
+
+test('주식 수 없는 관심종목은 스캔 NCAV 비율로 평가하고 비율 결측을 추정하지 않는다', () => {
+    const liked = { ...scan, lstn_stcn: undefined, ncav_ratio: 1.25 };
+    assert.equal(scanValuationSummary(liked)[0].targetPrice, 12500);
+    assert.equal(scanValuationSummary({ ...liked, ncav_ratio: null })[0].targetPrice, null);
+    assert.equal(scanValuationSummary({ ...liked, last_price: null })[0].targetPrice, null);
+    assert.equal(scanValuationSummary({ ...liked, ncav_ratio: -1 })[0].targetPrice, null);
+});
+
+test('미국 평가액은 NCAV 비율을 사용하고 센트 단위를 보존하며 적자 PER을 제외한다', () => {
+    const us = { ...scan, is_us: 1, last_price: 20, ncav_ratio: 0.625, eps: 1.234, bps: 8.76, net_income: 100 };
+    const models = scanValuationSummary(us);
+    assert.deepEqual(models.map(model => model.targetPrice), [12.5, 12.34, 8.76]);
+    assert.equal(scanValuationSummary({ ...us, net_income: -100 })[1].targetPrice, null);
+    assert.equal(scanValuationSummary({ ...us, ncav_ratio: null })[0].targetPrice, null);
+});
