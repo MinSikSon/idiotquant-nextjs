@@ -1385,10 +1385,10 @@ function ScreenerContent() {
                 </div>
             </div>
 
-            {isLoggedIn && <ScreenerUsageGuide />}
+            {isLoggedIn && filterMethod === 'manual' && <ScreenerUsageGuide />}
 
             {/* ── 수집 중 안내 배너 ── */}
-            {isLoggedIn && scanningInProgress && !showLikedOnly && (
+            {isLoggedIn && scanningInProgress && !showLikedOnly && filterMethod === 'manual' && (
                 <div className="bg-amber-50 dark:bg-amber-950/20 border-b border-amber-200/70 dark:border-amber-800/30">
                     <div className="service-container py-2.5 flex items-center gap-2">
                         <Clock size={13} className="text-amber-500 dark:text-amber-400 shrink-0" />
@@ -1401,13 +1401,13 @@ function ScreenerContent() {
 
             {isLoggedIn && <div className="border-b border-neutral-200 bg-white dark:border-surface-dark-border dark:bg-surface-dark-card">
                 <div className="service-container">
-                    <div role="group" aria-label="필터 설정 방식" className="flex flex-wrap gap-2 py-3">
+                    <div role="group" aria-label="필터 설정 방식" className={cn("flex gap-5 border-b border-neutral-200 dark:border-surface-dark-border", filterMethod === 'worldcup' && "mx-auto max-w-2xl")}>
                         {([['worldcup', '월드컵으로 찾기'], ['manual', '직접 필터 설정']] as const).map(([method, label]) => <button
                             key={method} type="button" aria-pressed={filterMethod === method}
                             onClick={() => { setFilterMethod(method); setFilterOpen(false); }}
-                            className={cn('min-h-11 rounded-lg border px-3 py-2 text-sm font-semibold', filterMethod === method
-                                ? 'border-brand bg-brand text-white'
-                                : 'border-neutral-200 text-neutral-600 dark:border-surface-dark-border dark:text-neutral-300')}
+                            className={cn('min-h-11 border-b-2 px-1 py-3 text-sm font-semibold transition-colors focus-visible:outline-brand-ink', filterMethod === method
+                                ? 'border-brand-ink text-brand-ink'
+                                : 'border-transparent text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100')}
                         >{label}</button>)}
                     </div>
                     <div className={filterMethod === 'worldcup' ? undefined : 'hidden'}>
@@ -1970,7 +1970,7 @@ function ScreenerContent() {
 
             {/* ── 전략 기준 배너 — 어떤 값이 왜 초록으로 표시되는지 한 줄로 밝힌다.
                    기존에는 전략 이름만 있고 판정 기준이 화면 어디에도 없었다. ── */}
-            {bannerPreset && (
+            {filterMethod === 'manual' && bannerPreset && (
                 <div className="bg-brand-light dark:bg-brand-muted/25 border-b border-brand-light dark:border-brand/40">
                     <div className="service-container py-2.5 flex items-start gap-2">
                         <span className={cn(
@@ -1988,7 +1988,7 @@ function ScreenerContent() {
             )}
 
             {/* ── 전략 가이드 패널 ── */}
-            {showGuide && (
+            {filterMethod === 'manual' && showGuide && (
                 <div className="bg-white dark:bg-surface-dark-card border-b border-neutral-200 dark:border-border-subtle-dark">
                     <div className="service-container py-5">
                         <div className="flex items-center justify-between mb-4">
@@ -2040,9 +2040,9 @@ function ScreenerContent() {
             )}
 
             {/* ── 종목 리스트 ── */}
-            {showLikedOnly && likesState === "fulfilled" && session?.user?.id && <WatchlistChanges />}
+            {filterMethod === 'manual' && showLikedOnly && likesState === "fulfilled" && session?.user?.id && <WatchlistChanges />}
 
-            <div className="service-container pt-2 sm:pt-5 pb-20">
+            <div className={cn('service-container pt-2 sm:pt-5 pb-20', filterMethod === 'worldcup' && 'hidden')}>
 
 
                 {isLoading && (
@@ -2344,7 +2344,7 @@ function ScreenerContent() {
                 )}
             </div>
             {country === 'KR' && <p className="mt-6 text-xs leading-relaxed text-neutral-500">국내 재무정보 출처: <a href="https://opendart.fss.or.kr/" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">금융감독원 OpenDART</a> · 공시자료를 가공하여 제공합니다.</p>}
-            {isLoggedIn && <FactorWorkbench items={ncavDailyList.country === country ? filteredList : []} scanDate={ncavDailyList.country === country ? ncavDailyList.scanDate : null} country={country} isAdmin={isAdmin} availableDates={availableDates} />}
+            {isLoggedIn && filterMethod === 'manual' && <FactorWorkbench items={ncavDailyList.country === country ? filteredList : []} scanDate={ncavDailyList.country === country ? ncavDailyList.scanDate : null} country={country} isAdmin={isAdmin} availableDates={availableDates} />}
         </div>
         </Tooltip.Provider>
     );
