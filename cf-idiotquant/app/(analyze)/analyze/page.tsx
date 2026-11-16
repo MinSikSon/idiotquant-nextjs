@@ -24,7 +24,7 @@ import { useStockSearch } from '@/app/(search)/search/hooks/useStockSearch';
 import { selectKrMarketHistory } from '@/lib/features/searchHistory/searchHistorySlice';
 import {
   AlertCircle, Loader2, Flame, CheckCircle,
-  Heart, TrendingUp, ChevronLeft, ChevronDown, Lock, ArrowRight,
+  Heart, TrendingUp, ChevronDown, Lock, ArrowRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PageHeader, PAGE_WIDTH, PAGE_ACTION_CLS } from '@/components/pageHeader';
@@ -636,6 +636,11 @@ function AnalyzeContent() {
           <span className="font-semibold tabular-nums text-neutral-900 dark:text-white">{headerPrice}</span>
         </> : undefined}
         actions={isPriceLoaded ? <div className="flex min-w-0 flex-col gap-3">
+          <button type="button" onClick={() => void handleToggleLike()} disabled={likeBusy}
+            aria-label={isInWatchlist ? '관심 종목에서 빼기' : '관심 종목에 담기'} aria-pressed={isInWatchlist}
+            className="inline-flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm text-neutral-600 hover:bg-neutral-100 disabled:opacity-50 dark:text-neutral-300 dark:hover:bg-neutral-800">
+            <Heart size={16} fill={isInWatchlist ? 'currentColor' : 'none'} />{likeBusy ? '저장 중…' : isInWatchlist ? '관심 종목 해제' : '관심 종목 담기'}
+          </button>
           <p className="text-sm font-semibold">공유 · 등급 기준</p>
           {gradeLabel && <GradeHelp key={tickerLabel} grade={gradeLabel} upside={stockData?.ncavRatio ?? 0} />}
           <ResultShare disabled={!stockData || waitResponse} getSnapshot={() => {
@@ -710,14 +715,8 @@ function AnalyzeContent() {
           시작선이 다른 쪽이 더 크게 걸린다. 카드 여백이 다시 두꺼워지면 여기가
           아니라 카드 쪽을 줄인다. */}
       <main className={cn(ANALYZE_WIDTH, styles.content, "pb-8")}>
-        {isPriceLoaded && <nav aria-label="분석 다음 행동" className="mb-4 flex flex-wrap items-center gap-2">
-          <Link href={returnTo || "/"} aria-label={returnTo ? "목록으로" : "오늘로"} className="inline-flex min-h-11 items-center gap-1 px-2 text-sm text-neutral-600 dark:text-neutral-300"><ChevronLeft size={16} /><span>{returnTo ? "목록으로" : "오늘로"}</span></Link>
-          <button type="button" onClick={() => void handleToggleLike()} disabled={likeBusy}
-            aria-label={isInWatchlist ? '관심 종목에서 빼기' : '관심 종목에 담기'} aria-pressed={isInWatchlist}
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-brand px-4 text-sm font-semibold text-white disabled:opacity-50">
-            <Heart size={16} fill={isInWatchlist ? 'currentColor' : 'none'} />{likeBusy ? '저장 중…' : isInWatchlist ? '관심 종목 해제' : '관심 종목 담기'}
-          </button>
-          <Link href={comparisonHref(krOrUs, [tickerLabel], new Date().toLocaleDateString('sv-SE'))} className="inline-flex min-h-11 items-center rounded-xl border border-neutral-200 px-3 text-sm dark:border-neutral-700">비교에 추가</Link>
+        {isPriceLoaded && <nav aria-label="분석 다음 행동" className="mb-2 flex justify-end">
+          <Link href={comparisonHref(krOrUs, [tickerLabel], new Date().toLocaleDateString('sv-SE'))} className="inline-flex min-h-11 items-center px-2 text-xs text-neutral-500 underline-offset-4 hover:text-brand-ink hover:underline dark:text-neutral-400">비교에 추가</Link>
         </nav>}
 
 

@@ -304,6 +304,7 @@ export function NavbarWithSimpleLinks() {
   const bottomNav = useRef<HTMLElement>(null);
   const identity = useRef<HTMLDivElement>(null);
   const [identityScrolled, setIdentityScrolled] = useState(false);
+  const [analysisIdentityOffset, setAnalysisIdentityOffset] = useState(0);
   const mobilePageTitle = MOBILE_PAGE_TITLES.find(item => active(pathname, item.href, item.href === "/"))?.label;
   const showMore = moreOpen || moreActive;
 
@@ -319,7 +320,13 @@ export function NavbarWithSimpleLinks() {
     let state: NavigationScrollState = { y: Math.max(0, window.scrollY), direction: 0, travel: 0, hidden: false };
     const onScroll = () => {
       const header = document.querySelector('[data-navigation-header]');
-      setIdentityScrolled(!!identity.current && !!header && identity.current.getBoundingClientRect().bottom <= header.getBoundingClientRect().bottom);
+      if (fixedAnalysisIdentity) {
+        const offset = Math.min(56, Math.max(0, window.scrollY));
+        setAnalysisIdentityOffset(offset);
+        setIdentityScrolled(offset >= 56);
+      } else {
+        setIdentityScrolled(!!identity.current && !!header && identity.current.getBoundingClientRect().bottom <= header.getBoundingClientRect().bottom);
+      }
       state = navigationScroll(state, window.scrollY,
         window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 2,
         moreSheet || !!bottomNav.current?.querySelector(":focus-visible"));
@@ -327,6 +334,7 @@ export function NavbarWithSimpleLinks() {
     };
     const observer = new ResizeObserver(onScroll);
     observer.observe(document.body);
+    onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll);
     return () => {
@@ -334,7 +342,7 @@ export function NavbarWithSimpleLinks() {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
     };
-  }, [pathname, inGame, moreSheet]);
+  }, [pathname, inGame, moreSheet, fixedAnalysisIdentity]);
 
   /* Theme sync: persist choice in localStorage, hydrate on mount */
   useEffect(() => {
@@ -492,7 +500,7 @@ export function NavbarWithSimpleLinks() {
           <div ref={!mobile ? pageHeader?.setTitleTarget : undefined} className={cn("hidden min-w-0 flex-1 md:block", !pageHeader?.active && "md:hidden")} />
           {!pageHeader?.active && <span className="hidden min-w-0 flex-1 truncate text-sm font-semibold md:block">{pathname === "/" ? null : mobilePageTitle}</span>}
           <div className="min-w-0 flex-1 md:hidden">
-            <div ref={pageHeader?.setScrollTitleTarget} data-navigation-scroll-title hidden={fixedAnalysisIdentity || !identityScrolled} />
+            <div ref={pageHeader?.setScrollTitleTarget} data-navigation-scroll-title hidden={!identityScrolled} />
           </div>
           <div ref={pageHeader?.setActionsTarget} data-navigation-actions className="shrink-0" />
           <div className="navigation-search flex shrink-0 items-center"><StockSearchTrigger /></div>
@@ -503,10 +511,12 @@ export function NavbarWithSimpleLinks() {
           </div>
         </div>
         {fixedAnalysisIdentity && (
-        <div ref={identity} className="navigation-analysis-identity flex h-[56px] items-center gap-3 px-3 py-1 md:hidden">
+        <div className="navigation-analysis-identity overflow-hidden md:hidden" style={{ height: 56 - analysisIdentityOffset }}>
+        <div ref={identity} className="flex h-[56px] items-center gap-3 px-3 py-1" style={{ transform: `translateY(-${analysisIdentityOffset}px)`, visibility: identityScrolled ? "hidden" : undefined }} aria-hidden={identityScrolled}>
           <Link href="/" className="shrink-0 text-xl font-bold tracking-tight text-neutral-900 dark:text-white">idiot<span className="text-brand-ink">quant</span></Link>
           <div ref={mobile ? pageHeader?.setTitleTarget : undefined} className={cn("min-w-0 flex-1", !pageHeader?.active && "hidden")} />
           {!pageHeader?.active && <span className="truncate text-base font-semibold">{mobilePageTitle}</span>}
+        </div>
         </div>
         )}
         <div ref={pageHeader?.setTabsTarget} />
