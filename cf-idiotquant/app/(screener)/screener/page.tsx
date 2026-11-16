@@ -29,6 +29,7 @@ import { buildGroups, defaultOpenGroups, GroupedResults, type Group, type GroupM
 import { ResultSummary, TermStrip } from "./components/ResultSummary";
 import { StockGridCard } from "./components/StockGridCard";
 import { StockRatioRow } from "./components/StockRatioRow";
+import { FilterWorldcup } from "./components/FilterWorldcup";
 import ScreenerUsageGuide from "./components/ScreenerUsageGuide";
 import { LiquidityBadge, w52Position } from "./components/LiquidityBadge";
 import { scanTradingAmount } from "@/lib/utils/scanFinancials";
@@ -635,6 +636,7 @@ function ScreenerContent() {
     // 일 거래대금 하한 (KR: 억원, US: 백만 달러, URL param: mintr)
     const [minTrAmt, setMinTrAmt] = useState<number>(() => initNum('mintr', 'mintr', country === 'US' ? US_TR_AMT_PRESETS : KR_TR_AMT_PRESETS));
     const [filterOpen, setFilterOpen] = useState(false);
+    const [filterMethod, setFilterMethod] = useState<'manual' | 'worldcup'>('manual');
     const [showLikedOnly, setShowLikedOnly] = useState(() =>
         (searchParams.get('filter') ?? saved.filter) === 'liked'
     );
@@ -1403,11 +1405,35 @@ function ScreenerContent() {
                 </div>
             )}
 
+            {isLoggedIn && <div className="border-b border-neutral-200 bg-white dark:border-surface-dark-border dark:bg-surface-dark-card">
+                <div className="service-container">
+                    <div role="group" aria-label="필터 설정 방식" className="flex flex-wrap gap-2 py-3">
+                        {([['worldcup', '월드컵으로 찾기'], ['manual', '직접 필터 설정']] as const).map(([method, label]) => <button
+                            key={method} type="button" aria-pressed={filterMethod === method}
+                            onClick={() => { setFilterMethod(method); setFilterOpen(false); }}
+                            className={cn('min-h-11 rounded-lg border px-3 py-2 text-sm font-semibold', filterMethod === method
+                                ? 'border-brand bg-brand text-white'
+                                : 'border-neutral-200 text-neutral-600 dark:border-surface-dark-border dark:text-neutral-300')}
+                        >{label}</button>)}
+                    </div>
+                    <div className={filterMethod === 'worldcup' ? undefined : 'hidden'}>
+                        <FilterWorldcup key={country} country={country} hasTradingAmount={hasTrAmtData} loading={isLoading}
+                            previewCount={proposal => applyFilters(baseList, { ...filters, ...proposal }).length}
+                            onManual={() => setFilterMethod('manual')}
+                            onApply={proposal => {
+                                setExcludeDeficit(proposal.excludeDeficit); setMaxPer(proposal.maxPer);
+                                setMaxPbr(proposal.maxPbr); setMinTrAmt(proposal.minTrAmt);
+                                setDisplayCount(DAILY_PAGE_SIZE); setFilterOpen(false); setFilterMethod('manual');
+                            }} />
+                    </div>
+                </div>
+            </div>}
+
             {/* 검색은 상단바에, 전략 조건·정렬·필터는 본문에 둔다. */}
             <div className={cn(
                 "bg-white/95 dark:bg-surface-dark/95",
                 "border-b border-neutral-200 dark:border-surface-dark-border",
-                !isLoggedIn && "hidden"
+                (!isLoggedIn || filterMethod === 'worldcup') && "hidden"
             )}>
                 <div className="service-container">
 
