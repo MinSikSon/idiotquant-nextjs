@@ -58,7 +58,7 @@ import * as Tooltip from "@radix-ui/react-tooltip";
 // 상수 & 타입
 // =========================================================================
 const DAILY_PAGE_SIZE = 30;
-const TABLE_COLUMNS = "grid-cols-[minmax(0,1fr)_56px_40px_40px_24px] sm:grid-cols-[minmax(0,1fr)_62px_46px_46px_28px] lg:grid-cols-[minmax(160px,2fr)_minmax(110px,1.25fr)_minmax(88px,1fr)_minmax(68px,1fr)_minmax(68px,1fr)_minmax(68px,1fr)_minmax(112px,1fr)]";
+const TABLE_COLUMNS = "grid-cols-[minmax(0,1fr)_56px_40px_40px_44px] sm:grid-cols-[minmax(0,1fr)_62px_46px_46px_44px] lg:grid-cols-[minmax(160px,2fr)_minmax(110px,1.25fr)_minmax(88px,1fr)_minmax(68px,1fr)_minmax(68px,1fr)_minmax(68px,1fr)_minmax(112px,1fr)]";
 
 // 비로그인에게 보여 주는 줄 수. 검색엔진과 처음 온 사람에게 "무엇이 나오는 화면인지"는
 // 보여 주되, 목록 전체는 계정이 있어야 본다.
@@ -288,7 +288,7 @@ function SortableHeader({ label, sortKey: key, currentKey, order, onToggle, rele
             title={title}
             onClick={() => onToggle(key)}
             className={cn(
-                "flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider transition-colors whitespace-nowrap",
+                "flex min-h-[44px] items-center gap-1 text-[10px] font-bold uppercase tracking-wider transition-colors whitespace-nowrap",
                 active ? "text-brand-ink dark:text-brand-ink" : "text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300",
                 relevant && !active && "text-emerald-600/90 dark:text-emerald-400/90"
             )}
@@ -317,7 +317,7 @@ const TableRow = memo(function TableRow({ item, onClick, isLiked, onToggleLike, 
 
     return (
         <div
-            className={cn("group grid gap-1.5 lg:gap-4 items-center px-2 py-2.5 sm:px-4 lg:px-6 lg:py-3 hover:bg-brand-light/40 dark:hover:bg-surface-dark-card/50 cursor-pointer transition-colors border-b border-neutral-100 dark:border-border-subtle-dark last:border-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand-ink", TABLE_COLUMNS)}
+            className={cn("group grid min-h-[48px] gap-1 lg:gap-4 items-center px-2 py-0.5 sm:px-4 sm:py-2.5 lg:px-6 lg:py-3 hover:bg-brand-light/40 dark:hover:bg-surface-dark-card/50 cursor-pointer transition-colors border-b border-neutral-100 dark:border-border-subtle-dark last:border-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand-ink", TABLE_COLUMNS)}
             onClick={() => onClick(item.ticker, item.name)}
             onKeyDown={event => {
                 if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
@@ -331,9 +331,9 @@ const TableRow = memo(function TableRow({ item, onClick, isLiked, onToggleLike, 
         >
             <div className="min-w-0 flex items-center gap-2">
                 <ComparisonCheckbox choice={comparison} name={item.name} />
-                <div className="min-w-0 flex-1">
-                    <p className="truncate font-semibold text-xs text-neutral-900 dark:text-white sm:text-sm" title={item.name}>{item.name}</p>
-                    <div className="mt-0.5 flex h-5 min-w-0 items-center gap-1 overflow-hidden whitespace-nowrap">
+                <div className="min-w-0 flex-1 flex flex-wrap items-center gap-x-1.5 sm:block">
+                    <p className="min-w-0 truncate font-semibold text-xs text-neutral-900 dark:text-white sm:text-sm" title={item.name}>{item.name}</p>
+                    <div className="flex min-w-0 items-center gap-1 overflow-hidden whitespace-nowrap sm:mt-0.5 sm:h-5">
                         {item.ticker !== item.name && <span className="min-w-0 truncate text-[10px] text-neutral-400 font-mono" title={item.ticker}>{item.ticker}</span>}
                         <span className="shrink-0"><LiquidityBadge item={item} /></span>
                         <span className="min-w-0 overflow-hidden"><FinancialFreshnessNotice compact periods={scanFinancialPeriods(item)} source={item.financial_source} collectionDate={scanCollectionDate(item)} /></span>
@@ -391,7 +391,7 @@ const TableRow = memo(function TableRow({ item, onClick, isLiked, onToggleLike, 
             <div className="flex justify-end items-center gap-1.5">
                 <button
                     className={cn(
-                        "p-1 rounded transition-all",
+                        "flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded transition-all",
                         isLiked
                             ? "text-rose-500 dark:text-rose-400"
                             : "text-neutral-300 dark:text-neutral-600 hover:text-rose-400 dark:hover:text-rose-500"
@@ -2326,7 +2326,7 @@ function ScreenerContent() {
                             )
                         ) : (
                         <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
-                                <div className={cn("grid gap-1.5 lg:gap-4 items-center px-2 py-2.5 sm:px-4 lg:px-6 lg:py-4 bg-[#fcfaf7] dark:bg-surface-dark border-b border-neutral-200 dark:border-border-subtle-dark", TABLE_COLUMNS)}>
+                                <div className={cn("grid gap-1 lg:gap-4 items-center px-2 sm:px-4 sm:py-2.5 lg:px-6 lg:py-4 bg-[#fcfaf7] dark:bg-surface-dark border-b border-neutral-200 dark:border-border-subtle-dark", TABLE_COLUMNS)}>
                                     <SortableHeader label="종목명" sortKey="ticker" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} />
                                     <div className="hidden lg:block text-[10px] font-bold text-neutral-400 uppercase tracking-wider">전략</div>
                                     <SortableHeader label="NCAV" sortKey="ncav_ratio" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} relevant={!!metricHighlight && "ncav_ratio" in metricHighlight} />
