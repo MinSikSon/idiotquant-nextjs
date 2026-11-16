@@ -102,7 +102,8 @@ async function loadStock(ticker: string, market: 'KR' | 'US', nameHint: string, 
 
 function ComparePageContent() {
   const searchParams = useSearchParams();
-  const { status: sessionStatus } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
+  const isAdmin = (session?.user as { role?: string } | undefined)?.role === 'admin';
   const limits = sessionStatus === 'authenticated' ? MEMBER_LIMITS : GUEST_LIMITS;
   const sessionLoading = sessionStatus === 'loading';
   const limitsRef = useRef(limits);
@@ -491,6 +492,7 @@ function ComparePageContent() {
           </div>)}
         </div>
       </SecondarySection>}
+      {isAdmin && <p className="mt-5 text-xs leading-5 text-neutral-500">출처: 한국투자증권(시세·지표), 금융위원회 · 공공데이터포털(과거 시가총액 보완). <Link href="/data-sources" className="underline">데이터별 출처 및 이용 조건</Link></p>}
       <p className="mt-5 text-xs leading-5 text-neutral-600 dark:text-neutral-400">시세·지표는 조회 당시 기준입니다. 변화율은 배당·수수료·세금을 포함한 실제 투자 수익률과 다릅니다.</p>
       <SecondarySection title="가격 산정 방식과 데이터 기준" className="mt-3">
         <p className="mt-2 text-xs text-neutral-600 dark:text-neutral-400">환산가 = 해당 거래일 시가총액 ÷ 조회 당시 현재 상장주식 수. 국내 일별 저장값에 시총이나 당시 가격·상장주식 수가 없으면 공공데이터포털에서 해당 거래일의 시총을 조회합니다. 미국 종목은 종가 기준으로 비교합니다. 환산가가 없는 날짜가 있으면 해당 종목은 모든 날짜를 종가 기준으로 비교합니다. 휴장일은 선택일 이전의 최근 거래일을 사용합니다.</p>

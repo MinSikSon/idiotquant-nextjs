@@ -92,6 +92,7 @@ const MOBILE_PAGE_TITLES = [
   { href: "/algorithm-trade", label: "자동매매" },
   { href: "/quant", label: "퀀트 투자" },
   { href: "/share", label: "공유 결과" },
+  { href: "/data-sources", label: "데이터 출처" },
   { href: "/terms", label: "이용약관" },
   { href: "/privacy", label: "개인정보 처리방침" },
 ];

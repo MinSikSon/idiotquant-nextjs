@@ -29,6 +29,7 @@ import {
 import { cn } from '@/lib/utils';
 import { PageHeader, PAGE_WIDTH, PAGE_ACTION_CLS } from '@/components/pageHeader';
 import { GradeHelp } from './components/GradeHelp';
+import { FinancialDataEvidence } from '@/components/financial-data-evidence';
 import StockLikeStats from '@/components/stockLikeStats';
 import FinancialFreshnessNotice from '@/components/financial-freshness';
 import { analysisFinancialPeriods } from '@/lib/utils/financialFreshness';
@@ -362,6 +363,7 @@ function AnalyzeContent() {
 
   const { data: session } = useSession();
   const isLoggedIn = !!session;
+  const isAdmin = (session?.user as { role?: string } | undefined)?.role === 'admin';
   const { toasts, addToast, removeToast: dismissToast } = useToast();
 
   const returnTo = screenerReturnPath(searchParams.get('returnTo')) ?? (searchParams.get('from') === 'screener' ? '/screener' : null);
@@ -952,6 +954,8 @@ function AnalyzeContent() {
                         </div>
                       )}
 
+                      <FinancialDataEvidence key={`${krOrUs}:${name}`} market={krOrUs} kiBS={data.kiBS} kiIS={data.kiIS} finnhubData={data.finnhubData} />
+
                       <details className={styles.readingNote}>
                         <summary className="flex items-center justify-between gap-2">분기·연간 기준<ChevronDown size={16} aria-hidden="true" /></summary>
                         <p>자산과 부채는 공시 기준일의 잔액입니다. 매출·이익·현금흐름은 표시된 기간 동안의 금액이므로 분기·누적·연간을 구분해 비교하세요.</p>
@@ -981,6 +985,7 @@ function AnalyzeContent() {
             실제 투자 결정은 본인의 판단과 책임 하에 이루어져야 합니다.
           </p>
           {krOrUs === 'KR' && <p className="text-[13px] text-neutral-500">국내 재무정보 출처: <a href="https://opendart.fss.or.kr/" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">금융감독원 OpenDART</a> · 공시자료를 가공하여 제공합니다.</p>}
+          {isAdmin && <Link href="/data-sources" className="text-xs text-neutral-500 underline">데이터 출처 및 이용 조건</Link>}
           <span className="text-[13px] font-mono text-neutral-500 dark:text-neutral-500">© 2026 IdiotQuant</span>
         </div>
       </footer>
