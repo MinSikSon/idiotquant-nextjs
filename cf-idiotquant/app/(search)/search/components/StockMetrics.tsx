@@ -4,6 +4,7 @@ import React, { useMemo } from "react";
 import { formatKoreanUnit } from "@/lib/utils/financeCalc";
 import { cn } from "@/lib/utils";
 import ui from "@/components/research/research-ui.module.css";
+import styles from "./StockMetrics.module.css";
 import {
   BarChart3, Calendar, DollarSign, Coins,
   TrendingUp, Layers, Activity, AlertTriangle,
@@ -23,15 +24,15 @@ interface MetricItem {
 // =========================================================================
 function MetricCard({ m }: { m: MetricItem }) {
   return (
-    <div className={ui.metric}>
+    <div className={cn(ui.metric, styles.metric)}>
       <p className={cn(
-        "text-[14px] font-medium mb-2",
+        "text-[14px] font-medium mb-1 md:mb-2",
         m.highlight ? "text-neutral-500 dark:text-neutral-400" : "text-neutral-600 dark:text-neutral-300"
       )}>
         {m.label}
       </p>
       <p className={cn(
-        "text-[22px] font-semibold tabular-nums leading-normal break-words",
+        "text-[16px] md:text-[22px] font-semibold tabular-nums leading-normal break-words",
         m.highlight
           ? "text-neutral-900 dark:text-neutral-100"
           : "text-neutral-900 dark:text-white"
@@ -39,7 +40,7 @@ function MetricCard({ m }: { m: MetricItem }) {
         {m.val}
       </p>
       {m.sub && (
-        <div className="flex items-center gap-1 mt-1.5">
+        <div className="flex items-center gap-1 mt-1 md:mt-1.5">
           <Calendar size={9} className="text-neutral-600 dark:text-neutral-300 shrink-0" />
           <span className="text-[13px] text-neutral-500 dark:text-neutral-400 font-mono">
             {m.sub.replace(/(\d{4})(\d{2})(\d{2})/, "$1-$2-$3")}
@@ -47,7 +48,7 @@ function MetricCard({ m }: { m: MetricItem }) {
         </div>
       )}
 
-      <p className={ui.metricDescription}>{m.desc}</p>
+      <p className={cn(ui.metricDescription, styles.description)}>{m.desc}</p>
     </div>
   );
 }
@@ -55,7 +56,7 @@ function MetricCard({ m }: { m: MetricItem }) {
 // 섹션 레이블
 function SectionLabel({ icon, label }: { icon: React.ReactNode; label: string }) {
   return (
-    <div className="flex items-center gap-2 mb-2.5">
+    <div className="flex items-center gap-2 mb-1 md:mb-2.5">
       <span className="text-neutral-600 dark:text-neutral-300">{icon}</span>
       <span className="text-[15px] font-semibold text-neutral-600 dark:text-neutral-300">{label}</span>
       <div className="flex-1 h-px bg-neutral-100 dark:bg-surface-dark-muted" />
@@ -170,11 +171,11 @@ export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
   const volumeMetrics    = metrics.filter(m => m.type === "volume");
 
   return (
-    <div className={cn(ui.surface, "w-full flex flex-col")}>
+    <div className={cn(ui.surface, styles.compact, "w-full flex flex-col")}>
 
       {/* ── 헤더 ── */}
-      <div className={ui.sectionHead}>
-        <div className="flex items-center gap-x-6">
+      <div className={cn(ui.sectionHead, styles.header)}>
+        <div className="flex items-center gap-x-2.5 md:gap-x-6">
           <div className="w-7 h-7 bg-surface-canvas dark:bg-surface-dark-card rounded-lg flex items-center justify-center border border-neutral-200 dark:border-surface-dark-border shrink-0">
             <BarChart3 size={14} className="text-neutral-500 dark:text-neutral-400" />
           </div>
@@ -182,7 +183,7 @@ export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
             <h4 className={ui.sectionTitle}>
               시장 지표
             </h4>
-            <p className="text-[13px] text-neutral-500 dark:text-neutral-400 font-mono font-bold uppercase tracking-normal mt-0.5">
+            <p className="hidden md:block text-[13px] text-neutral-500 dark:text-neutral-400 font-mono font-bold uppercase tracking-normal mt-0.5">
               주당 가치 · 가격 범위 · 거래 규모
             </p>
           </div>
@@ -213,13 +214,13 @@ export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
       )}
 
       {/* ── 콘텐츠 ── */}
-      <div className="flex-1 p-4 sm:p-6 space-y-6">
+      <div className="flex-1 p-4 md:p-6 space-y-3 md:space-y-6">
 
         {/* 밸류에이션 지표 */}
         {valuationMetrics.length > 0 && (
           <div>
             <SectionLabel icon={<Layers size={11} />} label="한 주당 이익과 순자산" />
-            <div className={ui.metricGrid}>
+            <div className={cn(ui.metricGrid, styles.grid)}>
               {valuationMetrics.map((m, i) => <MetricCard key={i} m={m} />)}
             </div>
           </div>
@@ -229,7 +230,7 @@ export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
         {priceMetrics.length > 0 && (
           <div>
             <SectionLabel icon={<TrendingUp size={11} />} label="52주 가격 범위" />
-            <div className={ui.metricGrid}>
+            <div className={cn(ui.metricGrid, styles.grid)}>
               {priceMetrics.map((m, i) => <MetricCard key={i} m={m} />)}
             </div>
           </div>
@@ -239,7 +240,7 @@ export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
         {volumeMetrics.length > 0 && (
           <div>
             <SectionLabel icon={<Activity size={11} />} label="시장 데이터" />
-            <div className={ui.metricGrid}>
+            <div className={cn(ui.metricGrid, styles.grid)}>
               {volumeMetrics.map((m, i) => <MetricCard key={i} m={m} />)}
             </div>
           </div>
