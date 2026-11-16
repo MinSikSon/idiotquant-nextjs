@@ -67,7 +67,7 @@ function harness(country: 'KR' | 'US' = 'KR', hasTradingAmount = true) {
     const render = () => { cursor = 0; tree = output.exports.FilterWorldcup(props); };
     const buttons = () => nodes(tree).filter(node => node.type === 'button');
     const click = (label: string) => {
-        const button = buttons().find(node => label === 'A' || label === 'B' ? text(node).startsWith(label) : text(node).includes(label));
+        const button = buttons().find(node => label === 'A' || label === 'B' ? node.props['aria-label']?.startsWith(`선택 ${label}:`) : text(node).includes(label));
         assert.ok(button, `button: ${label}`);
         assert.ok(!button.props.disabled, `enabled: ${label}`);
         button.props.onClick(); render();
@@ -79,7 +79,7 @@ function harness(country: 'KR' | 'US' = 'KR', hasTradingAmount = true) {
 test('선택·앞뒤 이동·다시 시작은 조건을 바꾸지 않고 마지막 적용만 필터를 갱신한다', () => {
     const h = harness();
     h.click('A'); h.click('← 이전 비교'); h.click('B');
-    h.click('아직 모르겠어요'); h.click('둘 다 마음에 안 들어요'); h.click('B');
+    h.click('건너뛰기'); h.click('건너뛰기'); h.click('B');
     assert.equal(h.applications.length, 0);
     assert.match(h.text(), /2종목/);
     h.click('기존 필터 직접 설정');
@@ -103,7 +103,7 @@ test('거래대금 자료가 없거나 사라지면 하한을 적용하지 않�
     assert.equal(h.applications[0].minTrAmt, 0);
     h.click('처음부터 다시 고르기');
     for (let index = 0; index < 3; index++) h.click('B');
-    assert.ok(h.buttons().find(button => h.textOf(button).includes('A'))?.props.disabled);
-    h.click('아직 모르겠어요');
+    assert.ok(h.buttons().find(button => button.props['aria-label']?.startsWith('선택 A:'))?.props.disabled);
+    h.click('건너뛰기');
     assert.match(h.text(), /미정인 1개/);
 });
