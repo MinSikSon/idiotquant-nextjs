@@ -1401,7 +1401,7 @@ function ScreenerContent() {
             {isLoggedIn && <div className="border-b border-neutral-200 bg-white dark:border-surface-dark-border dark:bg-surface-dark-card">
                 <div className="service-container">
                     <div role="group" aria-label="필터 설정 방식" className={cn("flex gap-5 border-b border-neutral-200 dark:border-surface-dark-border", filterMethod === 'worldcup' && "mx-auto max-w-2xl")}>
-                        {([['worldcup', '월드컵으로 찾기'], ['manual', '직접 필터 설정']] as const).map(([method, label]) => <button
+                        {([['worldcup', '이상형 월드컵'], ['manual', '직접 필터 설정']] as const).map(([method, label]) => <button
                             key={method} type="button" aria-pressed={filterMethod === method}
                             onClick={() => { setFilterMethod(method); setFilterOpen(false); }}
                             className={cn('min-h-11 border-b-2 px-1 py-3 text-sm font-semibold transition-colors focus-visible:outline-brand-ink', filterMethod === method
