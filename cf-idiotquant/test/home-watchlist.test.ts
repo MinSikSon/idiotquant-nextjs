@@ -23,7 +23,7 @@ function harness(initialBaseline = baseline, sampleRoot = false) {
     let saved = structuredClone(initialBaseline);
     let failure = 0;
     let sample = async (): Promise<any> => ({ items: [item], failed: 0 });
-    let get = async () => ({ success: true, data: { items: [item], baseline: saved } });
+    let get = async (): Promise<any> => ({ success: true, data: { items: [item], baseline: saved } });
     const equal = (a: any[], b: any[]) => a?.length === b?.length && a.every((value, index) => value === b[index]);
     const memo = (fn: () => unknown, deps: any[]) => {
         const index = cursor++;
@@ -168,7 +168,7 @@ test('시장별 분류에서 전략별 분류로 전환하고 복수 전략과 �
         { ...item, ticker: 'US-TEST', stock_name: '미국 샘플', is_us: 1, strategies: [] },
     ], baseline } }));
     await h.settle();
-    const stockLinks = () => h.nodes().filter(node => node.type === 'a' && node.props.href === '/analyze?ticker=005930' && node.props.className?.includes('py-1.5'));
+    const stockLinks = () => h.nodes().filter(node => node.type === 'a' && node.props.href === '/analyze?ticker=005930' && node.props.className?.includes('block min-h-11'));
     assert.equal(stockLinks().length, 1);
     assert.match(h.text(), /국내1종목/);
     assert.match(h.text(), /미국1종목/);
@@ -202,7 +202,7 @@ test('예시 조회 실패는 재시도하고 재무 수치 부재를 계산 불
     await h.settle();
     assert.match(h.text(), /불러오지 못했습니다/);
     assert.doesNotMatch(h.text(), /가격.*%/);
-    h.sampleWith(async () => ({ items: [{ ...item, eps: null, bps: null, lstn_stcn: null }], failed: 0 }));
+    h.sampleWith(async () => ({ items: [{ ...item, eps: null, bps: null, lstn_stcn: null, ncav_ratio: null }], failed: 0 }));
     h.nodes().find(node => node.type === 'button').props.onClick();
     h.render(); await h.settle();
     assert.equal((h.text().match(/계산 불가/g) ?? []).length, 3);
@@ -216,4 +216,35 @@ test('스캔이 비어 있으면 빈 상태를 보여준다', async () => {
     await h.settle();
     assert.match(h.text(), /아직 표시할 스캔 데이터가 없습니다/);
     assert.equal(h.posts.length, 0);
+});
+
+
+test('로그인 관심목록에도 추가 조회 없이 NCAV 비율·EPS·BPS로 세 평가액을 표시한다', async () => {
+    const h = harness();
+    const liked = { ...item, lstn_stcn: undefined };
+    h.getWith(async () => ({ success: true, data: { items: [liked], baseline } }));
+    await h.settle();
+    assert.match(h.text(), /NCAV₩79,200/);
+    assert.match(h.text(), /PER₩10,000/);
+    assert.match(h.text(), /PBR₩5,000/);
+    assert.match(h.text(), /NCAV 1배 \/ PER 10배 \/ PBR 1배/);
+    assert.equal(h.posts.length, 0);
+});
+
+test('미국 관심종목은 달러 소수점으로 표시하고 결측·적자 값은 계산 불가로 남긴다', async () => {
+    const h = harness();
+    h.getWith(async () => ({ success: true, data: { items: [{
+        ...item, ticker: 'US-TEST', stock_name: '미국 예시', is_us: 1,
+        last_price: 20, ncav_ratio: 0.625, eps: 1.234, bps: 8.76, net_income: 100,
+    }], baseline } }));
+    await h.settle();
+    assert.match(h.text(), /NCAV\$12.5/);
+    assert.match(h.text(), /PER\$12.34/);
+    assert.match(h.text(), /PBR\$8.76/);
+    h.getWith(async () => ({ success: true, data: { items: [{
+        ...item, ticker: 'US-TEST', is_us: 1, last_price: 20, ncav_ratio: null,
+        eps: 1.234, net_income: -100, bps: null,
+    }], baseline } }));
+    h.focus(); await h.settle();
+    assert.equal((h.text().match(/계산 불가/g) ?? []).length, 3);
 });

@@ -18,22 +18,27 @@ export function valuationSummary(models: { type: string; result: ValuationResult
     });
 }
 
-/** 일별 스캔에서 확인할 수 있는 세 모델의 기준 평가액. KR 자산·부채는 억원이다. */
+/** 스캔 기준 평가액. 주식 수가 없는 관심목록은 동일 스캔의 NCAV 비율×가격을 사용한다. */
 export function scanValuationSummary(item: {
     last_price: number | null; eps: number | null; bps: number | null;
-    current_assets: number | null; total_liabilities: number | null; lstn_stcn: number | null;
+    current_assets: number | null; total_liabilities: number | null; lstn_stcn?: number | null;
+    ncav_ratio?: number | null; is_us?: number; net_income?: number | null;
 }) {
-    const positive = (value: number | null): value is number => value !== null && Number.isFinite(value) && value > 0;
+    const positive = (value: number | null | undefined): value is number => typeof value === 'number' && Number.isFinite(value) && value > 0;
     const hasAssets = item.current_assets !== null && Number.isFinite(item.current_assets) && item.current_assets >= 0;
     const hasLiabilities = item.total_liabilities !== null && Number.isFinite(item.total_liabilities) && item.total_liabilities >= 0;
+    const ncav = !item.is_us && hasAssets && hasLiabilities && positive(item.lstn_stcn)
+        ? (item.current_assets! - item.total_liabilities!) * 100_000_000 / item.lstn_stcn
+        : positive(item.ncav_ratio) && positive(item.last_price) ? item.ncav_ratio * item.last_price : null;
+    const profitable = !(item.is_us && item.net_income != null && item.net_income <= 0);
+    const precision = item.is_us ? 100 : 1;
     const models = [
-        { label: 'NCAV', basis: '1배', target: hasAssets && hasLiabilities && positive(item.lstn_stcn)
-            ? (item.current_assets! - item.total_liabilities!) * 100_000_000 / item.lstn_stcn : null },
-        { label: 'PER', basis: '10배', target: positive(item.eps) ? item.eps * 10 : null },
+        { label: 'NCAV', basis: '1배', target: ncav },
+        { label: 'PER', basis: '10배', target: profitable && positive(item.eps) ? item.eps * 10 : null },
         { label: 'PBR', basis: '1배', target: positive(item.bps) ? item.bps : null },
     ];
     return models.map(({ label, basis, target }) => {
-        const targetPrice = positive(target) && Math.round(target) > 0 ? Math.round(target) : null;
+        const targetPrice = positive(target) && Math.round(target * precision) > 0 ? Math.round(target * precision) / precision : null;
         const gapPercent = targetPrice !== null && positive(item.last_price)
             ? (targetPrice / item.last_price - 1) * 100 : null;
         return { label, basis, targetPrice, gapPercent };

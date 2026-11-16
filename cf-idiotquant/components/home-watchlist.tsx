@@ -106,15 +106,16 @@ export function HomeWatchlist() {
                     </button>
                 </section>
                 <section className={panel} aria-labelledby="watchlist-title">
-                    <div className="flex items-center justify-between gap-3"><h2 id="watchlist-title" className="font-semibold">내 관심종목 · {review.items.length}</h2><Link href={WATCHLIST_HREF} className="inline-flex min-h-11 items-center text-xs text-brand-ink">상세 목록<ArrowRight size={14} aria-hidden="true" /></Link></div>
-                    <div className="mb-2 flex items-center justify-between gap-2">
-                        <p className="text-xs text-neutral-500">{grouping === 'market' ? '국내·미국으로 묶어 보기' : '여러 전략에 해당하면 중복 표시됩니다.'}</p>
+                    <div className="flex items-center justify-between gap-3"><h2 id="watchlist-title" className="text-sm font-semibold">내 관심종목 · {review.items.length}</h2><Link href={WATCHLIST_HREF} className="inline-flex min-h-11 items-center text-xs text-brand-ink">상세 목록<ArrowRight size={14} aria-hidden="true" /></Link></div>
+                    <div className="mb-1 flex items-center justify-between gap-2">
+                        <p className="text-[11px] text-neutral-500">{grouping === 'market' ? '국내·미국으로 묶어 보기' : '여러 전략에 해당하면 중복 표시됩니다.'}</p>
                         <label className="flex shrink-0 items-center gap-2 text-xs text-neutral-500">분류
                             <select value={grouping} onChange={event => setGrouping(event.target.value as 'market' | 'strategy')} className="min-h-11 rounded-lg border border-neutral-200 bg-transparent px-2 text-neutral-900 dark:border-neutral-700 dark:text-neutral-100">
                                 <option value="market">시장별</option><option value="strategy">전략별</option>
                             </select>
                         </label>
                     </div>
+                    <p className="mb-2 text-[10px] leading-4 text-neutral-500">스캔 기준 추정 적정주가 · NCAV 1배 / PER 10배 / PBR 1배</p>
                     <WatchlistItems items={review.items} grouping={grouping} />
                     <div className="mt-4"><AddStock onSearch={openSearch} /></div>
                 </section>
@@ -132,7 +133,7 @@ function AddStock({ onSearch }: { onSearch: () => void }) {
 }
 
 
-type WatchlistDisplayItem = Pick<LikedStockItem, 'ticker' | 'stock_name' | 'is_us' | 'scan_date' | 'strategies' | 'last_price'>;
+type WatchlistDisplayItem = Pick<LikedStockItem, 'ticker' | 'stock_name' | 'is_us' | 'scan_date' | 'strategies' | 'last_price' | 'eps' | 'bps' | 'ncav_ratio' | 'current_assets' | 'total_liabilities'> & { net_income?: number | null };
 
 function WatchlistItems({ items, grouping = 'market' }: { items: WatchlistDisplayItem[]; grouping?: 'market' | 'strategy' }) {
     const groups = new Map<string, WatchlistDisplayItem[]>();
@@ -140,14 +141,23 @@ function WatchlistItems({ items, grouping = 'market' }: { items: WatchlistDispla
         const keys = grouping === 'market' ? [item.is_us ? 'US' : 'KR'] : item.strategies.length ? [...new Set(item.strategies)] : ['unclassified'];
         for (const key of keys) groups.set(key, [...(groups.get(key) ?? []), item]);
     }
-    return <div className="space-y-2">{[...groups].map(([key, stocks], index) => <details key={`${grouping}:${key}`} open={index < 2} className="rounded-xl border border-neutral-100 dark:border-neutral-800">
-        <summary className="min-h-11 cursor-pointer rounded-xl bg-neutral-50 px-3 py-3 text-xs font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand dark:bg-neutral-800/50">
+    return <div className="space-y-1">{[...groups].map(([key, stocks], index) => <details key={`${grouping}:${key}`} open={index < 2} className="rounded-xl border border-neutral-100 dark:border-neutral-800">
+        <summary className="min-h-11 cursor-pointer rounded-xl bg-neutral-50 px-2 py-2 text-[11px] font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand dark:bg-neutral-800/50">
             {grouping === 'market' ? key === 'US' ? '미국' : '국내' : key === 'unclassified' ? '해당 전략 없음' : STRATEGY_LABEL[key] || key}<span className="ml-2 font-normal text-neutral-500">{stocks.length}종목</span>
         </summary>
-        <ul className="divide-y divide-neutral-100 px-3 dark:divide-neutral-800">{stocks.map(item => {
-            const row = <><div className="min-w-0"><p className="truncate text-sm font-medium" title={item.stock_name || item.ticker}>{item.stock_name || item.ticker}</p><p className="text-[11px] leading-4 text-neutral-500">{item.ticker} · {item.scan_date ? scanDateLabel(item.scan_date) : '스캔 없음'}</p></div><span className="shrink-0 text-sm tabular-nums">{item.last_price == null ? '—' : `${item.is_us ? '$' : '₩'}${metric(item.last_price)}`}</span></>;
-            const rowClass = 'flex min-h-11 items-center justify-between gap-3 rounded-lg py-1.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand';
-            return <li key={`${item.is_us}:${item.ticker}`}><Link href={analysisHref(item.ticker)} className={rowClass}>{row}</Link></li>;
+        <ul className="divide-y divide-neutral-100 px-2 dark:divide-neutral-800">{stocks.map(item => {
+            const currency = item.is_us ? '$' : '₩';
+            const models = scanValuationSummary(item);
+            return <li key={`${item.is_us}:${item.ticker}`}><Link href={analysisHref(item.ticker)} className="block min-h-11 rounded-lg py-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand">
+                <div className="flex items-baseline justify-between gap-2">
+                    <div className="flex min-w-0 items-baseline gap-1.5"><p className="truncate text-xs font-medium leading-4" title={item.stock_name || item.ticker}>{item.stock_name || item.ticker}</p><span className="shrink-0 text-[9px] text-neutral-500" title={item.ticker}>{item.scan_date ? scanDateLabel(item.scan_date) : '스캔 없음'}</span></div>
+                    <span className="shrink-0 text-xs leading-4 tabular-nums">{item.last_price == null ? '—' : `${currency}${metric(item.last_price)}`}</span>
+                </div>
+                <dl aria-label="전략별 적정주가" className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] leading-[14px] tabular-nums">{models.map(model => <div key={model.label} className="flex items-baseline gap-1">
+                    <dt className="text-neutral-500">{model.label}</dt><dd>{model.targetPrice === null ? '계산 불가' : `${currency}${metric(model.targetPrice)}`}</dd>
+                </div>)}</dl>
+            </Link></li>;
+
         })}</ul>
     </details>)}</div>;
 }
