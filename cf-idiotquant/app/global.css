@@ -358,7 +358,22 @@ body :is(.font-mono, .font-serif) {
 }
 
 @media (max-width: 767px) {
-  html { font-size: 115%; }
+  /* 기존 115%의 약 76%: 서비스 전체의 rem 글자·간격을 함께 조정한다.
+     브라우저의 사용자 글자 크기와 확대 기능은 그대로 따른다. */
+  html { font-size: 87.5%; }
+
+  /* rem 축소로 주요 컨트롤의 조작 영역까지 작아지지 않게 한다. */
+  :is(button, a, input, select, summary, [role="button"]):is(.h-10, .h-11, .h-12, .min-h-10, .min-h-11, .min-h-12) {
+    min-height: 44px;
+  }
+  :is(button, a, input, select, summary, [role="button"]):is(.w-10, .w-11, .w-12, .min-w-10, .min-w-11, .min-w-12) {
+    min-width: 44px;
+  }
+
+  /* iOS에서 입력 포커스 시 페이지가 자동 확대되지 않도록 유지한다. */
+  :is(input, textarea, select):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]) {
+    font-size: max(16px, 1em);
+  }
 }
 
 /* ── 게임 화면의 바탕은 문서 뿌리까지 ──
@@ -723,4 +738,13 @@ html.dark .stock-search-error { color: #fca5a5; }
 @media (max-width: 767px) {
   html:has(.navigation-analysis-identity) { --navigation-h: 104px; }
   html:has(.navigation-analysis-identity):has(.navigation-header [data-page-tabs]) { --navigation-h: 148px; }
+}
+
+/* 모바일 본문도 공통 rem 배율과 여백을 따른다. */
+@media (max-width: 767px) {
+  .service-container, .stock-search-modal { font-size: 1rem; }
+  .service-content { padding-block: 1rem; }
+}
+@media (max-width: 639px) {
+  .service-container { padding-inline: 0.5rem; }
 }
