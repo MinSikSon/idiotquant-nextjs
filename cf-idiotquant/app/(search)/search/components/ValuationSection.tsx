@@ -224,8 +224,8 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
 
       {/* ────── 모델별 적정주가 (모델별 트랙) ────── */}
       {axis && (
-        <div className="px-0 sm:px-5 pt-2 pb-4 border-b border-neutral-100 dark:border-border-subtle-dark">
-          <div className="flex items-center gap-2 mb-3">
+        <div className="px-0 sm:px-5 pt-1 pb-2 md:pt-2 md:pb-4 border-b border-neutral-100 dark:border-border-subtle-dark">
+          <div className="flex items-center gap-2 mb-1 md:mb-3">
             <Target size={13} className="text-neutral-600 dark:text-neutral-300 shrink-0" />
             <span className="text-[13.5px] font-semibold text-neutral-700 dark:text-neutral-200 tracking-tight">
               모델별 적정주가
@@ -234,8 +234,12 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
               {axis.rows.length}개 모델
             </span>
           </div>
-          <p className="mb-3 text-[15px] text-neutral-500 dark:text-neutral-400 break-keep">
+          <p className="hidden md:block mb-3 text-[15px] text-neutral-500 dark:text-neutral-400 break-keep">
             세로선은 현재가, 점은 모델별 계산 가격입니다. 오른쪽 %는 계산 기준가와의 차이입니다. 가격을 산출하지 못한 모델도 함께 표시합니다.
+          </p>
+
+          <p className="mb-1 text-[12px] text-neutral-500 dark:text-neutral-400 md:hidden">
+            세로선 현재가 · 점 적정주가 · % 계산 기준가 대비
           </p>
 
           {showBaseNote && (
@@ -245,7 +249,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
             </p>
           )}
 
-          <p className="mb-2 text-sm font-semibold tabular-nums text-neutral-700 dark:text-neutral-200 sm:hidden">
+          <p className="mb-2 text-sm font-semibold tabular-nums text-neutral-700 dark:text-neutral-200 md:hidden">
             현재가 {currency}{axis.curPrice.toLocaleString(undefined, { maximumFractionDigits: isUs ? 2 : 0 })}
           </p>
           {/* 모델별 트랙 — 축과 목록을 한 줄에 합친다. 점과 이름이 같은 행에 있으면
@@ -305,7 +309,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
                     >
                       <span>{r.config.name}</span><ChevronDown size={12} aria-hidden="true" className={cn("shrink-0 text-neutral-600 dark:text-neutral-300 transition-transform", isExplained && "rotate-180")} />
                     </button>
-                    <p className="hidden sm:block text-[13px] leading-6 text-neutral-600 dark:text-neutral-300 break-keep">{r.config.description.short}</p>
+                    <p className="hidden md:block text-[13px] leading-6 text-neutral-600 dark:text-neutral-300 break-keep">{r.config.description.short}</p>
                   </div>
 
                   {/* self-stretch — 셀이 행 높이를 꽉 채워야 현재가 세로선이 행 사이에서 끊기지 않는다.
@@ -348,9 +352,11 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
                   )}>
                     {r.returnPct !== null ? `${isPositive ? "+" : ""}${r.returnPct.toFixed(0)}%` : "—"}
                   </span>
-                  <p className={cn(styles.notice, "col-span-4 text-[15px] leading-normal text-neutral-600 dark:text-neutral-300 break-keep", !r.notice && "sm:hidden")}>
-                    {r.notice ?? r.config.description.short}
-                  </p>
+                  {r.notice && (
+                    <p className={cn(styles.notice, "col-span-4 text-[15px] leading-normal text-neutral-600 dark:text-neutral-300 break-keep")}>
+                      {r.notice}
+                    </p>
+                  )}
                   {isExplained && (
                     <div
                       id={`model-explanation-${r.type}`}

@@ -1,13 +1,13 @@
-@media (max-width: 639px) {
+@media (max-width: 767px) {
   .axis { display: block; }
   .axisHeader { display: none; }
-  .modelRow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; }
-  .modelLabel { grid-column: 1 / -1; grid-row: 1; }
-  .modelLabel button { font-size: 14px; }
-  .price { grid-column: 1; grid-row: 2; text-align: left; font-size: 16px; overflow-wrap: anywhere; white-space: normal; }
-  .returnPct { grid-column: 2; grid-row: 2; align-self: center; font-size: 14px; }
-  .track { grid-column: 1 / -1; grid-row: 3; min-height: 28px; margin: 4px 8px; }
+  .modelRow { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 2px 8px; padding-block: 6px; }
+  .modelLabel { grid-column: 1; grid-row: 1; }
+  .modelLabel button { font-size: 13px; line-height: 1.4; }
+  .price { grid-column: 2; grid-row: 1; text-align: right; font-size: 14px; overflow-wrap: anywhere; white-space: normal; }
+  .returnPct { grid-column: 3; grid-row: 1; align-self: center; font-size: 13px; }
+  .track { grid-column: 1 / -1; grid-row: 2; min-height: 16px; margin: 0 8px 2px; }
   .track > :global(.w-px) { top: 0; bottom: 0; }
-  .notice { grid-column: 1 / -1; grid-row: 4; line-height: 1.6; }
-  .explanation { grid-column: 1 / -1; grid-row: 5; overflow-wrap: anywhere; }
+  .notice { grid-column: 1 / -1; grid-row: 3; font-size: 13px; line-height: 1.5; }
+  .explanation { grid-column: 1 / -1; grid-row: 4; font-size: 13px; overflow-wrap: anywhere; }
 }
