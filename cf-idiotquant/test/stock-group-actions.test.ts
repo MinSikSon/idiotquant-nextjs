@@ -10,6 +10,11 @@ const source = ts.transpileModule(readFileSync(new URL("../components/balance/st
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true },
 }).outputText;
 
+const summaryExports: any = {};
+runInNewContext(ts.transpileModule(readFileSync(new URL("../lib/features/capital/tradingSummary.ts", import.meta.url), "utf8"), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+}).outputText, { exports: summaryExports });
+
 function table(overrides: Record<string, unknown>) {
   const states: any[] = [];
   let cursor = 0;
@@ -20,7 +25,7 @@ function table(overrides: Record<string, unknown>) {
     if (name === "react") return { memo: (fn: unknown) => fn, useMemo: (fn: () => unknown) => fn(),
       useRef(initial: unknown) { return states[cursor++] ??= { current: initial }; },
       useState(initial: unknown) { const i = cursor++; if (!(i in states)) states[i] = initial; return [states[i], (next: any) => { states[i] = typeof next === "function" ? next(states[i]) : next; }]; } };
-    if (name === "@/lib/features/capital/tradingSummary") return { tradingCursorIndex: () => null };
+    if (name === "@/lib/features/capital/tradingSummary") return summaryExports;
     if (name === "@/lib/features/capital/capitalSlice") return { LIKES_GROUP_ID: "__likes__" };
     if (name.endsWith(".json")) return [];
     if (name.startsWith("./") || name.startsWith("@/")) return {};
@@ -45,7 +50,7 @@ function table(overrides: Record<string, unknown>) {
     assert.ok(button, label);
     return button.props.onClick();
   };
-  return { pick, selected, click, render, text };
+  return { pick, selected, click, render, text, nodes, rows: (key: string) => section(key).props.rows };
 }
 
 for (const [label, callback] of [["복사", "onCopyLikes"], ["이동", "onBulkMove"], ["삭제", "onBulkRemove"], ["새 그룹", "onCreateGroup"]]) {
@@ -84,3 +89,30 @@ for (const action of ["복사", "이동"]) {
     assert.deepEqual(h.selected(), action === "복사" ? ["g::B"] : ["__likes__::A"]);
   });
 }
+
+for (const index of [0, 2, 4]) for (const bulk of [false, true]) {
+  test(`IDX ${index} 포함 ${bulk ? "일괄" : "단일"} 제거: IDX 종목을 요청에 포함하고 성공 시 선택을 해제한다`, async () => {
+    const symbols = ["DSWL", "SOHU", "QFIN", "ATXG", "AGMH"];
+    let requested: string[] = [];
+    const h = table({ data: { groups: [{ id: "g", name: "운용" }], stock_list: symbols.map(symbol => ({ symbol, group_id: "g" })), token_info: { refill_stock_index: index } }, onBulkRemove: async (tickers: string[]) => { requested = tickers; } });
+    assert.equal(h.rows("g").find((row: any) => row.currentCursor)?.symbol, symbols[index]);
+    h.pick(symbols[index], "g");
+    if (bulk) h.pick(symbols[1], "g");
+    await h.click("삭제");
+    assert.deepEqual(Array.from(requested), [...new Set([symbols[index], ...(bulk ? [symbols[1]] : [])])]);
+    assert.deepEqual(h.selected(), []);
+  });
+}
+
+test("IDX 종목 제거 실패 안내는 스크롤 중에도 보이는 고정 작업 막대 안에 표시한다", async () => {
+  const h = table({ data: { groups: [{ id: "g", name: "운용" }], stock_list: [{ symbol: "A", group_id: "g" }, { symbol: "AGMH", group_id: "g" }], token_info: { refill_stock_index: 1 } }, onBulkRemove: async () => { throw Error("계좌 주문 처리 중입니다."); } });
+  assert.equal(h.rows("g").find((row: any) => row.currentCursor)?.symbol, "AGMH");
+  h.pick("AGMH", "g");
+  await h.click("삭제");
+  const toolbar = h.nodes(h.render()).find((node: any) => node.type === "fieldset" && node.props["aria-busy"] !== undefined);
+  assert.ok(toolbar);
+  const alert = h.nodes(toolbar).find((node: any) => node.props?.role === "alert");
+  assert.ok(alert, "실패 안내가 고정 작업 막대 밖에 있으면 모바일에서 보이지 않는다");
+  assert.match(h.text(alert), /계좌 주문 처리 중/);
+  assert.deepEqual(h.selected(), ["g::AGMH"]);
+});

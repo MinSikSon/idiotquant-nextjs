@@ -666,11 +666,12 @@ function StockListTable({
               {selectionAction === "copy" ? `${pickedInterestSymbols.length}개 관심 종목 복사` : selectionAction === "create" ? `${pickedOperatingSymbols.length}개로 그룹 만들기` : selectionAction === "remove" ? `${pickedOperatingSymbols.length}개 목록에서 제거` : `${pickedOperatingSymbols.length}개 종목 이동`}
             </button>
           </div>
+          {groupActionError && <p role="alert" className="w-full text-sm text-rose-600 dark:text-rose-400">{groupActionError}</p>}
           {selectionAction === "copy" && <p className="text-[11px] text-neutral-500 dark:text-neutral-400">좋아요는 그대로 유지하고 선택한 관심 종목을 대상 그룹에 추가합니다.</p>}
         </fieldset>
       )}
 
-      {groupActionError && <p role="alert" className="text-sm text-rose-600">{groupActionError}</p>}
+      {picked.size === 0 && groupActionError && <p role="alert" className="text-sm text-rose-600">{groupActionError}</p>}
 
       <section aria-label="종목 그룹" className="space-y-1.5 md:space-y-3">
         <h2 className="flex items-center gap-2 px-2 py-3 text-sm font-semibold text-neutral-900 dark:text-neutral-100"><ComponentNumber value={groupsSectionNumber} />종목 그룹</h2>
