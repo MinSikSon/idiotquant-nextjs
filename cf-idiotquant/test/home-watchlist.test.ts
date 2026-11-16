@@ -94,41 +94,28 @@ function harness(initialBaseline = baseline, sampleRoot = false) {
     };
 }
 
-test('홈 조회와 재조회는 기준을 바꾸지 않고 명시적 완료만 표시한 값을 저장한다', async () => {
+test('홈은 변화 확인과 수동 새로고침 없이 관심종목을 바로 보여준다', async () => {
     const h = harness();
     await h.settle();
-    assert.match(h.text(), /지난 확인 이후 변화 · 1종목/);
+    assert.match(h.text(), /내 관심종목 · 1/);
+    assert.match(h.text(), /삼성전자/);
+    assert.doesNotMatch(h.text(), /지난 확인|확인 완료|새로고침|내 관심종목, 매일 짧게/);
+    assert.equal(h.nodes().find(node => node.type === 'section').props['aria-labelledby'], 'watchlist-title');
     h.focus(); await h.settle();
     assert.equal(h.posts.length, 0);
     assert.equal(h.saved().revision, 1);
-    h.button().props.onClick(); h.button().props.onClick();
+});
+
+test('조회 실패 시에만 재시도 버튼을 보여주고 목록을 복구한다', async () => {
+    const h = harness();
+    h.getWith(async () => ({ success: false, error: '조회 실패' }));
     await h.settle();
-    assert.equal(h.posts.length, 1);
-    assert.equal(h.posts[0].items[0].price, 66000);
-    assert.match(h.text(), /달라진 내용이 없습니다/);
-    const returning = harness(h.saved());
-    await returning.settle();
-    assert.match(returning.text(), /달라진 내용이 없습니다/);
-});
-
-test('저장 실패는 기존 변화와 기준을 유지하고 재조회 뒤 다시 확인할 수 있다', async () => {
-    const h = harness(); await h.settle(); h.fail(503);
-    h.button().props.onClick(); await h.settle();
-    assert.equal(h.saved().revision, 1);
-    assert.match(h.text(), /지난 확인 이후 변화 · 1종목/);
-    assert.equal(h.button().props.disabled, true);
-    h.focus(); await h.settle(); h.fail(0);
-    assert.equal(h.button().props.disabled, false);
-    h.button().props.onClick(); await h.settle();
-    assert.equal(h.saved().revision, 2);
-});
-
-test('충돌은 최신 기준을 읽고 자동으로 다시 저장하지 않는다', async () => {
-    const h = harness(); await h.settle(); h.fail(409);
-    h.button().props.onClick(); await h.settle();
-    assert.equal(h.posts.length, 1);
-    assert.equal(h.saved().revision, 2);
-    assert.match(h.text(), /저장 실패/);
+    assert.match(h.text(), /조회 실패/);
+    h.getWith(async () => ({ success: true, data: { items: [item], baseline } }));
+    h.nodes().find(node => node.type === 'button').props.onClick();
+    await h.settle();
+    assert.match(h.text(), /삼성전자/);
+    assert.doesNotMatch(h.text(), /조회 실패|다시 불러오기/);
 });
 
 test('늦게 도착한 이전 조회는 새 응답을 덮어쓰지 못한다', async () => {
@@ -136,14 +123,14 @@ test('늦게 도착한 이전 조회는 새 응답을 덮어쓰지 못한다', a
     const pending: ((value: any) => void)[] = [];
     h.getWith(() => new Promise(resolve => pending.push(resolve)));
     h.focus(); h.render();
-    assert.equal(h.button().props.disabled, true);
     h.focus();
     pending[1]({ success: true, data: { items: [{ ...item, last_price: 70000 }], baseline } });
     await h.settle();
     pending[0]({ success: true, data: { items: [item], baseline } });
     await h.settle();
-    h.button().props.onClick(); await h.settle();
-    assert.equal(h.posts[0].items[0].price, 70000);
+    assert.match(h.text(), /₩70,000/);
+    assert.doesNotMatch(h.text(), /₩66,000/);
+    assert.equal(h.posts.length, 0);
 });
 
 
