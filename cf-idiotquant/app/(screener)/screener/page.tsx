@@ -1317,7 +1317,17 @@ function ScreenerContent() {
                         </>
                     )
                 )}
-                actions={isLoggedIn && <ScreenerUsageGuide />}
+                actions={isLoggedIn && <>
+                    <ScreenerUsageGuide />
+                    {scanningInProgress && !showLikedOnly && filterMethod === 'manual' && (
+                        <div className="flex items-start gap-2 rounded-lg bg-amber-50 p-3 text-xs font-medium leading-5 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400">
+                            <Clock size={13} className="mt-1 shrink-0" />
+                            <p>
+                                최근 발굴 종목 수집 중 — 아직 스캔되지 않은 종목은{formattedPrevDate ? ` 이전(${formattedPrevDate})` : " 이전"} 데이터로 보완됩니다.
+                            </p>
+                        </div>
+                    )}
+                </>}
                 primaryAction={isLoggedIn && <button onClick={handleRefresh} disabled={isLoading || ncavDailyList.refreshing} className={PAGE_ACTION_CLS} title="목록 새로고침" aria-label="목록 새로고침">
                         <RefreshCw size={13} className={isLoading || ncavDailyList.refreshing ? "animate-spin" : ""} />
                         <span className="hidden sm:inline">새로고침</span>
@@ -1360,8 +1370,8 @@ function ScreenerContent() {
                                 setDisplayCount(DAILY_PAGE_SIZE);
                             }}
                             className={cn(
-                                "px-3 py-3 text-sm font-bold border-b-2 transition-colors sm:px-4",
-                                country === value ? "border-brand-ink text-brand-ink underline decoration-2 underline-offset-4" : "border-transparent text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200"
+                                "px-3 py-3 text-sm font-bold transition-colors sm:px-4",
+                                country === value ? "text-brand-ink" : "text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200"
                             )}
                         >{label}</button>
                         ))}
@@ -1404,27 +1414,15 @@ function ScreenerContent() {
                 </div>
             </div>
 
-            {/* ── 수집 중 안내 배너 ── */}
-            {isLoggedIn && scanningInProgress && !showLikedOnly && filterMethod === 'manual' && (
-                <div className="bg-amber-50 dark:bg-amber-950/20 border-b border-amber-200/70 dark:border-amber-800/30">
-                    <div className="service-container py-2.5 flex items-center gap-2">
-                        <Clock size={13} className="text-amber-500 dark:text-amber-400 shrink-0" />
-                        <p className="min-w-0 truncate whitespace-nowrap text-xs text-amber-700 dark:text-amber-400 font-medium">
-                            최근 발굴 종목 수집 중 — 아직 스캔되지 않은 종목은{formattedPrevDate ? ` 이전(${formattedPrevDate})` : " 이전"} 데이터로 보완됩니다.
-                        </p>
-                    </div>
-                </div>
-            )}
-
             {isLoggedIn && <div className="border-b border-neutral-200 bg-white dark:border-surface-dark-border dark:bg-surface-dark-card">
                 <div className="service-container">
-                    <div role="group" aria-label="필터 설정 방식" className={cn("flex gap-5 border-b border-neutral-200 dark:border-surface-dark-border", filterMethod === 'worldcup' && "mx-auto max-w-2xl")}>
+                    <div role="group" aria-label="필터 설정 방식" className={cn("flex gap-5", filterMethod === 'worldcup' && "mx-auto max-w-2xl")}>
                         {([['worldcup', '이상형 월드컵'], ['manual', '직접 필터 설정']] as const).map(([method, label]) => <button
                             key={method} type="button" aria-pressed={filterMethod === method}
                             onClick={() => { setFilterMethod(method); setFilterOpen(false); }}
-                            className={cn('min-h-11 border-b-2 px-1 py-3 text-sm font-semibold transition-colors focus-visible:outline-brand-ink', filterMethod === method
-                                ? 'border-brand-ink text-brand-ink'
-                                : 'border-transparent text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100')}
+                            className={cn('min-h-11 px-1 py-3 text-sm font-semibold transition-colors focus-visible:outline-brand-ink', filterMethod === method
+                                ? 'text-brand-ink'
+                                : 'text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100')}
                         >{label}</button>)}
                     </div>
                     <div className={filterMethod === 'worldcup' ? undefined : 'hidden'}>
