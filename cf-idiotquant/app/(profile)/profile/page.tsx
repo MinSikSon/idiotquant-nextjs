@@ -5,7 +5,7 @@ import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { LogOut, Eye, DollarSign, ChevronRight, ShieldCheck, Heart, Trash2, Blocks, EyeOff, UserRound } from "lucide-react";
+import { LogOut, Eye, DollarSign, ChevronRight, ShieldCheck, Heart, Trash2, Blocks, EyeOff, UserRound, Check } from "lucide-react";
 import { PageHeader } from "@/components/pageHeader";
 
 /* 계정 화면은 카드 한 줄짜리 좁은 단이라 PAGE_WIDTH 프리셋(4xl/7xl)에 얹으면
@@ -189,40 +189,40 @@ export default function ProfilePage() {
                 {/* 아직 담은 종목이 없을 때만 — 다음에 할 일을 맨 위에 둔다.
                     지금까지 이 자리는 이름과 이메일이었는데, 사용자가 이미 아는 정보다. */}
                 {isNewUser && (
-                    <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
+                    <div className="bg-white dark:bg-surface-dark-card rounded-[var(--radius-panel)] border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
                         <div className="px-5 pt-4 pb-2 flex items-center justify-between">
-                            <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
-                                3단계 중 1단계
-                            </span>
-                            <span className="text-[10px] font-bold text-neutral-400 font-mono tabular-nums">1 / 3</span>
+                            <span className="text-xs font-medium text-neutral-600 dark:text-neutral-300">진행 상황</span>
+                            <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-200 font-mono tabular-nums">1 / 3 완료</span>
                         </div>
                         <div className="px-5">
-                            <div className="h-1 rounded-full bg-neutral-100 dark:bg-surface-dark-muted overflow-hidden">
+                            <div role="progressbar" aria-label="온보딩 진행률" aria-valuemin={0} aria-valuemax={3} aria-valuenow={1} aria-valuetext="3단계 중 1단계 완료" className="h-1 rounded-full bg-neutral-100 dark:bg-surface-dark-muted overflow-hidden">
                                 <div className="h-full w-1/3 rounded-full bg-brand" />
                             </div>
                         </div>
-                        <ol className="px-5 pt-3 pb-1 flex flex-col gap-1.5">
+                        <ol className="px-5 pt-3 pb-1 flex flex-col gap-2">
                             {[
                                 { done: true, label: "가입했습니다" },
                                 { done: false, now: true, label: "싼 종목을 찾아 관심에 담기" },
                                 { done: false, label: "탄탄함으로 위험한 종목 걸러내기" },
-                            ].map((s, i) => (
-                                <li key={i} className="flex items-center gap-2">
+                            ].map(s => (
+                                <li key={s.label} aria-current={s.now ? "step" : undefined} className="flex min-h-7 items-center gap-2.5">
                                     <span className={cn(
-                                        "w-3 h-3 rounded-full shrink-0 border-2",
+                                        "grid size-5 shrink-0 place-items-center rounded-full border",
                                         s.done
-                                            ? "bg-brand border-brand"
+                                            ? "bg-brand border-brand text-white"
                                             : s.now
-                                                ? "border-brand"
-                                                : "border-neutral-200 dark:border-[#3f3d37]"
-                                    )} />
+                                                ? "border-2 border-brand"
+                                                : "border-neutral-300 dark:border-neutral-500"
+                                    )}>
+                                        {s.done ? <Check size={12} aria-hidden="true" /> : s.now ? <span className="size-1.5 rounded-full bg-brand" /> : null}
+                                    </span>
                                     <span className={cn(
-                                        "text-xs",
+                                        "text-sm",
                                         s.done
-                                            ? "text-neutral-400 dark:text-neutral-500"
+                                            ? "text-neutral-600 dark:text-neutral-300"
                                             : s.now
-                                                ? "font-black text-neutral-800 dark:text-neutral-100"
-                                                : "text-neutral-400 dark:text-neutral-500"
+                                                ? "font-semibold text-neutral-900 dark:text-neutral-50"
+                                                : "text-neutral-600 dark:text-neutral-300"
                                     )}>
                                         {s.label}
                                     </span>
@@ -232,10 +232,10 @@ export default function ProfilePage() {
                         <div className="px-5 pt-2.5 pb-4">
                             <Link
                                 href="/screener"
-                                className="flex items-center justify-center gap-1.5 w-full py-3 rounded-xl bg-brand hover:bg-brand-hover text-white text-sm font-bold transition-colors"
+                                className="flex min-h-11 items-center justify-center gap-1.5 w-full px-4 py-2 rounded-[var(--radius-control)] bg-brand hover:bg-brand-hover text-white text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink"
                             >
                                 싼 종목 찾아보기
-                                <ChevronRight size={15} />
+                                <ChevronRight size={15} aria-hidden="true" />
                             </Link>
                         </div>
                     </div>
