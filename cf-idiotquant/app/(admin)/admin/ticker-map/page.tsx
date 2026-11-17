@@ -206,7 +206,7 @@ export default function TickerMapPage() {
   };
 
   if (status === "loading") {
-    return <div className="flex items-center justify-center min-h-[60vh] text-sm text-neutral-400">권한 확인 중…</div>;
+    return <div className="flex items-center justify-center min-h-[60vh] text-sm text-neutral-600 dark:text-neutral-300">권한 확인 중…</div>;
   }
 
   const isClientPaginated = country === "US";
@@ -223,7 +223,7 @@ export default function TickerMapPage() {
           <button
             onClick={() => { setShowAddForm(v => !v); setAddError(null); }}
             aria-label="오버라이드 추가"
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-brand text-white rounded-lg text-xs font-black hover:bg-brand-hover transition-colors"
+            className="flex min-h-11 items-center gap-1.5 px-3.5 py-2 bg-brand text-white rounded-[var(--radius-control)] text-sm font-semibold hover:bg-brand-hover transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink"
           >
             <Plus size={14} /><span className="hidden sm:inline">추가</span>
           </button>
@@ -239,18 +239,18 @@ export default function TickerMapPage() {
                 value={addTicker}
                 onChange={e => setAddTicker(e.target.value.toUpperCase())}
                 placeholder="티커 (예: 005930, AAPL)"
-                className="flex-1 min-w-[120px] px-3 py-2 bg-surface-canvas dark:bg-surface-dark-canvas border border-neutral-200 dark:border-border-subtle-dark rounded-xl text-xs font-mono focus:outline-none focus:ring-1 focus:ring-brand dark:text-white"
+                className="min-h-11 flex-1 min-w-[120px] px-3 py-2 bg-surface-canvas dark:bg-surface-dark-canvas border border-neutral-200 dark:border-border-subtle-dark rounded-[var(--radius-control)] text-base font-mono focus:outline-none focus:ring-2 focus:ring-brand/30 dark:text-white"
               />
               <input
                 value={addName}
                 onChange={e => setAddName(e.target.value)}
                 placeholder="종목명 (예: 삼성전자, Apple Inc.)"
-                className="flex-1 min-w-[160px] px-3 py-2 bg-surface-canvas dark:bg-surface-dark-canvas border border-neutral-200 dark:border-border-subtle-dark rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-brand dark:text-white"
+                className="min-h-11 flex-1 min-w-[160px] px-3 py-2 bg-surface-canvas dark:bg-surface-dark-canvas border border-neutral-200 dark:border-border-subtle-dark rounded-[var(--radius-control)] text-base focus:outline-none focus:ring-2 focus:ring-brand/30 dark:text-white"
               />
               <select
                 value={addCountry}
                 onChange={e => setAddCountry(e.target.value)}
-                className="px-3 py-2 bg-surface-canvas dark:bg-surface-dark-canvas border border-neutral-200 dark:border-border-subtle-dark rounded-xl text-xs font-bold focus:outline-none focus:ring-1 focus:ring-brand dark:text-white"
+                className="min-h-11 px-3 py-2 bg-surface-canvas dark:bg-surface-dark-canvas border border-neutral-200 dark:border-border-subtle-dark rounded-[var(--radius-control)] text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand/30 dark:text-white"
               >
                 <option value="KR">국내(KR)</option>
                 <option value="US">미국(US)</option>
@@ -258,13 +258,14 @@ export default function TickerMapPage() {
               <button
                 onClick={handleAdd}
                 disabled={addLoading}
-                className="flex items-center gap-1 px-3 py-2 bg-brand text-white rounded-xl text-xs font-black hover:bg-brand-hover disabled:opacity-50 transition-colors"
+                className="flex min-h-11 items-center gap-1 px-3 py-2 bg-brand text-white rounded-[var(--radius-control)] text-sm font-semibold hover:bg-brand-hover disabled:opacity-50 transition-colors"
               >
                 {addLoading ? <RefreshCw size={12} className="animate-spin" /> : <Check size={12} />} 저장
               </button>
               <button
                 onClick={() => { setShowAddForm(false); setAddError(null); }}
-                className="px-3 py-2 bg-neutral-100 dark:bg-surface-dark-muted text-neutral-500 rounded-xl text-xs font-black hover:bg-neutral-200 dark:hover:bg-surface-dark-elevated transition-colors"
+                aria-label="추가 양식 닫기"
+                className="flex min-h-11 min-w-11 items-center justify-center px-3 py-2 bg-neutral-100 dark:bg-surface-dark-muted text-neutral-600 dark:text-neutral-300 rounded-[var(--radius-control)] text-sm font-semibold hover:bg-neutral-200 dark:hover:bg-surface-dark-elevated transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-ink"
               >
                 <X size={12} />
               </button>
@@ -289,14 +290,14 @@ export default function TickerMapPage() {
             ))}
           </div>
 
-          <div className="flex items-center gap-1 text-xs text-neutral-400">
+          <div className="flex items-center gap-1 text-xs text-neutral-600 dark:text-neutral-300">
             <Filter size={11} />
             {SOURCE_OPTIONS.map(opt => (
               <button
                 key={opt.value}
                 onClick={() => { setSource(opt.value as any); setPage(1); }}
                 className={cn(
-                  "min-h-[44px] min-w-[44px] flex-1 px-2.5 py-1 rounded-lg font-bold transition-colors",
+                  "min-h-[44px] min-w-[44px] flex-1 px-2.5 py-1 rounded-[var(--radius-control)] text-sm font-semibold transition-colors",
                   source === opt.value
                     ? "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900"
                     : "bg-neutral-100 dark:bg-surface-dark-muted text-neutral-500 hover:bg-neutral-200 dark:hover:bg-surface-dark-elevated"
@@ -311,12 +312,13 @@ export default function TickerMapPage() {
           <button
             onClick={() => load(page)}
             disabled={loading}
-            className="p-1.5 rounded-lg bg-neutral-100 dark:bg-surface-dark-muted text-neutral-500 hover:bg-neutral-200 dark:hover:bg-surface-dark-elevated transition-colors"
+            aria-label="티커 목록 새로고침"
+            className="flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-control)] bg-neutral-100 dark:bg-surface-dark-muted text-neutral-600 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-surface-dark-elevated transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-ink"
           >
             <RefreshCw size={13} className={(loading || usBaseLoading) ? "animate-spin" : ""} />
           </button>
 
-          <span className="text-[10px] font-mono text-neutral-400 ml-auto">
+          <span className="text-xs font-mono text-neutral-600 dark:text-neutral-300 ml-auto">
             {usBaseLoading ? "미국 종목 로딩 중…" : `총 ${meta.total.toLocaleString()}개`}
             {isClientPaginated && !usBaseLoading && (
               <span className="ml-1 text-neutral-300 dark:text-neutral-600">(클라이언트 필터)</span>
@@ -335,26 +337,26 @@ export default function TickerMapPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-neutral-100 dark:border-border-subtle-dark">
-                  <th className="px-4 py-3 text-left text-[10px] font-black text-neutral-400 uppercase tracking-widest">티커</th>
-                  <th className="px-4 py-3 text-left text-[10px] font-black text-neutral-400 uppercase tracking-widest">종목명</th>
-                  <th className="px-4 py-3 text-left text-[10px] font-black text-neutral-400 uppercase tracking-widest">국가</th>
-                  <th className="px-4 py-3 text-left text-[10px] font-black text-neutral-400 uppercase tracking-widest">소스</th>
-                  {isAdmin && <th className="px-4 py-3 text-center text-[10px] font-black text-neutral-400 uppercase tracking-widest">액션</th>}
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-600 dark:text-neutral-300 uppercase tracking-wide">티커</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-600 dark:text-neutral-300 uppercase tracking-wide">종목명</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-600 dark:text-neutral-300 uppercase tracking-wide">국가</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-600 dark:text-neutral-300 uppercase tracking-wide">소스</th>
+                  {isAdmin && <th className="px-4 py-3 text-center text-xs font-semibold text-neutral-600 dark:text-neutral-300 uppercase tracking-wide">액션</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-50 dark:divide-border-subtle-dark/40">
                 {(loading || usBaseLoading) && rows.length === 0 && (
-                  <tr><td colSpan={isAdmin ? 5 : 4} className="py-12 text-center text-xs text-neutral-400">
+                  <tr><td colSpan={isAdmin ? 5 : 4} className="py-12 text-center text-xs text-neutral-600 dark:text-neutral-300">
                     {usBaseLoading ? "미국 종목 데이터 로딩 중… (최초 1회)" : "불러오는 중..."}
                   </td></tr>
                 )}
                 {!loading && !usBaseLoading && rows.length === 0 && (
-                  <tr><td colSpan={isAdmin ? 5 : 4} className="py-12 text-center text-xs text-neutral-400">결과 없음</td></tr>
+                  <tr><td colSpan={isAdmin ? 5 : 4} className="py-12 text-center text-xs text-neutral-600 dark:text-neutral-300">결과 없음</td></tr>
                 )}
                 {rows.map(row => (
                   <tr key={row.ticker} className="hover:bg-surface-muted-hover dark:hover:bg-[#2a2825] transition-colors group">
                     <td className="px-4 py-3">
-                      <span className="font-mono font-black text-xs text-neutral-900 dark:text-white">{row.ticker}</span>
+                        <span className="font-mono font-semibold text-sm text-neutral-900 dark:text-white">{row.ticker}</span>
                     </td>
                     <td className="px-4 py-3">
                       {editingTicker === row.ticker ? (
@@ -364,27 +366,27 @@ export default function TickerMapPage() {
                             value={editName}
                             onChange={e => setEditName(e.target.value)}
                             onKeyDown={e => { if (e.key === "Enter") handleEditSave(row.ticker); if (e.key === "Escape") setEditingTicker(null); }}
-                            className="flex-1 px-2 py-1 text-xs border border-brand rounded-lg bg-surface-canvas dark:bg-surface-dark-canvas focus:outline-none dark:text-white"
+                            className="min-h-11 flex-1 px-2 py-1 text-base border border-brand rounded-[var(--radius-control)] bg-surface-canvas dark:bg-surface-dark-canvas focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-ink dark:text-white"
                           />
-                          <button onClick={() => handleEditSave(row.ticker)} disabled={editLoading} className="p-1 text-brand-ink hover:bg-brand-light rounded-lg">
+                          <button aria-label={`${row.ticker} 종목명 저장`} onClick={() => handleEditSave(row.ticker)} disabled={editLoading} className="flex min-h-11 min-w-11 items-center justify-center text-brand-ink hover:bg-brand-light rounded-[var(--radius-control)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-ink">
                             {editLoading ? <RefreshCw size={12} className="animate-spin" /> : <Check size={12} />}
                           </button>
-                          <button onClick={() => setEditingTicker(null)} className="p-1 text-neutral-400 hover:bg-neutral-100 dark:hover:bg-surface-dark-muted rounded-lg">
+                          <button aria-label={`${row.ticker} 이름 수정 취소`} onClick={() => setEditingTicker(null)} className="flex min-h-11 min-w-11 items-center justify-center text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-surface-dark-muted rounded-[var(--radius-control)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-ink">
                             <X size={12} />
                           </button>
                         </div>
                       ) : (
                         <div className="flex items-center gap-2">
-                          <span className="text-xs text-neutral-700 dark:text-neutral-200">{row.name}</span>
+                          <span className="text-sm text-neutral-800 dark:text-neutral-100">{row.name}</span>
                           {row.has_override && (
-                            <span className="text-[9px] px-1.5 py-0.5 bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 rounded-full font-black">오버라이드</span>
+                            <span className="text-xs px-1.5 py-0.5 bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 rounded-full font-black">오버라이드</span>
                           )}
                         </div>
                       )}
                     </td>
                     <td className="px-4 py-3">
                       <span className={cn(
-                        "text-[10px] font-black px-2 py-0.5 rounded-full",
+                        "text-xs font-black px-2 py-0.5 rounded-full",
                         row.country === "KR"
                           ? "bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400"
                           : "bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400"
@@ -392,7 +394,7 @@ export default function TickerMapPage() {
                     </td>
                     <td className="px-4 py-3">
                       <span className={cn(
-                        "text-[10px] font-black px-2 py-0.5 rounded-full",
+                        "text-xs font-black px-2 py-0.5 rounded-full",
                         row.source === "hardcoded"
                           ? "bg-neutral-100 dark:bg-surface-dark-muted text-neutral-500"
                           : "bg-brand-light dark:bg-brand-muted/30 text-brand-ink"
@@ -400,11 +402,12 @@ export default function TickerMapPage() {
                     </td>
                     {isAdmin && (
                       <td className="px-4 py-3">
-                        <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
                           {editingTicker !== row.ticker && (
                             <button
                               onClick={() => { setEditingTicker(row.ticker); setEditName(row.name); }}
-                              className="p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-surface-dark-muted text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors"
+                              aria-label={`${row.ticker} 종목명 수정`}
+                              className="flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-control)] hover:bg-neutral-100 dark:hover:bg-surface-dark-muted text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-ink"
                               title="이름 수정 (오버라이드 저장)"
                             >
                               <Edit3 size={13} />
@@ -415,17 +418,18 @@ export default function TickerMapPage() {
                               <div className="flex items-center gap-1">
                                 <button
                                   onClick={() => handleDelete(row.ticker)}
-                                  className="px-2 py-1 rounded-lg bg-rose-500 text-white text-[10px] font-black hover:bg-rose-600 transition-colors"
+                                  className="min-h-11 px-3 py-1 rounded-[var(--radius-control)] bg-rose-500 text-white text-sm font-semibold hover:bg-rose-600 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-700"
                                 >확인</button>
                                 <button
                                   onClick={() => setDeletingTicker(null)}
-                                  className="px-2 py-1 rounded-lg bg-neutral-100 dark:bg-surface-dark-muted text-neutral-500 text-[10px] font-black"
+                                  className="min-h-11 px-3 py-1 rounded-[var(--radius-control)] bg-neutral-100 dark:bg-surface-dark-muted text-neutral-700 dark:text-neutral-200 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-ink"
                                 >취소</button>
                               </div>
                             ) : (
                               <button
                                 onClick={() => setDeletingTicker(row.ticker)}
-                                className="p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/20 text-neutral-400 hover:text-rose-500 transition-colors"
+                                aria-label={`${row.ticker} 오버라이드 삭제`}
+                                className="flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-control)] hover:bg-rose-50 dark:hover:bg-rose-950/20 text-neutral-600 dark:text-neutral-300 hover:text-rose-500 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-rose-600"
                                 title="오버라이드 삭제"
                               >
                                 <Trash2 size={13} />
@@ -443,24 +447,26 @@ export default function TickerMapPage() {
 
           {meta.pages > 1 && (
             <div className="flex items-center justify-between px-4 py-3 border-t border-neutral-100 dark:border-border-subtle-dark">
-              <span className="text-[11px] text-neutral-400 font-mono">
+              <span className="text-xs text-neutral-600 dark:text-neutral-300 font-mono">
                 {((meta.page - 1) * meta.limit) + 1}–{Math.min(meta.page * meta.limit, meta.total)} / {meta.total.toLocaleString()}
               </span>
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => load(meta.page - 1)}
                   disabled={meta.page <= 1 || loading}
-                  className="p-1.5 rounded-lg bg-neutral-100 dark:bg-surface-dark-muted text-neutral-500 disabled:opacity-40 hover:bg-neutral-200 dark:hover:bg-surface-dark-elevated transition-colors"
+                  aria-label="이전 페이지"
+                  className="flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-control)] bg-neutral-100 dark:bg-surface-dark-muted text-neutral-600 dark:text-neutral-300 disabled:opacity-40 hover:bg-neutral-200 dark:hover:bg-surface-dark-elevated transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-ink"
                 >
                   <ChevronLeft size={13} />
                 </button>
-                <span className="text-[11px] font-mono text-neutral-500 px-2">
+                <span className="text-xs font-mono text-neutral-500 px-2">
                   {meta.page} / {meta.pages}
                 </span>
                 <button
                   onClick={() => load(meta.page + 1)}
                   disabled={meta.page >= meta.pages || loading}
-                  className="p-1.5 rounded-lg bg-neutral-100 dark:bg-surface-dark-muted text-neutral-500 disabled:opacity-40 hover:bg-neutral-200 dark:hover:bg-surface-dark-elevated transition-colors"
+                  aria-label="다음 페이지"
+                  className="flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-control)] bg-neutral-100 dark:bg-surface-dark-muted text-neutral-600 dark:text-neutral-300 disabled:opacity-40 hover:bg-neutral-200 dark:hover:bg-surface-dark-elevated transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-ink"
                 >
                   <ChevronRight size={13} />
                 </button>

@@ -139,7 +139,7 @@ function buildMix(list: any[], keyOf: (i: any) => string, colorAt: (idx: number,
 function MixRow({ label, mix }: { label: string; mix: Mix }) {
     return (
         <div className="flex items-start gap-2.5">
-            <span className="w-7 shrink-0 pt-[5px] text-[10.5px] font-extrabold text-neutral-400">{label}</span>
+            <span className="w-7 shrink-0 pt-[5px] text-xs font-extrabold text-neutral-400">{label}</span>
             <div className="flex-1 min-w-0">
                 <div className="flex h-6 rounded-md overflow-hidden border border-neutral-200 dark:border-surface-dark-border">
                     {mix.segs.map(seg => (
@@ -150,14 +150,14 @@ function MixRow({ label, mix }: { label: string; mix: Mix }) {
                             className="relative flex items-center justify-center"
                         >
                             {seg.pct >= 15 && (
-                                <span className="text-[9.5px] font-black text-white tabular-nums">{seg.pct.toFixed(0)}%</span>
+                                <span className="text-xs font-black text-white tabular-nums">{seg.pct.toFixed(0)}%</span>
                             )}
                         </div>
                     ))}
                 </div>
                 <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1">
                     {mix.segs.map(seg => (
-                        <span key={seg.name} className="inline-flex items-center gap-1.5 text-[11px] text-neutral-600 dark:text-neutral-400">
+                        <span key={seg.name} className="inline-flex items-center gap-1.5 text-xs text-neutral-600 dark:text-neutral-400">
                             <i className="w-2 h-2 rounded-sm shrink-0" style={{ background: seg.color }} />
                             <span className="font-semibold">{seg.name}</span>
                             <span className="font-mono tabular-nums text-neutral-400">{seg.n}</span>
@@ -255,14 +255,14 @@ function StrategyCell({ label, count, active, activeCls, title, onClick, compact
             title={title}
             aria-pressed={active}
             className={cn(
-                "flex items-center justify-center gap-1 rounded-lg border text-center leading-none transition-all",
+                "flex min-h-11 items-center justify-center gap-1 rounded-lg border text-center leading-none transition-colors",
                 compact ? "w-[82px] shrink-0 py-2 md:w-auto md:flex-col md:gap-0.5 md:py-1.5" : "flex-col py-1.5",
                 active
                     ? activeCls
                     : "border-neutral-200 dark:border-surface-dark-border text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-surface-dark-card"
             )}
         >
-            <span className={cn("text-[11.5px] font-extrabold truncate max-w-full px-1", active && "underline decoration-2 underline-offset-4")}>{label}</span>
+            <span className={cn("text-sm font-semibold truncate max-w-full px-1", active && "underline decoration-2 underline-offset-4")}>{label}</span>
             <span className={cn("text-xs font-bold font-mono tabular-nums", active ? "opacity-75" : "text-neutral-500", compact && "md:mt-0.5")}>
                 {count}
             </span>
@@ -288,14 +288,14 @@ function SortableHeader({ label, sortKey: key, currentKey, order, onToggle, rele
             title={title}
             onClick={() => onToggle(key)}
             className={cn(
-                "flex min-h-[44px] items-center gap-1 text-xs font-semibold uppercase tracking-wide transition-colors whitespace-nowrap",
+                "flex min-h-[44px] items-center gap-1 text-sm font-semibold uppercase tracking-wide transition-colors whitespace-nowrap",
                 active ? "text-brand-ink dark:text-brand-ink" : "text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300",
                 relevant && !active && "text-emerald-600/90 dark:text-emerald-400/90"
             )}
         >
             {(active || relevant) && <span className={cn("w-1 h-1 rounded-full shrink-0", active ? "bg-brand" : "bg-emerald-500")} />}
             {label}
-            <span className="text-[9px] font-mono">{active ? (order === "asc" ? "↑" : "↓") : "↕"}</span>
+            <span className="text-xs font-mono">{active ? (order === "asc" ? "↑" : "↓") : "↕"}</span>
         </button>
     );
 }
@@ -332,7 +332,7 @@ const TableRow = memo(function TableRow({ item, onClick, isLiked, onToggleLike, 
             <div className="min-w-0 flex items-center gap-2">
                 <ComparisonCheckbox choice={comparison} name={item.name} />
                 <div className="min-w-0 flex-1 flex flex-wrap items-center gap-x-1.5 sm:block">
-                    <p className="min-w-0 truncate font-semibold text-xs text-neutral-900 dark:text-white sm:text-sm" title={item.name}>{item.name}</p>
+                    <p className="min-w-0 truncate font-semibold text-sm text-neutral-900 dark:text-white" title={item.name}>{item.name}</p>
                     <div className="flex min-w-0 items-center gap-1 overflow-hidden whitespace-nowrap sm:mt-0.5 sm:h-5">
                     {item.ticker !== item.name && <span className="min-w-0 truncate text-xs text-neutral-500 dark:text-neutral-400 font-mono" title={item.ticker}>{item.ticker}</span>}
                         <span className="shrink-0"><LiquidityBadge item={item} /></span>
@@ -356,7 +356,7 @@ const TableRow = memo(function TableRow({ item, onClick, isLiked, onToggleLike, 
 
             <div className="text-right whitespace-nowrap">
                 <span className={cn(
-                    "text-xs sm:text-sm font-mono font-bold tabular-nums",
+                    "text-sm font-mono font-semibold tabular-nums",
                     ncav >= 1 ? "text-emerald-600 dark:text-emerald-400" :
                     ncav >= 0.7 ? "text-amber-500" : "text-neutral-400",
                     hlPillCls(highlight, "ncav_ratio", item)
@@ -366,13 +366,13 @@ const TableRow = memo(function TableRow({ item, onClick, isLiked, onToggleLike, 
             </div>
 
             <div className="text-right whitespace-nowrap">
-                <span className={cn("text-xs sm:text-sm font-mono text-neutral-600 dark:text-neutral-300 tabular-nums", hlPillCls(highlight, "pbr", item))}>
+                <span className={cn("text-sm font-mono text-neutral-700 dark:text-neutral-200 tabular-nums", hlPillCls(highlight, "pbr", item))}>
                     {safeNum(item.pbr) > 0 ? `${safeNum(item.pbr).toFixed(2)}` : "—"}<MetricStatus highlight={highlight} metric="pbr" item={item} />
                 </span>
             </div>
 
             <div className="text-right whitespace-nowrap">
-                <span className={cn("text-xs sm:text-sm font-mono text-neutral-600 dark:text-neutral-300 tabular-nums", hlPillCls(highlight, "per", item))}>
+                <span className={cn("text-sm font-mono text-neutral-700 dark:text-neutral-200 tabular-nums", hlPillCls(highlight, "per", item))}>
                     {safeNum(item.per) > 0 ? `${safeNum(item.per).toFixed(1)}` : "—"}<MetricStatus highlight={highlight} metric="per" item={item} />
                 </span>
             </div>
@@ -430,23 +430,23 @@ const GuestRecommendationCard = memo(function GuestRecommendationCard({ item, ra
             className="w-full text-left bg-transparent py-4 hover:bg-neutral-100 dark:hover:bg-surface-dark-hover transition-colors"
         >
             <div className="flex items-start gap-1.5 sm:gap-3">
-                <span className="mt-0.5 w-5 h-5 shrink-0 text-neutral-400 flex items-center justify-center text-[10px] font-medium tabular-nums">
+                <span className="mt-0.5 w-5 h-5 shrink-0 text-neutral-400 flex items-center justify-center text-xs font-medium tabular-nums">
                     {rank}
                 </span>
                 <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-semibold text-neutral-900 dark:text-white">{item.name}</span>
-                    <span className="mt-0.5 flex items-center gap-1.5 text-[10.5px] font-mono tracking-[0.05em] text-neutral-400">
+                    <span className="mt-0.5 flex items-center gap-1.5 text-xs font-mono tracking-[0.05em] text-neutral-400">
                         {item.ticker}
                         {strategy && <span className="font-sans font-bold tracking-normal text-neutral-700 dark:text-neutral-300">· {STRATEGY_LABEL[strategy] ?? strategy}</span>}
                     </span>
                     <span className="mt-1 block"><FinancialFreshnessNotice compact periods={scanFinancialPeriods(item)} source={item.financial_source} collectionDate={scanCollectionDate(item)} /></span>
                 </span>
                 <span className="shrink-0 text-right">
-                    <span className="block text-[10px] font-bold text-neutral-400">PER</span>
+                    <span className="block text-xs font-bold text-neutral-400">PER</span>
                     <span className="block mt-0.5 font-mono text-base sm:text-lg font-medium tabular-nums text-neutral-700 dark:text-neutral-300">{item.per.toFixed(2)}배</span>
                 </span>
             </div>
-            <span className="block mt-1 pt-1 sm:mt-2 sm:pt-2 text-[10px] sm:text-[11px] text-neutral-500 dark:text-neutral-400">
+            <span className="block mt-1 pt-1 sm:mt-2 sm:pt-2 text-xs sm:text-xs text-neutral-500 dark:text-neutral-400">
                 순유동자산이 시가총액의 <strong className="font-mono text-neutral-700 dark:text-neutral-200">{ncav.toFixed(2)}배</strong> · 자세히 보기 <ChevronRight className="inline -mt-px" size={12} />
             </span>
         </button>
@@ -476,9 +476,9 @@ function DrawerCard({ label, remain, dashed, span2, children }: {
             span2 && "sm:col-span-2"
         )}>
             <div className="flex items-center justify-between gap-2 mb-2.5">
-                <span className="text-[11px] font-extrabold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">{label}</span>
+                <span className="text-xs font-extrabold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">{label}</span>
                 {remain !== undefined && (
-                    <span className="text-[10.5px] font-bold font-mono text-brand-ink tabular-nums shrink-0">→ {remain}개</span>
+                    <span className="text-xs font-bold font-mono text-brand-ink tabular-nums shrink-0">→ {remain}개</span>
                 )}
             </div>
             {children}
@@ -495,7 +495,7 @@ function DrawerChip({ active, onClick, children, title }: { active: boolean; onC
             onClick={onClick}
             title={title}
             className={cn(
-                "inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-colors",
+                "inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold border transition-colors",
                 active
                     ? "bg-brand border-brand text-white"
                     : "bg-surface-canvas dark:bg-surface-dark border-neutral-200 dark:border-surface-dark-border text-neutral-500 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600"
@@ -531,7 +531,7 @@ function DrawerCheck({ checked, onChange, label, delta }: {
                 {label}
             </span>
             {delta > 0 && (
-                <span className="text-[10.5px] font-mono text-neutral-400 tabular-nums shrink-0">−{delta}</span>
+                <span className="text-xs font-mono text-neutral-400 tabular-nums shrink-0">−{delta}</span>
             )}
         </label>
     );
@@ -1457,12 +1457,12 @@ function ScreenerContent() {
                     {isLoggedIn && <SecondarySection title={`전략 선택 · ${isAllActive ? "전체" : `${activeStrategyIds.size}개 선택`}`} className="my-3">
                     <div className="flex w-full items-center gap-2 py-2 sm:py-2.5">
                         <div className="min-w-0 flex-1 flex items-center gap-2 text-left">
-                            <span className="min-w-0 truncate text-[11px] font-bold text-brand-ink">
+                            <span className="min-w-0 truncate text-xs font-bold text-brand-ink">
                                 {isAllActive ? '전체' : `${activeStrategyIds.size}개 선택`} · {filteredList.length}종목
                             </span>
                         </div>
                         {activeStrategyIds.size > 1 && (
-                            <div className="shrink-0 flex items-center rounded-full border border-neutral-200 dark:border-surface-dark-border overflow-hidden text-[9px] font-black sm:text-[10px]">
+                            <div className="shrink-0 flex items-center rounded-full border border-neutral-200 dark:border-surface-dark-border overflow-hidden text-xs font-black sm:text-xs">
                                 <button onClick={() => setFilterMode('OR')} aria-label="선택 전략 중 하나 이상 만족" title="선택한 전략 중 하나 이상 충족" className={cn("min-h-[44px] min-w-[44px] px-2 py-1.5", filterMode === 'OR' ? "bg-brand text-white" : "text-neutral-500 dark:text-neutral-400")}>OR</button>
                                 <button onClick={() => setFilterMode('AND')} aria-label="선택 전략 모두 만족" title="선택한 전략을 모두 충족" className={cn("min-h-[44px] min-w-[44px] px-2 py-1.5 border-l border-neutral-200 dark:border-surface-dark-border", filterMode === 'AND' ? "bg-brand text-white" : "text-neutral-500 dark:text-neutral-400")}>AND</button>
                             </div>
@@ -1514,7 +1514,7 @@ function ScreenerContent() {
                                 setSortKey(key); setSortOrder(order); setDisplayCount(DAILY_PAGE_SIZE);
                             }}
                             aria-label="결과 정렬"
-                            className="min-h-[44px] shrink-0 w-[112px] sm:w-auto max-w-[132px] px-2 sm:px-2.5 py-2 rounded-lg text-[11px] sm:text-xs font-bold border border-neutral-200 dark:border-surface-dark-border bg-white dark:bg-surface-dark-card text-neutral-600 dark:text-neutral-300 outline-none focus:border-brand focus:ring-2 focus:ring-brand/15"
+                            className="min-h-[44px] shrink-0 w-[112px] sm:w-auto max-w-[132px] px-2 sm:px-2.5 py-2 rounded-lg text-sm font-semibold border border-neutral-200 dark:border-surface-dark-border bg-white dark:bg-surface-dark-card text-neutral-700 dark:text-neutral-200 outline-none focus:border-brand focus:ring-2 focus:ring-brand/15"
                         >
                             <option value="ncav_ratio:desc">NCAV 높은 순</option>
                             <option value="ncav_ratio:asc">NCAV 낮은 순</option>
@@ -1543,7 +1543,7 @@ function ScreenerContent() {
                             aria-expanded={filterOpen}
                             onClick={() => isLoggedIn ? setFilterOpen(o => !o) : requireLogin()}
                             className={cn(
-                                "shrink-0 flex min-h-[44px] items-center justify-center gap-1.5 px-2.5 py-2 rounded-lg text-xs font-bold border transition-colors whitespace-nowrap sm:px-3",
+                                "shrink-0 flex min-h-[44px] items-center justify-center gap-1.5 px-2.5 py-2 rounded-lg text-sm font-semibold border transition-colors whitespace-nowrap sm:px-3",
                                 filterOpen
                                     ? "bg-brand border-brand text-white"
                                     : activeFilterCount > 0
@@ -1556,13 +1556,13 @@ function ScreenerContent() {
                             {!isLoggedIn && <Lock size={10} className="opacity-60" />}
                             {activeFilterCount > 0 && (
                                 <span className={cn(
-                                    "px-1.5 rounded-full text-[10px] font-black",
+                                    "px-1.5 rounded-full text-xs font-black",
                                     filterOpen ? "bg-white/25 text-white" : "bg-brand-light dark:bg-brand-muted/60 text-brand-ink"
                                 )}>
                                     {activeFilterCount}
                                 </span>
                             )}
-                            <span className="font-mono text-[9px] sm:hidden">{filterOpen ? "▲" : "▼"}</span>
+                            <span className="font-mono text-xs sm:hidden">{filterOpen ? "▲" : "▼"}</span>
                         </button>
 
                         {/* 관심 종목 */}
@@ -1575,7 +1575,7 @@ function ScreenerContent() {
                                 setShowLikedOnly(o => !o); setActiveStrategyIds(new Set()); setDisplayCount(DAILY_PAGE_SIZE);
                             }}
                             className={cn(
-                                "shrink-0 flex min-h-[44px] items-center justify-center gap-1.5 px-2.5 py-2 rounded-lg text-xs font-bold border transition-all whitespace-nowrap sm:px-3",
+                                "shrink-0 flex min-h-[44px] items-center justify-center gap-1.5 px-2.5 py-2 rounded-lg text-sm font-semibold border transition-colors whitespace-nowrap sm:px-3",
                                 showLikedOnly
                                     ? "bg-rose-500 border-rose-500 text-white"
                                     : "border-neutral-200 dark:border-surface-dark-border text-neutral-600 dark:text-neutral-400 hover:border-rose-300 dark:hover:border-rose-700 hover:text-rose-500 dark:hover:text-rose-400 bg-white dark:bg-surface-dark-card"
@@ -1585,7 +1585,7 @@ function ScreenerContent() {
                             관심
                             {!isLoggedIn && <Lock size={10} className="opacity-60" />}
                             <span className={cn(
-                                "text-[10px] font-black px-1.5 py-0.5 rounded-full",
+                                "text-xs font-black px-1.5 py-0.5 rounded-full",
                                 showLikedOnly ? "bg-white/20" : "bg-surface-canvas dark:bg-surface-dark-elevated text-neutral-500"
                             )}>
                                 {likedTickers.size}
@@ -1624,10 +1624,10 @@ function ScreenerContent() {
                         if (chips.length === 0 && !hasActiveFilters) return null;
                         return (
                             <div className="pb-2.5 flex items-center gap-1.5 min-w-0">
-                                {chips.length > 0 && <span className="hidden sm:inline text-[10px] text-neutral-400 font-medium shrink-0">적용:</span>}
+                                {chips.length > 0 && <span className="hidden sm:inline text-xs text-neutral-400 font-medium shrink-0">적용:</span>}
                                 <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-x-auto no-scrollbar">
                                 {chips.map(c => (
-                                    <span key={c.key} className="inline-flex shrink-0 items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand-light dark:bg-brand-muted/30 border border-brand-light-hover dark:border-brand/50 text-brand-ink-hover dark:text-brand-ink">
+                                    <span key={c.key} className="inline-flex shrink-0 items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full bg-brand-light dark:bg-brand-muted/30 border border-brand-light-hover dark:border-brand/50 text-brand-ink-hover dark:text-brand-ink">
                                         {c.label}
                                         <button onClick={c.clear} className="hover:opacity-60" title="제거"><X size={9} /></button>
                                     </span>
@@ -1637,7 +1637,7 @@ function ScreenerContent() {
                                     <button
                                         onClick={resetAllFilters}
                                         title="모든 조건 초기화"
-                                        className="shrink-0 text-[10px] font-bold text-neutral-400 hover:text-red-500 underline underline-offset-2 transition-colors"
+                                        className="shrink-0 text-xs font-bold text-neutral-400 hover:text-red-500 underline underline-offset-2 transition-colors"
                                     >
                                         전체 해제
                                     </button>
@@ -1656,10 +1656,10 @@ function ScreenerContent() {
                         <div className="flex items-center justify-between gap-3 mb-4">
                             <div className="min-w-0">
                                 <p className="text-base sm:text-[12.5px] font-extrabold text-brand-ink dark:text-brand-ink">상세 필터</p>
-                                <p className="text-[11px] text-brand-ink dark:text-[#4ade80]/80 mt-0.5">현재 {filteredList.length}종목 · 조건을 바꾸면 바로 반영됩니다</p>
+                                <p className="text-xs text-brand-ink dark:text-[#4ade80]/80 mt-0.5">현재 {filteredList.length}종목 · 조건을 바꾸면 바로 반영됩니다</p>
                             </div>
                             <div className="flex shrink-0 items-center gap-2">
-                                <button onClick={clearDetailFilters} className="text-[11.5px] font-bold text-brand-ink hover:opacity-70 transition-opacity">전체 해제</button>
+                                <button onClick={clearDetailFilters} className="text-xs font-bold text-brand-ink hover:opacity-70 transition-opacity">전체 해제</button>
                                 <button onClick={() => setFilterOpen(false)} aria-label="필터 닫기" className="sm:hidden rounded-lg border border-neutral-200 bg-white p-2 text-neutral-600 dark:border-surface-dark-border dark:bg-surface-dark-card dark:text-neutral-300"><X size={16} /></button>
                             </div>
                         </div>
@@ -1668,7 +1668,7 @@ function ScreenerContent() {
                         <div className="mb-4 hidden sm:flex flex-col gap-1">
                             {funnel.map((s, i) => (
                                 <div key={s.label} className="flex items-center gap-2">
-                                    <span className="w-[76px] shrink-0 text-[10.5px] font-bold text-neutral-500 dark:text-neutral-400">{s.label}</span>
+                                    <span className="w-[76px] shrink-0 text-xs font-bold text-neutral-500 dark:text-neutral-400">{s.label}</span>
                                     <span className="flex-1 h-2.5 rounded-full bg-white/60 dark:bg-black/20 overflow-hidden">
                                         <span
                                             className="block h-full rounded-full"
@@ -1678,7 +1678,7 @@ function ScreenerContent() {
                                             }}
                                         />
                                     </span>
-                                    <span className="w-12 shrink-0 text-right text-[10.5px] font-mono font-bold tabular-nums text-brand-ink-hover dark:text-brand-ink">{s.count}</span>
+                                    <span className="w-12 shrink-0 text-right text-xs font-mono font-bold tabular-nums text-brand-ink-hover dark:text-brand-ink">{s.count}</span>
                                 </div>
                             ))}
                         </div>
@@ -1699,7 +1699,7 @@ function ScreenerContent() {
                                         </DrawerChip>
                                     ))}
                                 </div>
-                                <div className="flex items-center gap-1.5 text-[11px]">
+                                <div className="flex items-center gap-1.5 text-xs">
                                     <input
                                         type="number"
                                         min={0}
@@ -1730,7 +1730,7 @@ function ScreenerContent() {
                                     onChange={e => { setMaxPbr(Number(e.target.value)); setDisplayCount(DAILY_PAGE_SIZE); }}
                                     className="w-full h-1 accent-brand cursor-pointer"
                                 />
-                                <div className="flex items-center justify-between mt-1.5 text-[10px] font-mono text-neutral-300 dark:text-neutral-600">
+                                <div className="flex items-center justify-between mt-1.5 text-xs font-mono text-neutral-300 dark:text-neutral-600">
                                     <span>0</span>
                                     <span className={cn(maxPbr > 0 && "font-bold text-brand-ink")}>{maxPbr > 0 ? maxPbr.toFixed(2) : '미적용'}</span>
                                     <span>1.3</span>
@@ -1848,7 +1848,7 @@ function ScreenerContent() {
                                     {sectors.size > 0 && (
                                         <button
                                             onClick={() => { setSectors(new Set()); setDisplayCount(DAILY_PAGE_SIZE); }}
-                                            className="mt-2 text-[11px] font-bold text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
+                                            className="mt-2 text-xs font-bold text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
                                         >
                                             업종 선택 해제
                                         </button>
@@ -1973,13 +1973,13 @@ function ScreenerContent() {
 
                             {/* 이 조합 저장 — 재방문 동기 장치. 저장된 필터가 있으면 다시 올 이유가 생긴다. */}
                             <DrawerCard label="이 조합 저장" dashed span2>
-                                <p className="text-[11px] leading-relaxed text-neutral-400 mb-2.5">
+                                <p className="text-xs leading-relaxed text-neutral-400 mb-2.5">
                                     자주 쓰는 필터를 이름 붙여 저장하고 다음에 한 번에 불러옵니다.
                                 </p>
                                 {savedSets.length > 0 && (
                                     <div className="flex items-center gap-1.5 flex-wrap mb-2.5">
                                         {savedSets.map(s => (
-                                            <span key={s.id} className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-brand-light dark:bg-brand-muted/40 border border-brand-light-hover dark:border-brand/50 text-[11px] font-bold text-brand-ink-hover dark:text-brand-ink">
+                                            <span key={s.id} className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-brand-light dark:bg-brand-muted/40 border border-brand-light-hover dark:border-brand/50 text-xs font-bold text-brand-ink-hover dark:text-brand-ink">
                                                 <button onClick={() => applySavedSet(s.qs)} className="hover:opacity-70 max-w-[160px] truncate" title={s.name}>
                                                     {s.name}
                                                 </button>
@@ -2013,7 +2013,7 @@ function ScreenerContent() {
                 <div className="bg-brand-light dark:bg-brand-muted/25 border-b border-brand-light dark:border-brand/40">
                     <div className="service-container py-2.5 flex items-start gap-2">
                         <span className={cn(
-                            "shrink-0 mt-px px-1.5 py-0.5 rounded-md text-[10px] font-extrabold",
+                            "shrink-0 mt-px px-1.5 py-0.5 rounded-md text-xs font-extrabold",
                             STRATEGY_BADGE[bannerPreset.id] ?? "bg-brand-light text-brand-ink-hover"
                         )}>
                             {bannerPreset.label}
@@ -2053,25 +2053,25 @@ function ScreenerContent() {
                                 >
                                     <div className="flex items-center gap-2 mb-2">
                                         <span className={cn(
-                                            "text-[10px] font-extrabold px-2 py-0.5 rounded",
+                                            "text-xs font-extrabold px-2 py-0.5 rounded",
                                             STRATEGY_BADGE[preset.id] ?? "bg-surface-canvas text-neutral-500"
                                         )}>
                                             {preset.label}
                                         </span>
-                                        <span className="text-[10px] text-neutral-400 font-mono">
+                                        <span className="text-xs text-neutral-400 font-mono">
                                             {strategyCounts[preset.id] ?? 0}개
                                         </span>
                                         {activeStrategyIds.has(preset.id) && (
-                                            <span className="ml-auto text-[9px] font-black text-brand-ink dark:text-brand-ink bg-brand-light dark:bg-brand-muted/40 px-1.5 py-0.5 rounded">선택됨</span>
+                                            <span className="ml-auto text-xs font-black text-brand-ink dark:text-brand-ink bg-brand-light dark:bg-brand-muted/40 px-1.5 py-0.5 rounded">선택됨</span>
                                         )}
                                     </div>
-                                    <p className="text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed">
+                                    <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed">
                                         {preset.hint}
                                     </p>
                                 </button>
                             ))}
                         </div>
-                        <p className="mt-3 text-[10px] text-neutral-400 dark:text-neutral-500">
+                        <p className="mt-3 text-xs text-neutral-400 dark:text-neutral-500">
                             · 전략 카드를 클릭하면 필터에 추가됩니다. 복수 선택 후 OR(하나 이상 충족) 또는 AND(모두 충족) 조합 방식을 선택할 수 있습니다.
                         </p>
                     </div>
@@ -2154,7 +2154,7 @@ function ScreenerContent() {
                         <section className="w-full">
                             <div className="mb-3 flex items-baseline justify-between gap-3">
                                 <h2 className="text-sm font-black text-neutral-900 dark:text-white">PER 조건에 맞는 발굴 종목 {guestRecommendations.length}개</h2>
-                                {formattedDate && <span className="text-[10.5px] font-mono text-neutral-400">{formattedDate}</span>}
+                                {formattedDate && <span className="text-xs font-mono text-neutral-400">{formattedDate}</span>}
                             </div>
                             <div className="mb-3 flex flex-wrap items-center gap-2">{comparisonControls}</div>
                             <div className="divide-y divide-neutral-200 dark:divide-border-subtle-dark lg:grid lg:grid-cols-2 lg:gap-x-8 lg:divide-y-0 xl:grid-cols-3">
@@ -2165,7 +2165,7 @@ function ScreenerContent() {
                                     </div>
                                 ))}
                             </div>
-                            <p className="mt-4 text-center text-[11px] leading-relaxed text-neutral-400 dark:text-neutral-500">
+                            <p className="mt-4 text-center text-xs leading-relaxed text-neutral-400 dark:text-neutral-500">
                                 PER 0 초과·20 이하인 종목 중 순유동자산 비율이 높은 순으로 최대 10개를 보여드립니다.
                             </p>
                             <button
@@ -2186,15 +2186,15 @@ function ScreenerContent() {
                         {showInsights && (sectorMix || strategyMix) && (
                             <div className="mb-3 rounded-xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card px-3.5 py-3">
                                 <div className="flex items-baseline justify-between gap-2 mb-2">
-                                    <span className="text-[11px] font-extrabold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">결과 분포</span>
-                                    <span className="text-[10.5px] font-mono text-neutral-400 tabular-nums shrink-0">{filteredList.length}종목</span>
+                                    <span className="text-xs font-extrabold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">결과 분포</span>
+                                    <span className="text-xs font-mono text-neutral-400 tabular-nums shrink-0">{filteredList.length}종목</span>
                                 </div>
                                 <div className="flex flex-col gap-3">
                                     {sectorMix && <MixRow label="업종" mix={sectorMix} />}
                                     {strategyMix && <MixRow label="전략" mix={strategyMix} />}
                                 </div>
                                 {sectorMix && sectorMix.top3Pct >= 60 && (
-                                    <p className="mt-2.5 pt-2.5 border-t border-neutral-100 dark:border-border-subtle-dark text-[11.5px] leading-relaxed text-[#b8762e] dark:text-[#d9a05a] break-keep">
+                                    <p className="mt-2.5 pt-2.5 border-t border-neutral-100 dark:border-border-subtle-dark text-xs leading-relaxed text-[#b8762e] dark:text-[#d9a05a] break-keep">
                                         상위 3개 업종({sectorMix.topNames.join(' · ')})이 {sectorMix.top3Pct.toFixed(0)}%를 차지합니다.
                                         여기서 고르면 사실상 그 업황에 거는 셈입니다.
                                     </p>
@@ -2212,7 +2212,7 @@ function ScreenerContent() {
                                 onClick={() => setShowInsights(v => !v)}
                                 aria-expanded={showInsights}
                                 className={cn(
-                                    "ml-auto rounded-lg px-2.5 py-1.5 text-[11px] font-bold border transition-colors whitespace-nowrap",
+                                    "ml-auto rounded-lg px-2.5 py-1.5 text-xs font-bold border transition-colors whitespace-nowrap",
                                     showInsights
                                         ? "bg-brand-light dark:bg-brand-muted/30 border-brand-light-hover dark:border-brand/40 text-brand-ink-hover dark:text-brand-ink"
                                         : "border-neutral-200 dark:border-surface-dark-border text-neutral-500 dark:text-neutral-400 hover:border-neutral-300"
@@ -2249,7 +2249,7 @@ function ScreenerContent() {
                                         onClick={() => setGroupMode(o.id)}
                                         title={o.disabled ? "업종 데이터 연동 예정" : undefined}
                                         className={cn(
-                                            "px-2.5 py-1.5 rounded-lg text-[11px] transition-colors whitespace-nowrap",
+                                            "px-2.5 py-1.5 rounded-lg text-xs transition-colors whitespace-nowrap",
                                             o.disabled && "opacity-40 cursor-not-allowed",
                                             groupMode === o.id
                                                 ? "bg-white dark:bg-surface-dark font-extrabold text-neutral-900 dark:text-white underline decoration-2 underline-offset-4"
@@ -2268,7 +2268,7 @@ function ScreenerContent() {
                                         title={VIEW_MODE_TITLE[id]}
                                         aria-pressed={viewMode === id}
                                         className={cn(
-                                            "rounded-lg px-2 py-1.5 text-[11px] font-bold transition-colors sm:px-2.5",
+                                            "rounded-lg px-2 py-1.5 text-xs font-bold transition-colors sm:px-2.5",
                                             viewMode === id
                                                 ? "bg-white dark:bg-surface-dark text-neutral-900 dark:text-white underline decoration-2 underline-offset-4"
                                                 : "text-neutral-500 dark:text-neutral-400"
@@ -2326,7 +2326,7 @@ function ScreenerContent() {
                         <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
                                 <div className={cn("grid gap-1 lg:gap-4 items-center px-2 sm:px-4 sm:py-2.5 lg:px-6 lg:py-4 bg-[#fcfaf7] dark:bg-surface-dark border-b border-neutral-200 dark:border-border-subtle-dark", TABLE_COLUMNS)}>
                                     <SortableHeader label="종목명" sortKey="ticker" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} />
-                                    <div className="hidden lg:block text-[10px] font-bold text-neutral-400 uppercase tracking-wider">전략</div>
+                                    <div className="hidden lg:block text-xs font-bold text-neutral-400 uppercase tracking-wider">전략</div>
                                     <SortableHeader label="NCAV" sortKey="ncav_ratio" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} relevant={!!metricHighlight && "ncav_ratio" in metricHighlight} />
                                     <SortableHeader label="PBR" sortKey="pbr" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} relevant={!!metricHighlight && "pbr" in metricHighlight} />
                                     <SortableHeader label="PER" sortKey="per" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} relevant={!!metricHighlight && "per" in metricHighlight} />

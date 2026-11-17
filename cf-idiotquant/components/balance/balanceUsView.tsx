@@ -100,11 +100,11 @@ function OverseasOrderRow({ item, isNccs }: { item: any; isNccs: boolean }) {
         <span className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300">
           {formatTime(item.ord_tmd)}
         </span>
-        <span className="text-[10px] tabular-nums text-neutral-400 block mt-0.5">No. {item.odno}</span>
+        <span className="text-xs tabular-nums text-neutral-400 block mt-0.5">No. {item.odno}</span>
       </td>
       <td className="py-3.5 px-4">
         <span className={cn(
-          "px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wide",
+          "px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wide",
           isBuy ? "bg-red-50 text-red-500 dark:bg-red-950/40" : "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400"
         )}>
           {item.sll_buy_dvsn_cd_name || (isBuy ? "매수" : "매도")}
@@ -112,17 +112,17 @@ function OverseasOrderRow({ item, isNccs }: { item: any; isNccs: boolean }) {
       </td>
       <td className="py-3.5 px-4">
         <span className="font-bold text-neutral-900 dark:text-white text-xs block">{item.prdt_name}</span>
-        <span className="text-[10px] tabular-nums text-neutral-400 uppercase">{item.tr_mket_name || item.tr_crcy_cd}</span>
+        <span className="text-xs tabular-nums text-neutral-400 uppercase">{item.tr_mket_name || item.tr_crcy_cd}</span>
       </td>
       <td className="py-3.5 px-4 text-right tabular-nums">
         <span className="block text-xs font-bold text-neutral-700 dark:text-neutral-300">{item.ft_ord_qty || "-"}</span>
-        <span className="text-[10px] text-neutral-400">주문</span>
+        <span className="text-xs text-neutral-400">주문</span>
       </td>
       <td className="py-3.5 px-4 text-right tabular-nums">
         {hasPartialFill ? (
           <>
             <span className="block text-xs font-semibold text-neutral-900 dark:text-white">{item.ft_ccld_qty}</span>
-            <span className="text-[10px] font-bold text-emerald-500">체결</span>
+            <span className="text-xs font-bold text-emerald-500">체결</span>
           </>
         ) : (
           <span className="text-xs text-neutral-400">-</span>
@@ -133,7 +133,7 @@ function OverseasOrderRow({ item, isNccs }: { item: any; isNccs: boolean }) {
           {Number(item.ft_ord_unpr3 || 0) > 0 ? fmtUsd(item.ft_ord_unpr3) : "-"}
         </span>
         {hasPartialFill && (
-          <span className="text-[10px] text-neutral-400">{fmtUsd(item.ft_ccld_unpr3)} 체결가</span>
+          <span className="text-xs text-neutral-400">{fmtUsd(item.ft_ccld_unpr3)} 체결가</span>
         )}
       </td>
       <td className="py-3.5 px-4 text-right tabular-nums">
@@ -144,7 +144,7 @@ function OverseasOrderRow({ item, isNccs }: { item: any; isNccs: boolean }) {
       </td>
       <td className="py-3.5 px-4 text-center">
         <span className={cn(
-          "inline-block px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wide",
+          "inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold tracking-wide",
           item.prcs_stat_name?.includes("체결") || item.prcs_stat_name?.includes("완료")
             ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400"
             : isNccs
@@ -463,7 +463,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
       mobileTab={mobileTab}
       onMobileTabChange={setMobileTab}
       breadcrumb={
-        <nav className="flex items-center gap-1.5 text-[11px] font-semibold text-neutral-400 flex-wrap">
+        <nav className="flex items-center gap-1.5 text-xs font-semibold text-neutral-400 flex-wrap">
           <span className="flex items-center gap-1">
             <Globe size={12} />
             해외 투자
@@ -484,7 +484,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
             disabled={tradingStatus.state === "pending" || tradingStatus.US === null}
             title={tradingStatus.US === null ? "자동매매 상태 확인 중" : tradingStatus.US ? "자동매매 비활성화" : "자동매매 활성화"}
             className={cn(
-              "flex shrink-0 items-center gap-1 px-2 py-2 md:gap-1.5 md:px-3 rounded-xl text-[11px] md:text-xs font-bold border transition-all",
+              "flex min-h-11 shrink-0 items-center gap-1 px-2 py-2 md:gap-1.5 md:px-3 rounded-[var(--radius-control)] text-sm font-semibold border transition-colors",
               tradingStatus.US
                 ? "bg-neutral-100 dark:bg-neutral-800/30 text-neutral-900 dark:text-neutral-100 border-neutral-300 dark:border-neutral-600/40"
                 : "bg-white dark:bg-surface-dark-card text-neutral-400 border-neutral-200 dark:border-border-subtle-dark hover:border-neutral-400",
@@ -496,7 +496,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
           </button>
           {exRate > 0 && (
             <div className="flex shrink-0 items-center gap-2 py-1 sm:bg-white sm:dark:bg-surface-dark-card sm:px-3 sm:py-2 sm:rounded-xl sm:border sm:border-neutral-200 sm:dark:border-border-subtle-dark">
-              <span className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider flex items-center gap-1.5"><ArrowLeftRight size={12} aria-hidden="true" />고시환율</span>
+              <span className="text-xs font-semibold text-neutral-400 uppercase tracking-wider flex items-center gap-1.5"><ArrowLeftRight size={12} aria-hidden="true" />고시환율</span>
               <span className="text-sm tabular-nums font-semibold text-neutral-900 dark:text-neutral-100">
                 {exRate.toLocaleString()}원
               </span>
@@ -664,9 +664,9 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
                 subtitle="미국 전략 자동매매 종목 풀 및 토큰(예산) 관리"
                 badge={
                   usCapital.state === "pending"
-                    ? <span className="text-[10px] tabular-nums text-amber-500 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800 animate-pulse">로딩 중</span>
+                    ? <span className="text-xs tabular-nums text-amber-500 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800 animate-pulse">로딩 중</span>
                     : usCapital.stock_list?.length > 0
-                    ? <span className="text-[10px] tabular-nums text-neutral-500 dark:text-neutral-400 bg-surface-canvas dark:bg-surface-dark-card px-2 py-0.5 rounded-full">{usCapital.stock_list.length}종목</span>
+                    ? <span className="text-xs tabular-nums text-neutral-500 dark:text-neutral-400 bg-surface-canvas dark:bg-surface-dark-card px-2 py-0.5 rounded-full">{usCapital.stock_list.length}종목</span>
                     : null
                 }
               />

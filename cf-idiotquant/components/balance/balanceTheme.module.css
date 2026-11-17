@@ -8,6 +8,8 @@
   font-variant-numeric: tabular-nums;
 }
 
+.page :global(.text-neutral-400) { color: var(--service-muted); }
+
 
 
 .page :is(h1, h2) {
@@ -50,14 +52,4 @@
     flex-wrap: wrap;
     gap: 4px;
   }
-}
-
-
-@media (max-width: 639px) {
-  .page :global(.text-xs) { font-size: 11px; line-height: 1rem; }
-  .page :global(.text-sm) { font-size: 13px; line-height: 1.15rem; }
-  .page :global(.text-base) { font-size: 14px; line-height: 1.25rem; }
-  .page :global(.text-lg) { font-size: 16px; line-height: 1.4rem; }
-  .page :global(.text-xl) { font-size: 18px; line-height: 1.5rem; }
-  .page :global(.text-2xl) { font-size: 20px; line-height: 1.6rem; }
 }

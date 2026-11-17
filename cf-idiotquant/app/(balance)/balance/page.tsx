@@ -18,20 +18,20 @@ function CountryToggle({ country, onChange }: { country: Country; onChange: (c: 
     { id: "us", label: "미국", code: "US" },
   ];
   return (
-    <div data-header-market-switch className="flex shrink-0 items-center gap-0.5 md:gap-1 bg-surface-canvas dark:bg-surface-dark-muted p-1 rounded-xl">
+    <div data-header-market-switch className="flex shrink-0 items-center gap-0.5 md:gap-1 bg-surface-canvas dark:bg-surface-dark-muted p-1 rounded-[var(--radius-input)]">
       {items.map(it => (
         <button
           key={it.id}
           aria-pressed={country === it.id}
           onClick={() => onChange(it.id)}
           className={cn(
-            "flex items-center gap-1.5 min-h-11 px-2 md:px-3 py-1.5 rounded-lg text-[11px] md:text-xs font-semibold transition-all whitespace-nowrap",
+            "flex items-center gap-1.5 min-h-11 px-2 md:px-3 py-1.5 rounded-[var(--radius-control)] text-sm font-semibold transition-colors whitespace-nowrap",
             country === it.id
               ? "bg-white dark:bg-surface-dark-canvas text-neutral-950 dark:text-white shadow-none"
               : "text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-300"
           )}
         >
-          <span className="hidden md:inline text-[10px] tracking-wide text-neutral-500" aria-hidden="true">{it.code}</span>
+          <span className="hidden md:inline text-xs tracking-wide text-neutral-600 dark:text-neutral-400" aria-hidden="true">{it.code}</span>
           {it.label}
         </button>
       ))}

@@ -66,13 +66,13 @@ const RESULT_TONE_CLS: Record<string, string> = {
 };
 
 function StatusBadge({ lr, compact = false }: { lr?: LastResult; compact?: boolean }) {
-  if (!lr?.code) return compact ? <span className="inline-block h-1.5 w-1.5 rounded-full bg-neutral-400" role="img" aria-label="대기" /> : <span className="text-[11px] text-neutral-400">대기</span>;
+  if (!lr?.code) return compact ? <span className="inline-block h-1.5 w-1.5 rounded-full bg-neutral-400" role="img" aria-label="대기" /> : <span className="text-xs text-neutral-400">대기</span>;
   const meta = RESULT_META[lr.code] ?? { label: lr.code, tone: "neutral" as const };
   const detail = [lr.msg, relTime(lr.at)].filter(Boolean).join(" · ");
   if (compact) return <span title={detail} role="img" aria-label={meta.label} className={cn("inline-block h-1.5 w-1.5 rounded-full", meta.tone === "green" ? "bg-emerald-500" : meta.tone === "amber" ? "bg-amber-400" : meta.tone === "red" ? "bg-rose-500" : "bg-neutral-400")} />;
   return (
     <span title={detail}
-      className={cn("inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap", RESULT_TONE_CLS[meta.tone])}>
+      className={cn("inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold whitespace-nowrap", RESULT_TONE_CLS[meta.tone])}>
       {meta.label}
     </span>
   );
@@ -84,7 +84,7 @@ function Stat({ icon, label, value, hint }: { icon: React.ReactNode; label: stri
       <div className="flex items-center justify-between gap-2 flex-wrap sm:block">
         <div className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400 sm:mb-1">
           {icon}
-          <span className="text-[11px] font-bold uppercase tracking-wide">{label}</span>{hint && <DetailHelp label={label}>{hint}</DetailHelp>}
+          <span className="text-xs font-bold uppercase tracking-wide">{label}</span>{hint && <DetailHelp label={label}>{hint}</DetailHelp>}
         </div>
         <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-50 tabular-nums leading-tight text-left sm:text-left">{value}</p>
       </div>
@@ -144,12 +144,12 @@ export default function TradingActivityPanel({
           <p className={cn("text-sm font-semibold", open ? "text-neutral-900 dark:text-neutral-100" : "text-neutral-500 dark:text-neutral-400")}>
             {open ? "매매 시간대 · 5분마다 실행" : "매매 시간대 아님 · 대기"}
           </p>
-          <p className="text-[11px] text-neutral-400 mt-0.5">{country} 스케줄 {windowLabel}</p>
+          <p className="text-xs text-neutral-400 mt-0.5">{country} 스케줄 {windowLabel}</p>
         </div>
         {onRefresh && (
           <button
             onClick={onRefresh}
-            className="min-h-11 sm:min-h-0 shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold text-neutral-500 dark:text-neutral-400 bg-white dark:bg-surface-dark border border-neutral-200 dark:border-border-subtle-dark hover:border-neutral-300/50 dark:hover:border-neutral-600/50 transition-colors"
+            className="min-h-11 sm:min-h-0 shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold text-neutral-500 dark:text-neutral-400 bg-white dark:bg-surface-dark border border-neutral-200 dark:border-border-subtle-dark hover:border-neutral-300/50 dark:hover:border-neutral-600/50 transition-colors"
           >
             <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
             새로고침
@@ -167,8 +167,8 @@ export default function TradingActivityPanel({
 
       {/* 현재 매매 대상 (활성 그룹 소속 · action=active) — 워커가 이 종목들을 자동매매 */}
       <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1 mb-2">
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-900 dark:text-neutral-100">현재 매매 대상</p>
-        <p className="text-[11px] font-bold text-neutral-400">활성 그룹 {activeCount}종목</p>
+        <p className="text-xs font-semibold uppercase tracking-wider text-neutral-900 dark:text-neutral-100">현재 매매 대상</p>
+        <p className="text-xs font-bold text-neutral-400">활성 그룹 {activeCount}종목</p>
       </div>
       <div className="mb-2 space-y-1 sm:hidden">
         {activeStocks.length === 0 && <p className="rounded-xl border border-neutral-200 p-4 text-xs text-neutral-500 dark:border-border-subtle-dark">활성 그룹에 매매 대상 종목이 없습니다.</p>}
@@ -187,16 +187,16 @@ export default function TradingActivityPanel({
             </summary>
             <div className="pb-3 pt-1">
             <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0"><p className="break-words text-sm font-bold">{displayName(stock.symbol, stock.name)}</p><p className="mt-0.5 break-words text-[11px] text-neutral-500 dark:text-neutral-400">{group?.name ?? "—"} · {group?.dca ? "정액" : "일반"}{group?.side === "sell" ? "매도" : "매수"}</p></div>
+              <div className="min-w-0"><p className="break-words text-sm font-bold">{displayName(stock.symbol, stock.name)}</p><p className="mt-0.5 break-words text-xs text-neutral-500 dark:text-neutral-400">{group?.name ?? "—"} · {group?.dca ? "정액" : "일반"}{group?.side === "sell" ? "매도" : "매수"}</p></div>
               <StatusBadge lr={(stock as unknown as { last_result?: LastResult }).last_result} />
             </div>
             <div className="mt-3 flex flex-wrap items-baseline justify-between gap-2 text-xs"><span className="text-neutral-500 dark:text-neutral-400">현재 포인트</span><strong className="break-all text-base tabular-nums text-neutral-900 dark:text-neutral-100">{won(stock.token ?? 0)}</strong></div>
             {group?.dca && unitKrw !== null && <div className="mt-2">
-              <div className="flex flex-wrap justify-between gap-1 text-[11px] text-neutral-500 dark:text-neutral-400"><span>1주 예산 적립</span><span>{points >= unitKrw ? `예산 기준 ${Math.floor(points / unitKrw).toLocaleString("ko-KR")}주` : `${won(unitKrw - points)} 더 필요`}</span></div>
+              <div className="flex flex-wrap justify-between gap-1 text-xs text-neutral-500 dark:text-neutral-400"><span>1주 예산 적립</span><span>{points >= unitKrw ? `예산 기준 ${Math.floor(points / unitKrw).toLocaleString("ko-KR")}주` : `${won(unitKrw - points)} 더 필요`}</span></div>
               <div role="progressbar" aria-label={`${displayName(stock.symbol, stock.name)} 1주 예산 적립`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)} className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-neutral-100 dark:bg-surface-dark-muted"><div className="h-full rounded-full bg-neutral-900 dark:bg-neutral-100 dark:text-neutral-900" style={{ width: `${progress}%` }} /></div>
-              <p className="mt-1 text-[10px] text-neutral-400">저장된 시세 기준{group.side === "sell" ? " · 매도는 보유 수량 한도" : " · 실제 주문 수량은 달라질 수 있음"}</p>
+              <p className="mt-1 text-xs text-neutral-400">저장된 시세 기준{group.side === "sell" ? " · 매도는 보유 수량 한도" : " · 실제 주문 수량은 달라질 수 있음"}</p>
             </div>}
-            <p className="mt-1 text-[11px] text-neutral-500 dark:text-neutral-400">NCAV {Number.isFinite(Number(stock.ncavRatio)) ? `${Number(stock.ncavRatio).toFixed(2)}x` : "—"}</p>
+            <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">NCAV {Number.isFinite(Number(stock.ncavRatio)) ? `${Number(stock.ncavRatio).toFixed(2)}x` : "—"}</p>
             </div>
           </details>;
         })}
@@ -206,7 +206,7 @@ export default function TradingActivityPanel({
           <thead>
             <tr className="bg-[#fcfaf7] dark:bg-surface-dark border-b border-neutral-100 dark:border-border-subtle-dark">
               {["종목", "그룹", "상태", "NCAV", "예산(토큰)"].map((h, i) => (
-                <th key={h} className={cn("px-3 py-2 text-[10px] font-bold text-neutral-400 uppercase tracking-wider", i >= 3 && "text-right")}>{h}</th>
+                <th key={h} className={cn("px-3 py-2 text-xs font-bold text-neutral-400 uppercase tracking-wider", i >= 3 && "text-right")}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -222,10 +222,10 @@ export default function TradingActivityPanel({
                   <tr key={`${s.symbol}-${i}`} className="hover:bg-surface-canvas dark:hover:bg-surface-dark-card/50">
                     <td className="px-3 py-2">
                       <p className="text-xs font-bold text-neutral-800 dark:text-neutral-100 truncate max-w-[120px]">{nm}</p>
-                      {nm !== s.symbol && <p className="text-[10px] text-neutral-400 tabular-nums">{s.symbol}</p>}
+                      {nm !== s.symbol && <p className="text-xs text-neutral-400 tabular-nums">{s.symbol}</p>}
                     </td>
                     <td className="px-3 py-2">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400 truncate max-w-[90px]">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400 truncate max-w-[90px]">
                         {grp?.name ?? "-"}
                       </span>
                     </td>
@@ -241,7 +241,7 @@ export default function TradingActivityPanel({
       </div>
 
       {/* 최근 자동 체결 */}
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-900 dark:text-neutral-100 mb-2">자동매매 주문 접수 기록</p>
+      <p className="text-xs font-semibold uppercase tracking-wider text-neutral-900 dark:text-neutral-100 mb-2">자동매매 주문 접수 기록</p>
       <details className="mb-3 text-xs text-neutral-500 dark:text-neutral-400">
         <summary className="min-h-11 cursor-pointer py-3 font-medium">주문 접수와 실제 체결·포인트의 차이</summary>
         <p className="pb-3 text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">주문금액은 로그의 가격 × 주문 수량이며 실제 체결금액과 다를 수 있습니다. 기록된 포인트는 차감 전 값입니다. 매수·정액매도 접수 시 포인트가 차감되지만, 이 로그에는 차감 후 잔액과 실제 체결 확인이 없어 차감·체결 검증은 할 수 없습니다.</p>
@@ -257,13 +257,13 @@ export default function TradingActivityPanel({
           return <details key={`${log.ts}-${index}`} className="group/order min-w-0 rounded-xl border border-neutral-200 px-3 dark:border-border-subtle-dark">
             <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-neutral-500 dark:focus-visible:ring-neutral-400 [&::-webkit-details-marker]:hidden">
               <span className="min-w-0 flex-1 truncate text-sm font-bold">{name || "—"}</span>
-              <span className={cn("shrink-0 text-[11px] font-bold", sell ? "text-rose-500" : "text-neutral-900 dark:text-neutral-100")}>{sell ? "매도" : "매수"}</span>
+              <span className={cn("shrink-0 text-xs font-bold", sell ? "text-rose-500" : "text-neutral-900 dark:text-neutral-100")}>{sell ? "매도" : "매수"}</span>
               <span className="shrink-0 whitespace-nowrap text-xs font-bold tabular-nums">{amount === null ? "미확인" : fmtPrice(amount)}</span>
               <ChevronDown className="h-3.5 w-3.5 shrink-0 text-neutral-400 transition-transform group-open/order:rotate-180" aria-hidden="true" />
             </summary>
             <div className="pb-3 pt-1">
             <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0"><p className="break-words text-sm font-bold">{name || "—"}</p><p className="mt-1 text-[11px] text-neutral-500 dark:text-neutral-400">{Number.isFinite(log.ts) ? new Date(log.ts).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }) : "—"}</p></div>
+              <div className="min-w-0"><p className="break-words text-sm font-bold">{name || "—"}</p><p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">{Number.isFinite(log.ts) ? new Date(log.ts).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }) : "—"}</p></div>
               <span className={cn("shrink-0 rounded-md px-2 py-1 text-xs font-bold", sell ? "bg-rose-50 text-rose-600 dark:bg-rose-950/30" : "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30")}>{sell ? "매도 접수" : "매수 접수"}</span>
             </div>
             <dl className="mt-2 space-y-1 text-xs">
@@ -280,7 +280,7 @@ export default function TradingActivityPanel({
           <thead>
             <tr className="bg-[#fcfaf7] dark:bg-surface-dark border-b border-neutral-100 dark:border-border-subtle-dark">
               {["시각", "종목", "구분", "수량", "주문 기준가", "주문금액", "차감 전 포인트 (원)"].map((h, i) => (
-                <th key={h} className={cn("px-3 py-2 text-[10px] font-bold text-neutral-400 uppercase tracking-wider", i >= 3 && "text-right")}>{h}</th>
+                <th key={h} className={cn("px-3 py-2 text-xs font-bold text-neutral-400 uppercase tracking-wider", i >= 3 && "text-right")}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -299,14 +299,14 @@ export default function TradingActivityPanel({
                 const ts = Number.isFinite(l.ts) ? new Date(l.ts).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }) : "-";
                 return (
                   <tr key={`${code}-${l.ts}-${i}`} className="hover:bg-surface-canvas dark:hover:bg-surface-dark-card/50">
-                    <td className="px-3 py-2 text-[11px] text-neutral-400 tabular-nums whitespace-nowrap">{ts}</td>
+                    <td className="px-3 py-2 text-xs text-neutral-400 tabular-nums whitespace-nowrap">{ts}</td>
                     <td className="px-3 py-2">
                       <p className="text-xs font-bold text-neutral-800 dark:text-neutral-100 truncate max-w-[120px]">{name}</p>
-                      {code && <p className="text-[10px] text-neutral-400 tabular-nums">{code}</p>}
+                      {code && <p className="text-xs text-neutral-400 tabular-nums">{code}</p>}
                     </td>
                     <td className="px-3 py-2">
                       <span className={cn(
-                        "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold",
+                        "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold",
                         sell
                           ? "bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400"
                           : "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400"

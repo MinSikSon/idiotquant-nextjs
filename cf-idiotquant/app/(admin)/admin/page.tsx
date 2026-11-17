@@ -103,7 +103,7 @@ export default function AdminPage() {
 
   if (status === "loading") {
     return (
-      <div className="flex items-center justify-center min-h-[60vh] text-sm text-neutral-400">
+      <div className="flex items-center justify-center min-h-[60vh] text-sm text-neutral-600 dark:text-neutral-300">
         권한 확인 중…
       </div>
     );
@@ -132,27 +132,27 @@ export default function AdminPage() {
       <div className="flex flex-wrap gap-2 mb-6">
         <Link
           href="/admin/ticker-map"
-          className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-xl text-xs font-bold text-neutral-700 dark:text-neutral-300 hover:border-brand hover:text-brand-ink transition-colors group"
+          className="flex min-h-11 items-center gap-2 px-4 py-2 bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-[var(--radius-control)] text-sm font-semibold text-neutral-700 dark:text-neutral-300 hover:border-brand hover:text-brand-ink transition-colors group"
         >
-          <BookOpen size={13} className="text-neutral-400 group-hover:text-brand-ink transition-colors" />
+          <BookOpen size={13} className="text-neutral-600 dark:text-neutral-300 group-hover:text-brand-ink transition-colors" />
           종목명 매핑 관리
           <ArrowRight size={11} className="text-neutral-300 group-hover:text-brand-ink transition-colors" />
         </Link>
       </div>
 
-      <Link href="/admin/trading" className="mb-6 flex items-center justify-between gap-3 rounded-xl border border-neutral-200 bg-white p-4 text-sm font-bold text-neutral-800 hover:border-brand dark:border-border-subtle-dark dark:bg-surface-dark-card dark:text-neutral-100">
+      <Link href="/admin/trading" className="mb-6 flex min-h-11 items-center justify-between gap-3 rounded-[var(--radius-panel)] border border-neutral-200 bg-white p-4 text-sm font-semibold text-neutral-800 hover:border-brand dark:border-border-subtle-dark dark:bg-surface-dark-card dark:text-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink">
         자동매매 운영 현황 <ArrowRight size={14} />
       </Link>
 
       <OpenDartUsage />
 
       {/* 재가입 쿨다운 설정 */}
-      <div className="bg-white dark:bg-surface-dark border border-neutral-200/70 dark:border-surface-dark-border rounded-xl p-5 mb-6">
+      <div className="bg-white dark:bg-surface-dark border border-neutral-200/70 dark:border-surface-dark-border rounded-[var(--radius-panel)] p-5 mb-6">
         <div className="flex items-center gap-2 mb-1">
-          <Clock size={14} className="text-neutral-400" />
+          <Clock size={14} className="text-neutral-600 dark:text-neutral-300" />
           <span className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">재가입 쿨다운</span>
         </div>
-        <p className="text-xs text-neutral-400 mb-3">탈퇴 후 같은 카카오 계정의 재가입을 막을 기간(일). 0이면 제한 없음.</p>
+        <p className="text-xs text-neutral-600 dark:text-neutral-300 mb-3">탈퇴 후 같은 카카오 계정의 재가입을 막을 기간(일). 0이면 제한 없음.</p>
         <div className="flex items-center gap-2 flex-wrap">
           <input
             type="number"
@@ -160,13 +160,13 @@ export default function AdminPage() {
             max={3650}
             value={cooldownDays}
             onChange={(e) => setCooldownDays(e.target.value)}
-            className="w-28 px-3 py-2 rounded-xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card text-sm text-neutral-800 dark:text-neutral-200 outline-none focus:border-brand"
+            className="min-h-11 w-28 px-3 py-2 rounded-[var(--radius-control)] border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card text-base text-neutral-800 dark:text-neutral-200 outline-none focus:border-brand focus-visible:ring-2 focus-visible:ring-brand/30"
           />
           <span className="text-sm text-neutral-500 dark:text-neutral-400">일</span>
           <button
             onClick={saveCooldown}
             disabled={cooldownSaving || cooldownDays === ""}
-            className="ml-1 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-brand hover:bg-brand-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="ml-1 min-h-11 px-4 py-2 rounded-[var(--radius-control)] text-sm font-semibold text-white bg-brand hover:bg-brand-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink"
           >
             {cooldownSaving ? "저장 중…" : "저장"}
           </button>
@@ -182,8 +182,8 @@ export default function AdminPage() {
           { label: "Business",   value: users.filter(u => u.plan === "business").length },
           { label: "어드민",     value: users.filter(u => u.role === "admin").length },
         ].map(stat => (
-          <div key={stat.label} className="bg-white dark:bg-surface-dark border border-neutral-200/70 dark:border-surface-dark-border rounded-xl p-4">
-            <p className="text-xs text-neutral-400 mb-1">{stat.label}</p>
+          <div key={stat.label} className="bg-white dark:bg-surface-dark border border-neutral-200/70 dark:border-surface-dark-border rounded-[var(--radius-panel)] p-4">
+            <p className="text-xs text-neutral-600 dark:text-neutral-300 mb-1">{stat.label}</p>
             <p className="text-2xl font-black text-neutral-900 dark:text-white">
               {loading ? "—" : stat.value}
             </p>
@@ -192,18 +192,18 @@ export default function AdminPage() {
       </div>
 
       {/* User Table */}
-      <div className="bg-white dark:bg-surface-dark border border-neutral-200/70 dark:border-surface-dark-border rounded-xl overflow-hidden">
+      <div className="bg-white dark:bg-surface-dark border border-neutral-200/70 dark:border-surface-dark-border rounded-[var(--radius-panel)] overflow-hidden">
         <div className="flex items-center gap-2 px-5 py-4 border-b border-neutral-100 dark:border-surface-dark-hover">
-          <Users size={14} className="text-neutral-400" />
+          <Users size={14} className="text-neutral-600 dark:text-neutral-300" />
           {/* 문이 둘이 됐으므로 "카카오 가입자" 가 아니다 — 가입 경로는 줄마다 배지로 적는다 */}
           <span className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">가입자 목록</span>
           {!loading && (
-            <span className="ml-auto text-xs text-neutral-400">{users.length}명</span>
+            <span className="ml-auto text-xs text-neutral-600 dark:text-neutral-300">{users.length}명</span>
           )}
         </div>
 
         {loading && (
-          <div className="p-10 text-center text-sm text-neutral-400">불러오는 중…</div>
+          <div className="p-10 text-center text-sm text-neutral-600 dark:text-neutral-300">불러오는 중…</div>
         )}
         {error && (
           <div className="p-10 text-center text-sm text-red-500">{error}</div>
@@ -213,13 +213,13 @@ export default function AdminPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-neutral-100 dark:border-surface-dark-hover bg-surface-canvas dark:bg-surface-dark-card">
-                  <th className="text-left px-5 py-3 text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">이름</th>
-                  <th className="text-left px-5 py-3 text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">이메일</th>
-                  <th className="text-left px-5 py-3 text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">가입 경로</th>
-                  <th className="text-left px-5 py-3 text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">플랜</th>
-                  <th className="text-left px-5 py-3 text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">역할</th>
-                  <th className="text-left px-5 py-3 text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">가입일</th>
-                  <th className="text-left px-5 py-3 text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">마지막 로그인</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-neutral-600 dark:text-neutral-300 uppercase tracking-wider">이름</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-neutral-600 dark:text-neutral-300 uppercase tracking-wider">이메일</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-neutral-600 dark:text-neutral-300 uppercase tracking-wider">가입 경로</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-neutral-600 dark:text-neutral-300 uppercase tracking-wider">플랜</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-neutral-600 dark:text-neutral-300 uppercase tracking-wider">역할</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-neutral-600 dark:text-neutral-300 uppercase tracking-wider">가입일</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-neutral-600 dark:text-neutral-300 uppercase tracking-wider">마지막 로그인</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100 dark:divide-[#2c2b27]">
@@ -227,7 +227,7 @@ export default function AdminPage() {
                   <tr key={u.id} className="hover:bg-surface-canvas dark:hover:bg-surface-dark-card transition-colors">
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-7 h-7 rounded-full bg-neutral-100 dark:bg-surface-dark-muted flex items-center justify-center text-[10px] font-black text-neutral-600 dark:text-neutral-300 shrink-0">
+                        <div className="w-7 h-7 rounded-full bg-neutral-100 dark:bg-surface-dark-muted flex items-center justify-center text-xs font-black text-neutral-600 dark:text-neutral-300 shrink-0">
                           {u.name?.[0] ?? "?"}
                         </div>
                         <span className="font-medium text-neutral-800 dark:text-neutral-200">{u.name ?? "—"}</span>
@@ -242,19 +242,19 @@ export default function AdminPage() {
                           <span
                             key={p}
                             className={cn(
-                              "text-[10px] font-extrabold px-1.5 py-0.5 rounded whitespace-nowrap",
+                              "text-xs font-extrabold px-1.5 py-0.5 rounded whitespace-nowrap",
                               PROVIDER_CLASS[p] ?? "bg-neutral-100 dark:bg-surface-dark-muted text-neutral-500 dark:text-neutral-400"
                             )}
                           >
                             {PROVIDER_LABEL[p] ?? p}
                           </span>
                         ))}
-                        {!u.providers && <span className="text-xs text-neutral-400">—</span>}
+                        {!u.providers && <span className="text-xs text-neutral-600 dark:text-neutral-300">—</span>}
                       </div>
                     </td>
                     <td className="px-5 py-3">
                       <span className={cn(
-                        "text-[10px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-tight",
+                        "text-xs font-extrabold px-1.5 py-0.5 rounded uppercase tracking-tight",
                         PLAN_CLASS[u.plan] ?? PLAN_CLASS.free
                       )}>
                         {PLAN_LABEL[u.plan] ?? u.plan}
@@ -262,24 +262,24 @@ export default function AdminPage() {
                     </td>
                     <td className="px-5 py-3">
                       {u.role === "admin" ? (
-                        <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-tight bg-red-50 dark:bg-red-950/30 text-red-500 dark:text-red-400">
+                        <span className="text-xs font-extrabold px-1.5 py-0.5 rounded uppercase tracking-tight bg-red-50 dark:bg-red-950/30 text-red-500 dark:text-red-400">
                           Admin
                         </span>
                       ) : (
-                        <span className="text-xs text-neutral-400">user</span>
+                        <span className="text-xs text-neutral-600 dark:text-neutral-300">user</span>
                       )}
                     </td>
-                    <td className="px-5 py-3 text-neutral-400 text-xs">
+                    <td className="px-5 py-3 text-neutral-600 dark:text-neutral-300 text-xs">
                       {u.createdAt ? new Date(u.createdAt * 1000).toLocaleDateString("ko-KR") : "—"}
                     </td>
-                    <td className="px-5 py-3 text-neutral-400 text-xs">
+                    <td className="px-5 py-3 text-neutral-600 dark:text-neutral-300 text-xs">
                       {u.lastLoginAt ? new Date(u.lastLoginAt * 1000).toLocaleDateString("ko-KR") : "—"}
                     </td>
                   </tr>
                 ))}
                 {users.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-5 py-10 text-center text-neutral-400 text-sm">가입자 없음</td>
+                    <td colSpan={7} className="px-5 py-10 text-center text-neutral-600 dark:text-neutral-300 text-sm">가입자 없음</td>
                   </tr>
                 )}
               </tbody>

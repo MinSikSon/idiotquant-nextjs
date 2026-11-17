@@ -131,11 +131,11 @@ function OrderRow({ item, isNccs }: { item: any; isNccs: boolean }) {
         <span className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300">
           {isNccs ? "대기 중" : formatTime(item.ccld_time)}
         </span>
-        <span className="text-[10px] tabular-nums text-neutral-400 block mt-0.5">No. {item.odno}</span>
+        <span className="text-xs tabular-nums text-neutral-400 block mt-0.5">No. {item.odno}</span>
       </td>
       <td className="py-3.5 px-4">
         <span className={cn(
-          "px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wide",
+          "px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wide",
           isBuy
             ? "bg-red-50 text-red-500 dark:bg-red-950/40"
             : "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400"
@@ -145,26 +145,26 @@ function OrderRow({ item, isNccs }: { item: any; isNccs: boolean }) {
       </td>
       <td className="py-3.5 px-4">
         <span className="font-bold text-neutral-900 dark:text-white text-xs block">{item.prdt_name}</span>
-        <span className="text-[10px] tabular-nums text-neutral-400">{item.pdno}</span>
+        <span className="text-xs tabular-nums text-neutral-400">{item.pdno}</span>
       </td>
       <td className="py-3.5 px-4 text-right">
         <span className="block text-xs font-medium text-neutral-700 dark:text-neutral-300">
           {Number(item.ord_unpr).toLocaleString()}원
         </span>
-        <span className="text-[10px] text-neutral-400">{item.ord_qty}주</span>
+        <span className="text-xs text-neutral-400">{item.ord_qty}주</span>
       </td>
       <td className="py-3.5 px-4 text-right">
         {isNccs ? (
           <>
             <span className="block text-xs text-neutral-400">-</span>
-            <span className="text-[10px] text-neutral-400">{item.tot_ccld_qty}주 완료</span>
+            <span className="text-xs text-neutral-400">{item.tot_ccld_qty}주 완료</span>
           </>
         ) : (
           <>
             <span className="block text-xs font-semibold text-neutral-900 dark:text-white">
               {Number(item.ccld_unpr) > 0 ? `${Number(item.ccld_unpr).toLocaleString()}원` : "-"}
             </span>
-            <span className="text-[10px] font-bold text-emerald-500">{item.tot_ccld_qty}주</span>
+            <span className="text-xs font-bold text-emerald-500">{item.tot_ccld_qty}주</span>
           </>
         )}
       </td>
@@ -476,7 +476,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
       mobileTab={mobileTab}
       onMobileTabChange={setMobileTab}
       breadcrumb={
-        <nav className="flex items-center gap-1.5 text-[11px] font-semibold text-neutral-400 flex-wrap">
+        <nav className="flex items-center gap-1.5 text-xs font-semibold text-neutral-400 flex-wrap">
           <span className="flex items-center gap-1">
             <LayoutDashboard size={12} />
             투자 현황
@@ -505,7 +505,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
           disabled={tradingStatus.state === "pending" || tradingStatus.KR === null}
           title={tradingStatus.KR === null ? "자동매매 상태 확인 중" : tradingStatus.KR ? "자동매매 비활성화" : "자동매매 활성화"}
           className={cn(
-            "flex shrink-0 items-center gap-1 px-2 py-2 md:gap-1.5 md:px-3 rounded-xl text-[11px] md:text-xs font-bold border transition-all",
+            "flex min-h-11 shrink-0 items-center gap-1 px-2 py-2 md:gap-1.5 md:px-3 rounded-[var(--radius-control)] text-sm font-semibold border transition-colors",
             tradingStatus.KR
               ? "bg-neutral-100 dark:bg-neutral-800/30 text-neutral-900 dark:text-neutral-100 border-neutral-300 dark:border-neutral-600/40"
               : "bg-white dark:bg-surface-dark-card text-neutral-400 border-neutral-200 dark:border-border-subtle-dark hover:border-neutral-400",
@@ -517,7 +517,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
         </button>
       )}
       footerBadge={
-        <span className="text-[10px] tabular-nums text-neutral-400 bg-surface-canvas dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark px-2.5 py-1 rounded-lg">
+        <span className="text-xs tabular-nums text-neutral-400 bg-surface-canvas dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark px-2.5 py-1 rounded-lg">
           ID: {String(balanceKey).slice(0, 8) || "N/A"}
         </span>
       }
@@ -642,9 +642,9 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
                 subtitle="전략 자동매매 종목 풀 및 토큰(예산) 관리"
                 badge={
                   krCapital.state === "pending"
-                    ? <span className="text-[10px] tabular-nums text-amber-500 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800 animate-pulse">로딩 중</span>
+                    ? <span className="text-xs tabular-nums text-amber-500 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800 animate-pulse">로딩 중</span>
                     : krCapital.stock_list?.length > 0
-                    ? <span className="text-[10px] tabular-nums text-neutral-500 dark:text-neutral-400 bg-surface-canvas dark:bg-surface-dark-card px-2 py-0.5 rounded-full">{krCapital.stock_list.length}종목</span>
+                    ? <span className="text-xs tabular-nums text-neutral-500 dark:text-neutral-400 bg-surface-canvas dark:bg-surface-dark-card px-2 py-0.5 rounded-full">{krCapital.stock_list.length}종목</span>
                     : null
                 }
               />

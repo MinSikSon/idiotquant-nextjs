@@ -33,9 +33,9 @@ export function SectionNav({
             aria-pressed={mobileTab === id}
             onClick={() => onMobileTabChange?.(id)}
             className={cn(
-              "flex min-h-11 min-w-0 flex-1 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-transparent px-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-neutral-500 md:gap-2 md:rounded-none md:border-x-0 md:border-t-0 md:border-b-2 md:px-6 md:py-2 md:text-sm",
+              "relative flex min-h-11 min-w-0 flex-1 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-transparent px-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-neutral-500 md:gap-2 md:rounded-none md:border-x-0 md:border-t-0 md:px-6 md:py-2",
               mobileTab === id
-                ? "bg-white text-neutral-900 shadow-sm underline decoration-2 underline-offset-4 dark:bg-surface-dark-card dark:text-neutral-50 md:bg-transparent md:shadow-none md:border-neutral-900 md:text-neutral-900 dark:md:border-neutral-100 dark:md:text-neutral-100"
+                ? "bg-white font-semibold text-neutral-900 shadow-none dark:bg-surface-dark-card dark:text-neutral-50 md:bg-transparent md:after:absolute md:after:bottom-0 md:after:left-6 md:after:right-6 md:after:h-0.5 md:after:bg-neutral-900 dark:md:after:bg-neutral-100"
                 : "text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100"
             )}
           >

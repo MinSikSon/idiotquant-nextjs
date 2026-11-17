@@ -131,8 +131,8 @@ export default function GroupStrategyEditor({ groupRebalancing, stocks = [], cur
         <legend className="mb-2 text-sm font-bold text-neutral-900 dark:text-neutral-100">운용 전략</legend>
         <div className="grid grid-cols-3 gap-1.5 sm:gap-2" role="group" aria-label="전략 화면 선택">
           {modes.map(mode => <button key={mode.id} type="button" aria-pressed={draft.mode === mode.id} onClick={() => setField("mode", mode.id)} className={`flex h-full min-h-20 min-w-0 flex-col items-start rounded-xl border p-2 text-left sm:p-3 ${draft.mode === mode.id ? "border-brand bg-brand/10 text-brand-ink" : "border-neutral-200 bg-white text-neutral-500 dark:border-border-subtle-dark dark:bg-surface-dark-canvas dark:text-neutral-400"}`}>
-            <span className="flex min-h-10 flex-wrap content-start items-center gap-x-1 gap-y-0.5 text-xs font-bold sm:min-h-0 sm:gap-2 sm:text-sm">{mode.label}{mode.id === baseline.mode && <span className="text-[10px] text-brand-ink sm:text-[11px]">적용 중</span>}</span>
-            <span className="mt-1 block break-keep text-[11px] leading-relaxed sm:text-xs">{mode.description}</span>
+            <span className="flex min-h-10 flex-wrap content-start items-center gap-x-1 gap-y-0.5 text-xs font-bold sm:min-h-0 sm:gap-2 sm:text-sm">{mode.label}{mode.id === baseline.mode && <span className="text-xs text-brand-ink sm:text-xs">적용 중</span>}</span>
+            <span className="mt-1 block break-keep text-xs leading-relaxed sm:text-xs">{mode.description}</span>
           </button>)}
         </div>
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-neutral-200 bg-white p-3 text-xs dark:border-border-subtle-dark dark:bg-surface-dark-canvas" aria-live="polite">
