@@ -14,12 +14,12 @@ export function SecondarySection({ title, children, className }: {
 
     return (
         <details
-            className={cn("group/secondary min-w-0 rounded-xl border border-neutral-200 bg-white dark:border-surface-dark-border dark:bg-surface-dark-card", className)}
+            className={cn("group/secondary min-w-0 rounded-lg border border-neutral-200 bg-white dark:border-surface-dark-border dark:bg-surface-dark-card", className)}
             onToggle={event => {
                 if (event.currentTarget.open) setVisited(true);
             }}
         >
-            <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-neutral-700 outline-none focus-visible:ring-2 focus-visible:ring-brand dark:text-neutral-200 [&::-webkit-details-marker]:hidden">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-lg px-4 py-3 text-sm font-semibold text-neutral-700 outline-none focus-visible:ring-2 focus-visible:ring-brand dark:text-neutral-200 [&::-webkit-details-marker]:hidden">
                 {title}
                 <ChevronDown size={16} aria-hidden="true" className="shrink-0 transition-transform group-open/secondary:rotate-180" />
             </summary>

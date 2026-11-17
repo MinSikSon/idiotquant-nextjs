@@ -1,0 +1,17 @@
+{
+  "hook": {
+    "enabled": true,
+    "limits": {
+      "maxFindings": 5,
+      "maxChars": 8000
+    }
+  },
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [
+      "cf-idiotquant/app/(game)/**",
+      "cf-idiotquant/public/crafting-prototype*.html"
+    ],
+    "ignoreValues": []
+  }
+}

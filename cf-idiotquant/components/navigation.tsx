@@ -156,14 +156,14 @@ function TabItem({
       className={cn(
         "flex h-full min-h-[44px] min-w-0 flex-1 basis-0 flex-col items-center justify-center gap-[3px] py-1 transition-colors",
         // 랜딩의 각진 버튼 모양을 모바일 탭에도 사용한다.
-        "rounded-xl",
+        "rounded",
         isActive
           ? "text-brand-ink dark:text-brand-ink"
           : "text-neutral-600 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300"
       )}
     >
       <Icon size={20} strokeWidth={isActive ? 2 : 1.6} />
-      <span className={cn("text-[10px] font-semibold leading-none", isActive && "underline decoration-2 underline-offset-4")}>{label}</span>
+      <span className="text-xs font-semibold leading-none">{label}</span>
     </Link>
   );
 }
@@ -563,7 +563,7 @@ export function NavbarWithSimpleLinks() {
         <TabItem href="/screener"   label="발굴"   icon={Filter}     emoji="🥇" isActive={pathname.startsWith("/screener")} />
         <NavigationPopover label="서비스 메뉴" side="top" onOpenChange={open => { setMoreSheet(open); setBottomHidden(false); }} trigger={
           <button type="button" className={cn("flex h-full min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-[3px] text-neutral-600 dark:text-neutral-400", moreActive && "text-brand-ink dark:text-brand-ink")}>
-            <LayoutGrid size={20} aria-hidden="true" /><span className={cn("text-[10px] font-semibold leading-none", moreActive && "underline decoration-2 underline-offset-4")}>더 보기</span>
+            <LayoutGrid size={20} aria-hidden="true" /><span className="text-xs font-semibold leading-none">더 보기</span>
           </button>
         }>{!inGame && serviceMenu(true)}</NavigationPopover>
       </nav>

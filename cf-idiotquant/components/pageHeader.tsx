@@ -34,7 +34,7 @@ export const PAGE_HEADER_CHROME =
 
 // 헤더 우측 액션 버튼 — 세 화면이 같은 모양을 쓰도록 클래스를 한 곳에 둔다
 export const PAGE_ACTION_CLS =
-  "inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-lg text-xs font-medium transition-colors " +
+  "inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 px-3.5 py-2.5 rounded text-sm font-medium transition-colors " +
   "border border-neutral-500 dark:border-neutral-500 bg-transparent " +
   "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200/70 dark:hover:bg-surface-dark-hover " +
   "shrink-0 " + CONTROL_FOCUS_CLS + " " + CONTROL_DISABLED_CLS;
@@ -42,7 +42,7 @@ export const PAGE_ACTION_CLS =
 // 입력·추가·저장처럼 작업을 진행하는 동작에 쓴다. 새로고침·공유·닫기는 PAGE_ACTION_CLS.
 // 다크 채움은 흰 글자 4.5:1과 캔버스 대비 3:1을 함께 확보한다.
 export const PAGE_PRIMARY_ACTION_CLS =
-  "inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 rounded-lg px-3.5 py-2.5 text-xs font-semibold transition-colors " +
+  "inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 rounded px-3.5 py-2.5 text-sm font-semibold transition-colors " +
   "bg-brand text-white hover:bg-brand-hover " +
   CONTROL_FOCUS_CLS + " " + CONTROL_DISABLED_CLS;
 
@@ -126,7 +126,7 @@ export function PageHeader({
     {integrated && mobile && mobileTitleOnScroll && slots?.scrollTitleTarget && createPortal(titleContent, slots.scrollTitleTarget)}
     {integrated && createPortal(<div data-page-actions className="flex flex-nowrap items-center">
       {primaryAction && <div data-primary-action>{primaryAction}</div>}
-      {(actions || description || meta) && <NavigationPopover label="페이지 도구" trigger={<button type="button" aria-label="페이지 도구" className={cn("inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1 rounded-lg px-2 text-xs font-medium text-neutral-600 hover:bg-neutral-200/70 dark:text-neutral-400 dark:hover:bg-surface-dark-hover", CONTROL_FOCUS_CLS)}><MoreHorizontal size={20} className="md:hidden" aria-hidden="true" /><span className="hidden md:inline">도구</span><ChevronDown size={14} className="hidden md:block" aria-hidden="true" /></button>}>
+          {(actions || description || meta) && <NavigationPopover label="페이지 도구" trigger={<button type="button" aria-label="페이지 도구" className={cn("inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1 rounded px-2 text-sm font-medium text-neutral-600 hover:bg-neutral-200/70 dark:text-neutral-400 dark:hover:bg-surface-dark-hover", CONTROL_FOCUS_CLS)}><MoreHorizontal size={20} className="md:hidden" aria-hidden="true" /><span className="hidden md:inline">도구</span><ChevronDown size={14} className="hidden md:block" aria-hidden="true" /></button>}>
         <div data-page-secondary-actions className="flex flex-col gap-2">{actions}</div>
         {(description || meta) && <div className="border-t border-neutral-200 p-3 text-xs leading-6 dark:border-neutral-700">{description}{meta && <div>{meta}</div>}</div>}
       </NavigationPopover>}
