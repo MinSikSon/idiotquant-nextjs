@@ -97,11 +97,11 @@ const config = {
         brand: {
           DEFAULT: "rgb(var(--service-action-rgb) / <alpha-value>)",
           hover: "rgb(var(--service-action-hover-rgb) / <alpha-value>)",
-          light: "#eee7fa",
-          muted: "#3a3048",
+          light: "rgb(var(--service-accent-rgb) / <alpha-value>)",
+          muted: "rgb(var(--service-accent-rgb) / <alpha-value>)",
           ink: "rgb(var(--brand-ink) / <alpha-value>)",
           "ink-hover": "rgb(var(--brand-ink-hover) / <alpha-value>)",
-          "light-hover": "#d4c7ff",
+          "light-hover": "#c8e4dc",
         },
 
         // 라이트 모드 표면
