@@ -759,12 +759,12 @@ function AnalyzeContent() {
                     className="w-full min-h-11 flex items-center gap-2 text-left"
                   >
                     <span className={cn(
-                      "shrink-0 px-1.5 py-0.5 rounded-full text-[13px] font-semibold font-mono tabular-nums bg-white/70 dark:bg-surface-dark-canvas/50",
+                      "shrink-0 px-1.5 py-0.5 rounded-full text-[0.8125rem] font-semibold font-mono tabular-nums bg-white/70 dark:bg-surface-dark-canvas/50",
                       VERDICT_TONE[verdict.tone].label
                     )}>
                       {verdict.metCount}/{verdict.checks.length} 충족
                     </span>
-                    <span className={cn("min-w-0 flex-1 text-[15px] font-semibold leading-relaxed", VERDICT_TONE[verdict.tone].text)}>
+                    <span className={cn("min-w-0 flex-1 text-[0.9375rem] font-semibold leading-relaxed", VERDICT_TONE[verdict.tone].text)}>
                       {verdict.lead}
                     </span>
                     <ChevronDown

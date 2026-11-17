@@ -214,7 +214,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
     return (
       <div className="py-16 flex flex-col items-center justify-center gap-3 text-neutral-600 dark:text-neutral-300">
         <Target size={32} className="opacity-30" />
-        <p className="text-[15px] font-medium">재무 데이터가 부족하여 밸류에이션을 계산할 수 없습니다.</p>
+        <p className="text-[0.9375rem] font-medium">재무 데이터가 부족하여 밸류에이션을 계산할 수 없습니다.</p>
       </div>
     );
   }
@@ -227,23 +227,23 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
         <div className="px-0 sm:px-5 pt-1 pb-2 md:pt-2 md:pb-4 border-b border-neutral-100 dark:border-border-subtle-dark">
           <div className="flex items-center gap-2 mb-1 md:mb-3">
             <Target size={13} className="text-neutral-600 dark:text-neutral-300 shrink-0" />
-            <span className="text-[13.5px] font-semibold text-neutral-700 dark:text-neutral-200 tracking-tight">
+            <span className="text-[0.84375rem] font-semibold text-neutral-700 dark:text-neutral-200 tracking-tight">
               모델별 적정주가
             </span>
-            <span className="ml-auto text-[13px] font-mono font-bold text-neutral-600 dark:text-neutral-300 bg-surface-canvas dark:bg-surface-dark-card px-2 py-0.5 rounded-md uppercase tracking-normal">
+            <span className="ml-auto text-[0.8125rem] font-mono font-bold text-neutral-600 dark:text-neutral-300 bg-surface-canvas dark:bg-surface-dark-card px-2 py-0.5 rounded-md uppercase tracking-normal">
               {axis.rows.length}개 모델
             </span>
           </div>
-          <p className="hidden md:block mb-3 text-[15px] text-neutral-500 dark:text-neutral-400 break-keep">
+          <p className="hidden md:block mb-3 text-[0.9375rem] text-neutral-500 dark:text-neutral-400 break-keep">
             세로선은 현재가, 점은 모델별 계산 가격입니다. 오른쪽 %는 계산 기준가와의 차이입니다. 가격을 산출하지 못한 모델도 함께 표시합니다.
           </p>
 
-          <p className="mb-1 text-[12px] text-neutral-500 dark:text-neutral-400 md:hidden">
+          <p className="mb-1 text-[0.75rem] text-neutral-500 dark:text-neutral-400 md:hidden">
             세로선 현재가 · 점 적정주가 · % 계산 기준가 대비
           </p>
 
           {showBaseNote && (
-            <p className="mb-2.5 text-[15px] leading-relaxed text-neutral-600 dark:text-neutral-300 break-keep">
+            <p className="mb-2.5 text-[0.9375rem] leading-relaxed text-neutral-600 dark:text-neutral-300 break-keep">
               아래 괴리율은 모델이 계산에 쓴 {currency}{axis.modelBase.toLocaleString(undefined, { maximumFractionDigits: isUs ? 2 : 0 })} 기준입니다
               (현재 시세 {currency}{axis.curPrice.toLocaleString(undefined, { maximumFractionDigits: isUs ? 2 : 0 })}).
             </p>
@@ -265,7 +265,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
                 {axis.curPrice > 0 && (
                   <>
                     <span
-                      className="absolute -translate-x-1/2 whitespace-nowrap text-[13px] font-bold font-mono text-neutral-500 dark:text-neutral-400"
+                      className="absolute -translate-x-1/2 whitespace-nowrap text-[0.8125rem] font-bold font-mono text-neutral-500 dark:text-neutral-400"
                       style={{ left: `${curLabelPos}%` }}
                     >
                       현재가 {axis.curPrice.toLocaleString(undefined, { maximumFractionDigits: isUs ? 2 : 0 })}
@@ -305,11 +305,11 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
                       aria-label={`${r.config.name} 모델 설명`}
                       aria-expanded={isExplained}
                       aria-controls={isExplained ? `model-explanation-${r.type}` : undefined}
-                      className="inline-flex min-h-11 w-full items-center gap-1 text-left text-[13px] font-medium text-neutral-900 dark:text-neutral-100 hover:text-neutral-600 dark:hover:text-neutral-300 focus-visible:outline-2 focus-visible:outline-brand rounded-sm"
+                      className="inline-flex min-h-11 w-full items-center gap-1 text-left text-[0.8125rem] font-medium text-neutral-900 dark:text-neutral-100 hover:text-neutral-600 dark:hover:text-neutral-300 focus-visible:outline-2 focus-visible:outline-brand rounded-sm"
                     >
                       <span>{r.config.name}</span><ChevronDown size={12} aria-hidden="true" className={cn("shrink-0 text-neutral-600 dark:text-neutral-300 transition-transform", isExplained && "rotate-180")} />
                     </button>
-                    <p className="hidden md:block text-[13px] leading-6 text-neutral-600 dark:text-neutral-300 break-keep">{r.config.description.short}</p>
+                    <p className="hidden md:block text-[0.8125rem] leading-6 text-neutral-600 dark:text-neutral-300 break-keep">{r.config.description.short}</p>
                   </div>
 
                   {/* self-stretch — 셀이 행 높이를 꽉 채워야 현재가 세로선이 행 사이에서 끊기지 않는다.
@@ -342,25 +342,25 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
                     />}
                   </div>
 
-                  <span className={cn(styles.price, "whitespace-nowrap text-[14px] font-semibold tabular-nums text-neutral-900 dark:text-neutral-100 text-right")}>
+                  <span className={cn(styles.price, "whitespace-nowrap text-[0.875rem] font-semibold tabular-nums text-neutral-900 dark:text-neutral-100 text-right")}>
                     {r.targetPrice !== null ? `${currency}${r.targetPrice.toLocaleString()}` : "산출 불가"}
                   </span>
                   <span className={cn(
                     styles.returnPct,
-                    "whitespace-nowrap text-[13px] font-semibold font-mono tabular-nums text-right",
+                    "whitespace-nowrap text-[0.8125rem] font-semibold font-mono tabular-nums text-right",
                     r.returnPct === null ? "text-neutral-500 dark:text-neutral-400" : isPositive ? "text-emerald-700 dark:text-emerald-300" : "text-red-500 dark:text-red-400"
                   )}>
                     {r.returnPct !== null ? `${isPositive ? "+" : ""}${r.returnPct.toFixed(0)}%` : "—"}
                   </span>
                   {r.notice && (
-                    <p className={cn(styles.notice, "col-span-4 text-[15px] leading-normal text-neutral-600 dark:text-neutral-300 break-keep")}>
+                    <p className={cn(styles.notice, "col-span-4 text-[0.9375rem] leading-normal text-neutral-600 dark:text-neutral-300 break-keep")}>
                       {r.notice}
                     </p>
                   )}
                   {isExplained && (
                     <div
                       id={`model-explanation-${r.type}`}
-                      className={cn(styles.explanation, "col-span-4 rounded-lg bg-surface-canvas dark:bg-surface-dark-canvas p-3 text-[15px] leading-relaxed text-neutral-700 dark:text-neutral-300 break-keep")}
+                      className={cn(styles.explanation, "col-span-4 rounded-lg bg-surface-canvas dark:bg-surface-dark-canvas p-3 text-[0.9375rem] leading-relaxed text-neutral-700 dark:text-neutral-300 break-keep")}
                     >
                       <p><strong className="text-neutral-900 dark:text-white">계산 방식</strong> · {r.config.description.detail}</p>
                       {r.config.description.caution && (
@@ -391,7 +391,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
                 onClick={() => setActiveTab(tab.id)}
                 aria-pressed={activeTab === tab.id}
                 className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-bold transition-all duration-150",
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.8125rem] font-bold transition-all duration-150",
                   activeTab === tab.id
                     ? "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900"
                     : "text-neutral-500 dark:text-neutral-400 hover:bg-surface-muted-hover dark:hover:bg-surface-dark-card hover:text-neutral-800 dark:hover:text-neutral-200"
@@ -399,7 +399,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
               >
                 {tab.label}
                 <span className={cn(
-                  "text-[13px] font-semibold px-1.5 py-0.5 rounded-full",
+                  "text-[0.8125rem] font-semibold px-1.5 py-0.5 rounded-full",
                   activeTab === tab.id
                     ? "bg-white/20 dark:bg-black/20"
                     : "bg-surface-canvas dark:bg-surface-dark-card text-neutral-500 dark:text-neutral-500"
@@ -425,7 +425,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
           ) : (
             <div className="py-12 flex flex-col items-center justify-center gap-2 text-neutral-600 dark:text-neutral-300">
               <Layers size={28} className="opacity-30" />
-              <span className="text-[13px] font-medium">해당 카테고리의 모델이 없습니다.</span>
+              <span className="text-[0.8125rem] font-medium">해당 카테고리의 모델이 없습니다.</span>
             </div>
           )}
         </div>
@@ -435,7 +435,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
           <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-white/40 to-white/95 dark:from-surface-dark-card/40 dark:to-surface-dark-card/95">
             <Link
               href={loginHref}
-              className="flex min-h-11 items-center gap-2 px-4 py-2 rounded-lg bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900 text-[15px] font-medium transition-colors"
+              className="flex min-h-11 items-center gap-2 px-4 py-2 rounded-lg bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900 text-[0.9375rem] font-medium transition-colors"
             >
               <Lock size={13} />
               로그인하여 세부 모델 보기
@@ -502,11 +502,11 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="text-[15px] font-semibold text-neutral-900 dark:text-white tracking-tight break-keep">
+              <h3 className="text-[0.9375rem] font-semibold text-neutral-900 dark:text-white tracking-tight break-keep">
                 {config.name}
               </h3>
               <span className={cn(
-                "text-[13px] font-semibold uppercase tracking-normal px-2 py-0.5 rounded-full shrink-0",
+                "text-[0.8125rem] font-semibold uppercase tracking-normal px-2 py-0.5 rounded-full shrink-0",
                 config.badgeClass
               )}>
                 {config.category === "ASSET" ? "자산가치" : "수익가치"}
@@ -517,7 +517,7 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
             {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
           </span>
         </div>
-        <p className="mt-2 text-[15px] leading-relaxed text-neutral-600 dark:text-neutral-400 break-keep">{config.description.short}</p>
+        <p className="mt-2 text-[0.9375rem] leading-relaxed text-neutral-600 dark:text-neutral-400 break-keep">{config.description.short}</p>
       </button>
 
       {/* 카드 바디 */}
@@ -525,10 +525,10 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
         <>
           {/* 모델 설명 */}
           <div className="px-0 sm:px-5 py-3.5 border-b border-neutral-50 dark:border-border-subtle-dark/60 bg-surface-canvas/30 dark:bg-surface-dark-card/10">
-            <p className="text-[15px] text-neutral-500 dark:text-neutral-400 leading-relaxed break-keep">
+            <p className="text-[0.9375rem] text-neutral-500 dark:text-neutral-400 leading-relaxed break-keep">
               {config.description.detail}
             </p>
-            <p className="mt-2 text-[13px] leading-relaxed font-mono text-neutral-500 dark:text-neutral-400 break-words">계산식 · {result.formula}</p>
+            <p className="mt-2 text-[0.8125rem] leading-relaxed font-mono text-neutral-500 dark:text-neutral-400 break-words">계산식 · {result.formula}</p>
           </div>
 
           {/* 핵심 지표 그리드 */}
@@ -539,10 +539,10 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
                   key={i}
                   className="px-0 py-2 sm:p-3 border-b border-neutral-100 dark:border-border-subtle-dark"
                 >
-                  <p className="text-[13px] text-neutral-600 dark:text-neutral-300 font-bold uppercase tracking-normal mb-1 truncate">
+                  <p className="text-[0.8125rem] text-neutral-600 dark:text-neutral-300 font-bold uppercase tracking-normal mb-1 truncate">
                     {m.label}
                   </p>
-                  <p className="text-[13px] font-semibold font-mono text-neutral-900 dark:text-white tabular-nums truncate">
+                  <p className="text-[0.8125rem] font-semibold font-mono text-neutral-900 dark:text-white tabular-nums truncate">
                     {m.value}
                   </p>
                 </div>
@@ -559,7 +559,7 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
                     <th
                       key={i}
                       className={cn(
-                        "px-2 sm:px-5 py-2.5 text-[13px] font-semibold text-neutral-600 dark:text-neutral-300 uppercase tracking-normal font-mono whitespace-nowrap",
+                        "px-2 sm:px-5 py-2.5 text-[0.8125rem] font-semibold text-neutral-600 dark:text-neutral-300 uppercase tracking-normal font-mono whitespace-nowrap",
                         i > 0 && "text-right"
                       )}
                     >
@@ -591,13 +591,13 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
                             isBase ? config.dotBg : "bg-transparent"
                           )} />
                           <span className={cn(
-                            "text-[13px] font-bold font-mono tracking-tight",
+                            "text-[0.8125rem] font-bold font-mono tracking-tight",
                             isBase ? "text-neutral-900 dark:text-white" : "text-neutral-600 dark:text-neutral-400"
                           )}>
                             {displayMultiplier}
                           </span>
                           {isBase && (
-                            <span className="text-[13px] font-semibold text-neutral-600 dark:text-neutral-300 font-mono uppercase tracking-normal">
+                            <span className="text-[0.8125rem] font-semibold text-neutral-600 dark:text-neutral-300 font-mono uppercase tracking-normal">
                               적정
                             </span>
                           )}
@@ -605,7 +605,7 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
                       </td>
                       <td className="px-2 sm:px-5 py-3 text-right whitespace-nowrap">
                         <span className={cn(
-                          "text-[13px] font-semibold font-mono tabular-nums px-2.5 py-0.5 rounded-lg inline-block",
+                          "text-[0.8125rem] font-semibold font-mono tabular-nums px-2.5 py-0.5 rounded-lg inline-block",
                           isPositive
                             ? "text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30"
                             : "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30"
@@ -614,7 +614,7 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
                         </span>
                       </td>
                       <td className={cn(
-                        "px-2 sm:px-5 py-3 text-[13px] font-semibold font-mono text-right tabular-nums whitespace-nowrap",
+                        "px-2 sm:px-5 py-3 text-[0.8125rem] font-semibold font-mono text-right tabular-nums whitespace-nowrap",
                         isBase ? "text-neutral-900 dark:text-white" : "text-neutral-700 dark:text-neutral-300"
                       )}>
                         {currency}{row.targetPrice.toLocaleString()}
@@ -629,7 +629,7 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
           {/* 푸터 노트 */}
           <div className="px-0 sm:px-5 py-3 border-t border-neutral-100 dark:border-border-subtle-dark bg-surface-canvas/30 dark:bg-surface-dark-card/10 flex items-start gap-2">
             <Sparkles size={12} className="text-amber-500 shrink-0 mt-0.5" />
-            <p className="text-[15px] text-neutral-600 dark:text-neutral-300 leading-relaxed">
+            <p className="text-[0.9375rem] text-neutral-600 dark:text-neutral-300 leading-relaxed">
               {result.footerNotice}
             </p>
           </div>
