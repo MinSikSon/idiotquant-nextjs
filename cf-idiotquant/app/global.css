@@ -16,13 +16,13 @@
   --service-line: rgb(var(--service-line-rgb));
   --service-soft-rgb: 245 244 247;
   --service-soft: rgb(var(--service-soft-rgb));
-  --service-action-rgb: 116 89 180;
+  --service-action-rgb: 18 101 87;
   --service-action: rgb(var(--service-action-rgb));
-  --service-action-hover-rgb: 98 70 158;
+  --service-action-hover-rgb: 14 79 68;
   --service-action-hover: rgb(var(--service-action-hover-rgb));
-  --service-accent-rgb: 240 235 249;
+  --service-accent-rgb: 228 242 238;
   --service-accent: rgb(var(--service-accent-rgb));
-  --service-accent-ink-rgb: 99 69 153;
+  --service-accent-ink-rgb: 18 101 87;
   --service-accent-ink: rgb(var(--service-accent-ink-rgb));
   --font-sans: "Pretendard Variable", ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-mono: var(--font-sans);
@@ -32,8 +32,8 @@
   --topbar-h: 48px;
   --bottombar-h: calc(52px + env(safe-area-inset-bottom, 0px));
   --navigation-h: 48px;
-  --brand-ink: 113 76 182;
-  --brand-ink-hover: 89 54 153;
+  --brand-ink: 18 101 87;
+  --brand-ink-hover: 14 79 68;
   --radius-control: 4px;
   --radius-input: 4px;
   --radius-panel: 8px;
@@ -46,12 +46,12 @@ html.dark {
   --service-muted-rgb: 181 177 193;
   --service-line-rgb: 61 59 70;
   --service-soft-rgb: 37 37 46;
-  --service-action-rgb: 116 84 175;
-  --service-action-hover-rgb: 99 68 156;
-  --service-accent-rgb: 48 39 63;
-  --service-accent-ink-rgb: 200 177 237;
-  --brand-ink: 201 176 239;
-  --brand-ink-hover: 221 204 250;
+  --service-action-rgb: 115 209 187;
+  --service-action-hover-rgb: 147 224 205;
+  --service-accent-rgb: 28 56 49;
+  --service-accent-ink-rgb: 115 209 187;
+  --brand-ink: 115 209 187;
+  --brand-ink-hover: 147 224 205;
 }
 
 /* 게임은 서비스 카드·입력 규칙과 별도의 기기 UI를 사용한다. */
@@ -360,7 +360,7 @@ body :is(.font-mono, .font-serif) {
 @media (max-width: 767px) {
   /* 기존 115%의 약 76%: 서비스 전체의 rem 글자·간격을 함께 조정한다.
      브라우저의 사용자 글자 크기와 확대 기능은 그대로 따른다. */
-  html { font-size: 87.5%; }
+  html { font-size: 100%; }
 
   /* rem 축소로 주요 컨트롤의 조작 영역까지 작아지지 않게 한다. */
   :is(button, a, input, select, summary, [role="button"]):is(.h-10, .h-11, .h-12, .min-h-10, .min-h-11, .min-h-12) {

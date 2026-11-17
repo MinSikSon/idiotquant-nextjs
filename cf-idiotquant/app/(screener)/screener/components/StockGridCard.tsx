@@ -43,8 +43,8 @@ function cautions(i: Item): string[] {
 
 const Metric = ({ label, value, ok }: { label: string; value: string; ok?: boolean }) => (
     <div className="flex shrink-0 items-baseline gap-1 whitespace-nowrap">
-        <p className="text-[9.5px] font-bold text-neutral-400 uppercase tracking-wider">{label}</p>
-        <p className={cn("text-[13px] font-mono font-bold tabular-nums", ok ? "text-brand-ink" : "text-neutral-700 dark:text-neutral-200")}>
+        <p className="text-xs font-bold text-neutral-500 uppercase tracking-wider">{label}</p>
+        <p className={cn("text-sm font-mono font-bold tabular-nums", ok ? "text-brand-ink" : "text-neutral-700 dark:text-neutral-200")}>
             {value}
             {ok && <><span aria-hidden="true" title="강조 기준 충족"> ✓</span><span className="sr-only"> 강조 기준 충족</span></>}
         </p>
@@ -79,16 +79,16 @@ export function StockGridCard({ item, onClick, isLiked, onToggleLike, comparison
             role="link"
             tabIndex={0}
             aria-label={`${item.name} 분석 보기`}
-            className="cursor-pointer rounded-md border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card overflow-hidden hover:border-brand-light-hover dark:hover:border-brand-hover/60 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand transition-all"
+            className="cursor-pointer rounded-lg border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card overflow-hidden hover:border-brand-light-hover dark:hover:border-brand-hover/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand transition-colors"
         >
             <div className="p-2 sm:p-3">
                 <div className="flex items-center gap-1.5 mb-1 sm:gap-2 sm:mb-1.5">
                     <ComparisonCheckbox choice={comparison} name={item.name} />
                     <div className="min-w-0 flex-1">
                         <div className="flex min-w-0 items-center gap-1.5">
-                            <span className="min-w-0 truncate text-sm font-extrabold text-neutral-900 dark:text-white leading-tight" title={item.name}>{item.name}</span>
-                            {item.ticker !== item.name && <span className="shrink-0 text-[10px] font-mono text-neutral-400">{item.ticker}</span>}
-                            {sector && <span title={sector} className="hidden sm:inline max-w-[5rem] truncate text-[9px] font-bold text-neutral-400">{sector}</span>}
+                            <span className="min-w-0 truncate text-base font-extrabold text-neutral-900 dark:text-white leading-tight" title={item.name}>{item.name}</span>
+                            {item.ticker !== item.name && <span className="shrink-0 text-xs font-mono text-neutral-500">{item.ticker}</span>}
+                            {sector && <span title={sector} className="hidden sm:inline max-w-[5rem] truncate text-xs font-bold text-neutral-500">{sector}</span>}
                             <span className="shrink-0"><LiquidityBadge item={item} /></span>
                         </div>
                         <div className="mt-1 min-w-0"><FinancialFreshnessNotice compact periods={scanFinancialPeriods(item)} source={item.financial_source} collectionDate={scanCollectionDate(item)} /></div>
@@ -98,11 +98,11 @@ export function StockGridCard({ item, onClick, isLiked, onToggleLike, comparison
                         aria-label={`${item.name} 관심 종목`}
                         aria-pressed={isLiked}
                         onClick={e => { e.stopPropagation(); onToggleLike(item.ticker, item.name); }}
-                        className={cn("flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg shrink-0 transition-colors",
+                        className={cn("flex h-11 w-11 items-center justify-center rounded shrink-0 transition-colors",
                             isLiked ? "text-rose-500" : "text-neutral-300 dark:text-neutral-600 hover:text-rose-400")}
                         title={isLiked ? "관심 해제" : "관심 추가"}
                     >
-                        <Heart size={14} fill={isLiked ? "currentColor" : "none"} />
+                        <Heart size={18} fill={isLiked ? "currentColor" : "none"} />
                     </button>
                 </div>
 
@@ -115,20 +115,20 @@ export function StockGridCard({ item, onClick, isLiked, onToggleLike, comparison
 
                 <div className="mt-1 sm:mt-2 flex items-center gap-1 min-w-0">
                     {strategy && (
-                        <span className={cn("shrink-0 px-1.5 py-0.5 rounded text-[9px] font-bold", STRATEGY_BADGE[strategy] ?? "bg-surface-canvas text-neutral-500")}>
+                        <span className={cn("shrink-0 px-2 py-1 rounded text-xs font-bold", STRATEGY_BADGE[strategy] ?? "bg-surface-canvas text-neutral-500")}>
                             {STRATEGY_LABEL[strategy] ?? strategy}
                         </span>
                     )}
                     {warn.length > 0 ? (
-                        <span title={warn.join(" ")} className="min-w-0 truncate text-[10px] font-semibold text-amber-700 dark:text-amber-400">
+                        <span title={warn.join(" ")} className="min-w-0 truncate text-xs font-semibold text-amber-700 dark:text-amber-400">
                             ⚠ {warn[0]}
                         </span>
                     ) : why ? (
-                        <span title={why} className="min-w-0 truncate text-[10px] text-neutral-500 dark:text-neutral-400">
+                        <span title={why} className="min-w-0 truncate text-xs text-neutral-500 dark:text-neutral-400">
                             {why}
                         </span>
                     ) : <span className="flex-1" />}
-                    <span className="shrink-0 flex items-center gap-0.5 text-[10px] font-bold text-brand-ink">분석 <ChevronRight size={11} /></span>
+                    <span className="shrink-0 flex items-center gap-0.5 text-xs font-bold text-brand-ink">분석 <ChevronRight size={14} /></span>
                 </div>
             </div>
         </div>

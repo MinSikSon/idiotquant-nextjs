@@ -1,0 +1,10 @@
+{
+  "detector": {
+    "designSystem": { "enabled": true },
+    "ignoreFiles": [
+      "app/(game)/**",
+      "public/crafting-prototype*.html"
+    ]
+  },
+  "hook": { "enabled": false }
+}
