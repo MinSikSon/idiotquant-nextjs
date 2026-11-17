@@ -1,5 +1,7 @@
 "use client";
 
+import styles from "../screener.module.css";
+
 import { ChevronRight, Heart } from "lucide-react";
 import { ComparisonCheckbox, type ComparisonChoice } from "@/components/comparison-checkbox";
 import { cn } from "@/lib/utils";
@@ -79,14 +81,14 @@ export function StockGridCard({ item, onClick, isLiked, onToggleLike, comparison
             role="link"
             tabIndex={0}
             aria-label={`${item.name} 분석 보기`}
-            className="cursor-pointer rounded-lg border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card overflow-hidden hover:border-brand-light-hover dark:hover:border-brand-hover/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand transition-colors"
+            className={cn(styles.stockCard, "cursor-pointer hover:bg-neutral-100/50 dark:hover:bg-surface-dark-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-ink")}
         >
-            <div className="p-2 sm:p-3">
+            <div className="py-2 sm:p-4">
                 <div className="flex items-center gap-1.5 mb-1 sm:gap-2 sm:mb-1.5">
                     <ComparisonCheckbox choice={comparison} name={item.name} />
                     <div className="min-w-0 flex-1">
-                        <div className="flex min-w-0 items-center gap-1.5">
-                            <span className="min-w-0 truncate text-base font-extrabold text-neutral-900 dark:text-white leading-tight" title={item.name}>{item.name}</span>
+                        <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                            <span className="min-w-0 break-words text-base font-semibold text-neutral-900 dark:text-white leading-tight" title={item.name}>{item.name}</span>
                             {item.ticker !== item.name && <span className="shrink-0 text-xs font-mono text-neutral-500">{item.ticker}</span>}
                             {sector && <span title={sector} className="hidden sm:inline max-w-[5rem] truncate text-xs font-bold text-neutral-500">{sector}</span>}
                             <span className="shrink-0"><LiquidityBadge item={item} /></span>

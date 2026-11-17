@@ -1,5 +1,7 @@
 "use client";
 
+import styles from "../screener.module.css";
+
 import { ChevronRight, Heart } from "lucide-react";
 import { ComparisonCheckbox, type ComparisonChoice } from "@/components/comparison-checkbox";
 import { cn } from "@/lib/utils";
@@ -21,13 +23,14 @@ function Bar({ label, value, scale, color, hint, us }: {
     label: string; value: number; scale: number; color: string; hint: string; us: boolean;
 }) {
     return (
-        <div className="flex items-center gap-2" title={hint}>
-            <span className="w-[68px] shrink-0 text-xs font-semibold text-neutral-600 dark:text-neutral-300">{label}</span>
-            <div className="relative flex-1 h-[18px] rounded-md bg-[#f2f0ec] dark:bg-surface-dark-hover overflow-hidden">
+        <div className={styles.ratioBar} title={hint}>
+            <span className="text-sm font-medium text-neutral-600 dark:text-neutral-300">{label}</span>
+            <div className={styles.track}>
                 <div
-                    className={cn("absolute inset-y-0 left-0 rounded-md transition-[width] duration-500", color)}
+                    className={cn(styles.bar, color)}
                     style={{ width: `${barPct(value, scale)}%` }}
                 />
+                <span className={cn(styles.marker, color)} style={{ left: `${barPct(value, scale)}%` }} />
             </div>
             <span className="w-[76px] shrink-0 text-right text-sm font-mono font-semibold tabular-nums text-neutral-700 dark:text-neutral-200">
                 {money(value, us)}
@@ -71,13 +74,13 @@ export function StockRatioRow({ item, onClick, isLiked, onToggleLike, comparison
             role="link"
             tabIndex={0}
             aria-label={`${item.name} 분석 보기`}
-            className="cursor-pointer rounded-lg border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card p-3 sm:p-4 hover:border-brand-light-hover dark:hover:border-brand-hover/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-ink transition-colors"
+            className={cn(styles.ratioCard, "cursor-pointer py-2 sm:p-4 hover:bg-neutral-100/50 dark:hover:bg-surface-dark-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-ink")}
         >
             <div className="flex items-center gap-2 mb-2 sm:mb-3">
                 <ComparisonCheckbox choice={comparison} name={item.name} />
                 <div className="min-w-0 flex-1">
-                    <div className="flex min-w-0 items-center gap-1.5">
-                        <span className="min-w-0 truncate text-base font-extrabold text-neutral-900 dark:text-white leading-tight" title={item.name}>{item.name}</span>
+                    <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                        <span className="min-w-0 break-words text-base font-semibold text-neutral-900 dark:text-white leading-tight" title={item.name}>{item.name}</span>
                         {item.ticker !== item.name && <span className="shrink-0 text-xs font-mono text-neutral-500">{item.ticker}</span>}
                         <span className="shrink-0"><LiquidityBadge item={item} /></span>
                     </div>
@@ -96,8 +99,8 @@ export function StockRatioRow({ item, onClick, isLiked, onToggleLike, comparison
                 </button>
             </div>
 
-            <div className="flex flex-col gap-1.5">
-                <Bar label="유동자산" value={m.currentAssets} scale={m.scale} color="bg-brand" us={us}
+            <div className={styles.ratioRows}>
+                <Bar label="유동자산" value={m.currentAssets} scale={m.scale} color="bg-brand-ink" us={us}
                      hint="유동자산 — 1년 안에 현금화할 수 있는 자산" />
                 <Bar label="부채총계" value={m.liabilities} scale={m.scale} color="bg-[#d4525c]" us={us}
                      hint="부채총계 — 갚아야 할 돈 전체" />

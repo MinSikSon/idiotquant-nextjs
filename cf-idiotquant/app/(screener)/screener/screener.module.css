@@ -1,7 +1,85 @@
-/* 카드 폭을 기준으로 열 수를 늘려 넓은 화면의 여백을 줄인다. */
+.page { word-break: keep-all; }
+
+.marketTabs, .methodTabs, .viewTabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: 100%;
+  min-height: 44px;
+}
+
+.tab {
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 4px;
+  border-bottom: 2px solid transparent;
+  color: rgb(115 115 115);
+  font-size: .875rem;
+  font-weight: 600;
+  line-height: 1.5;
+  transition: color .15s, border-color .15s;
+}
+
+.tab[aria-pressed="true"], .tab[data-state="active"] {
+  color: rgb(var(--brand-ink));
+  border-bottom-color: rgb(var(--brand-ink));
+}
+
+.tab:focus-visible, .resultPanel:focus-visible {
+  outline: 2px solid rgb(var(--brand-ink));
+  outline-offset: -2px;
+}
+
+.viewTabs {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 12px;
+}
+
+.resultPanel { min-width: 0; }
+
+.stockCard, .ratioCard {
+  min-width: 0;
+  border-bottom: 1px solid rgb(115 115 115 / 20%);
+  background: transparent;
+}
+
+.ratioRows { display: grid; gap: 0; }
+.ratioBar {
+  display: grid;
+  grid-template-columns: 64px minmax(24px, 1fr) 88px;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  border-bottom: 1px solid rgb(115 115 115 / 8%);
+}
+.ratioBar:last-child { border-bottom: 0; }
+.ratioBar > :last-child { width: auto; min-width: 0; overflow-wrap: anywhere; }
+.track { position: relative; height: 3px; background: rgb(115 115 115 / 20%); }
+.bar { position: absolute; inset-block: 0; left: 0; }
+.marker {
+  position: absolute;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  border: 2px solid Canvas;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+@media (min-width: 640px) {
+  .stockCard, .ratioCard {
+    border: 1px solid rgb(115 115 115 / 20%);
+    border-radius: 8px;
+  }
+}
+
+/* 분석 화면과 같은 얇은 구분선과 공통 가격 축을 유지한다. */
 @media (min-width: 1024px) {
   .stockGrid {
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     align-items: start;
   }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tab { transition: none; }
 }

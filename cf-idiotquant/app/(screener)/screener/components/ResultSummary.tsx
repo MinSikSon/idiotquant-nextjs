@@ -1,5 +1,6 @@
 "use client";
 
+import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { STRATEGY_HEX, STRATEGY_PRESETS_CLIENT } from "@/lib/constants/strategies";
@@ -17,9 +18,9 @@ const p95 = (xs: number[]) => {
   return v.length ? v[Math.min(v.length - 1, Math.floor(v.length * 0.95))] : 0;
 };
 
-const CARD = "rounded-xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card px-[15px] py-3.5";
+const CARD = "border-b border-neutral-200 dark:border-border-subtle-dark py-4";
 // 축 눈금 — 예전에는 neutral-300 이라 배경과 거의 구분되지 않았다. 축을 읽으라고 둔 글자다.
-const AXIS = "text-xs font-mono tabular-nums text-neutral-400 dark:text-neutral-500";
+const AXIS = "text-xs font-mono tabular-nums text-neutral-500 dark:text-neutral-400";
 
 export function ResultSummary({ list }: { list: Item[] }) {
   if (list.length === 0) return null;
@@ -54,30 +55,27 @@ export function ResultSummary({ list }: { list: Item[] }) {
 
       <div className={CARD}>
         <div className="flex items-baseline justify-between gap-2 mb-2.5">
-          <p className="text-xs font-extrabold uppercase tracking-[0.08em] text-neutral-400">싼 정도 × 버는 정도</p>
-          <span className="text-xs text-neutral-400 shrink-0">색 = 전략</span>
+          <p className="text-base font-semibold text-neutral-800 dark:text-neutral-100">PBR · ROE 분포</p>
+          <span className="text-xs text-neutral-500 dark:text-neutral-400 shrink-0">색 = 전략</span>
         </div>
 
         <div className="flex gap-1.5">
           {/* 세로축 눈금 — 위가 큰 값. 축 이름(ROE)을 값 옆에 붙여 두면 무엇을 재는 축인지
               범례를 찾지 않아도 안다. */}
-          <div className="w-[52px] shrink-0 h-[132px] flex flex-col justify-between items-end">
+          <div className="w-[64px] shrink-0 h-[180px] flex flex-col justify-between items-end">
             {/* 눈금 글자의 가운데가 그 값의 높이에 오도록 위아래 끝만 반 칸씩 당긴다 */}
             <span className={cn(AXIS, "-translate-y-1/2")}>ROE {yMax.toFixed(0)}%</span>
             <span className={AXIS}>{(yMax / 2).toFixed(0)}%</span>
             <span className={cn(AXIS, "translate-y-1/2")}>0%</span>
           </div>
 
-          <div className="relative flex-1 h-[132px] border-l border-b border-neutral-200 dark:border-border-subtle-dark">
-            {/* 좌상단(PBR 낮고 ROE 높은 쪽)으로 갈수록 옅은 초록 — 어느 방향이 좋은지 눈으로
-                알려준다. 가로축이 PBR 이라 오른쪽은 비싼 쪽이다. */}
-            <div className="absolute inset-0 bg-gradient-to-tl from-transparent to-brand/[0.055] pointer-events-none" />
+          <div className="relative flex-1 h-[180px] border-l border-b border-neutral-200 dark:border-border-subtle-dark">
             {[25, 50, 75].map(v => (
-              <div key={`h${v}`} className="absolute inset-x-0 border-t border-dashed border-[#e7e4de] dark:border-[#3a3833]" style={{ bottom: `${v}%` }} />
+              <div key={`h${v}`} className="absolute inset-x-0 border-t border-neutral-200/60 dark:border-border-subtle-dark" style={{ bottom: `${v}%` }} />
             ))}
             {/* 세로 격자 — 가로축 눈금(0 · 중간 · 최대)을 눈으로 따라가게 해 준다 */}
             {[25, 50, 75].map(v => (
-              <div key={`v${v}`} className="absolute inset-y-0 border-l border-dashed border-[#e7e4de] dark:border-[#3a3833]" style={{ left: `${v}%` }} />
+              <div key={`v${v}`} className="absolute inset-y-0 border-l border-neutral-200/60 dark:border-border-subtle-dark" style={{ left: `${v}%` }} />
             ))}
             {/* 색 = 전략. 위 '결과 분포' 카드의 전략 띠가 같은 색을 쓰므로 그게 곧 범례다. */}
             {dots.map(d => (
@@ -93,7 +91,7 @@ export function ResultSummary({ list }: { list: Item[] }) {
 
         {/* 가로축 눈금 — 왼쪽 여백은 세로축 눈금 칸과 같은 폭이라 0 이 축 시작점에 선다 */}
         <div className="flex gap-1.5 mt-1">
-          <span className="w-[52px] shrink-0" />
+          <span className="w-[64px] shrink-0" />
           <div className="flex-1 flex justify-between">
             <span className={AXIS}>PBR 0</span>
             <span className={AXIS}>{(xMax / 2).toFixed(2)}</span>
@@ -129,22 +127,21 @@ export function TermStrip() {
   };
 
   return (
-    <div className="rounded-xl border border-[#fef3c7] dark:border-amber-900/40 bg-[#fffdf5] dark:bg-amber-950/10 px-[15px] py-3 mb-4">
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-extrabold text-[#92400e] dark:text-amber-500">ⓘ 이 표의 숫자 읽는 법</p>
-        <button onClick={toggle} className="text-xs font-bold text-[#a16207] dark:text-amber-600 hover:opacity-70">
-          {open ? "접기" : "펼치기"}
-        </button>
-      </div>
+    <div className="mb-4 border-b border-neutral-200 dark:border-border-subtle-dark">
+      <button type="button" onClick={toggle} aria-expanded={open}
+        className="flex min-h-11 w-full items-center justify-between gap-2 text-left text-base font-semibold text-neutral-800 dark:text-neutral-100">
+        지표 읽는 법
+        <ChevronDown size={16} aria-hidden="true" className={open ? "rotate-180" : undefined} />
+      </button>
       {open && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pb-4 pt-2">
           {TERMS.map(t => (
-            <div key={t.term} className="rounded-lg border border-[#fef3c7] dark:border-amber-900/40 bg-white dark:bg-surface-dark-card px-3 py-2.5">
+            <div key={t.term} className="min-w-0">
               <div className="flex items-center gap-1.5 mb-1.5">
-                <span className="text-xs font-extrabold text-neutral-900 dark:text-neutral-100">{t.term}</span>
-                <span className="px-1.5 py-0.5 rounded-full bg-brand-light dark:bg-brand-muted/60 text-brand-ink text-xs font-mono font-bold">{t.rule}</span>
+                <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{t.term}</span>
+                <span className="px-1.5 py-0.5 rounded bg-brand-ink/10 text-brand-ink text-xs font-mono font-semibold">{t.rule}</span>
               </div>
-              <p className="text-xs leading-relaxed text-neutral-500 dark:text-neutral-400 break-keep">{t.desc}</p>
+              <p className="text-sm leading-relaxed text-neutral-500 dark:text-neutral-400 break-keep">{t.desc}</p>
             </div>
           ))}
         </div>
