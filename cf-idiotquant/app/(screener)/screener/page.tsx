@@ -2,6 +2,8 @@
 
 export const dynamic = 'force-dynamic';
 
+import * as Tabs from "@radix-ui/react-tabs";
+
 import { PageSearch } from "@/components/page-search";
 import GuestDiscovery from "./components/GuestDiscovery";
 import { ComparisonCheckbox, type ComparisonChoice } from "@/components/comparison-checkbox";
@@ -72,7 +74,7 @@ const NCAV_MIN_PRESETS = [0.7, 1.0, 1.5];   // NCAV 비율 이상
 
 // 업종 분포 띠 색 — 앱 강조색(초록)에서 단계적으로 옅어지고, 마지막은 "그 외"용 중립색.
 // 두 테마 모두 같은 값을 쓴다: 채도가 있는 면 위에 흰 글씨라 바탕색이 바뀌어도 대비가 유지된다.
-const MIX_COLORS = ['#15803d', '#16a34a', '#3faf6d', '#6ec492', '#93a89b', '#a8a29e'];
+const MIX_COLORS = ['#126557', '#218774', '#4a9d8b', '#78b5a6', '#93a89b', '#a8a29e'];
 // 전략 띠는 전략 고유색을 그대로 쓴다 — 요약의 산점도 점도 같은 색이라 이 범례가 그쪽 범례를 겸한다.
 const STRATEGY_HEX_BY_LABEL: Record<string, string> = Object.fromEntries(
     Object.entries(STRATEGY_HEX).map(([id, hex]) => [STRATEGY_LABEL[id] ?? id, hex])
@@ -1293,7 +1295,7 @@ function ScreenerContent() {
 
     return (
         <Tooltip.Provider delayDuration={300}>
-        <div id="screener-page" className="landing-style-page min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas text-neutral-900 dark:text-neutral-100">
+        <div id="screener-page" className={cn(styles.page, "landing-style-page min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas text-neutral-900 dark:text-neutral-100")}>
 
             {/* ── 페이지 헤더 (공통 규칙) ── */}
             <PageHeader
@@ -1333,18 +1335,8 @@ function ScreenerContent() {
                         <span className="hidden sm:inline">새로고침</span>
                     </button>}
 
-            />
-
-            {!showLikedOnly && ncavDailyList.country === country && (ncavDailyList.refreshing || (ncavDailyList.receivedAt !== null && ncavDailyList.error)) && (
-                <div className="service-container">
-                    <ScanRefreshNotice refreshing={ncavDailyList.refreshing} error={ncavDailyList.error} onRetry={handleRefresh} />
-                </div>
-            )}
-
-            <div className="border-b border-neutral-200 bg-white dark:border-surface-dark-border dark:bg-surface-dark-card">
-                <div className="service-container flex items-center gap-2">
-
-                    <div className="flex gap-1" data-compact-tabs role="group" aria-label="발굴 시장">
+                tabs={
+                    <div className={styles.marketTabs} role="group" aria-label="발굴 시장">
                         {([['KR', '국내'], ['US', '미국']] as const).map(([value, label]) => (
                         <button
                             key={value}
@@ -1369,14 +1361,21 @@ function ScreenerContent() {
                                 setShowLikedOnly(false);
                                 setDisplayCount(DAILY_PAGE_SIZE);
                             }}
-                            className={cn(
-                                "px-3 py-3 text-sm font-bold transition-colors sm:px-4",
-                                country === value ? "text-brand-ink" : "text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200"
-                            )}
+                            className={styles.tab}
                         >{label}</button>
                         ))}
                     </div>
-                    {isAdmin && (
+                }
+            />
+
+            {!showLikedOnly && ncavDailyList.country === country && (ncavDailyList.refreshing || (ncavDailyList.receivedAt !== null && ncavDailyList.error)) && (
+                <div className="service-container">
+                    <ScanRefreshNotice refreshing={ncavDailyList.refreshing} error={ncavDailyList.error} onRetry={handleRefresh} />
+                </div>
+            )}
+
+            {isAdmin && <div className="border-b border-neutral-200 bg-white dark:border-surface-dark-border dark:bg-surface-dark-card">
+                <div className="service-container flex items-center gap-2">
                         <div className="relative ml-auto min-w-0 max-w-[168px] rounded-full py-1.5 focus-within:ring-2 focus-within:ring-brand focus-within:ring-offset-2 dark:focus-within:ring-offset-surface-dark-card">
                             <div className={cn(
                                 "pointer-events-none flex h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold",
@@ -1410,19 +1409,16 @@ function ScreenerContent() {
                                 </optgroup>}
                             </select>
                         </div>
-                    )}
                 </div>
-            </div>
+            </div>}
 
             {isLoggedIn && <div className="border-b border-neutral-200 bg-white dark:border-surface-dark-border dark:bg-surface-dark-card">
                 <div className="service-container">
-                    <div role="group" aria-label="필터 설정 방식" className={cn("flex gap-5", filterMethod === 'worldcup' && "mx-auto max-w-2xl")}>
+                    <div role="group" aria-label="필터 설정 방식" className={styles.methodTabs}>
                         {([['worldcup', '이상형 월드컵'], ['manual', '직접 필터 설정']] as const).map(([method, label]) => <button
                             key={method} type="button" aria-pressed={filterMethod === method}
                             onClick={() => { setFilterMethod(method); setFilterOpen(false); }}
-                            className={cn('min-h-11 px-1 py-3 text-sm font-semibold transition-colors focus-visible:outline-brand-ink', filterMethod === method
-                                ? 'text-brand-ink'
-                                : 'text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100')}
+                            className={styles.tab}
                         >{label}</button>)}
                     </div>
                     <div className={filterMethod === 'worldcup' ? undefined : 'hidden'}>
@@ -2176,7 +2172,7 @@ function ScreenerContent() {
                             </button>
                         </section>
                     ) : (
-                    <>
+                    <Tabs.Root value={viewMode} onValueChange={value => setViewMode(value as ViewMode)}>
                         {/* 결과 분포 — 목록을 늘어놓기 전에 "무엇을 받았는지"를 먼저 보여준다.
                             업종과 전략을 한 카드에 둔다: 같은 목록을 두 각도로 자른 것이라
                             나란히 놓아야 "이 업황 하나에 이 전략 하나" 같은 쏠림이 눈에 띈다. */}
@@ -2212,7 +2208,7 @@ function ScreenerContent() {
                                 onClick={() => setShowInsights(v => !v)}
                                 aria-expanded={showInsights}
                                 className={cn(
-                                    "ml-auto rounded-lg px-2.5 py-1.5 text-xs font-bold border transition-colors whitespace-nowrap",
+                                    "ml-auto min-h-11 rounded-lg px-3 py-2 text-sm font-medium border transition-colors whitespace-nowrap",
                                     showInsights
                                         ? "bg-brand-light dark:bg-brand-muted/30 border-brand-light-hover dark:border-brand/40 text-brand-ink-hover dark:text-brand-ink"
                                         : "border-neutral-200 dark:border-surface-dark-border text-neutral-500 dark:text-neutral-400 hover:border-neutral-300"
@@ -2227,7 +2223,7 @@ function ScreenerContent() {
                                 {filteredList.find((item: any) => item.ticker === ticker)?.name ?? ticker} ×
                             </button>)}</div>
                         </div>}
-                        <SecondarySection title="보기 설정 · 묶기 · 복사 · 공유" className="mb-3">
+                        <SecondarySection title="묶기 · 복사 · 공유" className="mb-3">
                         <ResultShare disabled={isLoading || !(isLoggedIn ? filteredList.length : guestRecommendations.length)}
                         getSnapshot={() => screenerSnapshot(
                             isLoggedIn ? filteredList : guestRecommendations,
@@ -2260,24 +2256,6 @@ function ScreenerContent() {
                                     </button>
                                 ))}
                             </div>
-                            <div role="group" aria-label="결과 보기 방식" className="ml-auto shrink-0 flex items-center gap-0.5 p-0.5 rounded-lg bg-surface-canvas dark:bg-surface-dark-hover">
-                                {([['table', '목록'], ['card', '카드'], ['ratio', '비율']] as const).map(([id, label]) => (
-                                    <button
-                                        key={id}
-                                        onClick={() => setViewMode(id)}
-                                        title={VIEW_MODE_TITLE[id]}
-                                        aria-pressed={viewMode === id}
-                                        className={cn(
-                                            "rounded-lg px-2 py-1.5 text-xs font-bold transition-colors sm:px-2.5",
-                                            viewMode === id
-                                                ? "bg-white dark:bg-surface-dark text-neutral-900 dark:text-white underline decoration-2 underline-offset-4"
-                                                : "text-neutral-500 dark:text-neutral-400"
-                                        )}
-                                    >
-                                        {label}
-                                    </button>
-                                ))}
-                            </div>
                             <div className="flex shrink-0 items-center gap-2">
                                 <CopyStockButtons rows={copyRows} label={showLikedOnly ? "관심 종목" : "발굴 종목"} />
                             </div>
@@ -2292,9 +2270,17 @@ function ScreenerContent() {
                             <ResultSummary list={filteredList} />
                         </>}
 
+                        <Tabs.List aria-label="결과 보기 방식" className={styles.viewTabs}>
+                            {([['table', '목록'], ['card', '카드'], ['ratio', '자산 비율']] as const).map(([id, label]) => (
+                                <Tabs.Trigger key={id} value={id} title={VIEW_MODE_TITLE[id]} className={styles.tab}>
+                                    {label}
+                                </Tabs.Trigger>
+                            ))}
+                        </Tabs.List>
+                        <Tabs.Content value={viewMode} className={styles.resultPanel}>
                         {viewMode === 'ratio' ? (
                             groups ? (
-                                <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
+                                <div className="bg-white dark:bg-surface-dark-card rounded-lg border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
                                     <GroupedResults {...groupedProps} bodyClassName={GRID_BODY}
                                         renderRow={(item: any) => (
                                             <StockRatioRow key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(watchTickerFor(item.ticker, item.name))} onToggleLike={handleToggleLike} comparison={comparisonFor(item)} />
@@ -2309,7 +2295,7 @@ function ScreenerContent() {
                             )
                         ) : viewMode === 'card' ? (
                             groups ? (
-                                <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
+                                <div className="bg-white dark:bg-surface-dark-card rounded-lg border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
                                     <GroupedResults {...groupedProps} bodyClassName={CARD_GRID_BODY}
                                         renderRow={(item: any) => (
                                             <StockGridCard key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(watchTickerFor(item.ticker, item.name))} onToggleLike={handleToggleLike} comparison={comparisonFor(item)} />
@@ -2323,7 +2309,7 @@ function ScreenerContent() {
                                 </div>
                             )
                         ) : (
-                        <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
+                        <div className="bg-white dark:bg-surface-dark-card rounded-lg border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
                                 <div className={cn("grid gap-1 lg:gap-4 items-center px-2 sm:px-4 sm:py-2.5 lg:px-6 lg:py-4 bg-surface-canvas dark:bg-surface-dark border-b border-neutral-200 dark:border-border-subtle-dark", TABLE_COLUMNS)}>
                                     <SortableHeader label="종목명" sortKey="ticker" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} />
                                     <div className="hidden lg:block text-xs font-bold text-neutral-400 uppercase tracking-wider">전략</div>
@@ -2348,6 +2334,8 @@ function ScreenerContent() {
                                 )}
                         </div>
                         )}
+
+                        </Tabs.Content>
 
                         {previewCapped && (
                             <div className="mt-8 rounded-2xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card p-6 text-center">
@@ -2377,7 +2365,7 @@ function ScreenerContent() {
                                 </button>
                             </div>
                         )}
-                    </>
+                    </Tabs.Root>
                     )}
                     </>
                 )}
