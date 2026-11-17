@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { valuationModels } from '@/lib/utils/valuationModels';
-import { valuationSummary, scanValuationSummary } from '@/lib/utils/valuationSummary';
+import { valuationSummary, scanValuationSummary, valuationComparisonAxis } from '@/lib/utils/valuationSummary';
 import type { ValuationResult } from '@/lib/utils/financeCalc';
 
 const model = (type: string, targetPrice: number, returnPct = 10) => ({
@@ -105,4 +105,24 @@ test('미국 평가액은 NCAV 비율을 사용하고 센트 단위를 보존하
     assert.deepEqual(models.map(model => model.targetPrice), [12.5, 12.34, 8.76]);
     assert.equal(scanValuationSummary({ ...us, net_income: -100 })[1].targetPrice, null);
     assert.equal(scanValuationSummary({ ...us, ncav_ratio: null })[0].targetPrice, null);
+});
+
+test('비교 축은 모든 모델에 0 기준의 같은 가격 비율을 쓰고 최신 시세로 차이율을 계산한다', () => {
+    const axis = valuationComparisonAxis(200, [100, 50, 300]);
+    assert.equal(axis.position(100), axis.position(200) / 2);
+    assert.equal(axis.difference(100), -50);
+    assert.equal(axis.difference(300), 50);
+    assert.equal(axis.difference(200), 0);
+    assert.ok(axis.position(300) < 100);
+});
+
+test('시세·적정가가 없거나 무효면 차이율을 만들지 않고 축 위치는 유한하게 유지한다', () => {
+    for (const current of [0, NaN, Infinity]) {
+        const axis = valuationComparisonAxis(current, [null, -1, NaN, Infinity]);
+        assert.equal(axis.difference(100), null);
+        assert.equal(axis.position(current), 0);
+    }
+    const axis = valuationComparisonAxis(0.5, [0.25, null]);
+    assert.equal(axis.difference(0.25), -50);
+    assert.equal(axis.difference(null), null);
 });
