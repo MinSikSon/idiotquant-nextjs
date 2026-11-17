@@ -31,8 +31,14 @@ export default function PageInputShortcuts() {
       if (!window.matchMedia('(pointer: coarse)').matches) return;
 
       release?.();
+      const searchInput = () => {
+        if (window.location.pathname !== '/analyze') return null;
+        const trigger = document.querySelector<HTMLButtonElement>('[data-page-search-trigger]');
+        if (trigger && visible(trigger) && trigger.getAttribute('aria-expanded') !== 'true') trigger.click();
+        return document.querySelector<HTMLInputElement>('[data-search-content] [data-page-input]');
+      };
       if (window.location.pathname === '/analyze') {
-        const target = document.querySelector<HTMLInputElement>('[data-search-content] [data-page-input]');
+        const target = searchInput();
         if (target && visible(target)) {
           target.focus({ preventScroll: true });
           return;
@@ -49,7 +55,7 @@ export default function PageInputShortcuts() {
 
       const transfer = () => {
         if (window.location.pathname !== '/analyze') return;
-        const target = document.querySelector<HTMLInputElement>('[data-search-content] [data-page-input]');
+        const target = searchInput();
         if (!target || !visible(target)) return;
         // 느린 페이지 이동 중 먼저 입력한 글자도 실제 검색창에 전달한다.
         if (input.value) {
