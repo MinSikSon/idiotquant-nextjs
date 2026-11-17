@@ -501,6 +501,7 @@ export function NavbarWithSimpleLinks() {
           <div ref={!mobile ? pageHeader?.setTitleTarget : undefined} className={cn("hidden min-w-0 flex-1 md:block", !pageHeader?.active && "md:hidden")} />
           {!pageHeader?.active && <span className="hidden min-w-0 flex-1 truncate text-sm font-semibold md:block">{pathname === "/" ? null : mobilePageTitle}</span>}
           <div className="min-w-0 flex-1 md:hidden">
+            <div ref={pageHeader?.setInfoTarget} data-navigation-info />
             <div ref={pageHeader?.setScrollTitleTarget} data-navigation-scroll-title hidden={!identityScrolled} />
           </div>
           <div ref={pageHeader?.setActionsTarget} data-navigation-actions className="shrink-0" />

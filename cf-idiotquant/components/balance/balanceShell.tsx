@@ -1,5 +1,6 @@
 "use client";
 
+import { BalanceScrollControls } from "./balanceScrollControls";
 import styles from "./balanceTheme.module.css";
 
 import { PageHeader, PAGE_WIDTH, PAGE_ACTION_CLS } from "@/components/pageHeader";
@@ -28,7 +29,7 @@ export function BalanceShell({
   toasts, onRemoveToast,
   breadcrumb, title, lastUpdated,
   countryToggle, autoRefresh, onToggleAutoRefresh, isLoading, onRefresh, headerExtra, footerBadge,
-  accountSelector,
+  accountSelector, scrollLabel,
   navSections, mobileTab, onMobileTabChange,
   sections,
 }: {
@@ -45,6 +46,7 @@ export function BalanceShell({
   headerExtra?: React.ReactNode;
   footerBadge?: React.ReactNode;
   accountSelector?: React.ReactNode;
+  scrollLabel: string;
   navSections: NavSection[];
   mobileTab: string;
   onMobileTabChange: (id: string) => void;
@@ -77,11 +79,10 @@ export function BalanceShell({
       />
       <div className={cn(PAGE_WIDTH.data, "service-content flex flex-col gap-6")}>
 
-        {/* 국가·계좌 선택은 본문과 함께 스크롤한다. */}
-        {(countryToggle || accountSelector) && <div className="flex flex-col gap-3">
+        {(countryToggle || accountSelector) && <BalanceScrollControls label={scrollLabel}>
           {countryToggle}
           {accountSelector}
-        </div>}
+        </BalanceScrollControls>}
 
         {/* 섹션 본문 — 활성 탭에 속한 패널을 모두 표시한다.
             탭 id 와 패널 id 를 1:1 로 보면, 탭을 묶는 순간 짝 없는 패널이 조용히 사라진다. */}
