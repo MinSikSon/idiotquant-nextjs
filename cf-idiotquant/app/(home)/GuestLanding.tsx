@@ -1,14 +1,19 @@
 "use client";
 
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { WatchlistSample } from '@/components/home-watchlist';
 import { ArrowRight, Heart, Search } from 'lucide-react';
 import { useStockSearchModal } from '@/components/stock-search-provider';
+import styles from './home.module.css';
+
+const HeroArt = dynamic(() => import('./HeroArt'), { ssr: false });
 
 export default function GuestLanding() {
   const { openSearch } = useStockSearchModal();
   return <div className="mx-auto w-full max-w-3xl px-4 py-10 text-neutral-900 dark:text-neutral-100 sm:px-6 sm:py-20">
-    <section aria-labelledby="home-title">
+    <section aria-labelledby="home-title" className="relative isolate">
+      <div className={styles.heroArt} aria-hidden="true"><HeroArt /></div>
       <h1 id="home-title" className="text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">내 관심종목,<br />가격과 적정주가를 한눈에</h1>
       <p className="mt-5 max-w-lg text-sm leading-7 text-neutral-600 dark:text-neutral-300">관심종목을 담고 가격과 전략별 적정주가를 함께 살펴보세요.<br className="hidden sm:block" />궁금한 종목은 분석 화면에서 자세히 확인할 수 있습니다.</p>
       <div className="mt-7 flex flex-wrap gap-3">
