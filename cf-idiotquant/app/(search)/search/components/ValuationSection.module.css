@@ -3,9 +3,16 @@
 .currentKey, .targetKey { display: inline-block; width: 8px; height: 8px; flex-shrink: 0; }
 .currentKey { background: rgb(var(--brand-ink)); transform: rotate(45deg); }
 .targetKey { border-radius: 50%; background: currentColor; }
-.track { position: relative; min-height: 28px; align-self: center; }
+.axis { position: relative; isolation: isolate; overflow-x: auto; display: grid; grid-template-columns: minmax(0, 9.375rem) minmax(40px, 1fr) max-content max-content; column-gap: 12px; }
+.referenceColumn { grid-column: 2; position: relative; min-width: 0; pointer-events: none; z-index: 1; }
+.modelRow { grid-column: 1 / -1; min-width: 0; }
+.modelLabel { grid-column: 1; }
+.track { grid-column: 2; position: relative; min-width: 0; min-height: 28px; align-self: center; z-index: 2; }
+.price { grid-column: 3; }
+.returnPct { grid-column: 4; }
+.notice, .explanation { position: relative; z-index: 2; background: var(--service-panel); }
 .baseline { position: absolute; inset-inline: 0; top: 50%; height: 2px; background: rgb(115 115 115 / 20%); }
-.currentLine { position: absolute; inset-block: 0; border-left: 2px dashed rgb(var(--brand-ink) / 60%); transform: translateX(-1px); }
+.currentLine { position: absolute; inset-block: 0; border-left: 2px solid rgb(var(--brand-ink) / 70%); transform: translateX(-1px); }
 .gap { position: absolute; top: 50%; height: 6px; margin-top: -2px; border-radius: 3px; opacity: .55; }
 .currentMarker, .targetMarker { position: absolute; top: 50%; width: 10px; height: 10px; margin-top: 1px; box-shadow: 0 0 0 2px var(--service-panel); }
 .currentMarker { background: rgb(var(--brand-ink)); transform: translate(-50%, -50%) rotate(45deg); }
@@ -16,13 +23,11 @@
 :global(.dark) .higher { background: #6ee7b7; }
 :global(.dark) .lower { background: #fb7185; }
 @media (max-width: 767px) {
-  .axis { display: block; }
-  .modelRow { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 2px 8px; padding-block: 6px; }
-  .modelLabel { grid-column: 1; grid-row: 1; }
+  .axis { grid-template-columns: minmax(4.5rem, 6rem) minmax(40px, 1fr) max-content max-content; column-gap: 6px; }
+  .modelRow { padding-block: 6px; }
   .modelLabel button { font-size: 0.8125rem; line-height: 1.4; }
-  .price { grid-column: 2; grid-row: 1; text-align: right; font-size: 0.875rem; overflow-wrap: anywhere; white-space: normal; }
-  .returnPct { grid-column: 3; grid-row: 1; align-self: center; font-size: 0.8125rem; }
-  .track { grid-column: 1 / -1; grid-row: 2; min-height: 28px; margin: 0 8px 2px; }
-  .notice { grid-column: 1 / -1; grid-row: 3; font-size: 0.8125rem; line-height: 1.5; }
-  .explanation { grid-column: 1 / -1; grid-row: 4; font-size: 0.8125rem; overflow-wrap: anywhere; }
+  .price { text-align: right; font-size: 0.875rem; }
+  .returnPct { font-size: 0.8125rem; }
+  .notice, .explanation { font-size: 0.8125rem; overflow-wrap: anywhere; }
+  .notice { line-height: 1.5; }
 }

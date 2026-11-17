@@ -135,8 +135,6 @@ const DEFAULT_CONFIG: ModelConfig = {
 };
 
 // 가격·괴리율의 실제 너비를 모든 행이 공유하고, 남은 공간을 트랙에 쓴다.
-const AXIS_GRID = "grid grid-cols-[56px_minmax(24px,1fr)_max-content_max-content] sm:grid-cols-[150px_minmax(32px,1fr)_max-content_max-content] gap-x-2 sm:gap-x-3";
-const AXIS_ROW = "col-span-4 grid grid-cols-[subgrid] items-center";
 
 // =========================================================================
 // ValuationSection
@@ -249,8 +247,15 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
           {/* 모델별 트랙 — 축과 목록을 한 줄에 합친다. 점과 이름이 같은 행에 있으면
               "이 점이 어느 모델인지" 를 색으로 되짚을 필요가 없다.
               모든 행이 같은 min~max 스케일을 쓰므로 세로로 곧장 비교된다. */}
-          <div className={cn(AXIS_GRID, styles.axis, "overflow-hidden")}>
-            {axis.rows.map(r => {
+          <div className={styles.axis}>
+            {axis.curPrice > 0 && <div
+              className={styles.referenceColumn}
+              style={{ gridRow: `1 / span ${axis.rows.length}` }}
+              aria-hidden="true"
+            >
+              <div className={styles.currentLine} style={{ left: `${curLabelPos}%` }} />
+            </div>}
+            {axis.rows.map((r, index) => {
               const difference = axis.difference(r.targetPrice);
               const isPositive = difference !== null && difference >= 0;
               const target = r.targetPrice !== null ? axis.pos(r.targetPrice) : null;
@@ -260,7 +265,8 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
                   key={r.type}
                   onPointerEnter={event => { if (event.pointerType === "mouse") setHoveredModel(r.type); }}
                   onPointerLeave={event => { if (event.pointerType === "mouse") setHoveredModel(null); }}
-                  className={cn(AXIS_ROW, styles.modelRow, "px-0 sm:px-4 py-2.5 bg-transparent sm:bg-white dark:sm:bg-surface-dark-card border-t border-neutral-100 dark:border-border-subtle-dark")}
+                  className={cn(styles.modelRow, "grid grid-cols-[subgrid] items-center py-2.5 border-t border-neutral-100 dark:border-border-subtle-dark")}
+                  style={{ gridRow: index + 1 }}
                 >
                   <div className={cn(styles.modelLabel, "min-w-0")}>
                     <button
@@ -287,7 +293,6 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
                     aria-label={`${r.config.name}: ${axis.usedMarketPrice ? "현재가" : "계산 기준가"} ${currency}${axis.curPrice.toLocaleString()}, 적정가 ${r.targetPrice !== null ? `${currency}${r.targetPrice.toLocaleString()}` : "산출 불가"}${difference !== null ? `, 차이 ${difference.toFixed(1)}%` : ""}`}
                   >
                     <div className={styles.baseline} />
-                    {axis.curPrice > 0 && <div className={styles.currentLine} style={{ left: `${curLabelPos}%` }} />}
                     {target !== null && difference !== null && <div
                       className={cn(styles.gap, isPositive ? styles.higher : styles.lower)}
                       style={{ left: `${Math.min(curLabelPos, target)}%`, width: `${Math.abs(target - curLabelPos)}%` }}
