@@ -283,7 +283,7 @@ export function NavbarWithSimpleLinks() {
 
      `/game` Rogue는 DOM이라 앱 테마를 따른다. */
   const inGame = pathname.startsWith("/games");
-  const fixedAnalysisIdentity = pathname === "/analyze";
+  const fixedPageIdentity = pathname === "/analyze" || pathname === "/screener";
   // 게임 안에서는 금융 서비스 이름 대신 게임 묶음의 이름을 쓴다. 공통 헤더지만
   // 경로에 따라 한 단어만 바꾸므로, 게임 바의 색·배치는 그대로 유지된다.
   const brandSuffix = inGame ? "GAMES" : "QUANT";
@@ -305,7 +305,7 @@ export function NavbarWithSimpleLinks() {
   const bottomNav = useRef<HTMLElement>(null);
   const identity = useRef<HTMLDivElement>(null);
   const [identityScrolled, setIdentityScrolled] = useState(false);
-  const [analysisIdentityOffset, setAnalysisIdentityOffset] = useState(0);
+  const [identityOffset, setIdentityOffset] = useState(0);
   const mobilePageTitle = MOBILE_PAGE_TITLES.find(item => active(pathname, item.href, item.href === "/"))?.label;
   const showMore = moreOpen || moreActive;
 
@@ -321,9 +321,9 @@ export function NavbarWithSimpleLinks() {
     let state: NavigationScrollState = { y: Math.max(0, window.scrollY), direction: 0, travel: 0, hidden: false };
     const onScroll = () => {
       const header = document.querySelector('[data-navigation-header]');
-      if (fixedAnalysisIdentity) {
+      if (fixedPageIdentity) {
         const offset = Math.min(56, Math.max(0, window.scrollY));
-        setAnalysisIdentityOffset(offset);
+        setIdentityOffset(offset);
         setIdentityScrolled(offset >= 56);
       } else {
         setIdentityScrolled(!!identity.current && !!header && identity.current.getBoundingClientRect().bottom <= header.getBoundingClientRect().bottom);
@@ -343,7 +343,7 @@ export function NavbarWithSimpleLinks() {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
     };
-  }, [pathname, inGame, moreSheet, fixedAnalysisIdentity]);
+  }, [pathname, inGame, moreSheet, fixedPageIdentity]);
 
   /* Theme sync: persist choice in localStorage, hydrate on mount */
   useEffect(() => {
@@ -512,19 +512,19 @@ export function NavbarWithSimpleLinks() {
             </NavigationPopover>
           </div>
         </div>
-        {fixedAnalysisIdentity && (
-        <div className="navigation-analysis-identity overflow-hidden md:hidden" style={{ height: 56 - analysisIdentityOffset }}>
-        <div ref={identity} className="flex h-[56px] items-center gap-3 px-3 py-1" style={{ transform: `translateY(-${analysisIdentityOffset}px)`, visibility: identityScrolled ? "hidden" : undefined }} aria-hidden={identityScrolled}>
+        {fixedPageIdentity && (
+        <div className="navigation-analysis-identity overflow-hidden md:hidden" style={{ height: 56 - identityOffset }}>
+        <div ref={identity} className="flex h-[56px] items-center gap-3 px-3 py-1" style={{ transform: `translateY(-${identityOffset}px)`, visibility: identityScrolled ? "hidden" : undefined }} aria-hidden={identityScrolled}>
           <Link href="/" className="shrink-0 text-xl font-bold tracking-tight text-neutral-900 dark:text-white">idiot<span className="text-brand-ink">quant</span></Link>
           <div ref={mobile ? pageHeader?.setTitleTarget : undefined} className={cn("min-w-0 flex-1", !pageHeader?.active && "hidden")} />
           {!pageHeader?.active && <span className="truncate text-base font-semibold">{mobilePageTitle}</span>}
         </div>
         </div>
         )}
-        <div ref={pageHeader?.setTabsTarget} />
+        <div ref={pageHeader?.setTabsTarget} data-navigation-tabs />
       </header>}
 
-      {!inGame && !fixedAnalysisIdentity && <div ref={identity} className="navigation-identity bg-surface-canvas dark:bg-surface-dark-canvas md:hidden">
+      {!inGame && !fixedPageIdentity && <div ref={identity} className="navigation-identity bg-surface-canvas dark:bg-surface-dark-canvas md:hidden">
         <div className="flex min-h-10 items-center gap-3 px-3 py-1">
           <Link href="/" className="shrink-0 text-xl font-bold tracking-tight text-neutral-900 dark:text-white">idiot<span className="text-brand-ink">quant</span></Link>
           <div ref={mobile ? pageHeader?.setTitleTarget : undefined} className={cn("min-w-0 flex-1", !pageHeader?.active && "hidden")} />
