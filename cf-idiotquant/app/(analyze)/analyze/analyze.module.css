@@ -13,7 +13,7 @@
   --analysis-lilac-ink: var(--service-accent-ink);
   background: var(--analysis-canvas);
   color: var(--analysis-ink);
-  font-size: 0.9375rem;
+  font-size: 1rem;
   line-height: 1.65;
   word-break: keep-all;
   overflow-wrap: anywhere;
@@ -77,12 +77,11 @@
 .readingNote { border-top: 1px solid var(--analysis-line); padding-top: 12px; color: var(--analysis-muted); }
 .intro { padding-top: 4px; }
 .introHeading { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 24px; }
-.eyebrow { margin-bottom: 12px; font-size: 0.8125rem; font-weight: 600; color: var(--analysis-muted); }
 .page .introTitle { font-size: clamp(24px, 3vw, 32px); font-weight: 600; line-height: 1.5; letter-spacing: -.025em; color: var(--analysis-ink); }
 .introNote { max-width: 340px; font-size: 0.9375rem; line-height: 1.8; color: var(--analysis-muted); }
 .steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
 .step { padding: 24px 0; }
-.stepTop { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; color: var(--analysis-lilac-ink); font-size: 0.875rem; font-variant-numeric: tabular-nums; }
+.stepTop { display: flex; align-items: center; justify-content: flex-start; margin-bottom: 20px; color: var(--analysis-lilac-ink); }
 .step h3 { margin-bottom: 8px; font-size: 1.125rem; font-weight: 600; color: var(--analysis-ink); }
 .step p { color: var(--analysis-muted); font-size: 0.9375rem; line-height: 1.8; }
 .quickSearches { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 16px; padding-bottom: 32px; }

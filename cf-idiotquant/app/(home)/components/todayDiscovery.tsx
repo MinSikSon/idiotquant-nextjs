@@ -53,26 +53,26 @@ export function TodayDiscovery({
 
         <div className="flex items-end justify-between gap-3 mb-3.5">
           <div className="flex items-baseline gap-2 min-w-0">
-            <h2 className="text-[13px] font-extrabold text-neutral-900 dark:text-white shrink-0">오늘 남은 회사</h2>
-            <span className="text-[11px] text-neutral-400 dark:text-white/35 shrink-0">싼 순서로</span>
+            <h2 className="text-base font-bold text-neutral-900 dark:text-white shrink-0">오늘 남은 회사</h2>
+            <span className="text-xs text-neutral-500 dark:text-white/70 shrink-0">싼 순서로</span>
           </div>
           <Link
             href="/screener"
-            className="inline-flex items-center min-h-[44px] px-2 -mx-2 text-[11.5px] font-bold text-brand-ink dark:text-brand-ink hover:opacity-70 transition-opacity shrink-0"
+            className="inline-flex items-center min-h-[44px] px-2 -mx-2 text-[13px] font-bold text-brand-ink dark:text-brand-ink hover:opacity-70 transition-opacity shrink-0"
           >
             {totalCount > 0 ? `${totalCount}개 전체 보기 →` : "발굴 결과 보기 →"}
           </Link>
         </div>
 
-        <div className="rounded-xl border border-neutral-200 dark:border-[#22402f] overflow-hidden bg-white dark:bg-[#101b15]">
+        <div className="rounded-[var(--radius-panel)] border border-neutral-200 dark:border-[#22402f] overflow-hidden bg-white dark:bg-[#101b15]">
 
           {/* 헤더 행 — 좁은 폭에서는 지표 컬럼을 접고 종목·전략만 남긴다 */}
           <div className="hidden sm:grid gap-3.5 items-center sm:grid-cols-[minmax(0,2.4fr)_minmax(0,1.1fr)_74px_62px_62px_66px] px-[18px] py-2.5 bg-surface-canvas dark:bg-[#0c1712] border-b border-neutral-200 dark:border-[#22402f]">
             {["종목", "전략"].map(h => (
-              <span key={h} className="text-[10px] font-bold text-neutral-400 dark:text-white/35 uppercase tracking-[0.07em]">{h}</span>
+              <span key={h} className="text-xs font-semibold text-neutral-600 dark:text-white/75 uppercase tracking-[0.04em]">{h}</span>
             ))}
             {["NCAV", "PBR", "PER", "ROE"].map(h => (
-              <span key={h} className="text-[10px] font-bold text-neutral-400 dark:text-white/35 uppercase tracking-[0.07em] text-right">{h}</span>
+              <span key={h} className="text-xs font-semibold text-neutral-600 dark:text-white/75 uppercase tracking-[0.04em] text-right">{h}</span>
             ))}
           </div>
 
@@ -112,8 +112,8 @@ export function TodayDiscovery({
                     <div className="flex items-center gap-2 min-w-0">
                       <ValueMedal item={item} />
                       <div className="min-w-0">
-                        <p className="text-[13px] font-bold text-neutral-900 dark:text-white truncate leading-tight">{item.name}</p>
-                        <p className="text-[10.5px] font-mono tracking-[0.05em] text-neutral-400 dark:text-white/35 mt-0.5">{item.ticker}</p>
+                        <p className="text-sm font-semibold text-neutral-900 dark:text-white truncate leading-tight">{item.name}</p>
+                        <p className="text-xs font-mono tracking-[0.03em] text-neutral-600 dark:text-white/70 mt-0.5">{item.ticker}</p>
                       </div>
                     </div>
 
@@ -121,7 +121,7 @@ export function TodayDiscovery({
                     <div className="min-w-0">
                       {strategy && (
                         <span className={cn(
-                          "inline-block px-1.5 py-0.5 rounded text-[10px] font-bold",
+                          "inline-block px-1.5 py-0.5 rounded text-xs font-semibold",
                           STRATEGY_BADGE[strategy] ?? "bg-surface-canvas text-neutral-500 dark:bg-white/10 dark:text-white/70"
                         )}>
                           {STRATEGY_LABEL[strategy] ?? strategy}

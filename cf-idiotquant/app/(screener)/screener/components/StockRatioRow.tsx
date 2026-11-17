@@ -22,14 +22,14 @@ function Bar({ label, value, scale, color, hint, us }: {
 }) {
     return (
         <div className="flex items-center gap-2" title={hint}>
-            <span className="w-[52px] shrink-0 text-[9.5px] font-bold text-neutral-400 uppercase tracking-wider">{label}</span>
+            <span className="w-[68px] shrink-0 text-xs font-semibold text-neutral-600 dark:text-neutral-300">{label}</span>
             <div className="relative flex-1 h-[18px] rounded-md bg-[#f2f0ec] dark:bg-surface-dark-hover overflow-hidden">
                 <div
                     className={cn("absolute inset-y-0 left-0 rounded-md transition-[width] duration-500", color)}
                     style={{ width: `${barPct(value, scale)}%` }}
                 />
             </div>
-            <span className="w-[68px] shrink-0 text-right text-[11px] font-mono font-bold tabular-nums text-neutral-700 dark:text-neutral-200">
+            <span className="w-[76px] shrink-0 text-right text-xs font-mono font-bold tabular-nums text-neutral-700 dark:text-neutral-200">
                 {money(value, us)}
             </span>
         </div>
@@ -38,7 +38,7 @@ function Bar({ label, value, scale, color, hint, us }: {
 
 const Ratio = ({ label, value, ok, hint }: { label: string; value: number | null; ok: boolean; hint: string }) => (
     <div className="flex shrink-0 items-baseline gap-1 whitespace-nowrap" title={hint}>
-        <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">{label}</p>
+        <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-300">{label}</p>
         <p className={cn(
             "text-[13px] font-mono font-bold tabular-nums",
             value === null ? "text-neutral-400" : ok ? "text-brand-ink" : "text-neutral-700 dark:text-neutral-200"
@@ -122,7 +122,7 @@ export function StockRatioRow({ item, onClick, isLiked, onToggleLike, comparison
                         ? " — 유동자산으로 부채를 덮지 못합니다."
                         : " — 시가총액에는 못 미칩니다."}
             </p>
-            <span className="mt-2 flex items-center justify-end gap-0.5 text-[11px] font-semibold text-brand-ink">분석 <ChevronRight size={12} aria-hidden="true" /></span>
+            <span className="mt-2 flex min-h-11 items-center justify-end gap-0.5 text-xs font-semibold text-brand-ink">분석 <ChevronRight size={14} aria-hidden="true" /></span>
         </div>
     );
 }

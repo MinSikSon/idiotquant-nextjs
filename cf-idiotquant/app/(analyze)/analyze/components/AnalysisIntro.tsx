@@ -13,15 +13,14 @@ export default function AnalysisIntro({ onSearch }: { onSearch: (value: string) 
     <section className={styles.intro} aria-labelledby="analysis-intro-title">
       <div className={styles.introHeading}>
         <div>
-          <p className={styles.eyebrow}>분석을 시작하는 세 가지 관점</p>
           <h2 id="analysis-intro-title" className={styles.introTitle}>가격을 넘어,<br />가치의 근거까지.</h2>
         </div>
         <p className={styles.introNote}>국내·미국 종목명이나 티커를 검색하세요.<br />지표에서 재무까지, 한 흐름으로 살펴봅니다.</p>
       </div>
       <div className={styles.steps}>
-        {steps.map(({ title, description, icon: Icon }, index) => (
+        {steps.map(({ title, description, icon: Icon }) => (
           <article key={title} className={styles.step}>
-            <div className={styles.stepTop}><span>0{index + 1}</span><Icon size={18} aria-hidden="true" strokeWidth={1.5} /></div>
+            <div className={styles.stepTop}><Icon size={18} aria-hidden="true" strokeWidth={1.5} /></div>
             <h3>{title}</h3><p>{description}</p>
           </article>
         ))}

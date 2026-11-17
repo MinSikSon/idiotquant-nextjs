@@ -29,11 +29,11 @@
   .filterLine :global(.discovery-filters) > button { padding-inline: 10px; }
   .riskControls summary { font-size: 12px; gap: 4px; }
 
-  .collection { font-size: 11px; }
+  .collection { font-size: 12px; }
   .filterLine:first-child { flex-wrap: nowrap; gap: 8px; }
   .toolbar { align-items: flex-start; gap: 8px; padding-top: 20px; }
   .toolbar h2 { font-size: 19px; }
-  .toolbar p { font-size: 11px; }
+  .toolbar p { font-size: 12px; }
 
 }
 
