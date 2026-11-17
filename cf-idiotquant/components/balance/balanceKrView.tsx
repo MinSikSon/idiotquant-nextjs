@@ -460,6 +460,9 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
       onRemoveToast={removeToast}
       lastUpdated={lastUpdated}
       countryToggle={countryToggle}
+      scrollLabel={isMaster ? `한국 · ${(Array.isArray(kakaoMemberList?.list)
+        ? kakaoMemberList.list.find((item: { key: string | number; value?: { nickname?: string } }) => String(item.key) === balanceKey)?.value?.nickname
+        : undefined) || balanceKey}` : "한국"}
       autoRefresh={autoRefresh}
       onToggleAutoRefresh={() => setAutoRefresh(v => !v)}
       isLoading={isLoading}
