@@ -126,10 +126,10 @@ export default function AdminPage() {
         mobileTitleInNavigation
         meta="카카오 가입 회원 현황"
       />
-      <div className={cn(PAGE_WIDTH.content, "py-8 md:py-12")}>
+      <main className={cn(PAGE_WIDTH.data, "service-content flex flex-col gap-5")}>
 
       {/* 관리 메뉴 링크 */}
-      <div className="flex flex-wrap gap-2 mb-6">
+      <div className="flex flex-wrap gap-2">
         <Link
           href="/admin/ticker-map"
           className="flex min-h-11 items-center gap-2 px-4 py-2 bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-[var(--radius-control)] text-sm font-semibold text-neutral-700 dark:text-neutral-300 hover:border-brand hover:text-brand-ink transition-colors group"
@@ -140,14 +140,14 @@ export default function AdminPage() {
         </Link>
       </div>
 
-      <Link href="/admin/trading" className="mb-6 flex min-h-11 items-center justify-between gap-3 rounded-[var(--radius-panel)] border border-neutral-200 bg-white p-4 text-sm font-semibold text-neutral-800 hover:border-brand dark:border-border-subtle-dark dark:bg-surface-dark-card dark:text-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink">
+      <Link href="/admin/trading" className="flex min-h-11 items-center justify-between gap-3 rounded-[var(--radius-panel)] border border-neutral-200 bg-white p-4 text-sm font-semibold text-neutral-800 hover:border-brand dark:border-border-subtle-dark dark:bg-surface-dark-card dark:text-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink">
         자동매매 운영 현황 <ArrowRight size={14} />
       </Link>
 
       <OpenDartUsage />
 
       {/* 재가입 쿨다운 설정 */}
-      <div className="bg-white dark:bg-surface-dark border border-neutral-200/70 dark:border-surface-dark-border rounded-[var(--radius-panel)] p-5 mb-6">
+      <div className="bg-white dark:bg-surface-dark border border-neutral-200/70 dark:border-surface-dark-border rounded-[var(--radius-panel)] p-5">
         <div className="flex items-center gap-2 mb-1">
           <Clock size={14} className="text-neutral-600 dark:text-neutral-300" />
           <span className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">재가입 쿨다운</span>
@@ -175,7 +175,7 @@ export default function AdminPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           { label: "전체 회원",  value: users.length },
           { label: "Pro 플랜",   value: users.filter(u => u.plan === "pro").length },
@@ -287,7 +287,7 @@ export default function AdminPage() {
           </div>
         )}
       </div>
-      </div>
+      </main>
     </>
   );
 }

@@ -229,7 +229,7 @@ export default function TickerMapPage() {
           </button>
         )}
       />
-      <div className={cn(PAGE_WIDTH.content, "py-6 space-y-5")}>
+      <main className={cn(PAGE_WIDTH.data, "service-content flex flex-col gap-5")}>
 
         {isAdmin && showAddForm && (
           <div className="bg-white dark:bg-surface-dark-card border border-brand/30 rounded-2xl p-4 space-y-3">
@@ -475,7 +475,7 @@ export default function TickerMapPage() {
           )}
         </div>
 
-      </div>
+      </main>
     </div>
   );
 }

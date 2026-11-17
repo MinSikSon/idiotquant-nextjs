@@ -1650,7 +1650,7 @@ function ScreenerContent() {
 
             {/* ── 필터 서랍 ── */}
             {filterOpen && (
-                <div aria-label="상세 필터" className="fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-[#f8faf8] dark:bg-surface-dark sm:static sm:overflow-visible sm:bg-brand-light sm:dark:bg-brand-muted/25 sm:border-b sm:border-brand-light sm:dark:border-brand/40">
+                <div aria-label="상세 필터" className="fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-surface-canvas dark:bg-surface-dark sm:static sm:overflow-visible sm:bg-brand-light sm:dark:bg-brand-muted/25 sm:border-b sm:border-brand-light sm:dark:border-brand/40">
                     <div className="service-container pt-4 sm:pt-5 pb-5 sm:pb-[18px]">
 
                         <div className="flex items-center justify-between gap-3 mb-4">
@@ -2236,7 +2236,7 @@ function ScreenerContent() {
                             isLoggedIn ? activeConditions.map(condition => condition.label) : ['PER 0 초과·20 이하', '순유동자산 비율 순 상위 종목']
                         )} />
                         <div className="flex flex-nowrap items-center gap-2 overflow-x-auto whitespace-nowrap">
-                            <div role="group" aria-label="결과 묶기" className="shrink-0 flex items-center gap-0.5 p-0.5 rounded-lg bg-[#f2f0ec] dark:bg-surface-dark-hover">
+                            <div role="group" aria-label="결과 묶기" className="shrink-0 flex items-center gap-0.5 p-0.5 rounded-lg bg-surface-canvas dark:bg-surface-dark-hover">
                                 {([
                                     { id: 'none',     label: '안 묶기' },
                                     { id: 'sector',   label: '업종', disabled: !hasSectorData },
@@ -2260,7 +2260,7 @@ function ScreenerContent() {
                                     </button>
                                 ))}
                             </div>
-                            <div role="group" aria-label="결과 보기 방식" className="ml-auto shrink-0 flex items-center gap-0.5 p-0.5 rounded-lg bg-[#f2f0ec] dark:bg-surface-dark-hover">
+                            <div role="group" aria-label="결과 보기 방식" className="ml-auto shrink-0 flex items-center gap-0.5 p-0.5 rounded-lg bg-surface-canvas dark:bg-surface-dark-hover">
                                 {([['table', '목록'], ['card', '카드'], ['ratio', '비율']] as const).map(([id, label]) => (
                                     <button
                                         key={id}
@@ -2324,7 +2324,7 @@ function ScreenerContent() {
                             )
                         ) : (
                         <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
-                                <div className={cn("grid gap-1 lg:gap-4 items-center px-2 sm:px-4 sm:py-2.5 lg:px-6 lg:py-4 bg-[#fcfaf7] dark:bg-surface-dark border-b border-neutral-200 dark:border-border-subtle-dark", TABLE_COLUMNS)}>
+                                <div className={cn("grid gap-1 lg:gap-4 items-center px-2 sm:px-4 sm:py-2.5 lg:px-6 lg:py-4 bg-surface-canvas dark:bg-surface-dark border-b border-neutral-200 dark:border-border-subtle-dark", TABLE_COLUMNS)}>
                                     <SortableHeader label="종목명" sortKey="ticker" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} />
                                     <div className="hidden lg:block text-xs font-bold text-neutral-400 uppercase tracking-wider">전략</div>
                                     <SortableHeader label="NCAV" sortKey="ncav_ratio" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} relevant={!!metricHighlight && "ncav_ratio" in metricHighlight} />
