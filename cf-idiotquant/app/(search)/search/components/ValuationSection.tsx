@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 import { VALUATION_MODEL_DESCRIPTIONS, type ValuationModelDescription } from "./valuationModelDescriptions";
 import type { ValuationResult } from "@/lib/utils/financeCalc";
 import { valuationModels } from "@/lib/utils/valuationModels";
-import { valuationSummary } from "@/lib/utils/valuationSummary";
+import { valuationSummary, valuationComparisonAxis } from "@/lib/utils/valuationSummary";
 
 type ValuationModelType = "NCAV" | "SRIM" | "DCF" | "PER" | "PEG" | "PBR" | string;
 type FilterTabType = "ALL" | "ASSET" | "EARNING";
@@ -175,21 +175,14 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
     const ref = rows.find(r => r.targetPrice !== null && r.returnPct !== null && r.returnPct > -100);
     const modelBase = ref?.targetPrice != null && ref.returnPct !== null ? ref.targetPrice / (1 + ref.returnPct / 100) : 0;
     // 시세를 못 읽는 경우(로딩 전·응답 누락)에는 기존대로 역산값으로 떨어진다 — 눈금이 비는 것보다 낫다.
-    const curPrice = marketPrice > 0 ? marketPrice : modelBase;
+    const hasMarketPrice = Number.isFinite(marketPrice) && marketPrice > 0;
+    const curPrice = hasMarketPrice ? marketPrice : Number.isFinite(modelBase) && modelBase > 0 ? modelBase : 0;
 
-    const prices = [...rows.flatMap(r => r.targetPrice !== null ? [r.targetPrice] : []), curPrice].filter(p => p > 0);
+    const comparison = valuationComparisonAxis(curPrice, rows.map(row => row.targetPrice));
 
-    const lo = prices.length ? Math.min(...prices) : 0;
-    const hi = prices.length ? Math.max(...prices) : 1;
-    const pad = (hi - lo) * 0.12 || hi * 0.1 || 1;
-    const min = Math.max(0, lo - pad);
-    const max = hi + pad;
-    const pos = (p: number) => (max > min ? ((p - min) / (max - min)) * 100 : 50);
-
-    // min·max 는 pos() 안에서만 쓰인다(끝값 라벨을 걷어내며 밖으로 내보낼 이유가 없어졌다).
     return {
       rows: [...rows].sort((a, b) => (b.targetPrice ?? 0) - (a.targetPrice ?? 0)),
-      curPrice, modelBase, usedMarketPrice: marketPrice > 0, pos,
+      curPrice, modelBase, usedMarketPrice: hasMarketPrice, pos: comparison.position, difference: comparison.difference,
     };
   }, [models, marketPrice]);
 
@@ -235,55 +228,31 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
             </span>
           </div>
           <p className="hidden md:block mb-3 text-[0.9375rem] text-neutral-500 dark:text-neutral-400 break-keep">
-            세로선은 현재가, 점은 모델별 계산 가격입니다. 오른쪽 %는 계산 기준가와의 차이입니다. 가격을 산출하지 못한 모델도 함께 표시합니다.
+            마름모는 현재가, 원은 모델별 적정가입니다. 모든 모델은 0부터 같은 가격 눈금을 쓰며, 연결 구간과 오른쪽 %는 현재가와의 차이를 표시합니다.
           </p>
 
           <p className="mb-1 text-[0.75rem] text-neutral-500 dark:text-neutral-400 md:hidden">
-            세로선 현재가 · 점 적정주가 · % 계산 기준가 대비
+            같은 가격 눈금 · 차이율은 {axis.usedMarketPrice ? "현재가" : "계산 기준가"} 대비
           </p>
 
           {showBaseNote && (
             <p className="mb-2.5 text-[0.9375rem] leading-relaxed text-neutral-600 dark:text-neutral-300 break-keep">
-              아래 괴리율은 모델이 계산에 쓴 {currency}{axis.modelBase.toLocaleString(undefined, { maximumFractionDigits: isUs ? 2 : 0 })} 기준입니다
+              상세 모델의 괴리율은 모델이 계산에 쓴 {currency}{axis.modelBase.toLocaleString(undefined, { maximumFractionDigits: isUs ? 2 : 0 })} 기준입니다
               (현재 시세 {currency}{axis.curPrice.toLocaleString(undefined, { maximumFractionDigits: isUs ? 2 : 0 })}).
             </p>
           )}
 
-          <p className="mb-2 text-sm font-semibold tabular-nums text-neutral-700 dark:text-neutral-200 md:hidden">
-            현재가 {currency}{axis.curPrice.toLocaleString(undefined, { maximumFractionDigits: isUs ? 2 : 0 })}
-          </p>
+          <div className={styles.legend}>
+            <span><i className={styles.currentKey} aria-hidden="true" />{axis.usedMarketPrice ? "현재가" : "계산 기준가"} {currency}{axis.curPrice.toLocaleString(undefined, { maximumFractionDigits: isUs ? 2 : 0 })}</span>
+            <span><i className={styles.targetKey} aria-hidden="true" />적정가</span>
+          </div>
           {/* 모델별 트랙 — 축과 목록을 한 줄에 합친다. 점과 이름이 같은 행에 있으면
               "이 점이 어느 모델인지" 를 색으로 되짚을 필요가 없다.
               모든 행이 같은 min~max 스케일을 쓰므로 세로로 곧장 비교된다. */}
           <div className={cn(AXIS_GRID, styles.axis, "overflow-hidden")}>
-            {/* 눈금 — 트랙 열 위에만 올린다. 그리드 정의를 행과 똑같이 맞춰야 라벨이 실제 위치를 가리킨다.
-                축 양 끝값(min·max)은 찍지 않는다. 실제 목표가가 아니라 가장 바깥 점이 잘리지 않게
-                12% 여백을 붙인 눈금 경계일 뿐인데, 현재가 옆에 나란히 서면 또 하나의 가격으로 읽힌다. */}
-            <div className={cn(AXIS_ROW, styles.axisHeader, "px-0 sm:px-4 pt-2 pb-1")}>
-              <div />
-              <div className="relative h-4">
-                {axis.curPrice > 0 && (
-                  <>
-                    <span
-                      className="absolute -translate-x-1/2 whitespace-nowrap text-[0.8125rem] font-bold font-mono text-neutral-500 dark:text-neutral-400"
-                      style={{ left: `${curLabelPos}%` }}
-                    >
-                      현재가 {axis.curPrice.toLocaleString(undefined, { maximumFractionDigits: isUs ? 2 : 0 })}
-                    </span>
-                    {/* 라벨과 첫 행의 세로선을 잇는 토막 — 선이 라벨에서 시작하는 것처럼 보인다 */}
-                    <div
-                      className="absolute top-4 -bottom-1 w-px -ml-px bg-neutral-900/40 dark:bg-white/40"
-                      style={{ left: `${curLabelPos}%` }}
-                    />
-                  </>
-                )}
-              </div>
-              <div />
-              <div />
-            </div>
-
             {axis.rows.map(r => {
-              const isPositive = r.returnPct !== null && r.returnPct >= 0;
+              const difference = axis.difference(r.targetPrice);
+              const isPositive = difference !== null && difference >= 0;
               const target = r.targetPrice !== null ? axis.pos(r.targetPrice) : null;
               const isExplained = (hoveredModel ?? selectedModel) === r.type;
               return (
@@ -312,34 +281,22 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
                     <p className="hidden md:block text-[0.8125rem] leading-6 text-neutral-600 dark:text-neutral-300 break-keep">{r.config.description.short}</p>
                   </div>
 
-                  {/* self-stretch — 셀이 행 높이를 꽉 채워야 현재가 세로선이 행 사이에서 끊기지 않는다.
-                      행 패딩(py-2.5)은 -inset-y-2.5 로 넘겨 다음 행 선과 맞붙는다. */}
-                  <div className={cn(styles.track, "relative self-stretch min-h-4")}>
-                    {target !== null && <div className="absolute left-0 right-0 top-1/2 -mt-px h-0.5 rounded-full bg-[#f2f0ec] dark:bg-surface-dark-hover" />}
-                    {axis.curPrice > 0 && target !== null && (
-                      <>
-                        <div
-                          className="absolute -inset-y-3 w-px -ml-px bg-neutral-900/40 dark:bg-white/40"
-                          style={{ left: `${curLabelPos}%` }}
-                        />
-                        {/* 현재가 → 적정주가 구간. 길이가 곧 괴리율이라 숫자를 읽기 전에 눈에 들어온다 */}
-                        <div
-                          className={cn("absolute top-1/2 -mt-px h-0.5 rounded-full opacity-60", r.config.dotBg)}
-                          style={{
-                            left: `${Math.min(curLabelPos, target)}%`,
-                            width: `${Math.abs(target - curLabelPos)}%`,
-                          }}
-                        />
-                      </>
-                    )}
-                    {target !== null && r.targetPrice !== null && <div
-                      title={`${r.config.name} ${currency}${r.targetPrice.toLocaleString()}`}
-                      className={cn(
-                        "absolute top-1/2 -mt-1.5 w-3 h-3 -ml-1.5 rounded-full ring-[2.5px] ring-white dark:ring-surface-dark-card",
-                        r.config.dotBg
-                      )}
+                  <div
+                    className={styles.track}
+                    role="img"
+                    aria-label={`${r.config.name}: ${axis.usedMarketPrice ? "현재가" : "계산 기준가"} ${currency}${axis.curPrice.toLocaleString()}, 적정가 ${r.targetPrice !== null ? `${currency}${r.targetPrice.toLocaleString()}` : "산출 불가"}${difference !== null ? `, 차이 ${difference.toFixed(1)}%` : ""}`}
+                  >
+                    <div className={styles.baseline} />
+                    {axis.curPrice > 0 && <div className={styles.currentLine} style={{ left: `${curLabelPos}%` }} />}
+                    {target !== null && difference !== null && <div
+                      className={cn(styles.gap, isPositive ? styles.higher : styles.lower)}
+                      style={{ left: `${Math.min(curLabelPos, target)}%`, width: `${Math.abs(target - curLabelPos)}%` }}
+                    />}
+                    {target !== null && <div
+                      className={cn(styles.targetMarker, difference === null ? styles.neutral : isPositive ? styles.higher : styles.lower)}
                       style={{ left: `${target}%` }}
                     />}
+                    {axis.curPrice > 0 && <div className={styles.currentMarker} style={{ left: `${curLabelPos}%` }} />}
                   </div>
 
                   <span className={cn(styles.price, "whitespace-nowrap text-[0.875rem] font-semibold tabular-nums text-neutral-900 dark:text-neutral-100 text-right")}>
@@ -348,9 +305,9 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
                   <span className={cn(
                     styles.returnPct,
                     "whitespace-nowrap text-[0.8125rem] font-semibold font-mono tabular-nums text-right",
-                    r.returnPct === null ? "text-neutral-500 dark:text-neutral-400" : isPositive ? "text-emerald-700 dark:text-emerald-300" : "text-red-500 dark:text-red-400"
+                    difference === null ? "text-neutral-500 dark:text-neutral-400" : isPositive ? "text-emerald-700 dark:text-emerald-300" : "text-red-500 dark:text-red-400"
                   )}>
-                    {r.returnPct !== null ? `${isPositive ? "+" : ""}${r.returnPct.toFixed(0)}%` : "—"}
+                    {difference !== null ? `${isPositive ? "+" : ""}${difference.toFixed(0)}%` : "—"}
                   </span>
                   {r.notice && (
                     <p className={cn(styles.notice, "col-span-4 text-[0.9375rem] leading-normal text-neutral-600 dark:text-neutral-300 break-keep")}>

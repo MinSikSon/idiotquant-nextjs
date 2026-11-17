@@ -1,13 +1,28 @@
+.legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-bottom: 8px; font-size: 0.8125rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.legend > span { display: inline-flex; align-items: center; gap: 6px; }
+.currentKey, .targetKey { display: inline-block; width: 8px; height: 8px; flex-shrink: 0; }
+.currentKey { background: rgb(var(--brand-ink)); transform: rotate(45deg); }
+.targetKey { border-radius: 50%; background: currentColor; }
+.track { position: relative; min-height: 28px; align-self: center; }
+.baseline { position: absolute; inset-inline: 0; top: 50%; height: 2px; background: rgb(115 115 115 / 20%); }
+.currentLine { position: absolute; inset-block: 0; border-left: 2px dashed rgb(var(--brand-ink) / 60%); transform: translateX(-1px); }
+.gap { position: absolute; top: 50%; height: 6px; margin-top: -2px; border-radius: 3px; opacity: .55; }
+.currentMarker, .targetMarker { position: absolute; top: 50%; width: 10px; height: 10px; margin-top: 1px; box-shadow: 0 0 0 2px var(--service-panel); }
+.currentMarker { background: rgb(var(--brand-ink)); transform: translate(-50%, -50%) rotate(45deg); }
+.targetMarker { border-radius: 50%; transform: translate(-50%, -50%); }
+.higher { background: #16803c; }
+.lower { background: #dc4444; }
+.neutral { background: #737373; }
+:global(.dark) .higher { background: #6ee7b7; }
+:global(.dark) .lower { background: #fb7185; }
 @media (max-width: 767px) {
   .axis { display: block; }
-  .axisHeader { display: none; }
   .modelRow { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 2px 8px; padding-block: 6px; }
   .modelLabel { grid-column: 1; grid-row: 1; }
   .modelLabel button { font-size: 0.8125rem; line-height: 1.4; }
   .price { grid-column: 2; grid-row: 1; text-align: right; font-size: 0.875rem; overflow-wrap: anywhere; white-space: normal; }
   .returnPct { grid-column: 3; grid-row: 1; align-self: center; font-size: 0.8125rem; }
-  .track { grid-column: 1 / -1; grid-row: 2; min-height: 16px; margin: 0 8px 2px; }
-  .track > :global(.w-px) { top: 0; bottom: 0; }
+  .track { grid-column: 1 / -1; grid-row: 2; min-height: 28px; margin: 0 8px 2px; }
   .notice { grid-column: 1 / -1; grid-row: 3; font-size: 0.8125rem; line-height: 1.5; }
   .explanation { grid-column: 1 / -1; grid-row: 4; font-size: 0.8125rem; overflow-wrap: anywhere; }
 }
