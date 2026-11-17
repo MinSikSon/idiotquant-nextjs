@@ -263,7 +263,7 @@ function StrategyCell({ label, count, active, activeCls, title, onClick, compact
             )}
         >
             <span className={cn("text-[11.5px] font-extrabold truncate max-w-full px-1", active && "underline decoration-2 underline-offset-4")}>{label}</span>
-            <span className={cn("text-[10px] font-black font-mono tabular-nums", active ? "opacity-75" : "text-neutral-400", compact && "md:mt-0.5")}>
+            <span className={cn("text-xs font-bold font-mono tabular-nums", active ? "opacity-75" : "text-neutral-500", compact && "md:mt-0.5")}>
                 {count}
             </span>
         </button>
@@ -288,7 +288,7 @@ function SortableHeader({ label, sortKey: key, currentKey, order, onToggle, rele
             title={title}
             onClick={() => onToggle(key)}
             className={cn(
-                "flex min-h-[44px] items-center gap-1 text-[10px] font-bold uppercase tracking-wider transition-colors whitespace-nowrap",
+                "flex min-h-[44px] items-center gap-1 text-xs font-semibold uppercase tracking-wide transition-colors whitespace-nowrap",
                 active ? "text-brand-ink dark:text-brand-ink" : "text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300",
                 relevant && !active && "text-emerald-600/90 dark:text-emerald-400/90"
             )}
@@ -334,7 +334,7 @@ const TableRow = memo(function TableRow({ item, onClick, isLiked, onToggleLike, 
                 <div className="min-w-0 flex-1 flex flex-wrap items-center gap-x-1.5 sm:block">
                     <p className="min-w-0 truncate font-semibold text-xs text-neutral-900 dark:text-white sm:text-sm" title={item.name}>{item.name}</p>
                     <div className="flex min-w-0 items-center gap-1 overflow-hidden whitespace-nowrap sm:mt-0.5 sm:h-5">
-                        {item.ticker !== item.name && <span className="min-w-0 truncate text-[10px] text-neutral-400 font-mono" title={item.ticker}>{item.ticker}</span>}
+                    {item.ticker !== item.name && <span className="min-w-0 truncate text-xs text-neutral-500 dark:text-neutral-400 font-mono" title={item.ticker}>{item.ticker}</span>}
                         <span className="shrink-0"><LiquidityBadge item={item} /></span>
                         <span className="min-w-0 overflow-hidden"><FinancialFreshnessNotice compact periods={scanFinancialPeriods(item)} source={item.financial_source} collectionDate={scanCollectionDate(item)} /></span>
                     </div>
@@ -343,12 +343,12 @@ const TableRow = memo(function TableRow({ item, onClick, isLiked, onToggleLike, 
 
             <div className="hidden lg:flex min-w-0 items-center gap-1 overflow-hidden whitespace-nowrap">
                 {strategies.slice(0, 2).map(s => (
-                    <span key={s} className={cn("px-1.5 py-0.5 rounded text-[10px] font-bold", STRATEGY_BADGE[s] ?? "bg-surface-canvas text-neutral-500")}>
+                    <span key={s} className={cn("px-1.5 py-0.5 rounded text-xs font-semibold", STRATEGY_BADGE[s] ?? "bg-surface-canvas text-neutral-500")}>
                         {STRATEGY_LABEL[s] ?? s}
                     </span>
                 ))}
                 {strategies.length > 2 && (
-                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-surface-canvas dark:bg-surface-dark-elevated text-neutral-500">
+                    <span className="px-1.5 py-0.5 rounded text-xs font-semibold bg-surface-canvas dark:bg-surface-dark-elevated text-neutral-600 dark:text-neutral-300">
                         +{strategies.length - 2}
                     </span>
                 )}
