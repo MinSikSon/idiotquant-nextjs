@@ -1302,6 +1302,14 @@ function ScreenerContent() {
                 title={showLikedOnly ? "내 관심 종목" : "종목 발굴"}
                 mobileTitleInNavigation={!showLikedOnly}
                 mobileCompact
+                mobileTitleOnScroll
+                compactMeta={<span className="text-xs">
+                    {country === 'KR' ? '국내' : '미국'} · {isLoading
+                        ? '불러오는 중…'
+                        : !showLikedOnly && ncavDailyList.state === 'rejected'
+                            ? '조회 실패'
+                            : `${matchedTotal}종목`}
+                </span>}
                 description={isLoggedIn ? "재무 기준과 전략을 조합해 조건에 맞는 종목을 찾아보세요." : "PER 0 초과·20 이하인 종목을 순유동자산 비율이 높은 순으로 보여드립니다."}
                 meta={isLoggedIn && (
                     isLoading && !showLikedOnly ? (
