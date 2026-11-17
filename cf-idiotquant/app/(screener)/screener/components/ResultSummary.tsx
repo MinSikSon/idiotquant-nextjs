@@ -19,7 +19,7 @@ const p95 = (xs: number[]) => {
 
 const CARD = "rounded-xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card px-[15px] py-3.5";
 // 축 눈금 — 예전에는 neutral-300 이라 배경과 거의 구분되지 않았다. 축을 읽으라고 둔 글자다.
-const AXIS = "text-[10px] font-mono tabular-nums text-neutral-400 dark:text-neutral-500";
+const AXIS = "text-xs font-mono tabular-nums text-neutral-400 dark:text-neutral-500";
 
 export function ResultSummary({ list }: { list: Item[] }) {
   if (list.length === 0) return null;
@@ -54,8 +54,8 @@ export function ResultSummary({ list }: { list: Item[] }) {
 
       <div className={CARD}>
         <div className="flex items-baseline justify-between gap-2 mb-2.5">
-          <p className="text-[10px] font-extrabold uppercase tracking-[0.08em] text-neutral-400">싼 정도 × 버는 정도</p>
-          <span className="text-[10px] text-neutral-400 shrink-0">색 = 전략</span>
+          <p className="text-xs font-extrabold uppercase tracking-[0.08em] text-neutral-400">싼 정도 × 버는 정도</p>
+          <span className="text-xs text-neutral-400 shrink-0">색 = 전략</span>
         </div>
 
         <div className="flex gap-1.5">
@@ -101,7 +101,7 @@ export function ResultSummary({ list }: { list: Item[] }) {
           </div>
         </div>
 
-        <p className="mt-2 text-[11px] leading-relaxed text-neutral-500 dark:text-neutral-400 break-keep">
+        <p className="mt-2 text-xs leading-relaxed text-neutral-500 dark:text-neutral-400 break-keep">
           가로 = PBR(낮을수록 쌈) · 세로 = ROE(높을수록 잘 범) — <span className="font-bold text-brand-ink">왼쪽 위</span>가 싸면서 잘 버는 쪽입니다.
         </p>
       </div>
@@ -131,8 +131,8 @@ export function TermStrip() {
   return (
     <div className="rounded-xl border border-[#fef3c7] dark:border-amber-900/40 bg-[#fffdf5] dark:bg-amber-950/10 px-[15px] py-3 mb-4">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-[11.5px] font-extrabold text-[#92400e] dark:text-amber-500">ⓘ 이 표의 숫자 읽는 법</p>
-        <button onClick={toggle} className="text-[11px] font-bold text-[#a16207] dark:text-amber-600 hover:opacity-70">
+        <p className="text-xs font-extrabold text-[#92400e] dark:text-amber-500">ⓘ 이 표의 숫자 읽는 법</p>
+        <button onClick={toggle} className="text-xs font-bold text-[#a16207] dark:text-amber-600 hover:opacity-70">
           {open ? "접기" : "펼치기"}
         </button>
       </div>
@@ -141,10 +141,10 @@ export function TermStrip() {
           {TERMS.map(t => (
             <div key={t.term} className="rounded-lg border border-[#fef3c7] dark:border-amber-900/40 bg-white dark:bg-surface-dark-card px-3 py-2.5">
               <div className="flex items-center gap-1.5 mb-1.5">
-                <span className="text-[11.5px] font-extrabold text-neutral-900 dark:text-neutral-100">{t.term}</span>
-                <span className="px-1.5 py-0.5 rounded-full bg-brand-light dark:bg-brand-muted/60 text-brand-ink text-[10px] font-mono font-bold">{t.rule}</span>
+                <span className="text-xs font-extrabold text-neutral-900 dark:text-neutral-100">{t.term}</span>
+                <span className="px-1.5 py-0.5 rounded-full bg-brand-light dark:bg-brand-muted/60 text-brand-ink text-xs font-mono font-bold">{t.rule}</span>
               </div>
-              <p className="text-[10.5px] leading-relaxed text-neutral-500 dark:text-neutral-400 break-keep">{t.desc}</p>
+              <p className="text-xs leading-relaxed text-neutral-500 dark:text-neutral-400 break-keep">{t.desc}</p>
             </div>
           ))}
         </div>

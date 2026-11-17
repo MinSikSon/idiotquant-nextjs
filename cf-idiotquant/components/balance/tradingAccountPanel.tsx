@@ -106,33 +106,33 @@ export default function TradingAccountPanel({ country, balanceKey, onChanged }: 
           <KeyRound className="w-3.5 h-3.5" />
           {exists ? "등록된 계정" : "계정 미등록"}
           {exists && (
-            <span className={cn("ml-1 rounded-full px-2 py-0.5 text-[10px] font-semibold",
+            <span className={cn("ml-1 rounded-full px-2 py-0.5 text-xs font-semibold",
               info?.is_active ? "bg-neutral-100 text-neutral-900 dark:text-neutral-100 dark:bg-neutral-800/30" : "bg-neutral-100 text-neutral-500 dark:bg-surface-dark-muted")}>
               <Power className="inline w-3 h-3 -mt-0.5 mr-0.5" />{info?.is_active ? "대상" : "제외"}
             </span>
           )}
         </span>
-        <span className="text-[11px] tabular-nums text-neutral-400">{balanceKey || "-"}</span>
+        <span className="text-xs tabular-nums text-neutral-400">{balanceKey || "-"}</span>
       </div>
 
       <div className="grid grid-cols-2 gap-2 md:gap-3">
         <label className="min-w-0 col-span-2 sm:col-span-1 flex flex-col gap-1">
-          <span className="text-[11px] text-neutral-500">App Key</span>
+          <span className="text-xs text-neutral-500">App Key</span>
           <input className={inputCls} value={appkey} onChange={e => setAppkey(e.target.value)}
             placeholder={info?.appkey_masked || "KIS App Key"} autoComplete="off" />
         </label>
         <label className="min-w-0 col-span-2 sm:col-span-1 flex flex-col gap-1">
-          <span className="text-[11px] text-neutral-500">App Secret</span>
+          <span className="text-xs text-neutral-500">App Secret</span>
           <input type="password" className={inputCls} value={appsecret} onChange={e => setAppsecret(e.target.value)}
             placeholder={info?.has_secret ? "●●●● 저장됨" : "KIS App Secret"} autoComplete="new-password" />
         </label>
         <label className="min-w-0 flex flex-col gap-1">
-          <span className="text-[11px] text-neutral-500">계좌번호</span>
+          <span className="text-xs text-neutral-500">계좌번호</span>
           <input className={inputCls} value={accountNumber} onChange={e => setAccountNumber(e.target.value)}
             placeholder="예: 50123456" autoComplete="off" />
         </label>
         <label className="min-w-0 flex flex-col gap-1">
-          <span className="text-[11px] text-neutral-500">계좌 기본 월 예산(원)</span>
+          <span className="text-xs text-neutral-500">계좌 기본 월 예산(원)</span>
           <input type="number" min={0} step={100000} className={inputCls} value={budget} onChange={e => setBudget(e.target.value)}
             placeholder="예: 2000000" />
         </label>
@@ -148,7 +148,7 @@ export default function TradingAccountPanel({ country, balanceKey, onChanged }: 
               {checking ? "확인 중…" : "토큰 유효성 확인"}
             </button>
           </div>
-          <p className="mt-2 text-[11px] leading-relaxed text-neutral-400">저장된 App Key/Secret으로 확인합니다. 수정한 값은 먼저 저장해 주세요. 만료된 토큰은 필요 시 갱신합니다.</p>
+          <p className="mt-2 text-xs leading-relaxed text-neutral-400">저장된 App Key/Secret으로 확인합니다. 수정한 값은 먼저 저장해 주세요. 만료된 토큰은 필요 시 갱신합니다.</p>
           <div role="status" aria-live="polite" className="mt-2 text-xs leading-relaxed">
             {tokenCheck && (
               <p className={cn("font-bold", tokenCheck.valid === true ? "text-neutral-900 dark:text-neutral-100" : tokenCheck.valid === false ? "text-red-500" : "text-neutral-600 dark:text-neutral-300")}>
@@ -156,7 +156,7 @@ export default function TradingAccountPanel({ country, balanceKey, onChanged }: 
                 {tokenCheck.message}{tokenCheck.code && ` (${tokenCheck.code})`}
               </p>
             )}
-            {tokenCheck?.checked_at && <p className="mt-1 text-[11px] text-neutral-400">확인 시각: {new Date(tokenCheck.checked_at).toLocaleString("ko-KR")}</p>}
+            {tokenCheck?.checked_at && <p className="mt-1 text-xs text-neutral-400">확인 시각: {new Date(tokenCheck.checked_at).toLocaleString("ko-KR")}</p>}
           </div>
         </div>
       )}
@@ -184,10 +184,10 @@ export default function TradingAccountPanel({ country, balanceKey, onChanged }: 
         </div>
       </div>
 
-      <p className="mt-3 text-[11px] leading-relaxed text-neutral-400">
+      <p className="mt-3 text-xs leading-relaxed text-neutral-400">
         App Key·Secret은 비워두면 기존 값을 유지하며, Secret은 저장 후 표시되지 않습니다.
       </p>
-      <details className="text-[11px] text-neutral-400">
+      <details className="text-xs text-neutral-400">
         <summary className="min-h-11 cursor-pointer py-3 font-medium">예산·계정 등록 안내</summary>
         <p className="leading-relaxed">계좌 기본 월 예산은 자동매매 충전 기준입니다. 풀별 예산은 자동매매 탭에서 변경합니다. 대상 계정 등록과 상단 매매 실행 ON/OFF는 별도 설정입니다.</p>
       </details>

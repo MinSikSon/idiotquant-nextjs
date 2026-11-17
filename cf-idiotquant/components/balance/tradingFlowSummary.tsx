@@ -83,7 +83,7 @@ export default function TradingFlowSummary({
             <p className={cn("text-sm font-semibold leading-normal", ready ? "text-neutral-900 dark:text-neutral-100" : "text-amber-700 dark:text-amber-400")}>
               {ready ? "자동매매 가동 중" : "자동매매 대기"}
             </p>
-            <p className="text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed">
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed">
               {ready
                 ? (condBits.length ? `${condBits.join(" · ")} 조건으로 5분마다 매매` : "조건 충족 종목을 5분마다 매매합니다")
                 : `매매 실행에 필요: ${missing.join(", ")}`}
@@ -119,10 +119,10 @@ export default function TradingFlowSummary({
                 "w-4 h-4 rounded-full flex items-center justify-center shrink-0",
                 s.ok ? "bg-neutral-900 dark:bg-neutral-100 dark:text-neutral-900 text-white" : "bg-neutral-200 dark:bg-surface-dark-elevated text-neutral-400"
               )}>
-                {s.ok ? <Check size={10} strokeWidth={3} /> : <span className="text-[9px] font-semibold">{i + 1}</span>}
+                {s.ok ? <Check size={10} strokeWidth={3} /> : <span className="text-xs font-semibold">{i + 1}</span>}
               </span>
-              <span className="text-[11px] font-bold text-neutral-700 dark:text-neutral-200 whitespace-nowrap">{s.label}</span>
-              <span className={cn("text-[11px] tabular-nums font-bold whitespace-nowrap", s.ok ? "text-neutral-900 dark:text-neutral-100" : "text-neutral-400")}>{s.detail}</span>
+              <span className="text-xs font-bold text-neutral-700 dark:text-neutral-200 whitespace-nowrap">{s.label}</span>
+              <span className={cn("text-xs tabular-nums font-bold whitespace-nowrap", s.ok ? "text-neutral-900 dark:text-neutral-100" : "text-neutral-400")}>{s.detail}</span>
             </div>
             {i < steps.length - 1 && <ChevronRight size={13} className="text-neutral-300 dark:text-neutral-600 shrink-0" />}
           </div>

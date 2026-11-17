@@ -21,8 +21,8 @@ export {
 // 확인된 위험과 자료 부족을 구별한다. 누락된 자료를 정상 판정으로 숨기지 않는다.
 // 표에 열을 새로 만들지 않은 이유: 데스크탑 표는 이미 7열 고정폭이라 한 열을 더하면 좁은
 // 노트북에서 눌리고, 카드 뷰에는 그 열이 아예 없어 같은 정보가 한쪽에만 생긴다.
-const ROSE = "px-1.5 py-0.5 rounded text-[9.5px] font-black bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400 whitespace-nowrap";
-const AMBER = "px-1.5 py-0.5 rounded text-[9.5px] font-black bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 whitespace-nowrap";
+const ROSE = "px-1.5 py-0.5 rounded text-xs font-black bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400 whitespace-nowrap";
+const AMBER = "px-1.5 py-0.5 rounded text-xs font-black bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 whitespace-nowrap";
 
 export function LiquidityBadge({ item }: { item: any }) {
     // 심각한 것 하나만 보여준다. 배지를 여러 개 달면 좁은 화면에서 종목명을 밀어낸다.
@@ -57,7 +57,7 @@ export function LiquidityBadge({ item }: { item: any }) {
         "중국 소재 소형주: 미국 상장·본사 중국·시총 3억 달러 미만. 저유동성: 일 거래대금 국내 3억원·미국 10만 달러 미만. 현금 소진: 최근 3개 연도 영업현금흐름 연속 음수.",
     ].filter(Boolean).join(" · ");
     if (!labels.length && !unknown.length) return null;
-    return <span className={labels.length ? AMBER : "px-1.5 py-0.5 rounded text-[9.5px] text-neutral-500 dark:text-neutral-400 whitespace-nowrap"} title={title} aria-label={title}>
+    return <span className={labels.length ? AMBER : "px-1.5 py-0.5 rounded text-xs text-neutral-500 dark:text-neutral-400 whitespace-nowrap"} title={title} aria-label={title}>
         {labels.length ? `${labels[0]}${labels.length > 1 ? ` +${labels.length - 1}` : ""}` : "위험정보 미확인"}
     </span>;
 }

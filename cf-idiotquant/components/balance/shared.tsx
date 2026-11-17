@@ -96,7 +96,7 @@ export function AccountSelector({ balanceKey, setBalanceKey, kakaoMemberList, is
   const list = Array.isArray(kakaoMemberList?.list) ? kakaoMemberList.list : [];
   return (
     <div data-account-selector className="flex items-center gap-2 md:gap-3 bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark px-2.5 py-2 md:px-4 md:py-3 shadow-none">
-      <div className="flex shrink-0 items-center gap-1.5 whitespace-nowrap px-2 py-1 md:px-2.5 bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 rounded-lg text-[10px] font-semibold uppercase">
+      <div className="flex shrink-0 items-center gap-1.5 whitespace-nowrap px-2 py-1 md:px-2.5 bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 rounded-lg text-xs font-semibold uppercase">
         <Key size={12} /> MASTER MODE
       </div>
       <span className="hidden shrink-0 text-xs font-semibold text-neutral-600 dark:text-neutral-400 sm:inline">계좌 선택</span>
@@ -172,7 +172,7 @@ export function MetricChip({ icon, label, value, valueClass = "text-neutral-900 
 }) {
   return (
     <div className="min-w-0 bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-xl px-2.5 py-1.5 md:px-4 md:py-2.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 md:flex-col md:items-stretch">
-      <span className="flex items-center gap-1.5 text-[11px] font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wide"><span aria-hidden="true" className="shrink-0">{icon}</span>{label}</span>
+      <span className="flex items-center gap-1.5 text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wide"><span aria-hidden="true" className="shrink-0">{icon}</span>{label}</span>
       <span className={cn("text-sm tabular-nums font-semibold break-words", valueClass)}>{value}</span>
     </div>
   );
@@ -191,7 +191,7 @@ export function KpiCard({ label, value, sub, icon, valueColor = "text-neutral-90
     <div className="relative bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden flex min-w-0 flex-col justify-between gap-1.5 p-2.5 md:gap-3 md:p-5">
 
       <div className="flex items-center justify-between gap-1">
-        <span className="text-[11px] md:text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wide leading-tight">{label}<DetailHelp label={label}>{sub}</DetailHelp></span>
+        <span className="text-xs md:text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wide leading-tight">{label}<DetailHelp label={label}>{sub}</DetailHelp></span>
         <div aria-hidden="true" className="hidden md:block shrink-0 text-neutral-600 dark:text-neutral-400">{icon}</div>
       </div>
       <div className="min-w-0 text-left">
@@ -219,7 +219,7 @@ export function UsdKpiCard({
     <div className="relative bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-2xl p-2.5 md:p-5 shadow-none overflow-hidden flex min-w-0 flex-col justify-between gap-1.5 md:gap-3">
 
       <div className="flex items-center justify-between gap-1">
-        <span className="text-[11px] md:text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wide leading-tight">{label}<DetailHelp label={label}>{subLabel}: <b className={subColor}>{subValue}</b></DetailHelp></span>
+        <span className="text-xs md:text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wide leading-tight">{label}<DetailHelp label={label}>{subLabel}: <b className={subColor}>{subValue}</b></DetailHelp></span>
         <div aria-hidden="true" className="hidden md:block shrink-0 text-neutral-600 dark:text-neutral-400">{icon}</div>
       </div>
       <div className="min-w-0 text-left">
@@ -299,7 +299,7 @@ export function BalanceHeaderActions({
         aria-pressed={autoRefresh}
         onClick={onToggleAutoRefresh}
         className={cn(
-          "flex min-h-11 min-w-11 shrink-0 items-center gap-1 px-2 py-2 md:gap-1.5 md:px-3 rounded-lg text-[11px] md:text-xs font-semibold border transition-colors",
+          "flex min-h-11 min-w-11 shrink-0 items-center gap-1 px-2 py-2 md:gap-1.5 md:px-3 rounded-lg text-xs md:text-xs font-semibold border transition-colors",
           CONTROL_FOCUS_CLS,
           autoRefresh
             ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800"
@@ -417,7 +417,7 @@ export function TableHeader({ headers }: { headers: { label: string; align?: str
           <th
             key={h.label}
             className={cn(
-              "py-3 px-4 text-[10px] font-semibold text-neutral-400 uppercase tracking-widest",
+              "py-3 px-4 text-xs font-semibold text-neutral-400 uppercase tracking-widest",
               h.align
             )}
           >

@@ -10,3 +10,14 @@
 @media(max-width:800px){.layout{grid-template-columns:1fr}.sidebar{padding:12px 10px}.account{display:inline-block;width:calc(50% - 4px);vertical-align:top}.sideFoot{margin-top:6px}.stats{gap:8px}.stat{padding:13px}.stat strong{font-size:15px}}
 @media(max-width:520px){.dashboard{padding-top:16px}.stats{grid-template-columns:1fr}.stat{display:grid;grid-template-columns:1fr 1.4fr;gap:3px 8px}.stat p{margin:0}.stat small{grid-column:2;margin:0}.panel{padding:16px 12px}.detailGrid{grid-template-columns:1fr;gap:18px}.connections{border-left:0;border-top:1px solid var(--ops-line);padding:14px 0 0}.tabs{gap:0}.tabs button{padding:8px 10px}.history{width:100%;max-width:none}.events li{grid-template-columns:60px 58px 1fr;gap:5px}.refresh>span{display:none}}
 @media(pointer:coarse){.dashboard button,.dashboard select{min-height:44px}}
+
+/* Match the service type and control scale while keeping this operations view's status colors. */
+.dashboard :is(.back,.refresh>span,.stat p,.stat small,.account>span,.account small,.sideFoot,.history,.timeline button,.timeline small,.badge,.current>small,.note,.detailGrid h3,.children p,.children small,.connections dt,.connections code,.settings>div,.inlineContext>div,.events li,.footer){font-size:12px}
+.dashboard :is(.button,.tabs button,.markets button){min-height:44px;border-radius:var(--radius-control);font-size:14px}
+.dashboard :is(.history select){min-height:44px;border-radius:var(--radius-control);font-size:16px}
+.dashboard :is(.stat,.sidebar,.panel){border-radius:var(--radius-panel)}
+.dashboard :is(.stat strong,.children strong,.panelHead h2){font-size:16px}
+.dashboard .current{font-size:14px}
+.dashboard .empty{font-size:14px}
+.dashboard :is(.timeline button,.account){min-height:44px;border-radius:var(--radius-control)}
+.dashboard .error{border-radius:var(--radius-panel)}

@@ -29,7 +29,7 @@ function Bar({ label, value, scale, color, hint, us }: {
                     style={{ width: `${barPct(value, scale)}%` }}
                 />
             </div>
-            <span className="w-[76px] shrink-0 text-right text-xs font-mono font-bold tabular-nums text-neutral-700 dark:text-neutral-200">
+            <span className="w-[76px] shrink-0 text-right text-sm font-mono font-semibold tabular-nums text-neutral-700 dark:text-neutral-200">
                 {money(value, us)}
             </span>
         </div>
@@ -40,7 +40,7 @@ const Ratio = ({ label, value, ok, hint }: { label: string; value: number | null
     <div className="flex shrink-0 items-baseline gap-1 whitespace-nowrap" title={hint}>
         <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-300">{label}</p>
         <p className={cn(
-            "text-[13px] font-mono font-bold tabular-nums",
+            "text-sm font-mono font-semibold tabular-nums",
             value === null ? "text-neutral-400" : ok ? "text-brand-ink" : "text-neutral-700 dark:text-neutral-200"
         )}>
             {x(value)}

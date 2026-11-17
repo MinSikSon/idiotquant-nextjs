@@ -122,13 +122,13 @@ export default function QuantRuleEditor({ data, isMaster, onSave, className = ""
           </div>
           <div className="flex flex-col">
             <span className="text-sm font-bold text-neutral-900 dark:text-neutral-100">기본 선정·퀀트 조건</span>
-            <span className="text-[11px] text-neutral-400">
+            <span className="text-xs text-neutral-400">
               {data?.is_override ? "계좌 전용 조건 적용 중" : "전역 기본값 적용 중 (저장 시 계좌 전용으로 전환)"}
             </span>
           </div>
         </div>
         {!isMaster && (
-          <span className="inline-flex items-center gap-1 rounded-md bg-neutral-100 px-2 py-1 text-[10px] font-bold text-neutral-400 dark:bg-surface-dark-muted">
+          <span className="inline-flex items-center gap-1 rounded-md bg-neutral-100 px-2 py-1 text-xs font-bold text-neutral-400 dark:bg-surface-dark-muted">
             <Lock className="h-3 w-3" /> 읽기 전용
           </span>
         )}
@@ -144,7 +144,7 @@ export default function QuantRuleEditor({ data, isMaster, onSave, className = ""
       {data?.state === "rejected" && <p role="alert" className="text-xs text-rose-500">조건 조회에 실패했습니다. 페이지를 새로고침해 다시 시도하세요.</p>}
       {data?.saveState === "rejected" && <p role="alert" className="text-xs text-rose-500">조건을 저장하지 못했습니다. 입력 내용을 확인하고 다시 저장하세요.</p>}
 
-      <p className="text-[11px] leading-relaxed text-neutral-500 dark:text-neutral-400">운용 모드는 각 그룹에서 선택합니다. 아래 조건은 그룹별 설정이 없을 때 사용하는 기본값이며, DCA도 대상 선정 필터와 활성 종목 수 제한은 적용받습니다.</p>
+      <p className="text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">운용 모드는 각 그룹에서 선택합니다. 아래 조건은 그룹별 설정이 없을 때 사용하는 기본값이며, DCA도 대상 선정 필터와 활성 종목 수 제한은 적용받습니다.</p>
 
       {/* 필드 그리드 */}
       <div className="grid grid-cols-1 gap-1.5 sm:gap-3 sm:grid-cols-2">
@@ -162,8 +162,8 @@ export default function QuantRuleEditor({ data, isMaster, onSave, className = ""
             )}>
               <div className="min-w-0 flex items-center justify-between gap-2 sm:mb-1.5">
                 <span className="flex items-center gap-1.5 text-xs font-bold text-neutral-800 dark:text-neutral-200">
-                  {meta.label}<DetailHelp label={meta.label}>{meta.desc}<span className="mt-2 block tabular-nums text-[10px] text-neutral-400">{k}</span></DetailHelp>
-                  {changed && <span className="rounded bg-neutral-900/10 dark:bg-neutral-100/10 px-1.5 py-0.5 text-[9px] font-semibold text-neutral-900 dark:text-neutral-100">변경됨</span>}
+                  {meta.label}<DetailHelp label={meta.label}>{meta.desc}<span className="mt-2 block tabular-nums text-xs text-neutral-400">{k}</span></DetailHelp>
+                  {changed && <span className="rounded bg-neutral-900/10 dark:bg-neutral-100/10 px-1.5 py-0.5 text-xs font-semibold text-neutral-900 dark:text-neutral-100">변경됨</span>}
                 </span>
               </div>
               {meta.type === "boolean" ? (
@@ -201,7 +201,7 @@ export default function QuantRuleEditor({ data, isMaster, onSave, className = ""
                 />
               )}
               {defaultVal != null && (
-                <div className="col-span-2 flex flex-wrap items-center justify-between gap-2 sm:mt-1.5 text-[10px] text-neutral-400">
+                <div className="col-span-2 flex flex-wrap items-center justify-between gap-2 sm:mt-1.5 text-xs text-neutral-400">
                   <span>기본값 <span className="tabular-nums">{defaultVal}</span></span>
                   {changed && isMaster && (
                     <button type="button" onClick={() => setField(k, defaultDraft[k])} className="font-bold text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100">되돌리기</button>

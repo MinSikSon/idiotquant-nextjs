@@ -65,9 +65,9 @@ export const defaultOpenGroups = (groups: Group[] | null) =>
 function Stat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
     return (
         <div className="hidden sm:flex items-baseline gap-1 shrink-0">
-            <span className="text-[10px] text-neutral-400">{label}</span>
+            <span className="text-xs text-neutral-400">{label}</span>
             <span className={cn(
-                "text-[11px] font-mono font-bold tabular-nums",
+                "text-xs font-mono font-bold tabular-nums",
                 accent ? "text-brand-ink" : "text-neutral-600 dark:text-neutral-300"
             )}>{value}</span>
         </div>
@@ -97,7 +97,7 @@ export function GroupedResults({
                             onClick={() => onToggle(g.key)}
                             className="w-full flex items-center gap-2.5 px-[18px] py-2.5 bg-[#fbfbf9] dark:bg-surface-dark border-b border-neutral-100 dark:border-border-subtle-dark hover:bg-[#f5f4f1] dark:hover:bg-surface-dark-hover transition-colors text-left"
                         >
-                            <span className={cn("text-[10px] text-neutral-400 transition-transform shrink-0", !isOpen && "-rotate-90")}>▾</span>
+                            <span className={cn("text-xs text-neutral-400 transition-transform shrink-0", !isOpen && "-rotate-90")}>▾</span>
                             {/* 폰에서는 한 줄에 이름·개수까지 들어가야 해서 아이콘을 한 단계 줄인다.
                                 20×14 격자 비율(1.4)은 유지해야 도트가 정수 배로 떨어진다. */}
                             {g.sector && (
@@ -106,11 +106,11 @@ export function GroupedResults({
                                 </span>
                             )}
                             <span className="text-[12.5px] font-extrabold text-neutral-900 dark:text-neutral-100 shrink-0">{g.label}</span>
-                            <span className="px-1.5 py-0.5 rounded-full bg-brand-light dark:bg-brand-muted/40 text-brand-ink text-[10px] font-mono font-bold shrink-0">
+                            <span className="px-1.5 py-0.5 rounded-full bg-brand-light dark:bg-brand-muted/40 text-brand-ink text-xs font-mono font-bold shrink-0">
                                 {g.rows.length}개
                             </span>
                             {hint && (
-                                <span className="text-[10.5px] text-neutral-400 truncate min-w-0">{hint(g)}</span>
+                                <span className="text-xs text-neutral-400 truncate min-w-0">{hint(g)}</span>
                             )}
                             <span className="flex-1" />
                             <Stat label="PBR 중위" value={g.medPbr > 0 ? g.medPbr.toFixed(2) : "—"} />
@@ -121,7 +121,7 @@ export function GroupedResults({
                 );
             })}
             {hiddenCount > 0 && (
-                <p className="px-[18px] py-3 bg-surface-canvas dark:bg-surface-dark text-center text-[11.5px] font-bold text-neutral-500 dark:text-neutral-400">
+                <p className="px-[18px] py-3 bg-surface-canvas dark:bg-surface-dark text-center text-xs font-bold text-neutral-500 dark:text-neutral-400">
                     접힌 {hiddenCount}개 그룹은 헤더를 눌러 펼칠 수 있습니다
                 </p>
             )}

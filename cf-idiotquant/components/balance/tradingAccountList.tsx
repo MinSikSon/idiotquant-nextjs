@@ -35,7 +35,7 @@ export default function TradingAccountList({ country, balanceKey, onSelect, refr
           <span className="text-neutral-400">({accounts.length})</span>
         </span>
         <button onClick={load} disabled={loading}
-          className="flex items-center gap-1 text-[11px] font-bold text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 disabled:opacity-50">
+          className="flex items-center gap-1 text-xs font-bold text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 disabled:opacity-50">
           <RefreshCw className={cn("w-3 h-3", loading && "animate-spin")} /> 새로고침
         </button>
       </div>
@@ -63,13 +63,13 @@ export default function TradingAccountList({ country, balanceKey, onSelect, refr
                   )}
                 >
                   <span className="tabular-nums text-xs font-bold dark:text-white">{acc.user_id}</span>
-                  <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold",
+                  <span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold",
                     acc.is_active
                       ? "bg-neutral-100 text-neutral-900 dark:text-neutral-100 dark:bg-neutral-800/40"
                       : "bg-neutral-100 text-neutral-500 dark:bg-surface-dark-muted")}>
                     <Power className="inline w-3 h-3 -mt-0.5 mr-0.5" />{acc.is_active ? "대상" : "제외"}
                   </span>
-                  <span className="ml-auto text-[11px] text-neutral-400">
+                  <span className="ml-auto text-xs text-neutral-400">
                     {acc.account_number || "계좌번호 미등록"} · 월 {won(acc.monthly_budget_krw)}원
                   </span>
                 </button>

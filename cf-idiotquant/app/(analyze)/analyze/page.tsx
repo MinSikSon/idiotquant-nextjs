@@ -603,7 +603,7 @@ function AnalyzeContent() {
                   <Loader2 size={16} className="animate-spin" aria-hidden="true" />
                   재무 정보를 불러오는 중입니다
                 </div>
-                <p className="mt-1 text-[13px] leading-5 text-neutral-500">시세는 먼저 표시됩니다. 분석 결과는 데이터가 도착하면 이어서 표시됩니다.</p>
+                <p className="mt-1 text-sm leading-6 text-neutral-600 dark:text-neutral-300">시세는 먼저 표시됩니다. 분석 결과는 데이터가 도착하면 이어서 표시됩니다.</p>
                 <div aria-hidden="true" className="mt-4 space-y-3 animate-pulse">
                   <div className="h-3 w-2/3 rounded bg-neutral-100 dark:bg-surface-dark-muted" />
                   <div className="h-3 w-1/2 rounded bg-neutral-100 dark:bg-surface-dark-muted" />
@@ -678,14 +678,14 @@ function AnalyzeContent() {
               <div className={cn(ANALYZE_WIDTH, "py-2 flex items-center gap-3")}>
                 <div className="flex items-center gap-1.5 shrink-0">
                   <Flame size={11} className="text-amber-500" />
-                  <span className="text-[13px] font-bold text-neutral-600 dark:text-neutral-300 uppercase tracking-normal" title="최근 7일 검색 기준 · 최근 검색에 더 높은 가중치">인기</span>
+                  <span className="text-sm font-bold text-neutral-600 dark:text-neutral-300 uppercase tracking-normal" title="최근 7일 검색 기준 · 최근 검색에 더 높은 가중치">인기</span>
                 </div>
                 <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
                   {popularStocks.slice(0, 8).map((s: any, i: number) => (
                     <button key={s.ticker} onClick={() => handleSearch(s.ticker)}
-                      className={cn(styles.historyButton, "shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white dark:bg-surface-dark-card text-[13px] font-bold text-neutral-600 dark:text-neutral-300 border border-neutral-200/60 dark:border-border-subtle-dark hover:border-brand/70 hover:text-brand-ink dark:hover:text-brand-ink transition-all whitespace-nowrap")}
+                      className={cn(styles.historyButton, "shrink-0 flex min-h-11 items-center gap-1 px-2.5 py-1 rounded-[var(--radius-control)] bg-white dark:bg-surface-dark-card text-sm font-semibold text-neutral-700 dark:text-neutral-300 border border-neutral-200/60 dark:border-border-subtle-dark hover:border-brand/70 hover:text-brand-ink dark:hover:text-brand-ink transition-colors whitespace-nowrap")}
                     >
-                      <span className={cn(styles.rank, "w-3.5 h-3.5 flex items-center justify-center rounded-full text-[13px] shrink-0")}>{i + 1}</span>
+                      <span className={cn(styles.rank, "w-3.5 h-3.5 flex items-center justify-center rounded-full text-sm shrink-0")}>{i + 1}</span>
                       {s.name}
                     </button>
                   ))}
@@ -694,11 +694,11 @@ function AnalyzeContent() {
             )}
             {krMarketHistory.length > 0 && (
               <div className={cn(ANALYZE_WIDTH, "py-2 flex items-center gap-3", !isPriceLoaded && popularStocks.length > 0 && "border-t border-neutral-100 dark:border-border-subtle-dark/40")}>
-                <span className="text-[13px] font-bold text-neutral-600 dark:text-neutral-300 uppercase tracking-normal shrink-0">최근 검색</span>
+                <span className="text-sm font-bold text-neutral-600 dark:text-neutral-300 uppercase tracking-normal shrink-0">최근 검색</span>
                 <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
                   {krMarketHistory.slice().reverse().slice(0, 8).map((s, i) => (
                     <button key={i} onClick={() => handleSearch(s)}
-                      className="shrink-0 px-2.5 py-1.5 text-[13px] font-bold text-neutral-500 hover:text-brand-ink dark:text-neutral-400 dark:hover:text-brand-ink hover:bg-white dark:hover:bg-surface-dark-card/40 rounded-lg border border-neutral-200/60 dark:border-border-subtle-dark transition-all whitespace-nowrap"
+                      className="shrink-0 min-h-11 px-2.5 py-1 text-sm font-semibold text-neutral-600 hover:text-brand-ink dark:text-neutral-300 dark:hover:text-brand-ink hover:bg-white dark:hover:bg-surface-dark-card/40 rounded-[var(--radius-control)] border border-neutral-200/60 dark:border-border-subtle-dark transition-colors whitespace-nowrap"
                     >
                       {s}
                     </button>
@@ -735,7 +735,7 @@ function AnalyzeContent() {
 
             <div className={cn(!isPriceLoaded && 'hidden')}>
               {krOrUs === 'US' && data.usSearchInfo.state === 'rejected' && (
-                <p role="status" className="mb-4 text-[13px] leading-5 text-neutral-500 dark:text-neutral-400">
+                <p role="status" className="mb-4 text-sm leading-6 text-neutral-600 dark:text-neutral-300">
                   종목 기본정보를 불러오지 못해 티커로 표시합니다. 조회된 시세와 재무정보는 계속 표시합니다.
                 </p>
               )}
@@ -779,15 +779,15 @@ function AnalyzeContent() {
                       {verdict.checks.map(c => (
                         <div key={c.label} className="flex items-center gap-2">
                           <span className={cn(
-                            "w-4 h-4 rounded-full grid place-items-center text-[13px] font-semibold text-white shrink-0",
+                            "w-4 h-4 rounded-full grid place-items-center text-sm font-semibold text-white shrink-0",
                             c.ok ? "bg-emerald-600" : "bg-neutral-300 dark:bg-surface-dark-elevated"
                           )}>
                             {c.ok ? '✓' : '✕'}
                           </span>
-                          <span className="text-[13px] font-bold text-neutral-600 dark:text-neutral-300 shrink-0">{c.label}</span>
-                          <span className="text-[13px] text-neutral-600 dark:text-neutral-300 break-words">{c.criterion}</span>
+                          <span className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 shrink-0">{c.label}</span>
+                          <span className="text-sm text-neutral-700 dark:text-neutral-300 break-words">{c.criterion}</span>
                           <span className={cn(
-                            "ml-auto text-[13px] font-semibold font-mono tabular-nums shrink-0",
+                            "ml-auto text-sm font-semibold font-mono tabular-nums shrink-0",
                             c.ok ? "text-neutral-500 dark:text-neutral-400" : "text-neutral-600 dark:text-neutral-300"
                           )}>
                             {c.value}
@@ -812,11 +812,11 @@ function AnalyzeContent() {
                 {isLoaded && !isLoggedIn && (
                   <div className={cn(styles.loginNotice, "border-b border-neutral-200 dark:border-neutral-800 py-3 flex items-center gap-3")}>
                     <div className="min-w-0 flex-1">
-                      <p className="text-[13px] font-medium text-neutral-900 dark:text-white flex items-center gap-1.5">
+                      <p className="text-sm font-medium text-neutral-900 dark:text-white flex items-center gap-1.5">
                         <Lock size={11} className="shrink-0" />
                         전체 분석은 로그인 후 제공됩니다
                       </p>
-                      <p className="text-[13px] text-neutral-500 dark:text-neutral-400 mt-1 break-keep">
+                      <p className="text-sm text-neutral-600 dark:text-neutral-300 mt-1 break-keep">
                         구글/카카오로 로그인 · 재무제표 · 상장폐지 위험도 · 상세 지표 포함
                       </p>
                     </div>
@@ -915,7 +915,7 @@ function AnalyzeContent() {
                   <BlurGate isLoggedIn={isLoggedIn} loginHref={loginHref}>
                     <div className={cn(styles.panel, styles.financialPanel, "flex min-w-0 flex-col gap-3 sm:gap-4")}>
                       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-                        <p className="text-[13px] sm:text-[15px] text-neutral-600 dark:text-neutral-300">
+                        <p className="text-sm sm:text-[15px] text-neutral-600 dark:text-neutral-300">
                           {krOrUs === 'KR' ? '분기 공시 · 억 원' : '공시 · USD'}
                         </p>
                         <div className={cn(styles.segmented, "grid grid-cols-2 gap-0.5 sm:ml-auto sm:flex sm:shrink-0 p-0.5 rounded-lg")}>
@@ -974,15 +974,15 @@ function AnalyzeContent() {
         <div className="flex flex-col items-center gap-3">
           <div className="flex items-center gap-2">
             <TrendingUp size={13} className="text-brand-ink" strokeWidth={2.5} />
-            <span className="text-[13px] font-bold text-neutral-700 dark:text-neutral-300">IdiotQuant</span>
+            <span className="text-sm font-bold text-neutral-700 dark:text-neutral-300">IdiotQuant</span>
           </div>
-          <p className="text-[13px] text-neutral-500 dark:text-neutral-400 text-center max-w-md leading-relaxed">
+          <p className="text-sm text-neutral-500 dark:text-neutral-400 text-center max-w-md leading-relaxed">
             본 서비스의 분석 결과는 투자 참고 목적의 정량적 자료이며, 투자 권유를 목적으로 하지 않습니다.
             실제 투자 결정은 본인의 판단과 책임 하에 이루어져야 합니다.
           </p>
-          {krOrUs === 'KR' && <p className="text-[13px] text-neutral-500">국내 재무정보 출처: <a href="https://opendart.fss.or.kr/" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">금융감독원 OpenDART</a> · 공시자료를 가공하여 제공합니다.</p>}
+          {krOrUs === 'KR' && <p className="text-sm text-neutral-500">국내 재무정보 출처: <a href="https://opendart.fss.or.kr/" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">금융감독원 OpenDART</a> · 공시자료를 가공하여 제공합니다.</p>}
           {isAdmin && <Link href="/data-sources" className="text-xs text-neutral-500 underline">데이터 출처 및 이용 조건</Link>}
-          <span className="text-[13px] font-mono text-neutral-500 dark:text-neutral-500">© 2026 IdiotQuant</span>
+          <span className="text-sm font-mono text-neutral-500 dark:text-neutral-500">© 2026 IdiotQuant</span>
         </div>
       </footer>
     </div>
@@ -1000,7 +1000,7 @@ export default function AnalyzePage() {
         <div className="p-4 bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark">
           <Loader2 className="animate-spin text-brand-ink dark:text-brand-ink" size={24} />
         </div>
-        <p className="text-[13px] font-bold text-neutral-600 dark:text-neutral-300 tracking-normal font-mono uppercase">
+        <p className="text-sm font-bold text-neutral-600 dark:text-neutral-300 tracking-normal font-mono uppercase">
           분석 엔진 초기화 중...
         </p>
       </div>
