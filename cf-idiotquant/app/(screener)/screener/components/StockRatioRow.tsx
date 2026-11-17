@@ -71,14 +71,14 @@ export function StockRatioRow({ item, onClick, isLiked, onToggleLike, comparison
             role="link"
             tabIndex={0}
             aria-label={`${item.name} 분석 보기`}
-            className="cursor-pointer rounded-md border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card p-2.5 sm:p-4 hover:border-brand-light-hover dark:hover:border-brand-hover/60 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-ink transition-all"
+            className="cursor-pointer rounded-lg border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card p-3 sm:p-4 hover:border-brand-light-hover dark:hover:border-brand-hover/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-ink transition-colors"
         >
             <div className="flex items-center gap-2 mb-2 sm:mb-3">
                 <ComparisonCheckbox choice={comparison} name={item.name} />
                 <div className="min-w-0 flex-1">
                     <div className="flex min-w-0 items-center gap-1.5">
-                        <span className="min-w-0 truncate text-sm font-extrabold text-neutral-900 dark:text-white leading-tight" title={item.name}>{item.name}</span>
-                        {item.ticker !== item.name && <span className="shrink-0 text-[10px] font-mono text-neutral-400">{item.ticker}</span>}
+                        <span className="min-w-0 truncate text-base font-extrabold text-neutral-900 dark:text-white leading-tight" title={item.name}>{item.name}</span>
+                        {item.ticker !== item.name && <span className="shrink-0 text-xs font-mono text-neutral-500">{item.ticker}</span>}
                         <span className="shrink-0"><LiquidityBadge item={item} /></span>
                     </div>
                     <div className="mt-1 min-w-0"><FinancialFreshnessNotice compact periods={scanFinancialPeriods(item)} source={item.financial_source} collectionDate={scanCollectionDate(item)} /></div>
@@ -88,11 +88,11 @@ export function StockRatioRow({ item, onClick, isLiked, onToggleLike, comparison
                     aria-label={`${item.name} 관심 종목`}
                     aria-pressed={isLiked}
                     onClick={e => { e.stopPropagation(); onToggleLike(item.ticker, item.name); }}
-                    className={cn("p-1 rounded-lg shrink-0 transition-colors",
+                    className={cn("flex h-11 w-11 items-center justify-center rounded shrink-0 transition-colors",
                         isLiked ? "text-rose-500" : "text-neutral-300 dark:text-neutral-600 hover:text-rose-400")}
                     title={isLiked ? "관심 해제" : "관심 추가"}
                 >
-                    <Heart size={14} fill={isLiked ? "currentColor" : "none"} />
+                    <Heart size={18} fill={isLiked ? "currentColor" : "none"} />
                 </button>
             </div>
 
@@ -114,7 +114,7 @@ export function StockRatioRow({ item, onClick, isLiked, onToggleLike, comparison
                        hint="시가총액 ÷ 유동자산. 낮을수록 자산 대비 싸게 거래됩니다." />
             </div>
 
-            <p className="mt-2 overflow-x-auto whitespace-nowrap text-[10.5px] leading-relaxed text-neutral-500 dark:text-neutral-400">
+            <p className="mt-2 overflow-x-auto text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">
                 순유동자산 <span className="font-mono font-bold">{money(m.netCurrent, us)}</span>
                 {m.ncavMultiple !== null && m.ncavMultiple >= 1
                     ? " — 시가총액보다 큽니다(청산가치 이하 거래)."

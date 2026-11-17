@@ -56,9 +56,7 @@
 .loginNotice { min-width: 0; }
 .analysisSidebar, .detailContent { min-width: 0; }
 .sidebarLabel { display: none; }
-.verdict { margin-bottom: 24px; padding: 16px; border: 1px solid var(--analysis-line); border-left: 3px solid var(--analysis-muted); border-radius: var(--radius-panel); background: var(--analysis-panel); }
-.verdict[data-tone="good"] { border-left-color: #32794f; }
-.verdict[data-tone="caution"] { border-left-color: #a57425; }
+.verdict { margin-bottom: 24px; padding: 16px; border: 1px solid var(--analysis-line); border-radius: var(--radius-panel); background: var(--analysis-panel); }
 .verdictChecks { font-size: 0.875rem; }
 .page .panel { padding: 24px; border: 1px solid var(--analysis-line); border-radius: var(--radius-panel); background: var(--analysis-panel); }
 .segmented { display: flex; flex-wrap: wrap; border: 1px solid var(--analysis-line); background: var(--analysis-soft); }

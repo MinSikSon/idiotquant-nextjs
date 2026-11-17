@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="IdiotQuant">
+  <rect x="2" y="2" width="60" height="60" rx="8" fill="#126557"/>
+  <path d="M18 18h8v28h-8zM32 18h7v3.5a10 10 0 0 1 7-4.5c7 0 11 5.4 11 14s-4 14-11 14a10 10 0 0 1-7-4.5V46h-7zm8 13c0 4.5 1.8 7 5 7s5-2.5 5-7-1.8-7-5-7-5 2.5-5 7" fill="#fff"/>
+  <circle cx="22" cy="12" r="3" fill="#fff"/>
+</svg>

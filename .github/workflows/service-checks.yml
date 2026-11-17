@@ -33,6 +33,7 @@ jobs:
           cache-dependency-path: cf-idiotquant/package-lock.json
       - run: npm ci
       - run: npm run check
+      - run: npx --yes impeccable@4.9.2 detect --json 'app/(home)' 'app/(screener)' 'app/(compare)' 'app/(analyze)' 'app/(search)/search/components/ValuationSection.tsx' 'components/home-watchlist.tsx'
       - run: npm run build
         env:
           NEXT_TELEMETRY_DISABLED: '1'
