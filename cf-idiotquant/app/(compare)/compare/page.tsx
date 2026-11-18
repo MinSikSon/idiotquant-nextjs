@@ -422,24 +422,21 @@ function ComparePageContent() {
             const latestReturn = latestDate ? priceReturns.get(`${stock.id}:${latestDate}`) : undefined;
             const hasReturn = latestReturn && latest?.priceDate !== latestReturn.baselineDate;
             return <details key={stock.id} className="group overflow-hidden rounded-lg border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-surface-dark-card">
-              <summary className="min-h-11 cursor-pointer list-none px-3 py-2.5 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand-ink [&::-webkit-details-marker]:hidden">
-                <div className="flex items-center gap-2">
-                  <span className="min-w-0 flex-1 truncate text-base font-semibold">{stock.name}</span>
-                  <span className="shrink-0 text-xs text-neutral-600 dark:text-neutral-400">{stock.ticker} · {stock.market}</span>
-                  <ChevronDown size={15} className="shrink-0 text-neutral-600 dark:text-neutral-400 transition-transform group-open:rotate-180" aria-hidden />
-                </div>
-                {latestDate ? <div className="mt-1.5 flex items-center justify-between gap-2 text-xs">
-                  <span className="shrink-0 text-neutral-600 dark:text-neutral-400">{formatDate(latest?.priceDate ?? latestDate.replaceAll('-', ''))} {comparison.closing ? '종가 기준' : '시총 환산가'}</span>
-                  <span className={`min-w-0 text-right font-semibold tabular-nums ${latest?.error ? 'text-rose-600 dark:text-rose-400' : ''}`}>
-                    {latest?.loading ? '조회 중' : latest?.price ? `${stock.currency}${show(latestPrice)}` : latest?.error ?? '가격 없음'}
-                  </span>
-                </div> : <p className="mt-1.5 text-xs text-neutral-600 dark:text-neutral-400">비교 날짜를 추가하면 가격을 볼 수 있습니다.</p>}
-                {latest?.price && !latest.loading && comparison.closing && <p className="mt-1 text-xs font-normal text-amber-700 dark:text-amber-400">환산가가 없는 날짜가 있어 모든 날짜를 종가 기준으로 비교합니다.</p>}
-                {hasReturn && <div className="mt-1 flex items-center justify-between gap-2 text-xs">
-                  <span className="text-neutral-600 dark:text-neutral-400">{formatDate(latestReturn.baselineDate)} 대비</span>
-                  <span className={`font-semibold tabular-nums ${latestReturn.percent >= 0 ? 'text-rose-600 dark:text-rose-400' : 'text-blue-600 dark:text-blue-400'}`}>{latestReturn.percent >= 0 ? '+' : ''}{show(latestReturn.percent)}%</span>
-                </div>}
+              <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-3 py-2 [&::-webkit-details-marker]:hidden focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand-ink">
+                <span className="min-w-0 flex-1 truncate text-sm font-semibold" title={stock.name}>{stock.name}</span>
+                <span className={`shrink-0 whitespace-nowrap text-sm font-semibold tabular-nums ${latest?.error ? 'text-rose-600 dark:text-rose-400' : ''}`} title={latestDate ? `${formatDate(latest?.priceDate ?? latestDate.replaceAll('-', ''))} ${comparison.closing ? '종가 기준' : '시총 환산가'}` : undefined}>
+                  {latestDate ? latest?.loading ? '조회 중' : latest?.price ? `${stock.currency}${show(latestPrice)}` : latest?.error ? '조회 실패' : '가격 없음' : '날짜 추가'}
+                </span>
+                {hasReturn && <span className={`shrink-0 whitespace-nowrap text-sm font-semibold tabular-nums ${latestReturn.percent >= 0 ? 'text-rose-600 dark:text-rose-400' : 'text-blue-600 dark:text-blue-400'}`} title={`${formatDate(latestReturn.baselineDate)} 대비`}>{latestReturn.percent >= 0 ? '+' : ''}{show(latestReturn.percent)}%</span>}
+                <ChevronDown size={15} className="shrink-0 text-neutral-600 dark:text-neutral-400 transition-transform group-open:rotate-180" aria-hidden />
               </summary>
+              <div className="border-t border-neutral-100 px-3 py-2.5 dark:border-neutral-800">
+                <p className="break-words text-sm font-semibold">{stock.name}</p>
+                <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">{stock.ticker} · {stock.market}</p>
+                {!latestDate && <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">비교 날짜를 추가하면 가격을 볼 수 있습니다.</p>}
+                {hasReturn && <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">변화율은 {formatDate(latestReturn.baselineDate)} 대비입니다.</p>}
+                {latest?.price && !latest.loading && comparison.closing && <p className="mt-1 text-xs font-normal text-amber-700 dark:text-amber-400">환산가가 없는 날짜가 있어 모든 날짜를 종가 기준으로 비교합니다.</p>}
+              </div>
               <div className="divide-y divide-neutral-100 border-t border-neutral-100 dark:divide-neutral-800 dark:border-neutral-800">
                 {dates.map(date => <div key={date} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-3 px-3 py-2.5 text-sm">
                   <p className="text-xs font-medium text-neutral-600 dark:text-neutral-400">{formatDate(date.replaceAll('-', ''))} {comparison.closing ? '종가' : '환산가'}</p>
