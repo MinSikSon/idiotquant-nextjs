@@ -631,6 +631,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
                 reqPostOrderCash={reqPostOrderCash}
                 kiOrderCash={orderCashState}
                 capital={krCapital}
+                countryTradingActive={tradingStatus.KR}
                 onOrderResult={handleOrderResult}
               />
             </SectionPanel>

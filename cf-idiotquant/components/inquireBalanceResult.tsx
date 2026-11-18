@@ -15,7 +15,7 @@ import {
     ChevronsUpDown,
     X,
     Loader2,
-    FolderOpen,
+    Bot,
     AlertCircle,
     ArrowDownRight,
 } from "lucide-react";
@@ -90,6 +90,7 @@ interface InquireBalanceResultProps {
     kakaoTotal?: any;
     kakaoMemberList?: any;
     capital?: any;
+    countryTradingActive?: boolean | null;
     onOrderResult?: (status: "success" | "error", message: string) => void;
 }
 
@@ -107,11 +108,12 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
         const groups: any[] = props.capital?.groups ?? [];
         const gmap = new Map(groups.map((g: any) => [g.id, g]));
         for (const s of (props.capital?.stock_list ?? [])) {
+            if (s.group_id === "__likes__") continue;
             const g: any = s.group_id ? gmap.get(s.group_id) : null;
             if (g && g.id !== "__likes__") {
                 map.set(String(s.symbol), { name: g.name, active: g.is_trading_active !== false, assigned: true });
             } else {
-                map.set(String(s.symbol), { name: "미지정", active: true, assigned: false });
+                map.set(String(s.symbol), { name: "미지정", active: false, assigned: false });
             }
         }
         return map;
@@ -282,6 +284,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                     isUs={isUs}
                     onOpenOrder={handleOpenOrderModal}
                     groupByTicker={groupByTicker}
+                    countryTradingActive={props.countryTradingActive}
                 />
             </div>
 
@@ -312,7 +315,7 @@ function SummaryItem({ icon, label, value, subValue, colorClass = "dark:text-whi
     );
 }
 
-function SortableBalanceTable({ inventoryData, isUs, onOpenOrder, groupByTicker }: { inventoryData: any[], isUs: boolean, onOpenOrder: (stock: any, mode?: "buy" | "sell", qty?: string) => void, groupByTicker?: Map<string, { name: string; active: boolean; assigned: boolean }> }) {
+function SortableBalanceTable({ inventoryData, isUs, onOpenOrder, groupByTicker, countryTradingActive }: { inventoryData: any[], isUs: boolean, onOpenOrder: (stock: any, mode?: "buy" | "sell", qty?: string) => void, groupByTicker?: Map<string, { name: string; active: boolean; assigned: boolean }>; countryTradingActive?: boolean | null }) {
     const [sortConfig, setSortConfig] = useState<any>({ key: "evlu_amt", direction: "desc" });
     const router = useRouter();
 
@@ -320,13 +323,15 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder, groupByTicker 
         const ticker = String(item.pdno || item.ovrs_pdno || "");
         const g = groupByTicker?.get(ticker);
         if (!g) return null; // 운용 풀에 없는(자동매매 비대상) 보유 종목
+        const label = !g.active || !g.assigned ? "자동매매 제외" : countryTradingActive === false ? "자동매매 OFF" : "자동매매";
+        const description = `${label} · ${g.name}`;
         return (
-            <span className={`mt-0.5 inline-flex w-fit items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[9px] font-bold ${
-                g.assigned && g.active
-                    ? "bg-neutral-900/10 dark:bg-neutral-100/10 text-neutral-900 dark:text-neutral-100"
-                    : "bg-neutral-100 text-neutral-400 dark:bg-surface-dark-muted dark:text-neutral-400"
+            <span title={description} aria-label={description} className={`mt-0.5 inline-flex w-fit max-w-full items-center gap-1 rounded px-1.5 py-0.5 text-xs font-semibold ${
+                g.assigned && g.active && countryTradingActive === true
+                    ? "bg-brand/10 text-brand-ink"
+                    : "bg-neutral-100 text-neutral-600 dark:bg-surface-dark-muted dark:text-neutral-400"
             }`}>
-                <FolderOpen className="w-2.5 h-2.5" /> {g.name}
+                <Bot className="h-3 w-3 shrink-0" aria-hidden="true" /> {label}
             </span>
         );
     };
@@ -400,17 +405,20 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder, groupByTicker 
                 return (
                     <details key={idx} className="group">
                         <summary className="grid grid-cols-[minmax(0,1fr)_4rem_3.5rem_1rem] items-center gap-1.5 px-2 py-2 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
-                            <span className="min-w-0 truncate text-xs font-bold text-neutral-900 dark:text-neutral-100" title={getFieldValue(item, "name")}>{getFieldValue(item, "name") || item.pdno || item.ovrs_pdno}</span>
-                            <span className="text-xs font-bold text-right text-neutral-700 dark:text-neutral-200 tabular-nums whitespace-nowrap" title={formatValue(evalAmount, "MONEY")}>{compactMoney(evalAmount)}</span>
-                            <span className={`tabular-nums text-[11px] font-semibold text-right tabular-nums whitespace-nowrap ${isPositive ? "text-rose-500" : "text-emerald-600 dark:text-emerald-400"}`}>
+                            <span className="flex min-w-0 flex-col items-start">
+                                <span className="max-w-full break-words text-xs font-bold text-neutral-900 dark:text-neutral-100">{getFieldValue(item, "name") || item.pdno || item.ovrs_pdno}</span>
+                                {renderGroupBadge(item)}
+                            </span>
+                            <span className="font-mono text-xs font-bold text-right text-neutral-700 dark:text-neutral-200 tabular-nums whitespace-nowrap" title={formatValue(evalAmount, "MONEY")}>{compactMoney(evalAmount)}</span>
+                            <span className={`font-mono text-[11px] font-black text-right tabular-nums whitespace-nowrap ${isPositive ? "text-rose-500" : "text-emerald-600 dark:text-emerald-400"}`}>
                                 {isPositive ? "+" : ""}{profitRt.toFixed(1)}%
                             </span>
                             <ChevronDown size={13} className="text-neutral-400 transition-transform group-open:rotate-180" aria-hidden />
                         </summary>
                         <div className="px-3 pb-2.5 space-y-2 border-t border-neutral-100 dark:border-border-subtle-dark">
-                            <div className="flex items-center gap-2 pt-2 text-[11px] tabular-nums text-neutral-500 dark:text-neutral-400">
+                            <div className="flex items-center gap-2 pt-2 text-[11px] font-mono text-neutral-500 dark:text-neutral-400">
                                 <span>{item.pdno || item.ovrs_pdno}</span>
-                                {renderGroupBadge(item)}
+                                {groupByTicker?.get(String(item.pdno || item.ovrs_pdno || ""))?.name}
                             </div>
                         {/* 항목명과 값을 한 줄에 배치 */}
                         <div className="grid grid-cols-1 min-[480px]:grid-cols-2 gap-x-4 gap-y-1 text-xs">
