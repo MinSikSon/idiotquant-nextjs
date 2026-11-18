@@ -4,6 +4,7 @@ import { DetailHelp } from "./detailHelp";
 import { Activity, Clock, RefreshCw, Gauge, Layers, ArrowDownCircle, ArrowUpCircle, ChevronDown } from "lucide-react";
 import { executionAmount, numericValue, stockBudgetProgress } from "@/lib/features/capital/tradingSummary";
 import { cn } from "@/lib/utils";
+import { formatTradingTime } from "@/lib/features/capital/tradingTime";
 import { KrUsCapitalType, TradingActivityState, TradingLog, UsCapitalStockItem, LIKES_GROUP_ID } from "@/lib/features/capital/capitalSlice";
 import validCorpCodeArray from "@/public/data/validCorpCodeArray.json";
 import validCorpNameArray from "@/public/data/validCorpNameArray.json";
@@ -27,20 +28,6 @@ function isWindowOpen(country: "KR" | "US"): boolean {
   const kst = new Date(Date.now() + 9 * 3600_000);
   const h = kst.getUTCHours(); // Date+9h 이므로 UTC 시각이 KST 시각
   return country === "KR" ? (h >= 8 && h < 18) : (h >= 21 || h < 6);
-}
-
-function relTime(dateStr?: string): string {
-  if (!dateStr) return "실행 기록 없음";
-  const t = new Date(dateStr).getTime();
-  if (!Number.isFinite(t)) return "-";
-  const diff = Date.now() - t;
-  if (diff < 0) return "방금";
-  const m = Math.floor(diff / 60000);
-  if (m < 1) return "방금";
-  if (m < 60) return `${m}분 전`;
-  const hr = Math.floor(m / 60);
-  if (hr < 24) return `${hr}시간 전`;
-  return `${Math.floor(hr / 24)}일 전`;
 }
 
 const won = (n: number) => `₩${Math.round(Number(n) || 0).toLocaleString("ko-KR")}`;
@@ -68,7 +55,7 @@ const RESULT_TONE_CLS: Record<string, string> = {
 function StatusBadge({ lr, compact = false }: { lr?: LastResult; compact?: boolean }) {
   if (!lr?.code) return compact ? <span className="inline-block h-1.5 w-1.5 rounded-full bg-neutral-400" role="img" aria-label="대기" /> : <span className="text-xs text-neutral-400">대기</span>;
   const meta = RESULT_META[lr.code] ?? { label: lr.code, tone: "neutral" as const };
-  const detail = [lr.msg, relTime(lr.at)].filter(Boolean).join(" · ");
+  const detail = [lr.msg, formatTradingTime(lr.at)].filter(Boolean).join(" · ");
   if (compact) return <span title={detail} role="img" aria-label={meta.label} className={cn("inline-block h-1.5 w-1.5 rounded-full", meta.tone === "green" ? "bg-emerald-500" : meta.tone === "amber" ? "bg-amber-400" : meta.tone === "red" ? "bg-rose-500" : "bg-neutral-400")} />;
   return (
     <span title={detail}
@@ -76,6 +63,14 @@ function StatusBadge({ lr, compact = false }: { lr?: LastResult; compact?: boole
       {meta.label}
     </span>
   );
+}
+
+function StatusDetail({ lr }: { lr?: LastResult }) {
+  if (!lr?.code) return null;
+  return <div className="mt-1 space-y-1 text-xs text-neutral-500 dark:text-neutral-400">
+    <p className="break-words tabular-nums">결과 시각 · {formatTradingTime(lr.at)}</p>
+    {lr.msg && <p className="break-words">{lr.msg}</p>}
+  </div>;
 }
 
 function Stat({ icon, label, value, hint }: { icon: React.ReactNode; label: string; value: string; hint?: string }) {
@@ -86,7 +81,7 @@ function Stat({ icon, label, value, hint }: { icon: React.ReactNode; label: stri
           {icon}
           <span className="text-xs font-bold uppercase tracking-wide">{label}</span>{hint && <DetailHelp label={label}>{hint}</DetailHelp>}
         </div>
-        <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-50 tabular-nums leading-tight text-left sm:text-left">{value}</p>
+        <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-50 tabular-nums leading-snug break-words text-left sm:text-left">{value}</p>
       </div>
     </div>
   );
@@ -159,7 +154,7 @@ export default function TradingActivityPanel({
 
       {/* 요약 지표 */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2.5 mb-2 md:mb-4">
-        <Stat icon={<Clock size={12} />} label="마지막 실행" value={relTime(capital?.time_stamp?.current)} />
+        <Stat icon={<Clock size={12} />} label="마지막 실행" value={formatTradingTime(capital?.time_stamp?.current, true)} />
         <Stat icon={<Gauge size={12} />} label="충전 속도" value={`${won(chargeRate)}`} hint="/ 5분 틱" />
         <Stat icon={<Layers size={12} />} label="활성 포인트 합계" value={won(activeTokenSum)} hint={`활성 ${activeCount}종목`} />
         <Stat icon={<Activity size={12} />} label="리필 인덱스" value={`${refillIdx} / ${stockList.length}`} hint="다음 매매 대상 위치" />
@@ -190,6 +185,7 @@ export default function TradingActivityPanel({
               <div className="min-w-0"><p className="break-words text-sm font-bold">{displayName(stock.symbol, stock.name)}</p><p className="mt-0.5 break-words text-xs text-neutral-500 dark:text-neutral-400">{group?.name ?? "—"} · {group?.dca ? "정액" : "일반"}{group?.side === "sell" ? "매도" : "매수"}</p></div>
               <StatusBadge lr={(stock as unknown as { last_result?: LastResult }).last_result} />
             </div>
+            <StatusDetail lr={(stock as unknown as { last_result?: LastResult }).last_result} />
             <div className="mt-3 flex flex-wrap items-baseline justify-between gap-2 text-xs"><span className="text-neutral-500 dark:text-neutral-400">현재 포인트</span><strong className="break-all text-base tabular-nums text-neutral-900 dark:text-neutral-100">{won(stock.token ?? 0)}</strong></div>
             {group?.dca && unitKrw !== null && <div className="mt-2">
               <div className="flex flex-wrap justify-between gap-1 text-xs text-neutral-500 dark:text-neutral-400"><span>1주 예산 적립</span><span>{points >= unitKrw ? `예산 기준 ${Math.floor(points / unitKrw).toLocaleString("ko-KR")}주` : `${won(unitKrw - points)} 더 필요`}</span></div>
@@ -229,7 +225,7 @@ export default function TradingActivityPanel({
                         {grp?.name ?? "-"}
                       </span>
                     </td>
-                    <td className="px-3 py-2"><StatusBadge lr={(s as unknown as { last_result?: LastResult }).last_result} /></td>
+                    <td className="px-3 py-2"><StatusBadge lr={(s as unknown as { last_result?: LastResult }).last_result} /><StatusDetail lr={(s as unknown as { last_result?: LastResult }).last_result} /></td>
                     <td className="px-3 py-2 text-right text-xs text-neutral-600 dark:text-neutral-300 tabular-nums">{Number.isFinite(ncav) ? `${ncav.toFixed(2)}x` : "-"}</td>
                     <td className="px-3 py-2 text-right text-xs font-bold text-neutral-800 dark:text-neutral-100 tabular-nums">{won(s.token ?? 0)}</td>
                   </tr>
