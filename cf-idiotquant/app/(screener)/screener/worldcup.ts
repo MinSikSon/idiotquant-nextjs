@@ -3,6 +3,35 @@ import type { ScreenerFilters } from './filters';
 export type WorldcupAnswer = 'a' | 'b' | 'unknown' | 'neither';
 export type WorldcupFilters = Pick<ScreenerFilters, 'excludeDeficit' | 'maxPer' | 'maxPbr' | 'minTrAmt'>;
 
+// 시장 한 글자 + 네 답변. 서버 저장 없이도 같은 선택을 다시 열 수 있다.
+export function worldcupCode(country: 'KR' | 'US', answers: readonly WorldcupAnswer[]) {
+    if (answers.length !== 4 || answers.some(answer => !['a', 'b', 'unknown', 'neither'].includes(answer))) return null;
+    return `${country === 'US' ? 'u' : 'k'}${answers.map(answer => answer === 'unknown' ? 'u' : answer === 'neither' ? 'n' : answer).join('')}`;
+}
+
+export function readWorldcupCode(code: string | null) {
+    if (!code || !/^[ku][abun]{4}$/.test(code)) return null;
+    return {
+        country: code[0] === 'u' ? 'US' as const : 'KR' as const,
+        answers: [...code.slice(1)].map(value => value === 'u' ? 'unknown' : value === 'n' ? 'neither' : value) as WorldcupAnswer[],
+    };
+}
+
+export function expandWorldcupParams(query: string) {
+    const params = new URLSearchParams(query);
+    const selection = readWorldcupCode(params.get('w'));
+    if (!selection) return params;
+    const proposal = worldcupFilters(selection.answers, selection.country);
+    if (!params.has('country')) params.set('country', selection.country);
+    for (const [key, value] of [['maxper', proposal.maxPer], ['maxpbr', proposal.maxPbr], ['mintr', proposal.minTrAmt]] as const) {
+        if (!params.has(key)) params.set(key, String(value));
+    }
+    const exclude = new Set(params.get('exclude')?.split(',').filter(Boolean));
+    if (proposal.excludeDeficit) exclude.add('deficit');
+    params.set('exclude', [...exclude].join(','));
+    return params;
+}
+
 export function worldcupFilters(answers: readonly (WorldcupAnswer | undefined)[], country: 'KR' | 'US'): WorldcupFilters {
     return {
         excludeDeficit: answers[0] === 'a',
