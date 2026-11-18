@@ -19,6 +19,7 @@ function render(value: string, inModal = false) {
             useState: (initial: unknown) => [hook++ === 1 ? true : initial, () => {}],
             useMemo: (factory: () => unknown) => factory(),
             useEffect: () => {},
+            useId: () => 'screener-search',
             useRef: () => ({ current: { blur() {}, focus() {} } }),
         },
         'react/jsx-runtime': { jsx, jsxs: jsx },
@@ -73,7 +74,7 @@ test('스크리너 자동완성에서 국문·영문 종목명을 고르면 해�
         const result = render(query);
         const option = result.nodes.find(node => node.props.role === 'option');
         assert.ok(option, query);
-        option.props.onMouseDown();
+        option.props.onClick();
         assert.deepEqual(result.changes, [ticker]);
         assert.deepEqual(result.searches, [ticker]);
     }
@@ -82,6 +83,6 @@ test('스크리너 자동완성에서 국문·영문 종목명을 고르면 해�
 test('모달에서도 결과 영역으로 보낸 자동완성을 선택하면 같은 종목을 전달한다', () => {
     const result = render('애플', true);
     assert.ok(result.nodes.some(node => node.type === 'portal'));
-    result.nodes.find(node => node.props.role === 'option')!.props.onMouseDown();
+    result.nodes.find(node => node.props.role === 'option')!.props.onClick();
     assert.deepEqual(result.searches, ['AAPL']);
 });
