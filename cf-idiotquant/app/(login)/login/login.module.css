@@ -1,0 +1,101 @@
+.page {
+  --login-line: #d8ddd7;
+  --login-muted: #59645f;
+  --login-paper: #fffefa;
+  --login-tint: #e8efe7;
+  color: #263c34;
+  padding: 32px 24px;
+}
+:global(.dark) .page {
+  --login-line: #39443e;
+  --login-muted: #acb8af;
+  --login-paper: #242a26;
+  --login-tint: #2b3930;
+  color: #e4ece5;
+}
+.shell { max-width: 1080px; margin: 0 auto; }
+.header, .wordmark, .back, .footer { display: flex; align-items: center; }
+.header { justify-content: space-between; gap: 16px; }
+.wordmark { gap: 10px; font-size: 14px; font-weight: 750; letter-spacing: .06em; min-height: 44px; }
+.mark { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 8px; background: rgb(var(--brand-ink)); color: var(--login-paper); font-size: 26px; font-weight: 700; letter-spacing: -.08em; padding-right: 3px; }
+.back { min-height: 44px; gap: 6px; font-size: 14px; color: var(--login-muted); }
+.content { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 80px; align-items: center; padding: 64px 0 48px; }
+.eyebrow { font-size: 14px; color: rgb(var(--brand-ink)); font-weight: 600; }
+.intro h1 { margin-top: 18px; font-size: clamp(32px, 4.2vw, 48px); line-height: 1.24; }
+.intro h1 span { color: rgb(var(--brand-ink)); }
+.description { margin-top: 20px; font-size: 16px; line-height: 1.8; color: var(--login-muted); }
+.preview { margin-top: 32px; }
+.steps { display: flex; border-bottom: 1px solid var(--login-line); }
+.steps button { display: flex; flex: 1; justify-content: center; align-items: center; flex-wrap: wrap; gap: 6px; min-height: 48px; padding: 8px 4px; border-bottom: 2px solid transparent; font-size: 14px; color: var(--login-muted); }
+.steps button[aria-pressed="true"] { border-color: rgb(var(--brand-ink)); color: rgb(var(--brand-ink)); font-weight: 650; }
+.stepNumber { font-size: 12px; font-variant-numeric: tabular-nums; margin-right: 3px; }
+.notebook { margin-top: 16px; border: 1px solid var(--login-line); border-radius: 8px; background: var(--login-paper); overflow: hidden; }
+.noteHeader { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding: 14px 20px; border-bottom: 1px solid var(--login-line); font-size: 12px; font-weight: 600; }
+.sample { color: var(--login-muted); font-weight: 400; }
+.demo { min-height: 174px; padding: 20px; }
+.filterLabel { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--login-muted); }
+.filters { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.filters span { padding: 5px 8px; border-radius: 4px; background: var(--login-tint); font-size: 12px; }
+.company { display: flex; align-items: center; gap: 12px; margin-top: 18px; }
+.companyIcon { display: grid; place-items: center; flex-shrink: 0; width: 40px; height: 40px; border: 1px solid var(--login-line); border-radius: 8px; font-size: 22px; color: rgb(var(--brand-ink)); }
+.company > div { flex: 1; min-width: 0; }
+.company strong { display: block; font-size: 16px; font-weight: 600; }
+.company div span { display: block; margin-top: 3px; font-size: 12px; color: var(--login-muted); }
+.company > svg { color: rgb(var(--brand-ink)); }
+.noteCaption { padding: 16px 20px 20px; border-top: 1px dashed var(--login-line); }
+.noteCaption h2 { font-size: 16px; }
+.noteCaption p { margin-top: 6px; font-size: 14px; line-height: 1.6; color: var(--login-muted); }
+.next { display: flex; align-items: center; justify-content: flex-end; gap: 8px; min-height: 44px; margin-left: auto; font-size: 12px; color: var(--login-muted); }
+.comparison > div { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 8px; padding: 9px 0; font-size: 14px; font-variant-numeric: tabular-nums; }
+.comparison > div:first-child { font-size: 12px; border-bottom: 1px solid var(--login-line); padding-top: 0; }
+.comparison strong, .comparison b { font-weight: 600; text-align: right; }
+.comparison span, .comparison p { color: var(--login-muted); }
+.comparison p { margin-top: 6px; font-size: 12px; }
+.save { display: grid; place-items: center; flex-shrink: 0; width: 44px; min-height: 44px; border-radius: 4px; color: rgb(var(--brand-ink)); }
+.save:hover { background: var(--login-tint); }
+.savedNote { display: flex; align-items: center; gap: 6px; margin-top: 16px; font-size: 12px; color: var(--login-muted); }
+.login { border: 1px solid var(--login-line); border-radius: 8px; background: var(--login-paper); }
+.ticketTop { display: flex; justify-content: space-between; gap: 12px; padding: 16px 24px; border-bottom: 1px dashed var(--login-line); color: var(--login-muted); font-size: 12px; }
+.loginBody { padding: 32px 28px 24px; }
+.ticketArt { position: relative; display: flex; align-items: center; justify-content: center; gap: 10px; width: 76px; height: 64px; margin-bottom: 28px; border: 1.5px solid currentColor; border-radius: 8px; color: rgb(var(--brand-ink)); transform: rotate(-6deg); background: var(--login-tint); }
+.artEye { width: 5px; height: 7px; background: currentColor; border-radius: 50%; margin-bottom: 10px; }
+.artSmile { position: absolute; width: 15px; height: 8px; border: 1.5px solid currentColor; border-top: 0; border-radius: 0 0 12px 12px; top: 35px; left: 29px; }
+.artLabel { position: absolute; right: -72px; top: 8px; padding: 5px 8px; border: 1px solid var(--login-line); border-radius: 4px; background: var(--login-paper); font-size: 12px; transform: rotate(6deg); }
+.loginBody h2 { font-size: 24px; line-height: 1.35; }
+.loginDescription { margin-top: 12px; color: var(--login-muted); font-size: 14px; line-height: 1.7; margin-bottom: 20px; }
+.auth { margin-top: 24px; }
+.auth button { min-height: 48px; font-size: 16px; }
+.accountNote { text-align: center; margin-top: 12px; font-size: 12px; color: var(--login-muted); }
+.terms { margin-top: 24px; font-size: 12px; line-height: 1.8; color: var(--login-muted); }
+.terms a { text-decoration: underline; text-underline-offset: 3px; }
+.ticketBottom { display: flex; flex-direction: column; gap: 4px; padding: 16px 28px; border-top: 1px dashed var(--login-line); background: var(--login-tint); border-radius: 0 0 8px 8px; }
+.ticketBottom > span { font-size: 12px; color: var(--login-muted); }
+.ticketBottom a { display: flex; align-items: center; gap: 8px; min-height: 44px; font-size: 14px; font-weight: 600; color: rgb(var(--brand-ink)); }
+.footer { justify-content: space-between; flex-wrap: wrap; gap: 12px; border-top: 1px solid var(--login-line); padding-top: 20px; color: var(--login-muted); font-size: 12px; }
+.page :is(a, button):focus-visible { outline: 2px solid rgb(var(--brand-ink)); outline-offset: 4px; }
+@media (max-width: 850px) {
+  .content { gap: 32px; grid-template-columns: minmax(0, 1fr) 330px; }
+  .loginBody { padding-left: 24px; padding-right: 24px; }
+}
+@media (max-width: 700px) {
+  .page { padding: 16px 20px 28px; }
+  .shell { max-width: 440px; }
+  .content { display: flex; flex-direction: column; align-items: stretch; gap: 28px; padding: 28px 0; }
+  .intro { display: contents; }
+  .eyebrow { order: 0; font-size: 12px; }
+  .intro h1 { order: 1; margin-top: -16px; font-size: clamp(28px, 7.6vw, 36px); }
+  .description { order: 2; margin-top: -12px; font-size: 14px; }
+  .login { order: 3; }
+  .preview { order: 4; margin-top: 4px; }
+  .ticketTop { padding: 12px 20px; }
+  .loginBody { padding: 24px 20px 20px; }
+  .ticketArt { display: none; }
+  .loginBody h2 { font-size: 22px; }
+  .auth { margin-top: 20px; }
+  .terms { margin-top: 16px; }
+  .ticketBottom { padding: 12px 20px; }
+  .footer { align-items: flex-start; flex-direction: column; }
+  .demo { padding: 16px; }
+  .noteHeader, .noteCaption { padding-left: 16px; padding-right: 16px; }
+  .stepNumber { display: none; }
+}
