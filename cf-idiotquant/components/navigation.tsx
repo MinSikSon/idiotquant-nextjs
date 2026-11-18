@@ -24,6 +24,8 @@ import {
   MoreHorizontal,
   LayoutGrid,
   ChevronDown,
+  Check,
+  UserRound,
   NotebookText,
   Heart,
   EyeOff,
@@ -363,16 +365,44 @@ export function NavbarWithSimpleLinks() {
     return () => observer.disconnect();
   }, []);
 
-  const serviceMenu = (compact: boolean) => <div className="navigation-service-menu flex flex-col gap-1">
-      {[...MAIN_NAV, ...utilityNav].map(item => <Link key={item.href} href={item.href}
-        aria-current={active(pathname, item.href, item.href === "/") ? "page" : undefined}
-        className="flex min-h-11 items-center rounded-lg px-3 hover:bg-neutral-100 dark:hover:bg-neutral-800 aria-[current=page]:font-semibold aria-[current=page]:underline aria-[current=page]:decoration-2 aria-[current=page]:underline-offset-4">{item.label}</Link>)}
-      <div className="flex items-center gap-2 border-t border-neutral-200 p-2 dark:border-neutral-700"><ThemeChanger /><QuickNavigation compact={compact} items={[...MAIN_NAV, ...utilityNav]} /></div>
-      {status === "authenticated" ? <>
-        <Link href="/profile" className="flex min-h-11 min-w-0 items-center px-3"><span className="truncate">{session?.user?.name || "내 계정"} · 내 계정</span></Link>
-        <button type="button" onClick={() => signOut({ callbackUrl: "/" })} className="min-h-11 px-3 text-left">로그아웃</button>
-      </> : status === "unauthenticated" ? <Link href="/login" className="flex min-h-11 items-center px-3">로그인</Link> : <span className="p-3">계정 확인 중…</span>}
+  const serviceMenu = (compact: boolean) => {
+    const research = [...MAIN_NAV, ...moreNav.filter(item =>
+      ["/analyze", "/compare", "/screener?filter=liked"].includes(item.href))];
+    const groups = [
+      { label: "종목 리서치", items: research },
+      { label: "투자 도구 · 게임", items: moreNav.filter(item => !research.includes(item)) },
+      { label: "관리", items: utilityNav.filter(item => !moreNav.includes(item)) },
+    ];
+    return <div className="navigation-service-menu text-base">
+      <nav aria-label="전체 서비스" className="divide-y divide-neutral-200 dark:divide-neutral-700">
+        {groups.filter(group => group.items.length).map(group => <section key={group.label} aria-label={group.label} className="py-2 first:pt-0">
+          <p className="px-3 pb-1 pt-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400">{group.label}</p>
+          {group.items.map(({ icon: Icon, ...item }) => {
+            const isActive = active(pathname, item.href, item.href === "/");
+            return <Link key={item.href} href={item.href}
+              aria-current={isActive ? "page" : undefined}
+              className={cn("flex min-h-11 items-center gap-3 rounded px-3 py-2 leading-6 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-ink",
+                isActive
+                  ? "bg-brand-light font-semibold text-brand-ink dark:bg-brand-muted/50"
+                  : "font-medium text-neutral-800 hover:bg-neutral-100 dark:text-neutral-100 dark:hover:bg-neutral-800")}>
+              <Icon size={18} aria-hidden="true" className={cn("shrink-0", !isActive && "text-neutral-500 dark:text-neutral-400")} />
+              <span className="min-w-0 flex-1">{item.label}</span>
+              {isActive && <Check size={16} aria-hidden="true" className="shrink-0" />}
+            </Link>;
+          })}
+        </section>)}
+      </nav>
+      <div className="flex items-center gap-2 border-t border-neutral-200 px-3 py-2 dark:border-neutral-700"><ThemeChanger compact /><QuickNavigation compact={compact} items={[...MAIN_NAV, ...utilityNav]} /></div>
+      <div className="border-t border-neutral-200 pt-1 dark:border-neutral-700">
+        {status === "authenticated" ? <>
+          <Link href="/profile" aria-current={pathname === "/profile" ? "page" : undefined} className="flex min-h-11 items-center gap-3 rounded px-3 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-800">
+            <UserRound size={18} aria-hidden="true" className="shrink-0 text-neutral-500 dark:text-neutral-400" /><span className="min-w-0 flex-1 break-words">{session?.user?.name || "내 계정"}<span className="ml-2 text-xs text-neutral-500 dark:text-neutral-400">내 계정</span></span>
+          </Link>
+          <button type="button" onClick={() => signOut({ callbackUrl: "/" })} className="flex min-h-11 w-full items-center gap-3 rounded px-3 py-2 text-left text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"><LogOut size={18} aria-hidden="true" className="shrink-0" />로그아웃</button>
+        </> : status === "unauthenticated" ? <Link href="/login" className="flex min-h-11 items-center gap-3 rounded px-3 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-800"><LogIn size={18} aria-hidden="true" className="shrink-0" />로그인</Link> : <span className="block p-3 text-sm text-neutral-500 dark:text-neutral-400">계정 확인 중…</span>}
+      </div>
     </div>;
+  };
 
   return (
     <>
