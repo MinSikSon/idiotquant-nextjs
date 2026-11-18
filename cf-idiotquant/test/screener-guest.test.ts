@@ -5,10 +5,11 @@ import test from 'node:test';
 import ts from 'typescript';
 import * as filters from '@/app/(screener)/screener/filters';
 import * as strategies from '@/lib/constants/strategies';
+import * as worldcup from '@/app/(screener)/screener/worldcup';
 import * as investmentFlow from '@/lib/investmentFlow';
 
 // 페이지의 필터·결과·이벤트를 실행하고 React/세션/네트워크 경계만 대체한다.
-function screen(query = '', loggedIn = false) {
+function screen(query = '', loggedIn = false, savedFilters = {}) {
   const states: any[] = [];
   let cursor = 0;
   const pushes: string[] = [];
@@ -49,6 +50,7 @@ function screen(query = '', loggedIn = false) {
     '@/lib/utils/scanFinancials': { scanTradingAmount: () => 0 },
     '@/lib/constants/strategies': strategies,
     './filters': filters,
+    './worldcup': worldcup,
     './components/LiquidityBadge': { LiquidityBadge: 'LiquidityBadge', w52Position: () => null },
     '@/components/result-share': { __esModule: true, default: 'ResultShare' },
     '@/components/research/FactorWorkbench': { __esModule: true, default: 'FactorWorkbench' },
@@ -62,6 +64,8 @@ function screen(query = '', loggedIn = false) {
   const output = { exports: {} as { ScreenerContent: () => any } };
   runInNewContext(script, {
     module: output, exports: output.exports, URLSearchParams, console,
+    window: { location: { search: query } },
+    localStorage: { getItem: (key: string) => key === 'screener:filters' ? JSON.stringify(savedFilters) : null },
     require: (name: string) => modules[name] ?? stub,
   });
   let nodes: any[] = [];
@@ -131,4 +135,15 @@ test('비로그인 비교는 4종목까지 선택한다', () => {
   cards[4].props.comparison.toggle();
   page.render();
   assert.equal(page.nodes().filter(node => node.type === 'StockGridCard' && node.props.comparison.selected).length, 4);
+});
+
+
+test('짧은 월드컵 링크로 들어오면 선택 결과와 필터를 복원하고 복귀 주소도 짧게 유지한다', () => {
+  const page = screen('w=kaabu', false, { maxper: 5, sectors: ['없는 업종'], filter: 'liked', country: 'US' });
+  assert.deepEqual(Array.from(page.find('FilterWorldcup').props.initialAnswers), ['a', 'a', 'b', 'unknown']);
+  assert.equal(page.find('FilterWorldcup').props.country, 'KR');
+  assert.equal(page.find('FilterWorldcup').props.previewCount(worldcup.worldcupFilters(['a', 'a', 'b', 'unknown'], 'KR')), 45);
+  const snapshot = page.find('ResultShare').props.getSnapshot();
+  assert.equal(snapshot[1], '/screener?w=kaabu');
+  assert.equal(page.nodes().find(node => node.props?.['aria-label'] === '필터 설정 방식').props.children[0].props['aria-pressed'], true);
 });

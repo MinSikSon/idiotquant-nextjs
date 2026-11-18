@@ -30,6 +30,7 @@ import { ResultSummary, TermStrip } from "./components/ResultSummary";
 import { StockGridCard } from "./components/StockGridCard";
 import { StockRatioRow } from "./components/StockRatioRow";
 import { FilterWorldcup } from "./components/FilterWorldcup";
+import { expandWorldcupParams, readWorldcupCode, worldcupCode, worldcupFilters, type WorldcupAnswer } from "./worldcup";
 import ScreenerUsageGuide from "./components/ScreenerUsageGuide";
 import { LiquidityBadge, w52Position } from "./components/LiquidityBadge";
 import { scanTradingAmount } from "@/lib/utils/scanFinancials";
@@ -504,7 +505,10 @@ function DrawerCheck({ checked, onChange, label, delta }: {
 function ScreenerContent() {
     const dispatch = useAppDispatch();
     const router = useRouter();
-    const searchParams = useSearchParams();
+    const rawSearchParams = useSearchParams();
+    const searchParams = useMemo(() => expandWorldcupParams(rawSearchParams.toString()), [rawSearchParams]);
+    const [sharedWorldcup] = useState(() => readWorldcupCode(rawSearchParams.get('w')));
+    const [worldcupAnswers, setWorldcupAnswers] = useState<WorldcupAnswer[]>(sharedWorldcup?.answers ?? []);
     const { data: session, status: sessionStatus } = useSession();
     const isLoggedIn = !!session;
     const viewAsUser = useViewAsUser();
@@ -530,7 +534,7 @@ function ScreenerContent() {
     // (다른 페이지 다녀와 URL 파라미터가 없어도 마지막 필터를 그대로 복원)
     const [saved] = useState(() => {
         // 공개 미리보기에서 이어오면 이전 개인 필터 대신 명시한 조건부터 시작한다.
-        if (searchParams.get("from") === "preview" || typeof window === 'undefined') return {} as Record<string, any>;
+        if (sharedWorldcup || searchParams.get("from") === "preview" || typeof window === 'undefined') return {} as Record<string, any>;
         try { return JSON.parse(localStorage.getItem('screener:filters') || '{}') as Record<string, any>; }
         catch { return {} as Record<string, any>; }
     });
@@ -596,7 +600,7 @@ function ScreenerContent() {
     // 일 거래대금 하한 (KR: 억원, US: 백만 달러, URL param: mintr)
     const [minTrAmt, setMinTrAmt] = useState<number>(() => initNum('mintr', 'mintr', country === 'US' ? US_TR_AMT_PRESETS : KR_TR_AMT_PRESETS));
     const [filterOpen, setFilterOpen] = useState(false);
-    const [filterMethod, setFilterMethod] = useState<'manual' | 'worldcup'>('manual');
+    const [filterMethod, setFilterMethod] = useState<'manual' | 'worldcup'>(sharedWorldcup ? 'worldcup' : 'manual');
     const [likedOnlyRequested, setShowLikedOnly] = useState(() =>
         (searchParams.get('filter') ?? saved.filter) === 'liked'
     );
@@ -689,7 +693,11 @@ function ScreenerContent() {
     // 현재 필터 상태를 그대로 재현하는 쿼리 스트링 (URL 동기화 + 공유 링크 공용)
     const queryString = useMemo(() => {
         const params = new URLSearchParams();
-        if (country === 'US') params.set('country', 'US');
+        const proposal = worldcupFilters(worldcupAnswers, country);
+        const code = worldcupCode(country, worldcupAnswers);
+        const compact = code && proposal.excludeDeficit === excludeDeficit && proposal.maxPer === maxPer && proposal.maxPbr === maxPbr && proposal.minTrAmt === minTrAmt;
+        if (compact) params.set('w', code);
+        else if (country === 'US') params.set('country', 'US');
         if (activeStrategyIds.size > 0)
             params.set('strategies', Array.from(activeStrategyIds).join(','));
         if (filterMode !== 'OR')
@@ -700,7 +708,7 @@ function ScreenerContent() {
             params.set('order', sortOrder);
         const excludeList = [
             excludeHoldings ? 'holdings' : null,
-            excludeDeficit ? 'deficit' : null,
+            excludeDeficit && !compact ? 'deficit' : null,
             excludePreferred ? 'preferred' : null,
             country === 'US' && excludeAdr ? 'adr' : null,
             excludeChinaSmall ? 'china-small' : null,
@@ -715,10 +723,10 @@ function ScreenerContent() {
         if (sectors.size > 0) params.set('sectors', Array.from(sectors).join(','));
         if (markets.size > 0) params.set('markets', Array.from(markets).join(','));
         if (maxW52Pos > 0) params.set('w52', String(maxW52Pos));
-        if (minTrAmt > 0) params.set('mintr', String(minTrAmt));
+        if (!compact && minTrAmt > 0) params.set('mintr', String(minTrAmt));
         if (minMarketCap > 0) params.set('mincap', String(minMarketCap));
-        if (maxPbr > 0) params.set('maxpbr', String(maxPbr));
-        if (maxPer > 0) params.set('maxper', String(maxPer));
+        if (!compact && maxPbr > 0) params.set('maxpbr', String(maxPbr));
+        if (!compact && maxPer > 0) params.set('maxper', String(maxPer));
         if (minRoe > 0) params.set('minroe', String(minRoe));
         if (minNcav > 0) params.set('minncav', String(minNcav));
         if (minIncomeTax !== null) params.set('mintax', String(minIncomeTax));
@@ -727,7 +735,7 @@ function ScreenerContent() {
         if (groupMode !== 'none') params.set('group', groupMode);
         if (viewMode !== DEFAULT_VIEW) params.set('view', viewMode);
         return params.toString();
-    }, [country, activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludePreferred, excludeAdr, excludeChinaSmall, excludeLowLiquidity, excludeCashBurn, excludeHalted, excludeManaged, excludeDelisting, sectors, markets, maxW52Pos, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav, minIncomeTax, maxIncomeTax, showLikedOnly, groupMode, viewMode]);
+    }, [worldcupAnswers, country, activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludePreferred, excludeAdr, excludeChinaSmall, excludeLowLiquidity, excludeCashBurn, excludeHalted, excludeManaged, excludeDelisting, sectors, markets, maxW52Pos, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav, minIncomeTax, maxIncomeTax, showLikedOnly, groupMode, viewMode]);
 
     // 필터 상태 → URL 동기화 + localStorage 저장 (페이지 이동 후 재진입 시에도 전체 필터 유지)
     useEffect(() => {
@@ -1177,7 +1185,8 @@ function ScreenerContent() {
     }, [activeConditions, savedSets, queryString, persistSets]);
 
     const applySavedSet = useCallback((qs: string) => {
-        const p = new URLSearchParams(qs);
+        const p = expandWorldcupParams(qs);
+        setWorldcupAnswers(readWorldcupCode(p.get('w'))?.answers ?? []);
         setCountry(p.get('country') === 'US' ? 'US' : 'KR');
         setActiveStrategyIds(new Set((p.get('strategies') ?? '').split(',').filter(id => STRATEGY_PRESETS.some(s => s.id === id))));
         setFilterMode(p.get('mode') === 'AND' ? 'AND' : 'OR');
@@ -1284,6 +1293,7 @@ function ScreenerContent() {
                             onClick={() => {
                                 if (country === value) return;
                                 setCountry(value);
+                                setWorldcupAnswers([]);
                                 setSelectedDate("latest");
                                 setAvailableDates([]);
                                 setWeeklyPeriods([]);
@@ -1361,10 +1371,11 @@ function ScreenerContent() {
                         >{label}</button>)}
                     </div>
                     <div className={filterMethod === 'worldcup' ? undefined : 'hidden'}>
-                        <FilterWorldcup key={country} country={country} hasTradingAmount={hasTrAmtData} loading={isLoading}
+                        <FilterWorldcup key={`${country}:${worldcupAnswers.join()}`} country={country} initialAnswers={worldcupAnswers} hasTradingAmount={hasTrAmtData} loading={isLoading}
                             previewCount={proposal => applyFilters(baseList, { ...filters, ...proposal }).length}
                             onManual={() => setFilterMethod('manual')}
-                            onApply={proposal => {
+                            onApply={(proposal, answers) => {
+                                setWorldcupAnswers(answers);
                                 setExcludeDeficit(proposal.excludeDeficit); setMaxPer(proposal.maxPer);
                                 setMaxPbr(proposal.maxPbr); setMinTrAmt(proposal.minTrAmt);
                                 setDisplayCount(DAILY_PAGE_SIZE); setFilterOpen(false); setFilterMethod('manual');

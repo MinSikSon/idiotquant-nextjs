@@ -4,7 +4,7 @@ import { runInNewContext } from 'node:vm';
 import test from 'node:test';
 import ts from 'typescript';
 import { applyFilters, type ScreenerFilters } from '../app/(screener)/screener/filters.ts';
-import { worldcupFilters, worldcupRounds, type WorldcupFilters } from '../app/(screener)/screener/worldcup.ts';
+import { worldcupCode, readWorldcupCode, expandWorldcupParams, worldcupFilters, worldcupRounds, type WorldcupAnswer, type WorldcupFilters } from '../app/(screener)/screener/worldcup.ts';
 
 test('월드컵은 선택한 기준만 적용하고 미정·거절에는 필터를 만들지 않는다', () => {
     assert.deepEqual(worldcupFilters(['unknown', 'neither', 'unknown', 'neither'], 'KR'), {
@@ -39,13 +39,14 @@ const source = ts.transpileModule(readFileSync(new URL('../app/(screener)/screen
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
 }).outputText;
 
-function harness(country: 'KR' | 'US' = 'KR', hasTradingAmount = true) {
+function harness(country: 'KR' | 'US' = 'KR', hasTradingAmount = true, initialAnswers: WorldcupAnswer[] = [], copyFails = false) {
+    const copied: string[] = [];
     const slots: unknown[] = [];
     let cursor = 0;
     let tree: any;
     const applications: WorldcupFilters[] = [];
     let manual = 0;
-    const props = { country, hasTradingAmount, loading: false, previewCount: () => 2,
+    const props = { initialAnswers, country, hasTradingAmount, loading: false, previewCount: () => 2,
         onApply: (proposal: WorldcupFilters) => applications.push(proposal), onManual: () => manual++ };
     const react = {
         useState(initial: unknown) {
@@ -53,13 +54,15 @@ function harness(country: 'KR' | 'US' = 'KR', hasTradingAmount = true) {
             if (!(index in slots)) slots[index] = initial;
             return [slots[index], (next: any) => { slots[index] = typeof next === 'function' ? next(slots[index]) : next; }];
         },
+        useEffect() {},
         useRef() { return { current: null }; },
     };
     const output = { exports: {} as { FilterWorldcup: (input: typeof props) => any } };
-    runInNewContext(source, { module: output, exports: output.exports, require(name: string) {
+    runInNewContext(source, { URL, window: { location: { origin: 'https://idiotquant.com' } }, navigator: { clipboard: { writeText: async (url: string) => { if (copyFails) throw new Error('denied'); copied.push(url); } } }, module: output, exports: output.exports, require(name: string) {
         if (name === 'react') return react;
         if (name === 'react/jsx-runtime') return { jsx: (type: any, props: any) => ({ type, props }), jsxs: (type: any, props: any) => ({ type, props }) };
-        if (name === '../worldcup') return { worldcupFilters, worldcupRounds };
+        if (name === '../worldcup') return { worldcupFilters, worldcupRounds, worldcupCode };
+        if (name.endsWith('.module.css')) return { default: {} };
         throw new Error(`Unexpected module: ${name}`);
     } });
     const text = (node: any): string => node == null || typeof node === 'boolean' ? '' : Array.isArray(node) ? node.map(text).join('') : typeof node === 'object' ? text(node.props?.children) : String(node);
@@ -73,7 +76,7 @@ function harness(country: 'KR' | 'US' = 'KR', hasTradingAmount = true) {
         button.props.onClick(); render();
     };
     render();
-    return { click, props, render, applications, manual: () => manual, text: () => text(tree), buttons, textOf: text };
+    return { click, props, render, applications, copied, nodes: () => nodes(tree), manual: () => manual, text: () => text(tree), buttons, textOf: text };
 }
 
 test('선택·앞뒤 이동·다시 시작은 조건을 바꾸지 않고 마지막 적용만 필터를 갱신한다', () => {
@@ -106,4 +109,56 @@ test('거래대금 자료가 없거나 사라지면 하한을 적용하지 않�
     assert.ok(h.buttons().find(button => button.props['aria-label']?.startsWith('선택 A:'))?.props.disabled);
     h.click('건너뛰기');
     assert.match(h.text(), /미정인 1개/);
+});
+
+
+test('짧은 코드는 국내·미국의 모든 답변 조합을 5글자로 손실 없이 복원한다', () => {
+    const choices: WorldcupAnswer[] = ['a', 'b', 'unknown', 'neither'];
+    for (const country of ['KR', 'US'] as const) {
+        for (const a of choices) for (const b of choices) for (const c of choices) for (const d of choices) {
+            const answers = [a, b, c, d];
+            const code = worldcupCode(country, answers)!;
+            assert.equal(code.length, 5);
+            assert.deepEqual(readWorldcupCode(code), { country, answers });
+            const params = expandWorldcupParams(`w=${code}`);
+            const proposal = worldcupFilters(answers, country);
+            assert.equal(params.get('country'), country);
+            assert.equal(Number(params.get('maxper')), proposal.maxPer);
+            assert.equal(Number(params.get('maxpbr')), proposal.maxPbr);
+            assert.equal(Number(params.get('mintr')), proposal.minTrAmt);
+            assert.equal(params.get('exclude')?.split(',').includes('deficit'), proposal.excludeDeficit);
+        }
+    }
+    for (const invalid of [null, '', 'kaaa', 'kaaaaa', 'xaaaa', 'kAAaa', 'k<a>a', 'uaaaa/extra']) assert.equal(readWorldcupCode(invalid), null);
+    assert.equal(worldcupCode('KR', ['a']), null);
+});
+
+test('직접 필터 링크는 유지하고 짧은 코드와 함께 지정한 부가 조건도 복원한다', () => {
+    assert.equal(expandWorldcupParams('maxper=12&exclude=holdings').toString(), 'maxper=12&exclude=holdings');
+    const params = expandWorldcupParams('w=uaaaa&maxper=15&exclude=holdings&group=sector');
+    assert.equal(params.get('maxper'), '15');
+    assert.equal(params.get('exclude'), 'holdings,deficit');
+    assert.equal(params.get('group'), 'sector');
+});
+
+test('완료한 월드컵은 짧은 주소를 복사하고 같은 선택으로 바로 다시 열린다', async () => {
+    const answers: WorldcupAnswer[] = ['a', 'b', 'unknown', 'a'];
+    const h = harness('US', true, answers);
+    assert.match(h.text(), /나의 투자 기준이 완성/);
+    h.click('짧은 링크 복사');
+    await new Promise(resolve => setImmediate(resolve)); h.render();
+    assert.deepEqual(h.copied, ['https://idiotquant.com/screener?w=uabua']);
+    assert.match(h.text(), /링크를 복사했습니다/);
+    assert.equal(h.nodes().find(node => node.type === 'input').props.value, h.copied[0]);
+    h.click('처음부터 다시 고르기');
+    assert.doesNotMatch(h.text(), /링크를 복사했습니다/);
+});
+
+test('클립보드가 거절되면 직접 복사할 주소와 안내를 제공한다', async () => {
+    const h = harness('KR', true, ['a', 'a', 'a', 'a'], true);
+    h.click('짧은 링크 복사');
+    await new Promise(resolve => setImmediate(resolve)); h.render();
+    assert.equal(h.copied.length, 0);
+    assert.equal(h.nodes().find(node => node.type === 'input').props.value, 'https://idiotquant.com/screener?w=kaaaa');
+    assert.match(h.text(), /위 링크를 직접 복사/);
 });
