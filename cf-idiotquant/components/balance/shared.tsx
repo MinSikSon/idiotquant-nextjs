@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { listTradingAccounts, type TradingAccountSummary } from "@/lib/features/algorithmTrade/tradingAccountAPI";
 import {
   Loader2, CheckCircle2, Clock, ArrowUpRight, ArrowDownRight,
   RefreshCw, Activity, InboxIcon, ChevronDown, Key,
@@ -86,14 +88,28 @@ export function SectionHeader({
 }
 
 // 계좌 선택기 (MASTER 전용). 탭 위 최상단에 배치해 종목관리·자동매매를 계좌 단위로 전환한다.
-export function AccountSelector({ balanceKey, setBalanceKey, kakaoMemberList, isMaster }: {
+export function AccountSelector({ country, balanceKey, setBalanceKey, kakaoMemberList, isMaster }: {
+  country: "KR" | "US";
   balanceKey: string;
   setBalanceKey: (v: string) => void;
   kakaoMemberList?: any;
   isMaster: boolean;
 }) {
+  const [accountList, setAccountList] = useState<{ country: string; accounts: TradingAccountSummary[] } | null>(null);
+  useEffect(() => {
+    if (!isMaster) return;
+    let cancelled = false;
+    listTradingAccounts(country).then(accounts => {
+      if (!cancelled) setAccountList({ country, accounts });
+    });
+    return () => { cancelled = true; };
+  }, [country, isMaster]);
+
   if (!isMaster) return null;
-  const list = Array.isArray(kakaoMemberList?.list) ? kakaoMemberList.list : [];
+  const loading = accountList?.country !== country;
+  const list = loading ? [] : accountList.accounts.filter(account => account.is_active);
+  const members = Array.isArray(kakaoMemberList?.list) ? kakaoMemberList.list : [];
+  const selected = list.some(account => String(account.user_id) === balanceKey);
   return (
     <div data-account-selector className="flex items-center gap-2 md:gap-3 bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark px-2.5 py-2 md:px-4 md:py-3 shadow-none">
       <div className="flex shrink-0 items-center gap-1.5 whitespace-nowrap px-2 py-1 md:px-2.5 bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 rounded-lg text-xs font-semibold uppercase">
@@ -102,20 +118,25 @@ export function AccountSelector({ balanceKey, setBalanceKey, kakaoMemberList, is
       <span className="hidden shrink-0 text-xs font-semibold text-neutral-600 dark:text-neutral-400 sm:inline">계좌 선택</span>
       <div className="relative min-w-0 flex-1 sm:w-80 sm:max-w-[50%] sm:flex-none">
         <select
-          value={balanceKey}
+          value={selected ? balanceKey : ""}
+          disabled={loading || list.length === 0}
           aria-label="계좌 선택"
           onChange={(e) => setBalanceKey(e.target.value)}
           className="w-full min-h-[44px] min-w-0 truncate appearance-none bg-transparent pl-3 pr-8 py-1.5 font-bold text-sm focus:outline-none dark:text-white cursor-pointer border border-neutral-500 dark:border-neutral-500 rounded-lg"
         >
-          {list.length > 0 ? (
-            list.map((item: any) => (
-              <option key={item.key} value={String(item.key)} className="dark:bg-surface-dark-card">
-                {item.value?.nickname} ({item.key})
-              </option>
-            ))
-          ) : (
-            <option value="">계좌 목록 로딩 중...</option>
+          {!selected && (
+            <option value="" disabled>
+              {loading ? "계좌 목록 로딩 중..." : list.length === 0 ? "운용 중인 계좌가 없습니다" : "운용 계좌를 선택하세요"}
+            </option>
           )}
+          {list.map(account => {
+            const member = members.find((item: any) => String(item.key) === String(account.user_id));
+            return (
+              <option key={account.user_id} value={String(account.user_id)} className="dark:bg-surface-dark-card">
+                {member?.value?.nickname ? `${member.value.nickname} (${account.user_id})` : account.user_id}
+              </option>
+            );
+          })}
         </select>
         <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-600 dark:text-neutral-400" />
       </div>

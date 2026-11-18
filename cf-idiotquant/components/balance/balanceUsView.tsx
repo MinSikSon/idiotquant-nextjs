@@ -456,6 +456,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
       onRefresh={handleRefresh}
       accountSelector={
         <AccountSelector
+          country="US"
           balanceKey={balanceKey}
           setBalanceKey={setBalanceKey}
           kakaoMemberList={kakaoMemberList}
