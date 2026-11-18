@@ -31,19 +31,24 @@ export function StockSearchModal({ open, label, purpose = "analyze", disabledMes
   const guidance = STOCK_SEARCH_GUIDANCE[purpose];
   const [data, setData] = useState<StaticStockData | null>(null);
   const [loadError, setLoadError] = useState(false);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [error, setError] = useState("");
+  const [query, setQuery] = useState("");
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
   useEffect(() => {
     if (!open || data) return;
+    setLoadError(false);
     let active = true;
     loadStaticStockData().then(value => { if (active) setData(value); })
       .catch(() => { if (active) setLoadError(true); });
     return () => { active = false; };
-  }, [open, data]);
+  }, [open, data, loadAttempt]);
 
   useLayoutEffect(() => {
     const element = dialog.current;
     if (!element || !open) return;
     setError("");
+    setQuery("");
     const returnTarget = trigger.current;
     const scrollY = window.scrollY;
     const body = document.body;
@@ -81,6 +86,7 @@ export function StockSearchModal({ open, label, purpose = "analyze", disabledMes
     const allowed = new Set(options);
     return names.filter(stock => allowed.has(stock.symbol));
   }, [stockNames, market, data, options]);
+  const recent = recentSearches.filter(value => values.some(item => item.toLowerCase() === value.toLowerCase()));
   const select = (raw: string) => {
     const value = raw.trim();
     if (!value || disabled) return;
@@ -89,6 +95,8 @@ export function StockSearchModal({ open, label, purpose = "analyze", disabledMes
       setError("검색 결과에서 종목을 선택해 주세요.");
       return;
     }
+    const knownValue = values.find(item => item.toLowerCase() === value.toLowerCase());
+    if (knownValue) setRecentSearches(current => [knownValue, ...current.filter(item => item !== knownValue)].slice(0, 5));
     onSelect(value);
   };
 
@@ -141,22 +149,41 @@ export function StockSearchModal({ open, label, purpose = "analyze", disabledMes
         <button type="button" onClick={onClose} aria-label="검색창 닫기" title="뒤로" className="stock-search-back"><ChevronLeft size={26} strokeWidth={1.8} /></button>
         <div className="min-w-0 flex-1">
           <SearchAutocomplete validCorpNameArray={values} onSearchButton={select} autoFocus onEscape={onClose} stockNames={searchNames} resultsTarget={resultsTarget}
+            disabled={disabled} loading={!data && !options && !loadError} selectionRequired={requireSelection}
+            onQueryChange={value => { setQuery(value); setError(""); }}
             placeHolder={market === "US" ? "미국 종목명 또는 티커 검색" : guidance.placeholder} />
         </div>
       </header>
       <div className="stock-search-body" data-search-content role="search" aria-label={label}>
         <div ref={setResultsTarget} className="stock-search-results" />
-        {!data && !options && <p role="status" className="stock-search-status">{loadError ? "자동완성 목록을 불러오지 못했어요. 종목명이나 티커를 직접 입력해 검색해 주세요." : "종목 목록을 불러오는 중이에요."}</p>}
+        {loadError && !data && !options && <div className="stock-search-status">
+          <p role="status">자동완성 목록을 불러오지 못했어요. 종목명이나 티커를 직접 입력하거나 다시 불러와 주세요.</p>
+          <button type="button" onClick={() => { setLoadError(false); setLoadAttempt(attempt => attempt + 1); }}
+            className="mt-1 min-h-11 rounded border border-neutral-500 px-3 text-sm font-medium">종목 목록 다시 불러오기</button>
+        </div>}
         {disabled && <p role="status" className="stock-search-status">{disabledMessage ?? "종목 정보를 준비하고 있어요. 현재 작업이 끝나면 선택할 수 있어요."}</p>}
         {error && <p role="alert" className="stock-search-error">{error}</p>}
-        <section className="stock-search-guidance" aria-label={`${label} 가이드`}>
+        {!disabled && !query.trim() && recent.length > 0 && <section className="stock-search-guidance" aria-label="이번 방문의 최근 검색">
+          <div className="flex items-center justify-between gap-2">
+            <h3>이번 방문의 최근 검색</h3>
+            <button type="button" onClick={() => setRecentSearches([])}
+              className="min-h-11 rounded px-3 text-sm text-neutral-600 dark:text-neutral-400">기록 지우기</button>
+          </div>
+          <ul className="divide-y divide-neutral-200 dark:divide-neutral-700">
+            {recent.map(value => <li key={value}>
+              <button type="button" onClick={() => select(value)}
+                className="min-h-11 w-full break-words rounded px-3 py-2 text-left text-base hover:bg-neutral-100 dark:hover:bg-neutral-800">{value}</button>
+            </li>)}
+          </ul>
+        </section>}
+        {!disabled && !query.trim() && recent.length === 0 && <section className="stock-search-guidance" aria-label={`${label} 가이드`}>
           <h3>{guidance.title}</h3>
           <p className="stock-search-description">{guidance.description}</p>
           <SearchGuide market={market} onSelect={select} showAnalysis={purpose === "analyze"} />
           {purpose !== "analyze" && <ol className="stock-search-steps">
             {guidance.steps.map((step, index) => <li key={step}><span aria-hidden="true">{index + 1}</span><p>{step}</p></li>)}
           </ol>}
-        </section>
+        </section>}
         <footer id="stock-search-note" className="stock-search-note"><p>{guidance.note}</p></footer>
       </div>
     </div>}
