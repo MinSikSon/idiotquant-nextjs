@@ -653,6 +653,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
                 kakaoTotal={kakaoTotal}
                 kakaoMemberList={kakaoMemberList}
                 capital={usCapital}
+                countryTradingActive={tradingStatus.US}
                 onOrderResult={handleOrderResult}
               />
             </SectionPanel>
