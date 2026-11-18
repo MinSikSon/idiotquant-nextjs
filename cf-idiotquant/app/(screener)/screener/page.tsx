@@ -4,7 +4,6 @@ export const dynamic = 'force-dynamic';
 
 import * as Tabs from "@radix-ui/react-tabs";
 
-import { PageSearch } from "@/components/page-search";
 import GuestDiscovery from "./components/GuestDiscovery";
 import { ComparisonCheckbox, type ComparisonChoice } from "@/components/comparison-checkbox";
 import { analysisHref, comparisonHref, matchesWatchStock, PENDING_WATCH_KEY, toggleComparisonSelection } from "@/lib/investmentFlow";
@@ -945,13 +944,6 @@ function ScreenerContent() {
         })) : list;
     }, [showLikedOnly, normalizedLikedList, ncavDailyList.list, country, usEnglishNames]);
 
-    const searchStocks = useMemo(() => baseList.map((item: Record<string, any>) => ({
-        symbol: String(item.ticker ?? ""),
-        name: String(item.eng_name || item.name || item.ticker || ""),
-        koreanName: String(item.name || ""),
-    })).filter(item => item.symbol), [baseList]);
-    const searchTickers = useMemo(() => searchStocks.map(item => item.symbol), [searchStocks]);
-
     const filteredList = useMemo(() => {
         return sortList([...applyFilters(baseList, filters)], sortKey, sortOrder);
     }, [baseList, filters, sortKey, sortOrder]);
@@ -1501,42 +1493,8 @@ function ScreenerContent() {
                     </div>
                     </SecondarySection>}
 
-                    {/* 둘째 줄: 통합 툴바 — 검색·정렬·필터·관심을 한 줄로. 예전엔 세 줄로 흩어져
-                        세로 공간만 먹고 무엇이 주된 조작인지 위계가 없었다. */}
+                    {/* 필터·관심 툴바 */}
                     <div className="flex flex-col gap-2 pb-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2 sm:pb-3">
-                        <div className="flex items-center gap-2 min-w-0 w-full sm:w-auto sm:flex-1">
-                        {/* 검색 */}
-                        {isLoggedIn && <PageSearch purpose="analyze" label="발굴 종목 검색" market={country} options={searchTickers} stockNames={searchStocks}
-                            onSelect={value => router.push(analysisHref(value, returnPath))} />}
-
-
-                        {/* 표 헤더를 열지 않아도 어떤 보기에서나 정렬을 바꿀 수 있다. */}
-                        <select
-                            value={`${sortKey}:${sortOrder}`}
-                            onChange={e => {
-                                const [key, order] = e.target.value.split(':') as [DiscoverySortKey, SortOrder];
-                                setSortKey(key); setSortOrder(order); setDisplayCount(DAILY_PAGE_SIZE);
-                            }}
-                            aria-label="결과 정렬"
-                            className="min-h-[44px] shrink-0 w-[112px] sm:w-auto max-w-[132px] px-2 sm:px-2.5 py-2 rounded-lg text-sm font-semibold border border-neutral-200 dark:border-surface-dark-border bg-white dark:bg-surface-dark-card text-neutral-700 dark:text-neutral-200 outline-none focus:border-brand focus:ring-2 focus:ring-brand/15"
-                        >
-                            <option value="ncav_ratio:desc">NCAV 높은 순</option>
-                            <option value="ncav_ratio:asc">NCAV 낮은 순</option>
-                            <option value="pbr:asc">PBR 낮은 순</option>
-                            <option value="pbr:desc">PBR 높은 순</option>
-                            <option value="per:asc">PER 낮은 순</option>
-                            <option value="per:desc">PER 높은 순</option>
-                            <option value="roe:desc">ROE 높은 순</option>
-                            <option value="roe:asc">ROE 낮은 순</option>
-                            <option value="market_cap:desc">시가총액 큰 순</option>
-                            <option value="market_cap:asc">시가총액 작은 순</option>
-                            <option value="ticker:asc">종목명 가나다순</option>
-                            <option value="ticker:desc">종목명 역순</option>
-                            <option value="last_price:desc">현재가 높은 순</option>
-                            <option value="last_price:asc">현재가 낮은 순</option>
-                        </select>
-                        </div>
-
                         <div className="grid w-full grid-cols-2 items-center gap-2 sm:w-auto sm:flex">
                         {/* 필터 — 열림은 다른 툴바 토글과 같은 '단색 채움'으로 표시한다.
                             서랍과 탭처럼 이어붙이는 연출은 이 레이아웃에서 성립하지 않는다:
