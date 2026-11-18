@@ -50,39 +50,39 @@ export function FilterWorldcup({ initialAnswers = [], country, hasTradingAmount,
     };
 
     return <section aria-label="내 투자 기준 월드컵" className={styles.worldcup}>
-        <div className="flex flex-wrap items-center justify-between gap-2 text-sm font-semibold">
-            <p className="text-brand-ink">내 투자 기준 월드컵</p>
+        <div className={styles.header}>
+            <p>투자 기준 월드컵</p>
             <span className="tabular-nums text-neutral-500 dark:text-neutral-400">{country === 'US' ? '미국' : '국내'} · {done ? '선택 완료' : `${step + 1} / ${rounds.length}`}</span>
         </div>
         <nav aria-label="월드컵 진행 단계" className={styles.steps}>
             {rounds.map((item, index) => <button key={item.label} type="button" disabled={index > answers.length}
                 aria-current={!done && index === step ? 'step' : undefined} onClick={() => next(index)}
                 className={styles.step} data-complete={index < answers.length}>
-                <span className={styles.stepNumber} aria-hidden="true">{index < answers.length ? '✓' : index + 1}</span>
-                <span>{item.label}</span>
-                <span className="sr-only">{index < answers.length ? '선택 완료 · 다시 고르기' : `${index + 1}단계`}</span>
+                <span className="sr-only">{item.label} · {index < answers.length ? '선택 완료 · 다시 고르기' : `${index + 1}단계`}</span>
             </button>)}
         </nav>
-        <h2 ref={heading} tabIndex={-1} className={styles.question}>
-            {done ? '나의 투자 기준이 완성됐어요.' : round.question}
-        </h2>
-
         {!done ? <>
-            <div className={styles.choices}>
-                {(['a', 'b'] as const).map(choice => <button key={`${step}-${choice}`} type="button"
-                    aria-label={`선택 ${choice.toUpperCase()}: ${round[choice].title}`}
-                    disabled={choice === 'a' && step === 3 && !hasTradingAmount}
-                    aria-pressed={effectiveAnswers[step] === choice}
-                    onClick={() => choose(choice)}
-                    className={styles.choice}>
-                    <span className={styles.choiceTitle}>{round[choice].title}</span>
-                    <span className={styles.choiceIndicator} aria-hidden="true">{effectiveAnswers[step] === choice ? '✓' : '→'}</span>
-                </button>)}
+            <div className={styles.stage}>
+                <h2 ref={heading} tabIndex={-1} className={styles.question}>{round.question}</h2>
+                <div className={styles.choices} key={step}>
+                    {(['a', 'b'] as const).map(choice => <button key={`${step}-${choice}`} type="button"
+                        aria-label={`선택 ${choice.toUpperCase()}: ${round[choice].title}`}
+                        disabled={choice === 'a' && step === 3 && !hasTradingAmount}
+                        aria-pressed={effectiveAnswers[step] === choice}
+                        onClick={() => choose(choice)}
+                        className={styles.choice}>
+                        <span className={styles.choiceArt} aria-hidden="true" style={{ backgroundPosition: `${((step % 2) * 2 + (choice === 'b' ? 1 : 0)) * 100 / 3}% ${step < 2 ? 0 : 100}%` }} />
+                        <span className={styles.choiceCaption}>
+                            <span className={styles.choiceTitle}>{round[choice].title}</span>
+                            {effectiveAnswers[step] === choice && <span className={styles.choiceIndicator} aria-hidden="true">✓</span>}
+                        </span>
+                    </button>)}
+                </div>
             </div>
             {step === 3 && !hasTradingAmount && <p className="mt-3 text-sm text-neutral-500 dark:text-neutral-400" role="status">{loading ? '거래대금 자료를 확인하고 있습니다.' : '거래대금 자료가 없어 하한 조건을 선택할 수 없습니다.'}</p>}
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-                <button type="button" className="min-h-11 px-2 text-sm text-neutral-500 focus-visible:outline-brand-ink disabled:opacity-30 dark:text-neutral-400" disabled={step === 0} onClick={() => next(step - 1)}>← 이전 비교</button>
-                <button type="button" className="min-h-11 px-2 text-sm font-medium text-neutral-600 hover:text-brand-ink focus-visible:outline-brand-ink dark:text-neutral-300" onClick={() => choose('unknown')}>모르겠어요 · 건너뛰기 →</button>
+            <div className={styles.controls}>
+                <button type="button" className={styles.back} disabled={step === 0} onClick={() => next(step - 1)}><span aria-hidden="true">↶</span><span className="sr-only">← 이전 비교</span></button>
+                <button type="button" className={styles.skip} onClick={() => choose('unknown')}>건너뛰기</button>
             </div>
             <details key={step} className="mt-3 border-t border-neutral-200 dark:border-surface-dark-border">
                 <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-xs text-neutral-500 focus-visible:outline-brand-ink dark:text-neutral-400">선택 기준 자세히 <span aria-hidden="true">＋</span></summary>
@@ -92,6 +92,7 @@ export function FilterWorldcup({ initialAnswers = [], country, hasTradingAmount,
                 </div>
             </details>
         </> : <>
+            <h2 ref={heading} tabIndex={-1} className={styles.question}>나의 투자 기준이 완성됐어요.</h2>
             <dl className="divide-y divide-neutral-200 border-y border-neutral-200 dark:divide-surface-dark-border dark:border-surface-dark-border">
                 {rounds.map((item, index) => {
                     const answer = effectiveAnswers[index];
