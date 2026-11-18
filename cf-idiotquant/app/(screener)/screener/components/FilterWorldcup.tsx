@@ -54,7 +54,6 @@ export function FilterWorldcup({ initialAnswers = [], country, hasTradingAmount,
             <p className="text-brand-ink">내 투자 기준 월드컵</p>
             <span className="tabular-nums text-neutral-500 dark:text-neutral-400">{country === 'US' ? '미국' : '국내'} · {done ? '선택 완료' : `${step + 1} / ${rounds.length}`}</span>
         </div>
-        <p className="mt-2 text-sm leading-relaxed text-neutral-500 dark:text-neutral-400">네 번의 비교로 나에게 맞는 종목 탐색 기준을 골라보세요.</p>
         <nav aria-label="월드컵 진행 단계" className={styles.steps}>
             {rounds.map((item, index) => <button key={item.label} type="button" disabled={index > answers.length}
                 aria-current={!done && index === step ? 'step' : undefined} onClick={() => next(index)}
@@ -76,12 +75,8 @@ export function FilterWorldcup({ initialAnswers = [], country, hasTradingAmount,
                     aria-pressed={effectiveAnswers[step] === choice}
                     onClick={() => choose(choice)}
                     className={styles.choice}>
-                    <span className={styles.choiceLabel} aria-hidden="true">{choice.toUpperCase()} <span>{effectiveAnswers[step] === choice ? '✓ 선택한 기준' : '이 기준 선택 →'}</span></span>
-                    <span className="min-w-0 flex-1">
-                        <span className="block text-base font-semibold tracking-tight sm:text-lg">{round[choice].title}</span>
-                        <span className="mt-1.5 block text-sm leading-relaxed text-neutral-500 dark:text-neutral-400">{round[choice].description}</span>
-                        <span className={styles.value}>{round[choice].value}</span>
-                    </span>
+                    <span className={styles.choiceTitle}>{round[choice].title}</span>
+                    <span className={styles.choiceIndicator} aria-hidden="true">{effectiveAnswers[step] === choice ? '✓' : '→'}</span>
                 </button>)}
             </div>
             {step === 3 && !hasTradingAmount && <p className="mt-3 text-sm text-neutral-500 dark:text-neutral-400" role="status">{loading ? '거래대금 자료를 확인하고 있습니다.' : '거래대금 자료가 없어 하한 조건을 선택할 수 없습니다.'}</p>}
@@ -93,7 +88,7 @@ export function FilterWorldcup({ initialAnswers = [], country, hasTradingAmount,
                 <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-xs text-neutral-500 focus-visible:outline-brand-ink dark:text-neutral-400">선택 기준 자세히 <span aria-hidden="true">＋</span></summary>
                 <div className="pb-3 text-sm leading-relaxed text-neutral-500 dark:text-neutral-400">
                     <p>{round.context}</p>
-                    {(['a', 'b'] as const).map(choice => <p key={choice} className="mt-3"><strong className="font-medium text-neutral-700 dark:text-neutral-200">{round[choice].title}</strong> · {round[choice].tradeoff}</p>)}
+                    {(['a', 'b'] as const).map(choice => <p key={choice} className="mt-3"><strong className="font-medium text-neutral-700 dark:text-neutral-200">{round[choice].value}</strong> · {round[choice].description} {round[choice].tradeoff}</p>)}
                 </div>
             </details>
         </> : <>
