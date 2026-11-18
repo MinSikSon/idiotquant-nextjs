@@ -4,7 +4,6 @@ export const dynamic = 'force-dynamic';
 
 import * as Tabs from "@radix-ui/react-tabs";
 
-import GuestDiscovery from "./components/GuestDiscovery";
 import { ComparisonCheckbox, type ComparisonChoice } from "@/components/comparison-checkbox";
 import { analysisHref, comparisonHref, matchesWatchStock, PENDING_WATCH_KEY, toggleComparisonSelection } from "@/lib/investmentFlow";
 import { SecondarySection } from "@/components/secondary-section";
@@ -34,8 +33,6 @@ import { FilterWorldcup } from "./components/FilterWorldcup";
 import ScreenerUsageGuide from "./components/ScreenerUsageGuide";
 import { LiquidityBadge, w52Position } from "./components/LiquidityBadge";
 import { scanTradingAmount } from "@/lib/utils/scanFinancials";
-import { isValuationEligible } from "@/lib/utils/stockValuationEligibility";
-import { matchesGuestPer } from "@/lib/utils/guestStocks";
 import { isUsTicker } from "@/lib/utils/stockSearchInput";
 import ScanRefreshNotice from "@/components/scan-refresh-notice";
 import { STRATEGY_LABEL, STRATEGY_BADGE, STRATEGY_PRESETS_CLIENT as STRATEGY_PRESETS, MKTCAP_PRESETS, STRATEGY_ACTIVE_CLS, STRATEGY_HEX } from "@/lib/constants/strategies";
@@ -415,46 +412,6 @@ const TableRow = memo(function TableRow({ item, onClick, isLiked, onToggleLike, 
     );
 });
 
-// 비로그인 카드에서도 발굴 조건인 PER을 바로 확인할 수 있게 한다.
-const GuestRecommendationCard = memo(function GuestRecommendationCard({ item, rank, onClick }: {
-    item: any;
-    rank: number;
-    onClick: (ticker: string, name: string) => void;
-}) {
-    const ncav = safeNum(item.ncav_ratio);
-    const strategy = primaryStrategyOf(item);
-
-    return (
-        <button
-            type="button"
-            onClick={() => onClick(item.ticker, item.name)}
-            className="w-full text-left bg-transparent py-4 hover:bg-neutral-100 dark:hover:bg-surface-dark-hover transition-colors"
-        >
-            <div className="flex items-start gap-1.5 sm:gap-3">
-                <span className="mt-0.5 w-5 h-5 shrink-0 text-neutral-400 flex items-center justify-center text-xs font-medium tabular-nums">
-                    {rank}
-                </span>
-                <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-semibold text-neutral-900 dark:text-white">{item.name}</span>
-                    <span className="mt-0.5 flex items-center gap-1.5 text-xs font-mono tracking-[0.05em] text-neutral-400">
-                        {item.ticker}
-                        {strategy && <span className="font-sans font-bold tracking-normal text-neutral-700 dark:text-neutral-300">· {STRATEGY_LABEL[strategy] ?? strategy}</span>}
-                    </span>
-                    <span className="mt-1 block"><FinancialFreshnessNotice compact periods={scanFinancialPeriods(item)} source={item.financial_source} collectionDate={scanCollectionDate(item)} /></span>
-                </span>
-                <span className="shrink-0 text-right">
-                    <span className="block text-xs font-bold text-neutral-400">PER</span>
-                    <span className="block mt-0.5 font-mono text-base sm:text-lg font-medium tabular-nums text-neutral-700 dark:text-neutral-300">{item.per.toFixed(2)}배</span>
-                </span>
-            </div>
-            <span className="block mt-1 pt-1 sm:mt-2 sm:pt-2 text-xs sm:text-xs text-neutral-500 dark:text-neutral-400">
-                순유동자산이 시가총액의 <strong className="font-mono text-neutral-700 dark:text-neutral-200">{ncav.toFixed(2)}배</strong> · 자세히 보기 <ChevronRight className="inline -mt-px" size={12} />
-            </span>
-        </button>
-    );
-});
-
-
 // =========================================================================
 // 필터 서랍 — 조건을 좁히면서 결과가 몇 개 남는지 즉시 확인한다.
 // 모달이 아니라 툴바 아래로 밀어내리는 서랍인 이유: 모달로 띄우면 결과 테이블이 가려져
@@ -559,7 +516,7 @@ function ScreenerContent() {
     const [datesError, setDatesError] = useState(false);
     const weeklyPeriod = isAdmin && selectedDate.startsWith("weekly:") ? selectedDate.slice(7) : null;
     const requestedDate = isAdmin && !weeklyPeriod ? selectedDate : "latest";
-    // 비로그인 시 고급 필터/관심 사용 → 로그인 페이지로 유도 (복귀 URL 보존)
+    // 비로그인 시 관심종목 사용 → 로그인 페이지로 유도 (복귀 URL 보존)
     const requireLogin = useCallback(() => {
         router.push(`/login?callbackUrl=${encodeURIComponent(`/screener${window.location.search}`)}`);
     }, [router]);
@@ -640,9 +597,10 @@ function ScreenerContent() {
     const [minTrAmt, setMinTrAmt] = useState<number>(() => initNum('mintr', 'mintr', country === 'US' ? US_TR_AMT_PRESETS : KR_TR_AMT_PRESETS));
     const [filterOpen, setFilterOpen] = useState(false);
     const [filterMethod, setFilterMethod] = useState<'manual' | 'worldcup'>('manual');
-    const [showLikedOnly, setShowLikedOnly] = useState(() =>
+    const [likedOnlyRequested, setShowLikedOnly] = useState(() =>
         (searchParams.get('filter') ?? saved.filter) === 'liked'
     );
+    const showLikedOnly = isLoggedIn && likedOnlyRequested;
     // 시가총액 필터 (KR: 억원, US: 백만 달러, URL param: mincap)
     // 시가총액 직접 입력값과 PBR 슬라이더의 중간값도 URL·저장 조합에서 그대로 복원해야
     // 한다. 프리셋만 허용하면 750억·PBR 0.65처럼 사용자가 직접 고른 값이 재진입 때
@@ -716,15 +674,13 @@ function ScreenerContent() {
         return () => { active = false; };
     }, [isAdmin, country]);
 
-    // 비로그인은 서버에서 PER 조건을 먼저 적용한 고정 10개 미리보기를 받는다.
-    // 세션이 정해지기 전에는 부르지 않는다. status 가 loading → authenticated 로 바뀌는
-    // 동안 두 번 부르면, 아끼려고 만든 분기가 요청을 하나 더 만드는 꼴이 된다.
+    // 로그인 여부와 관계없이 전체 종목에 필터·정렬을 적용한다.
     useEffect(() => {
         if (sessionStatus === "loading") return;
         dispatch(reqGetNcavDailyList(
-            { date: requestedDate, weeklyPeriod, country, preview: !isLoggedIn }
+            { date: requestedDate, weeklyPeriod, country }
         ));
-    }, [dispatch, sessionStatus, isLoggedIn, country, requestedDate, weeklyPeriod]);
+    }, [dispatch, sessionStatus, country, requestedDate, weeklyPeriod]);
 
     useEffect(() => {
         if (isLoggedIn) dispatch(reqGetMyLikes());
@@ -827,9 +783,9 @@ function ScreenerContent() {
     }, [queryString, country, activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludePreferred, excludeAdr, excludeChinaSmall, excludeLowLiquidity, excludeCashBurn, excludeHalted, excludeManaged, excludeDelisting, sectors, markets, maxW52Pos, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav, minIncomeTax, maxIncomeTax, showLikedOnly, groupMode, viewMode, router]);
 
     const handleRefresh = useCallback(() => {
-        dispatch(reqGetNcavDailyList({ date: requestedDate, weeklyPeriod, limit: isLoggedIn ? undefined : PREVIEW_SIZE, country }));
+        dispatch(reqGetNcavDailyList({ date: requestedDate, weeklyPeriod, country, force: true }));
         setDisplayCount(DAILY_PAGE_SIZE);
-    }, [dispatch, isLoggedIn, country, requestedDate, weeklyPeriod]);
+    }, [dispatch, country, requestedDate, weeklyPeriod]);
 
     const toggleSort = useCallback((key: DiscoverySortKey) => {
         setSortKey(prev => {
@@ -948,17 +904,8 @@ function ScreenerContent() {
         return sortList([...applyFilters(baseList, filters)], sortKey, sortOrder);
     }, [baseList, filters, sortKey, sortOrder]);
 
-    // 비로그인에게는 홈과 같은 PER 조건의 종목을 NCAV 비율 순으로
-    // 짧게 보여 준다. 저장된 개인 필터나 URL 필터가 첫 화면을 빈 화면으로 만들지 않게
-    // 원본 미리보기 목록에서 항상 같은 기준으로 뽑는다.
-    const guestRecommendations = useMemo(() =>
-        sortList(
-            ncavDailyList.list.filter(item => isValuationEligible(item, country) && matchesGuestPer(item)),
-            'ncav_ratio',
-            'desc'
-        ).slice(0, PREVIEW_SIZE),
-        [ncavDailyList.list, country]
-    );
+    // 묶기·복사·공유·결과 해석은 화면에서 볼 수 있는 결과를 함께 사용한다.
+    const accessibleList = useMemo(() => isLoggedIn ? filteredList : filteredList.slice(0, PREVIEW_SIZE), [isLoggedIn, filteredList]);
 
     // 조건 하나만 다르게 걸었을 때 남는 개수 — 서랍의 −N 표기용
     const countWith = useCallback(
@@ -981,7 +928,7 @@ function ScreenerContent() {
 
     // 묶어 보기는 전체 결과를 대상으로 한다 — 페이지를 넘길 때마다 그룹 개수가 변하면
     // "이 전략에 12개"라는 숫자를 믿을 수 없다. 대신 상위 2개 그룹만 펼쳐 DOM을 작게 유지한다.
-    const groups = useMemo(() => buildGroups(filteredList, groupMode), [filteredList, groupMode]);
+    const groups = useMemo(() => buildGroups(accessibleList, groupMode), [accessibleList, groupMode]);
     // 그룹 구성이 달라지면 펼침 상태를 다시 잡는다. groupMode 만 보면 필터를 바꿔 그룹이
     // 통째로 바뀌었을 때 옛 키가 남아 "전부 접힘"이 된다.
     const groupSignature = (groups ?? []).map(g => g.key).join('|');
@@ -1002,33 +949,25 @@ function ScreenerContent() {
             : '',
     };
 
-    // 오늘 조건에 맞은 전체 개수. 비로그인은 목록을 PREVIEW_SIZE 만큼만 받으므로
-    // 받아 온 길이로 세면 "10개 발굴" 이 되어 버린다. 개수는 서버가 따로 세어 주는
-    // meta.matched 를 쓴다 — limit 과 무관한 값이다.
-    const matchedTotal = isLoggedIn
-        ? filteredList.length
-        : (ncavDailyList.total || filteredList.length);
-
-    // 비로그인은 앞 몇 줄만 본다. 목록을 아예 막지 않는 이유는 이 화면이 검색엔진이
-    // 들어오는 문이고, 빈 화면은 색인할 것이 없어서다.
+    const matchedTotal = filteredList.length;
     const previewCapped = !isLoggedIn && matchedTotal > PREVIEW_SIZE;
-    const visibleList = filteredList.slice(0, isLoggedIn ? displayCount : PREVIEW_SIZE);
+    const visibleList = accessibleList.slice(0, displayCount);
     const hasMore = isLoggedIn && !groups && filteredList.length > displayCount;
 
     // 결과 분포 — 지금 화면에 있는 목록 기준. 저PBR·NCAV 결과는 업황이 꺾인 산업 하나로
     // 뒤덮이기 쉬운데, 표를 위에서부터 읽으면 그게 "싼 회사가 많다"로 보인다.
-    const sectorMix = useMemo(() => buildMix(filteredList, sectorOf, idx => MIX_COLORS[idx]), [filteredList]);
+    const sectorMix = useMemo(() => buildMix(accessibleList, sectorOf, idx => MIX_COLORS[idx]), [accessibleList]);
     // 전략도 같은 자리에서 본다. 예전에는 표 위 요약 카드가 따로 세었는데, 분포를 두 군데서
     // 보여 주면 어느 쪽을 읽어야 할지 알 수 없어 한 카드로 합쳤다.
     const strategyMix = useMemo(
         () => buildMix(
-            filteredList,
+            accessibleList,
             i => { const id = primaryStrategyOf(i); return id ? (STRATEGY_LABEL[id] ?? id) : ""; },
             // 색과 폴백 회색은 산점도 점과 같은 값이어야 범례가 성립한다.
             (idx, name) => STRATEGY_HEX_BY_LABEL[name] ?? "#a3a3a3",
             Infinity,
         ),
-        [filteredList]
+        [accessibleList]
     );
 
     // 조건 깔때기 — 어느 단계에서 결과가 확 줄었는지 보여준다
@@ -1060,14 +999,14 @@ function ScreenerContent() {
         activeStrategyIds.size === 1 ? (STRATEGY_HIGHLIGHT[Array.from(activeStrategyIds)[0]] ?? null) : null;
 
     // 목록 복사용 행 (관심 뷰·일반 발굴 목록 공용)
-    const copyRows = useMemo<CopyStock[]>(() => filteredList.map(item => ({
+    const copyRows = useMemo<CopyStock[]>(() => accessibleList.map(item => ({
         name: item.name,
         ticker: item.ticker,
         ncav: item.ncav_ratio,
         pbr: item.pbr,
         per: item.per,
         roe: roeOf(item) || null,
-    })), [filteredList]);
+    })), [accessibleList]);
     const isLoading = !showLikedOnly && (ncavDailyList.state === "pending" || ncavDailyList.state === "init" || ncavDailyList.country !== country);
 
     const returnPath = `/screener${queryString ? `?${queryString}` : ''}`;
@@ -1302,8 +1241,8 @@ function ScreenerContent() {
                             ? '조회 실패'
                             : `${matchedTotal}종목`}
                 </span>}
-                description={isLoggedIn ? "재무 기준과 전략을 조합해 조건에 맞는 종목을 찾아보세요." : "PER 0 초과·20 이하인 종목을 순유동자산 비율이 높은 순으로 보여드립니다."}
-                meta={isLoggedIn && (
+                description="재무 기준과 전략을 조합해 조건에 맞는 종목을 찾아보세요."
+                meta={(
                     isLoading && !showLikedOnly ? (
                         <span className="flex items-center gap-1.5">
                             <Loader2 size={11} className="animate-spin" />
@@ -1319,7 +1258,7 @@ function ScreenerContent() {
                         </>
                     )
                 )}
-                actions={isLoggedIn && <>
+                actions={<>
                     <ScreenerUsageGuide />
                     {scanningInProgress && !showLikedOnly && filterMethod === 'manual' && (
                         <div className="flex items-start gap-2 rounded-lg bg-amber-50 p-3 text-xs font-medium leading-5 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400">
@@ -1330,7 +1269,7 @@ function ScreenerContent() {
                         </div>
                     )}
                 </>}
-                primaryAction={isLoggedIn && <button onClick={handleRefresh} disabled={isLoading || ncavDailyList.refreshing} className={PAGE_ACTION_CLS} title="목록 새로고침" aria-label="목록 새로고침">
+                primaryAction={<button onClick={handleRefresh} disabled={isLoading || ncavDailyList.refreshing} className={PAGE_ACTION_CLS} title="목록 새로고침" aria-label="목록 새로고침">
                         <RefreshCw size={13} className={isLoading || ncavDailyList.refreshing ? "animate-spin" : ""} />
                         <span className="hidden sm:inline">새로고침</span>
                     </button>}
@@ -1412,7 +1351,7 @@ function ScreenerContent() {
                 </div>
             </div>}
 
-            {isLoggedIn && <div className="border-b border-neutral-200 bg-white dark:border-surface-dark-border dark:bg-surface-dark-card">
+            <div className="border-b border-neutral-200 bg-white dark:border-surface-dark-border dark:bg-surface-dark-card">
                 <div className="service-container">
                     <div role="group" aria-label="필터 설정 방식" className={styles.methodTabs}>
                         {([['worldcup', '이상형 월드컵'], ['manual', '직접 필터 설정']] as const).map(([method, label]) => <button
@@ -1432,13 +1371,13 @@ function ScreenerContent() {
                             }} />
                     </div>
                 </div>
-            </div>}
+            </div>
 
             {/* 검색은 상단바에, 전략 조건·정렬·필터는 본문에 둔다. */}
             <div className={cn(
                 "bg-white/95 dark:bg-surface-dark/95",
                 "border-b border-neutral-200 dark:border-surface-dark-border",
-                (!isLoggedIn || filterMethod === 'worldcup') && "hidden"
+                (filterMethod === 'worldcup') && "hidden"
             )}>
                 <div className="service-container">
 
@@ -1446,11 +1385,7 @@ function ScreenerContent() {
                         칩(가변 폭)을 격자(고정 폭)로 바꾼 이유 — 칩은 이름 길이대로 폭이 달라져서
                         종목 수가 매번 다른 위치에 서고, 전략끼리 개수를 비교할 수가 없었다.
                         격자는 이름 위 / 개수 아래로 열을 맞추므로 훑는 것만으로 비교가 된다. */}
-                    {/* 전략별 개수는 비로그인에게 보여 주지 않는다. 목록을 PREVIEW_SIZE 만큼만
-                        받으므로 이 격자가 세는 것은 "오늘 이 전략에 몇 개" 가 아니라 "받아 온
-                        열 줄 중 몇 개" 가 된다. 거짓 숫자를 그리는 것보다 없는 편이 낫다.
-                        검색·정렬은 그대로 둔다 — 받은 열 줄 안에서 정확히 동작한다. */}
-                    {isLoggedIn && <SecondarySection title={`전략 선택 · ${isAllActive ? "전체" : `${activeStrategyIds.size}개 선택`}`} className="my-3">
+                    <SecondarySection title={`전략 선택 · ${isAllActive ? "전체" : `${activeStrategyIds.size}개 선택`}`} className="my-3">
                     <div className="flex w-full items-center gap-2 py-2 sm:py-2.5">
                         <div className="min-w-0 flex-1 flex items-center gap-2 text-left">
                             <span className="min-w-0 truncate text-xs font-bold text-brand-ink">
@@ -1491,7 +1426,7 @@ function ScreenerContent() {
                             />
                         ))}
                     </div>
-                    </SecondarySection>}
+                    </SecondarySection>
 
                     {/* 필터·관심 툴바 */}
                     <div className="flex flex-col gap-2 pb-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2 sm:pb-3">
@@ -1503,7 +1438,7 @@ function ScreenerContent() {
                         <button
                             type="button"
                             aria-expanded={filterOpen}
-                            onClick={() => isLoggedIn ? setFilterOpen(o => !o) : requireLogin()}
+                            onClick={() => setFilterOpen(o => !o)}
                             className={cn(
                                 "shrink-0 flex min-h-[44px] items-center justify-center gap-1.5 px-2.5 py-2 rounded-lg text-sm font-semibold border transition-colors whitespace-nowrap sm:px-3",
                                 filterOpen
@@ -1515,7 +1450,6 @@ function ScreenerContent() {
                         >
                             <SlidersHorizontal size={12} />
                             필터
-                            {!isLoggedIn && <Lock size={10} className="opacity-60" />}
                             {activeFilterCount > 0 && (
                                 <span className={cn(
                                     "px-1.5 rounded-full text-xs font-black",
@@ -2053,7 +1987,7 @@ function ScreenerContent() {
                     </div>
                 )}
 
-                {!isLoading && (isLoggedIn ? filteredList.length : guestRecommendations.length) === 0 && (
+                {!isLoading && filteredList.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-20 text-center gap-4">
                         <div className="p-4 bg-surface-canvas dark:bg-surface-dark-card rounded-2xl">
                             {showLikedOnly
@@ -2071,11 +2005,6 @@ function ScreenerContent() {
                                 <>
                                     <p className="text-sm font-bold text-neutral-700 dark:text-neutral-300">미국 종목 데이터 수집 전입니다</p>
                                     <p className="text-xs text-neutral-400 mt-1">수집이 시작되면 이곳에 발굴 결과가 표시됩니다.</p>
-                                </>
-                            ) : !isLoggedIn ? (
-                                <>
-                                    <p className="text-sm font-bold text-neutral-700 dark:text-neutral-300">오늘은 추천 기준을 만족한 종목이 없습니다</p>
-                                    <p className="text-xs text-neutral-400 mt-1">다음 스캔 결과에서 다시 확인해 주세요.</p>
                                 </>
                             ) : showLikedOnly ? (
                                 <>
@@ -2110,46 +2039,17 @@ function ScreenerContent() {
                     </div>
                 )}
 
-                {!isLoading && (isLoggedIn ? filteredList.length > 0 : guestRecommendations.length > 0) && (
+                {!isLoading && filteredList.length > 0 && (
                     <>
-                    {!isLoggedIn ? (
-                        <section className="w-full">
-                            <div className="mb-3 flex items-baseline justify-between gap-3">
-                                <h2 className="text-sm font-black text-neutral-900 dark:text-white">PER 조건에 맞는 발굴 종목 {guestRecommendations.length}개</h2>
-                                {formattedDate && <span className="text-xs font-mono text-neutral-400">{formattedDate}</span>}
-                            </div>
-                            <div className="mb-3 flex flex-wrap items-center gap-2">{comparisonControls}</div>
-                            <div className="divide-y divide-neutral-200 dark:divide-border-subtle-dark lg:grid lg:grid-cols-2 lg:gap-x-8 lg:divide-y-0 xl:grid-cols-3">
-                                {guestRecommendations.map((item: any, index) => (
-                                    <div key={item.ticker}>
-                                        {compareMode && <label className="flex min-h-11 items-center gap-2 text-sm"><ComparisonCheckbox choice={comparisonFor(item)} name={item.name} />비교 선택</label>}
-                                        <GuestRecommendationCard item={item} rank={index + 1} onClick={handleStockClick} />
-                                    </div>
-                                ))}
-                            </div>
-                            <p className="mt-4 text-center text-xs leading-relaxed text-neutral-400 dark:text-neutral-500">
-                                PER 0 초과·20 이하인 종목 중 순유동자산 비율이 높은 순으로 최대 10개를 보여드립니다.
-                            </p>
-                            <button
-                                onClick={requireLogin}
-                                className="mx-auto mt-5 flex items-center gap-1.5 text-xs font-bold text-brand-ink hover:text-brand-ink-hover"
-                            >
-                                전체 종목과 상세 조건 보기 <ChevronRight size={13} />
-                            </button>
-                        </section>
-                    ) : (
                     <Tabs.Root value={viewMode} onValueChange={value => setViewMode(value as ViewMode)}>
                         {/* 결과 분포 — 목록을 늘어놓기 전에 "무엇을 받았는지"를 먼저 보여준다.
                             업종과 전략을 한 카드에 둔다: 같은 목록을 두 각도로 자른 것이라
                             나란히 놓아야 "이 업황 하나에 이 전략 하나" 같은 쏠림이 눈에 띈다. */}
-                        {/* 업종·전략 비중도 같은 이유로 로그인한 사람에게만 보인다.
-                            열 줄로 만든 비중은 "오늘의 쏠림" 이 아니라 "그 열 줄의 쏠림" 이라,
-                            여기서 고르면 그 업황에 거는 셈이라는 경고까지 거짓이 된다. */}
                         {showInsights && (sectorMix || strategyMix) && (
                             <div className="mb-3 rounded-xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card px-3.5 py-3">
                                 <div className="flex items-baseline justify-between gap-2 mb-2">
                                     <span className="text-xs font-extrabold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">결과 분포</span>
-                                    <span className="text-xs font-mono text-neutral-400 tabular-nums shrink-0">{filteredList.length}종목</span>
+                                    <span className="text-xs font-mono text-neutral-400 tabular-nums shrink-0">{accessibleList.length}종목</span>
                                 </div>
                                 <div className="flex flex-col gap-3">
                                     {sectorMix && <MixRow label="업종" mix={sectorMix} />}
@@ -2190,12 +2090,12 @@ function ScreenerContent() {
                             </button>)}</div>
                         </div>}
                         <SecondarySection title="묶기 · 복사 · 공유" className="mb-3">
-                        <ResultShare disabled={isLoading || !(isLoggedIn ? filteredList.length : guestRecommendations.length)}
+                        <ResultShare disabled={isLoading || !filteredList.length}
                         getSnapshot={() => screenerSnapshot(
-                            isLoggedIn ? filteredList : guestRecommendations,
+                            accessibleList,
                             `/screener${queryString ? `?${queryString}` : ''}`,
                             ncavDailyList.scanDate, country,
-                            isLoggedIn ? activeConditions.map(condition => condition.label) : ['PER 0 초과·20 이하', '순유동자산 비율 순 상위 종목']
+                            activeConditions.map(condition => condition.label)
                         )} />
                         <div className="flex flex-nowrap items-center gap-2 overflow-x-auto whitespace-nowrap">
                             <div role="group" aria-label="결과 묶기" className="shrink-0 flex items-center gap-0.5 p-0.5 rounded-lg bg-surface-canvas dark:bg-surface-dark-hover">
@@ -2233,7 +2133,7 @@ function ScreenerContent() {
                         {/* 지표 설명과 산점도는 필요할 때만 펼친다 — 목록을 훑는 흐름을 막지 않는다. */}
                         {showInsights && <>
                             <TermStrip />
-                            <ResultSummary list={filteredList} />
+                            <ResultSummary list={accessibleList} />
                         </>}
 
                         <Tabs.List aria-label="결과 보기 방식" className={styles.viewTabs}>
@@ -2310,7 +2210,7 @@ function ScreenerContent() {
                                     {matchedTotal - PREVIEW_SIZE}개 종목이 더 있습니다
                                 </p>
                                 <p className="mt-1.5 text-xs text-neutral-500 dark:text-neutral-400">
-                                    로그인하면 전체 목록과 필터·정렬을 이용할 수 있습니다.
+                                    필터·정렬은 계속 이용할 수 있습니다. 로그인하면 전체 결과와 관심종목 저장·팩터 실험실을 이용할 수 있습니다.
                                 </p>
                                 <button
                                     onClick={requireLogin}
@@ -2332,7 +2232,6 @@ function ScreenerContent() {
                             </div>
                         )}
                     </Tabs.Root>
-                    )}
                     </>
                 )}
             </div>
@@ -2341,12 +2240,6 @@ function ScreenerContent() {
         </div>
         </Tooltip.Provider>
     );
-}
-
-function ScreenerEntry() {
-    const { status } = useSession();
-    if (status === "loading") return <div role="status" className="flex min-h-64 items-center justify-center gap-2 text-sm"><Loader2 className="animate-spin" size={18} />계정을 확인하는 중…</div>;
-    return status === "authenticated" ? <ScreenerContent /> : <GuestDiscovery />;
 }
 
 // =========================================================================
@@ -2359,7 +2252,7 @@ export default function ScreenerPage() {
                 <Loader2 className="animate-spin text-brand-ink" size={24} />
             </div>
         }>
-            <ScreenerEntry />
+            <ScreenerContent />
         </Suspense>
     );
 }
