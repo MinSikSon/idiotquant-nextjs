@@ -100,6 +100,23 @@ test('계좌 연속 선택은 URL만 갱신하고 이전 렌더가 선택을 되
 });
 
 for (const country of ['KR', 'US']) {
+    for (const oldValue of [true, false]) {
+        test(`${country}: 계좌 전환 조회 실패 시 이전 계좌의 ${oldValue ? 'ON' : 'OFF'}를 남기지 않는다`, () => {
+            const slice = load('../lib/features/algorithmTrade/algorithmTradeSlice.tsx').algorithmTradeSlice;
+            const fetch = slice.actions.reqFetchTradingStatus;
+            const oldArg = { country, key: 'A' }, newArg = { country, key: 'B' };
+            let state = slice.reducer(undefined, fetch.pending('old', oldArg));
+            state = slice.reducer(state, fetch.fulfilled({ country, value: oldValue }, 'old', oldArg));
+            assert.equal(state.tradingStatus[country], oldValue);
+            state = slice.reducer(state, fetch.pending('new', newArg));
+            assert.equal(state.tradingStatus[country], null);
+            state = slice.reducer(state, fetch.rejected(new Error('unavailable'), 'new', newArg));
+            assert.equal(state.tradingStatus[country], null);
+            assert.equal(state.tradingStatus.state, 'rejected');
+            state = slice.reducer(state, fetch.fulfilled({ country, value: oldValue }, 'old', oldArg));
+            assert.equal(state.tradingStatus[country], null);
+        });
+    }
     test(`${country}: 이전 계좌의 자동매매 조회·변경 응답을 무시한다`, () => {
         const slice = load('../lib/features/algorithmTrade/algorithmTradeSlice.tsx').algorithmTradeSlice;
         const fetch = slice.actions.reqFetchTradingStatus;

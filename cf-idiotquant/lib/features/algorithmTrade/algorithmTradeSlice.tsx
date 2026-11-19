@@ -524,6 +524,7 @@ export const algorithmTradeSlice = createAppSlice({
             {
                 pending: (state, action) => {
                     state.tradingStatus.requestIds[action.meta.arg.country] = action.meta.requestId;
+                    state.tradingStatus[action.meta.arg.country] = null;
                     state.tradingStatus.state = "pending";
                 },
                 fulfilled: (state, action) => {
