@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import {
   LayoutDashboard, ChevronRight, MapPin,
   Wallet, Coins, Percent,
-  Database, User, ClipboardList, Power, Activity, KeyRound,
+  Database, User, ClipboardList, Power, Bot, KeyRound,
   ArrowDownToLine, ArrowUpFromLine, ArrowLeftRight, Landmark,
 } from "lucide-react";
 import TradingAccountManager from "@/components/balance/tradingAccountManager";
@@ -448,10 +448,10 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
   // 한 번 손보려면 종목관리 → 조건 → 현황을 오가야 했다.
   // 각 항목은 묶음의 첫 패널로 스크롤한다(패널 자체의 id 는 그대로라 링크는 살아 있다).
   const navSections: NavSection[] = [
-    { id: "section-kpi", label: "자산", icon: <Wallet size={13} /> },
-    ...(hasCapital ? [{ id: "section-stocks", label: "자동매매", icon: <Activity size={13} /> }] : []),
-    { id: "section-orders", label: "주문내역", icon: <ClipboardList size={13} /> },
-    { id: "section-account", label: "계정", icon: <KeyRound size={13} /> },
+    { id: "section-kpi", label: "자산", icon: <Wallet size={14} /> },
+    ...(hasCapital ? [{ id: "section-stocks", label: "자동매매", icon: <Bot size={14} /> }] : []),
+    { id: "section-orders", label: "주문내역", icon: <ClipboardList size={14} /> },
+    { id: "section-account", label: "계정", icon: <KeyRound size={14} /> },
   ];
 
   return (

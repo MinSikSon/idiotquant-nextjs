@@ -641,6 +641,7 @@ html:has(.navigation-header [data-page-tabs]) { --navigation-h: 92px; }
 
 [data-page-tabs] :is(.navigation-strategy-tabs, [data-compact-tabs]) button { border-width: 0 0 2px; border-bottom-color: transparent; background: transparent; box-shadow: none; }
 [data-page-tabs] [data-compact-tabs] button { min-width: 96px; }
+[data-page-tabs] [data-compact-tabs][data-balance-tabs] button { min-width: 0; }
 [data-page-tabs] :is(.navigation-strategy-tabs, [data-compact-tabs]) :is([aria-pressed="true"], [aria-current="page"]) { border-bottom-color: rgb(var(--brand-ink)); color: rgb(var(--brand-ink)); }
 
 [data-page-secondary-actions] > button > span.hidden { display: inline; }

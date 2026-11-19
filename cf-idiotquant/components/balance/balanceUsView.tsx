@@ -8,7 +8,7 @@ import {
   Globe, ChevronRight, DollarSign, Building2,
   Wallet, TrendingUp, BarChart3, RefreshCw,
   AlertCircle, Database,
-  PieChart, ClipboardList, TrendingDown, Power, Activity, KeyRound,
+  PieChart, ClipboardList, TrendingDown, Power, Bot, KeyRound,
   ArrowDownToLine, ArrowUpFromLine, ArrowLeftRight, Landmark, Banknote, Layers, Coins,
 } from "lucide-react";
 import TradingAccountManager from "@/components/balance/tradingAccountManager";
@@ -435,10 +435,10 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
   // 섹션 네비게이션 — 8개를 4개로 묶는다(국내 화면과 같은 기준). "내 돈이 지금 어떤가"(자산)와
   // "기계가 뭘 하고 있나"(자동매매)를 가른다. 각 항목은 묶음의 첫 패널로 스크롤한다.
   const navSections: NavSection[] = [
-    { id: "section-kpi", label: "자산", icon: <Wallet size={13} /> },
-    ...(hasCapital ? [{ id: "section-stocks", label: "자동매매", icon: <Activity size={13} /> }] : []),
-    { id: "section-orders", label: "해외주문", icon: <ClipboardList size={13} /> },
-    { id: "section-account", label: "계정", icon: <KeyRound size={13} /> },
+    { id: "section-kpi", label: "자산", icon: <Wallet size={14} /> },
+    ...(hasCapital ? [{ id: "section-stocks", label: "자동매매", icon: <Bot size={14} /> }] : []),
+    { id: "section-orders", label: "해외주문", icon: <ClipboardList size={14} /> },
+    { id: "section-account", label: "계정", icon: <KeyRound size={14} /> },
   ];
 
   return (
