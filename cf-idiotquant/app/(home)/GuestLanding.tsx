@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
+import dynamic from 'next/dynamic';
 import { useWatchlistSample } from '@/components/home-watchlist';
 import { StockLogo } from '@/components/stockLogo';
 import { scanDateLabel } from '@/lib/features/stockLikes/changes';
@@ -10,6 +11,7 @@ import { scanValuationSummary } from '@/lib/utils/valuationSummary';
 import { ArrowRight, ChevronDown } from 'lucide-react';
 import { useStockSearchModal } from '@/components/stock-search-provider';
 
+const HeroArt = dynamic(() => import('./HeroArt'), { ssr: false });
 const choice = 'group flex min-w-0 flex-col items-center justify-between gap-1 rounded-xl px-2 pb-3 pt-1 text-center font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink';
 const choiceArt = 'h-28 w-full object-contain motion-safe:transition-transform motion-safe:group-hover:-translate-y-1 motion-safe:group-active:translate-y-0 motion-safe:group-active:scale-95 sm:h-36';
 
@@ -17,14 +19,17 @@ export default function GuestLanding() {
   const { openSearch } = useStockSearchModal();
   return <div className="mx-auto w-full max-w-5xl space-y-5 px-4 py-3 text-neutral-900 dark:text-neutral-100 sm:space-y-8 sm:px-6 sm:py-8">
     <div className="grid items-start gap-4 md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] md:gap-6">
-      <section aria-labelledby="home-title" className="rounded-2xl bg-white p-4 dark:bg-surface-dark-card sm:p-6">
+      <section aria-labelledby="home-title" className="relative isolate rounded-2xl bg-[#faf4e9] p-4 dark:bg-[#26221f] sm:p-6">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-2xl [mask-image:linear-gradient(to_bottom,transparent_2.25rem,black_4rem,black_90%,transparent)]">
+          <HeroArt />
+        </div>
         <h1 id="home-title" className="text-balance break-keep text-center text-2xl font-semibold leading-tight tracking-tight">종목을 어떻게 찾을까요?</h1>
         <div className="mt-3 grid grid-cols-2 gap-3 sm:mt-4 sm:gap-4">
-          <button type="button" onClick={openSearch} className={`${choice} bg-[#f8eee8] text-[#563626] hover:bg-[#f3e4db] dark:bg-[#33292b] dark:text-[#ffe3d3] dark:hover:bg-[#3c3032]`}>
+          <button type="button" onClick={openSearch} className={`${choice} bg-[#f8eee8]/80 text-[#563626] hover:bg-[#f3e4db]/90 dark:bg-[#392c2d]/75 dark:text-[#ffe3d3] dark:hover:bg-[#443334]/90`}>
             <Image src="/images/onboarding/search-company.webp" width={480} height={480} alt="" unoptimized loading="eager" className={choiceArt} />
             <span>종목 검색</span>
           </button>
-          <Link href="/screener" className={`${choice} bg-[#e7f1eb] text-[#244b3e] hover:bg-[#dcebe3] dark:bg-[#24352f] dark:text-[#d9f4e7] dark:hover:bg-[#2b4239]`}>
+          <Link href="/screener" className={`${choice} bg-[#e7f1eb]/80 text-[#244b3e] hover:bg-[#dcebe3]/90 dark:bg-[#243b31]/75 dark:text-[#d9f4e7] dark:hover:bg-[#2b4239]/90`}>
             <Image src="/images/onboarding/discover-stocks.webp" width={480} height={480} alt="" unoptimized loading="eager" className={choiceArt} />
             <span>종목 발굴</span>
           </Link>
