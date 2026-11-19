@@ -107,7 +107,8 @@ export function AccountSelector({ country, balanceKey, setBalanceKey, kakaoMembe
 
   if (!isMaster) return null;
   const loading = accountList?.country !== country;
-  const list = loading ? [] : accountList.accounts.filter(account => account.is_active);
+  // 잔고 조회는 자동매매 활성 여부와 무관하게 해당 시장의 등록 계정을 제공한다.
+  const list = loading ? [] : accountList.accounts;
   const members = Array.isArray(kakaoMemberList?.list) ? kakaoMemberList.list : [];
   const selected = list.some(account => String(account.user_id) === balanceKey);
   return (
@@ -126,7 +127,7 @@ export function AccountSelector({ country, balanceKey, setBalanceKey, kakaoMembe
         >
           {!selected && (
             <option value="" disabled>
-              {loading ? "계좌 목록 로딩 중..." : list.length === 0 ? "운용 중인 계좌가 없습니다" : "운용 계좌를 선택하세요"}
+              {loading ? "계좌 목록 로딩 중..." : list.length === 0 ? "등록된 계좌가 없습니다" : "조회 계좌를 선택하세요"}
             </option>
           )}
           {list.map(account => {

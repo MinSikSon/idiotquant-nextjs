@@ -38,7 +38,7 @@ function setup() {
     return { render: (overrides = {}) => output.exports.AccountSelector({ ...props, ...overrides }), effects, requests };
 }
 
-test('선택 목록은 해당 시장의 운용 대상 계정만 표시하며 회원 이름을 연결한다', async () => {
+test('선택 목록은 자동매매 상태와 무관하게 해당 시장의 등록 계정을 표시하며 회원 이름을 연결한다', async () => {
     const h = setup();
     assert.equal(elements(h.render(), 'select')[0].props.disabled, true);
     h.effects.shift()!();
@@ -47,10 +47,11 @@ test('선택 목록은 해당 시장의 운용 대상 계정만 표시하며 회
     await Promise.resolve();
     const tree = h.render();
     const options = elements(tree, 'option');
-    assert.deepEqual(options.map(option => option.props.value), ['', 'active', 'new']);
-    assert.equal(options[1].children[0], '운용 회원 (active)');
+    assert.deepEqual(options.map(option => option.props.value), ['active', 'inactive', 'new']);
+    assert.equal(options[0].children[0], '운용 회원 (active)');
+    assert.equal(options[1].children[0], '중단 회원 (inactive)');
     assert.equal(options[2].children[0], 'new');
-    assert.equal(elements(tree, 'select')[0].props.value, '');
+    assert.equal(elements(tree, 'select')[0].props.value, 'inactive');
     assert.equal(elements(h.render({ balanceKey: 'active' }), 'select')[0].props.value, 'active');
 });
 
@@ -69,15 +70,35 @@ test('시장 변경 시 이전 목록과 늦게 도착한 응답을 표시하지
     assert.deepEqual(elements(h.render({ country: 'KR' }), 'option').map(option => option.props.value), ['', 'kr']);
 });
 
-test('운용 계정이 없으면 빈 상태를 표시하고 선택을 비활성화한다', async () => {
+test('등록 계정이 없으면 빈 상태를 표시하고 선택을 비활성화한다', async () => {
     const h = setup();
     h.render();
     h.effects.shift()!();
-    h.requests[0].resolve([{ user_id: 'inactive', is_active: false }]);
+    h.requests[0].resolve([]);
     await Promise.resolve();
     const tree = h.render();
     assert.equal(elements(tree, 'select')[0].props.disabled, true);
-    assert.equal(elements(tree, 'option')[0].children[0], '운용 중인 계좌가 없습니다');
+    assert.equal(elements(tree, 'option')[0].children[0], '등록된 계좌가 없습니다');
+});
+
+test('국내 자동매매가 꺼진 syc 계정도 잔고 조회 대상으로 선택할 수 있다', async () => {
+    const h = setup();
+    let selected = '';
+    const props = { country: 'KR', balanceKey: 'syc73803842', setBalanceKey: (key: string) => { selected = key; } };
+    h.render(props);
+    h.effects.shift()!();
+    assert.equal(h.requests[0].country, 'KR');
+    const accounts = [{ user_id: 'syc73803842', is_active: false }];
+    h.requests[0].resolve(accounts);
+    await Promise.resolve();
+    const tree = h.render(props);
+    const select = elements(tree, 'select')[0];
+    assert.equal(select.props.disabled, false);
+    assert.equal(select.props.value, 'syc73803842');
+    assert.deepEqual(elements(tree, 'option').map(option => option.props.value), ['syc73803842']);
+    select.props.onChange({ target: { value: 'syc73803842' } });
+    assert.equal(selected, 'syc73803842');
+    assert.equal(accounts[0].is_active, false);
 });
 
 test('마스터가 아니면 목록을 조회하거나 표시하지 않는다', () => {
