@@ -16,7 +16,7 @@ export function ResearchPreview() {
 
     return (
         <section aria-label="서비스 미리보기" className={styles.research}>
-            <div className={styles.steps} aria-label="미리보기 단계">
+            <div className={styles.steps} role="group" aria-label="미리 볼 기능">
                 {STEPS.map(({ label, icon: Icon }, index) => (
                     <button key={label} type="button" aria-pressed={step === index} onClick={() => setStep(index)}>
                         <Icon size={16} aria-hidden="true" />{label}
@@ -24,7 +24,7 @@ export function ResearchPreview() {
                 ))}
             </div>
             <div className={styles.notebook}>
-                <div className={styles.noteHeader}><span>서비스 미리보기</span><span className={styles.sample}>가상 종목 · 예시</span></div>
+                <div className={styles.noteHeader}><span className={styles.sample}>가상 종목으로 체험</span></div>
                 <div className={styles.demo}>
                     {step === 0 && <>
                         <div className={styles.filterLabel}><SlidersHorizontal size={15} aria-hidden="true" />발굴 조건</div>
@@ -39,7 +39,7 @@ export function ResearchPreview() {
                     {step === 2 && <>
                         <div className={styles.filterLabel}><Heart size={15} aria-hidden="true" />관심종목</div>
                         <div className={styles.company}><span className={styles.companyIcon}>A</span><div><strong>예시기업 A</strong><span>{saved ? "저장됨" : "하트를 눌러 저장"}</span></div><button type="button" className={styles.save} aria-label="예시 관심종목 저장" aria-pressed={saved} onClick={() => setSaved(!saved)}><Heart size={22} fill={saved ? "currentColor" : "none"} /></button></div>
-                        <p className={styles.savedNote} aria-live="polite">{saved ? "실제 저장은 로그인 후 가능합니다." : ""}</p>
+                        <p className={styles.savedNote} aria-live="polite">{saved ? "관심종목을 계정에 저장하려면 로그인하세요." : ""}</p>
                     </>}
                 </div>
             </div>

@@ -16,37 +16,37 @@ import { STRATEGY_PRESETS_CLIENT } from '@/lib/constants/strategies';
 const STEPS = [
   {
     n: '1',
-    title: '기준을 숫자로 적는다',
-    body: '"싸다" 를 "PBR 0.5 미만" 처럼 계산할 수 있는 문장으로 바꿉니다. 이 한 줄이 퀀트의 전부입니다 — 숫자로 못 적으면 규칙이 아니라 취향입니다.',
+    title: '측정할 기준을 정합니다',
+    body: 'PBR이 0.5배 미만인 종목처럼, 재무제표와 시세로 판단할 수 있는 조건을 정합니다.',
   },
   {
     n: '2',
-    title: '모든 종목에 같은 잣대를 댄다',
-    body: '아는 회사부터 보지 않고 코스피·코스닥 전 종목에 같은 기준을 댑니다. 사람이 고르면 이름을 아는 회사만 후보가 되는데, 그 편향이 곧 손실입니다.',
+    title: '같은 기준으로 종목을 거릅니다',
+    body: '코스피·코스닥 종목의 PBR을 같은 기준으로 비교해 조건에 맞는 목록을 만듭니다.',
   },
   {
     n: '3',
-    title: '남은 것만 들여다본다',
-    body: '2,000곳이 수십 곳으로 줄어든 뒤부터 사람이 할 일이 시작됩니다. 왜 쌌는지, 계속 쌀 이유가 있는지는 규칙이 아니라 사람이 판단합니다.',
+    title: '조건에 맞는 기업을 살펴봅니다',
+    body: '낮은 PBR이 적자나 부채 증가와 함께 나타났는지 재무제표에서 확인합니다.',
   },
 ];
 
 const LIMITS = [
   {
-    title: '과거에 통한 규칙일 뿐이다',
-    body: '백테스트 성적은 그 규칙이 과거에 통했다는 뜻이지, 앞으로도 통한다는 보증이 아닙니다. 잘 통하던 전략이 몇 년씩 시장에 뒤처지는 구간이 실제로 있습니다.',
+    title: '과거 수익률과 미래 수익률은 다를 수 있습니다',
+    body: '백테스트는 선택한 기간의 데이터로 전략을 검증합니다. 같은 전략도 기간이 달라지면 시장 수익률에 뒤처질 수 있습니다.',
   },
   {
-    title: '싼 데는 이유가 있다',
-    body: '적자가 이어지거나 상장폐지 위험이 있는 회사도 숫자만 보면 기준을 통과합니다. 그래서 발굴 결과에는 상장폐지 위험도와 거래 상태를 함께 붙여 둡니다.',
+    title: '적자 기업도 가격 조건을 통과할 수 있습니다',
+    body: '낮은 PBR만으로는 연속 적자나 거래정지 위험을 판단하기 어렵습니다. 발굴 목록의 거래 상태와 분석 화면의 위험 점검을 함께 확인하세요.',
   },
   {
-    title: '재무제표는 늦게 온다',
-    body: '분기 보고서는 분기가 끝나고 한참 뒤에 나옵니다. 어제 나빠진 회사가 오늘 기준을 통과할 수 있다는 뜻입니다.',
+    title: '공시에는 시차가 있습니다',
+    body: '기업은 분기가 끝난 뒤에 분기 보고서를 냅니다. 새 보고서가 나오기 전에는 최근 실적 변화가 재무 필터에 반영되지 않을 수 있습니다.',
   },
   {
-    title: '작은 회사는 사고팔기가 어렵다',
-    body: '저평가 기준에는 소형주가 많이 걸립니다. 거래량이 적으면 원하는 값에 체결되지 않아, 화면의 수익률과 실제 수익률이 벌어집니다.',
+    title: '거래가 적으면 원하는 가격에 체결하기 어렵습니다',
+    body: '백테스트에서 가정한 가격과 실제 체결 가격이 달라지면 투자 수익률도 달라집니다.',
   },
 ];
 
@@ -54,14 +54,14 @@ const TOOLS = [
   {
     href: '/screener?mincap=500',
     icon: Filter,
-    title: '퀀트 스크리너로 오늘 걸린 종목 보기',
-    body: '아홉 가지 기준을 코스피·코스닥 전 종목에 매일 적용한 결과를 가입 없이 확인하세요.',
+    title: '종목 발굴',
+    body: '재무 기준에 맞는 국내·미국 종목을 찾습니다.',
   },
   {
     href: '/analyze',
     icon: Search,
-    title: '종목 하나를 재무로 뜯어보기',
-    body: 'NCAV·PBR·PER·ROE와 목표주가(DCF·RIM·그레이엄), 상장폐지 위험도까지 한 화면에서.',
+    title: '종목 분석',
+    body: '종목별 재무제표, 적정주가 추정치, 상장폐지 위험 신호를 확인합니다.',
   },
   {
     href: '/calculator',
@@ -78,28 +78,19 @@ export default function QuantPage() {
 
         {/* ── 머리 ── */}
         <header>
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-brand-ink">
-            Quant Investing
-          </p>
           <h1 className="mt-3 text-[26px] sm:text-[38px] font-black leading-[1.3] text-neutral-900 dark:text-white break-keep">
-            퀀트 투자란? 감이 아니라 <span className="text-brand-ink">숫자 규칙</span>으로 종목을 고르는 방법
+            퀀트 투자란?
           </h1>
           <p className="mt-5 text-[15px] sm:text-base leading-[1.85] text-neutral-600 dark:text-neutral-300 break-keep">
-            퀀트(quant)는 정량(quantitative)의 줄임말입니다. 퀀트 투자는 <strong className="font-bold text-neutral-900 dark:text-white">
-            숫자로 적을 수 있는 기준을 먼저 정하고, 그 기준을 모든 종목에 똑같이 적용해</strong> 후보를 추리는
-            방법입니다. 사람이 종목을 고르면 아는 회사부터 보게 되지만, 규칙은 이름을 모르는 회사도
-            똑같이 셉니다. 이 글에서는 퀀트 투자의 절차와 대표 전략의 기준식, 그리고 퀀트가 못 하는
-            일까지 정리합니다.
-          </p>
-          <p className="mt-4 text-[13px] text-neutral-400 dark:text-neutral-500">
-            읽는 데 5분 · 코스피·코스닥 기준
+            퀀트 투자는 재무지표나 주가처럼 측정할 수 있는 수치로 투자 기준을 정하는 방법입니다.
+            예를 들어 코스피·코스닥 종목에 같은 PBR 기준을 적용해 조사할 기업을 추릴 수 있습니다.
           </p>
         </header>
 
         {/* ── 절차 ── */}
         <section className="mt-14">
           <h2 className="text-[20px] sm:text-[26px] font-black text-neutral-900 dark:text-white break-keep">
-            퀀트 투자는 세 단계입니다
+            재무 기준으로 종목 고르기
           </h2>
           <div className="mt-6 grid gap-3">
             {STEPS.map(s => (
@@ -124,8 +115,7 @@ export default function QuantPage() {
             대표 퀀트 주식 전략 {STRATEGY_PRESETS_CLIENT.length}가지
           </h2>
           <p className="mt-3 text-[14px] leading-[1.85] text-neutral-600 dark:text-neutral-300 break-keep">
-            아래 기준식은 IdiotQuant 스크리너가 <strong className="font-bold text-neutral-900 dark:text-white">실제로 쓰는 그 조건</strong>입니다.
-            같은 기준을 매일 아침 코스피·코스닥 전 종목에 적용합니다.
+            IdiotQuant 종목 발굴에서 선택할 수 있는 전략입니다.
           </p>
 
           {/* 표가 아니라 목록이다. 세 칸짜리 표는 390px 화면에서 마지막 칸이 밖으로
@@ -149,7 +139,7 @@ export default function QuantPage() {
             href="/screener?mincap=500"
             className="mt-5 inline-flex items-center gap-2 rounded-xl bg-brand hover:bg-brand-hover px-5 py-3 text-[14px] font-bold text-white transition-colors"
           >
-            오늘 이 기준에 걸린 종목 보기
+            종목 발굴에서 기준 적용하기
             <ArrowRight size={15} />
           </Link>
         </section>
@@ -157,12 +147,8 @@ export default function QuantPage() {
         {/* ── 한계 ── */}
         <section className="mt-14">
           <h2 className="text-[20px] sm:text-[26px] font-black text-neutral-900 dark:text-white break-keep">
-            퀀트 투자가 못 하는 일
+            재무 기준을 쓸 때 주의할 점
           </h2>
-          <p className="mt-3 text-[14px] leading-[1.85] text-neutral-600 dark:text-neutral-300 break-keep">
-            규칙이 사람보다 나은 것은 <strong className="font-bold text-neutral-900 dark:text-white">한결같다</strong>는 점뿐입니다.
-            다음 네 가지는 규칙으로 해결되지 않으니, 스크리너 결과를 매수 목록이 아니라 조사 목록으로 보세요.
-          </p>
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
             {LIMITS.map(l => (
               <div key={l.title} className="rounded-2xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card p-4 sm:p-5">
@@ -176,7 +162,7 @@ export default function QuantPage() {
         {/* ── 시작하기 ── */}
         <section className="mt-14">
           <h2 className="text-[20px] sm:text-[26px] font-black text-neutral-900 dark:text-white break-keep">
-            퀀트 투자 시작하기
+            관련 도구
           </h2>
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
             {TOOLS.map(t => {
@@ -214,8 +200,7 @@ export default function QuantPage() {
         </section>
 
         <p className="mt-12 text-[11.5px] leading-relaxed text-neutral-400 dark:text-neutral-500 break-keep">
-          본 페이지는 투자 참고 목적의 정보이며 특정 종목의 매수·매도를 권유하지 않습니다.
-          투자 판단과 그 결과는 투자자 본인에게 있습니다.
+          이 글은 투자 참고용입니다. 투자 결정은 이용자 본인의 책임입니다.
         </p>
       </article>
     </div>

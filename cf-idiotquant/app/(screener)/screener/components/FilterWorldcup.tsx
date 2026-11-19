@@ -86,13 +86,10 @@ export function FilterWorldcup({ initialAnswers = [], country, hasTradingAmount,
             </div>
             <details key={step} className="mt-3 border-t border-neutral-200 dark:border-surface-dark-border">
                 <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-xs text-neutral-500 focus-visible:outline-brand-ink dark:text-neutral-400">선택 기준 자세히 <span aria-hidden="true">＋</span></summary>
-                <div className="pb-3 text-sm leading-relaxed text-neutral-500 dark:text-neutral-400">
-                    <p>{round.context}</p>
-                    {(['a', 'b'] as const).map(choice => <p key={choice} className="mt-3"><strong className="font-medium text-neutral-700 dark:text-neutral-200">{round[choice].value}</strong> · {round[choice].description} {round[choice].tradeoff}</p>)}
-                </div>
+                <p className="pb-3 text-sm leading-relaxed text-neutral-500 dark:text-neutral-400">{round.context}</p>
             </details>
         </> : <>
-            <h2 ref={heading} tabIndex={-1} className={styles.question}>나의 투자 기준이 완성됐어요.</h2>
+            <h2 ref={heading} tabIndex={-1} className={styles.question}>적용할 필터</h2>
             <dl className="divide-y divide-neutral-200 border-y border-neutral-200 dark:divide-surface-dark-border dark:border-surface-dark-border">
                 {rounds.map((item, index) => {
                     const answer = effectiveAnswers[index];
@@ -108,22 +105,22 @@ export function FilterWorldcup({ initialAnswers = [], country, hasTradingAmount,
                 <p className="text-xs text-neutral-500 dark:text-neutral-400">현재 목록에 이 기준을 적용하면</p>
                 <p className="mt-1 text-2xl font-bold tracking-tight text-brand-ink">{loading ? '데이터 확인 중…' : `${previewCount(proposed)}종목`}</p>
             </div>
-            {proposed.minTrAmt > 0 && country === 'KR' && <p className="mb-3 text-xs text-neutral-500 dark:text-neutral-400">거래대금이 누락된 국내 종목은 기존 필터 기준에 따라 목록에 남을 수 있습니다.</p>}
-            <button type="button" disabled={loading} onClick={() => onApply(proposed, effectiveAnswers)} className="min-h-12 w-full rounded bg-brand-ink px-4 py-3 text-sm font-semibold text-white hover:bg-brand-ink-hover dark:text-neutral-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink disabled:opacity-40">이 조건 적용하고 후보 보기 →</button>
+            {proposed.minTrAmt > 0 && country === 'KR' && <p className="mb-3 text-xs text-neutral-500 dark:text-neutral-400">거래대금 자료가 없는 국내 종목은 하한을 적용해도 목록에 남을 수 있습니다.</p>}
+            <button type="button" disabled={loading} onClick={() => onApply(proposed, effectiveAnswers)} className="min-h-12 w-full rounded bg-brand-ink px-4 py-3 text-sm font-semibold text-white hover:bg-brand-ink-hover dark:text-neutral-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink disabled:opacity-40">필터 적용</button>
             <div className="mt-3 rounded-lg border border-neutral-200 p-3 dark:border-surface-dark-border">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="text-sm font-medium">내 투자 기준 공유하기</p>
-                    <button type="button" disabled={loading} onClick={() => void copyLink()} className="min-h-11 rounded border border-brand-ink disabled:opacity-40 px-3 text-sm font-semibold text-brand-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink">{copyState === 'copied' ? '복사 완료 ✓' : '짧은 링크 복사'}</button>
+                    <p className="text-sm font-medium">선택한 조건 공유</p>
+                    <button type="button" disabled={loading} onClick={() => void copyLink()} className="min-h-11 rounded border border-brand-ink disabled:opacity-40 px-3 text-sm font-semibold text-brand-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink">{copyState === 'copied' ? '복사 완료 ✓' : '링크 복사'}</button>
                 </div>
                 <p className="mt-1 text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">시장과 네 가지 답변을 공유합니다. 다른 직접 필터는 포함하지 않으며, 종목 수는 최신 데이터에 따라 달라집니다.</p>
                 {shareUrl && <input aria-label="월드컵 공유 링크" readOnly value={shareUrl} onFocus={event => event.target.select()} className="mt-3 min-h-11 w-full min-w-0 rounded border border-neutral-300 bg-transparent px-3 text-base dark:border-neutral-600" />}
-                {copyState !== 'idle' && <p role="status" aria-live="polite" className="mt-1 text-sm text-brand-ink">{copyState === 'copied' ? '링크를 복사했습니다. 같은 선택 결과를 다시 열 수 있습니다.' : copyState === 'error' ? '자동 복사가 되지 않았습니다. 위 링크를 직접 복사해 주세요.' : ''}</p>}
+                {copyState !== 'idle' && <p role="status" aria-live="polite" className="mt-1 text-sm text-brand-ink">{copyState === 'copied' ? '링크를 복사했습니다.' : copyState === 'error' ? '자동 복사가 되지 않았습니다. 위 링크를 직접 복사해 주세요.' : ''}</p>}
             </div>
             <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
                 <button type="button" className="min-h-11 text-xs text-neutral-500 focus-visible:outline-brand-ink dark:text-neutral-400" onClick={() => { setAnswers([]); next(0); }}>처음부터 다시 고르기</button>
-                <button type="button" className="min-h-11 text-xs text-neutral-500 focus-visible:outline-brand-ink dark:text-neutral-400" onClick={onManual}>기존 필터 직접 설정</button>
+                <button type="button" className="min-h-11 text-xs text-neutral-500 focus-visible:outline-brand-ink dark:text-neutral-400" onClick={onManual}>직접 필터 설정</button>
             </div>
-            <p className="mt-3 text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">PER·PBR은 탐색을 시작하는 기준입니다. 적용 후 직접 수정할 수 있습니다.</p>
+            <p className="mt-3 text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">적용한 조건은 필터에서 수정할 수 있습니다.</p>
         </>}
     </section>;
 }

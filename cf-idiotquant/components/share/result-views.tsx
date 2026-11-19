@@ -42,23 +42,15 @@ function Metrics({ rows, columns = 4 }: { rows: string[][]; columns?: 3 | 4 }) {
   );
 }
 function Section({
-  tag,
   title,
   children,
 }: {
-  tag: string;
   title: string;
   children: ReactNode;
 }) {
   return (
     <section className="min-w-0">
       <div className="mb-3 mt-6 sm:mt-8">
-        <div className="mb-2 flex items-center gap-3">
-          <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-neutral-500">
-            {tag}
-          </span>
-          <div className="h-px flex-1 bg-neutral-200 dark:bg-border-subtle-dark" />
-        </div>
         <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
       </div>
       {children}
@@ -571,7 +563,7 @@ function CalculatorView({ snapshot }: { snapshot: ResultSnapshot }) {
     <div className="lg:grid lg:grid-cols-[minmax(0,490px)_minmax(0,1fr)] lg:items-start lg:gap-8">
       <div>
         {conditions && (
-          <Section tag="INPUT" title="조건">
+          <Section title="조건">
             <dl
               className={`${SHARE_CARD} divide-y divide-neutral-100 dark:divide-neutral-800`}
             >
@@ -591,7 +583,7 @@ function CalculatorView({ snapshot }: { snapshot: ResultSnapshot }) {
         )}
       </div>
       <div className="min-w-0">
-        <Section tag="RESULT" title="결과">
+        <Section title="결과">
           <div className={`${SHARE_CARD} p-4 sm:p-5`}>
             <p className="text-xs text-neutral-500">만기 평가금액</p>
             <p className="mt-2 break-words text-3xl font-semibold tracking-tight tabular-nums sm:text-4xl">
@@ -612,7 +604,7 @@ function CalculatorView({ snapshot }: { snapshot: ResultSnapshot }) {
           )}
         </Section>
         {growthRows.length > 1 && (
-          <Section tag="GROWTH" title="자산 구성 추이">
+          <Section title="자산 구성 추이">
             <GrowthChart rows={growthRows} />
           </Section>
         )}
@@ -622,12 +614,12 @@ function CalculatorView({ snapshot }: { snapshot: ResultSnapshot }) {
               table !== conditions && table !== result && table !== breakdown
           )
           .map((table, index) => (
-            <Section key={index} tag="VALUE" title={table.title}>
+            <Section key={index} title={table.title}>
               <SharedTable table={table} title={false} />
             </Section>
           ))}
         {breakdown && (
-          <Section tag="BREAKDOWN" title="연도별 명세">
+          <Section title="연도별 명세">
             <SharedTable table={breakdown} title={false} />
           </Section>
         )}

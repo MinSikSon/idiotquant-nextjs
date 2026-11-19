@@ -55,8 +55,8 @@ export function HomeWatchlist() {
             {loading && <p role="status" className="text-xs text-neutral-500">최신 상태를 확인하는 중…</p>}
             {!review.items.length ? <section className={panel} aria-labelledby="empty-watchlist">
                 <Heart size={24} aria-hidden="true" className="mb-4 text-brand-ink" />
-                <h1 id="empty-watchlist" className="text-lg font-semibold">먼저 관심종목을 담아보세요</h1>
-                <p className="mb-5 mt-2 text-sm leading-6 text-neutral-500">종목을 검색하거나 발굴한 뒤 하트를 누르면, 여기서 관심종목의 가격과 적정주가를 함께 볼 수 있습니다.</p>
+                <h1 id="empty-watchlist" className="text-lg font-semibold">저장한 관심종목이 없습니다</h1>
+                <p className="mb-5 mt-2 text-sm leading-6 text-neutral-500">종목을 열고 하트를 누르면 관심종목에 저장됩니다.</p>
                 <AddStock onSearch={openSearch} />
                 <div className="mt-5"><WatchlistSample /></div>
             </section> : <>
@@ -138,7 +138,7 @@ export function useWatchlistSample() {
 export function WatchlistSample() {
     const { data, retry } = useWatchlistSample();
     return <section aria-label="관심종목 사용 예시" className="space-y-3 rounded-xl border border-dashed border-brand/40 bg-brand/5 p-3 sm:p-4">
-        <div><span className="rounded bg-brand/10 px-2 py-1 text-xs font-semibold text-brand-ink">실제 데이터 예시</span><h3 className="mt-3 text-sm font-semibold">전략별 적정주가를 한눈에</h3><p className="mt-1 text-xs leading-5 text-neutral-500">실제 스캔 데이터로 계산한 예시입니다. 내 관심종목에는 저장되지 않습니다.</p></div>
+        <h3 className="text-sm font-semibold">전략별 적정주가 예시</h3>
         {!data ? <p role="status" className="py-3 text-sm text-neutral-500">실제 종목 데이터를 불러오는 중…</p> : <>
             {data.failed > 0 && <div role="alert" className="text-xs leading-5 text-neutral-500"><p>일부 종목 데이터를 불러오지 못했습니다.</p><button type="button" className="min-h-11 underline" onClick={retry}>다시 불러오기</button></div>}
             {data.items.length > 0 ? <>
@@ -152,7 +152,7 @@ export function WatchlistSample() {
                         <dd className="flex items-baseline gap-2 tabular-nums"><span className="font-medium">{model.targetPrice === null ? '계산 불가' : `₩${metric(model.targetPrice)}`}</span>{model.gapPercent !== null && <span className="text-[11px] text-neutral-500">{model.gapPercent > 0 ? '+' : ''}{model.gapPercent.toFixed(1)}%</span>}</dd>
                     </div>)}</dl>
                 </article>)}
-                <p className="text-[11px] leading-5 text-neutral-500">스캔 재무 기준 추정치 · %는 기준가 대비 차이입니다. NCAV=(유동자산−총부채)÷주식 수, PER=EPS×10, PBR=BPS×1.</p>
+                <p className="text-[11px] leading-5 text-neutral-500">실제 스캔 데이터로 적정주가를 계산했습니다. 차이율은 스캔 기준가 대비입니다. NCAV = (유동자산 − 총부채) ÷ 주식 수, PER 기준 = EPS × 10, PBR 기준 = BPS × 1.</p>
             </> : !data.failed && <p className="py-3 text-sm text-neutral-500">아직 표시할 스캔 데이터가 없습니다.</p>}
         </>}
     </section>;

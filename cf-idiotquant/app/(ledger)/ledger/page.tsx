@@ -510,10 +510,10 @@ export default function LedgerPage() {
                 <div className="service-container py-6">
                     <div className={cn(CARD_CLS, "py-12 px-4 text-center")}>
                         <p className="text-[13px] font-bold text-neutral-700 dark:text-neutral-300">
-                            로그인이 풀렸습니다.
+                            가계부를 보려면 로그인하세요.
                         </p>
                         <p className="mt-1.5 text-xs text-neutral-400 dark:text-neutral-500">
-                            기록은 그대로 있습니다. 다시 로그인하면 이어서 보입니다.
+                            다시 로그인하면 기존 기록을 볼 수 있습니다.
                         </p>
                         <Link
                             href="/login?callbackUrl=/ledger"
@@ -959,14 +959,14 @@ export default function LedgerPage() {
                             함께 쓰기
                         </h2>
                         <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-4">
-                            초대한 사람은 <b className="text-neutral-700 dark:text-neutral-300">내 가계부의 모든 내역을 보고 함께 기입·수정</b>할 수 있습니다.
+                            초대한 사람은 <b className="text-neutral-700 dark:text-neutral-300">가계부의 모든 내역을 보고, 추가하고, 수정</b>할 수 있습니다.
                         </p>
 
                         {/* 지금 들어와 있는 사람 */}
                         <div className="flex flex-col gap-1.5 mb-4">
                             <span className={FIELD_LABEL_CLS}>함께 쓰는 사람</span>
                             {members.length === 0 ? (
-                                <p className="text-xs text-neutral-400 dark:text-neutral-500 py-1">아직 없습니다.</p>
+                                <p className="text-xs text-neutral-400 dark:text-neutral-500 py-1">공유 중인 사람이 없습니다.</p>
                             ) : (
                                 <div className="flex flex-col gap-1">
                                     {members.map(m => (
@@ -1323,7 +1323,7 @@ export default function LedgerPage() {
 
                         {!editing && (
                             <p className="mt-2.5 text-[11px] text-neutral-400 dark:text-neutral-500 text-center">
-                                저장해도 시트는 열려 있습니다 — 이어서 기입하세요.
+                                저장 후 이 창에서 다음 내역을 입력할 수 있습니다.
                             </p>
                         )}
                     </form>

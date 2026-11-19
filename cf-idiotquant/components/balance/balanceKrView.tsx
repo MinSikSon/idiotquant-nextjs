@@ -644,7 +644,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
               <SectionHeader
                 icon={<Database size={16} />}
                 title="자동매매 운영"
-                subtitle="전략 자동매매 종목 풀 및 토큰(예산) 관리"
+                subtitle="그룹별 매매 대상 종목과 예산 포인트를 설정하세요."
                 badge={
                   krCapital.state === "pending"
                     ? <span className="text-xs tabular-nums text-amber-500 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800 animate-pulse">로딩 중</span>
@@ -808,7 +808,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
               <SectionHeader
                 icon={<KeyRound size={16} />}
                 title="자동매매 계정 관리"
-                subtitle="증권사 연결 정보와 계좌 기본 예산을 관리합니다. 매매 실행 스위치는 상단에서 변경합니다."
+                subtitle="한국투자증권 API 키, 계좌번호와 월 예산을 설정합니다. 자동매매 실행은 상단에서 켜거나 끌 수 있습니다."
               />
               <TradingAccountManager
                 country="KR"

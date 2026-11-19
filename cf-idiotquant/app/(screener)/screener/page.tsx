@@ -1250,7 +1250,6 @@ function ScreenerContent() {
                             ? '조회 실패'
                             : `${matchedTotal}종목`}
                 </span>}
-                description="재무 기준과 전략을 조합해 조건에 맞는 종목을 찾아보세요."
                 meta={(
                     isLoading && !showLikedOnly ? (
                         <span className="flex items-center gap-1.5">
@@ -1978,9 +1977,7 @@ function ScreenerContent() {
                                 </button>
                             ))}
                         </div>
-                        <p className="mt-3 text-xs text-neutral-400 dark:text-neutral-500">
-                            · 전략 카드를 클릭하면 필터에 추가됩니다. 복수 선택 후 OR(하나 이상 충족) 또는 AND(모두 충족) 조합 방식을 선택할 수 있습니다.
-                        </p>
+
                     </div>
                 </div>
             )}
@@ -2221,7 +2218,7 @@ function ScreenerContent() {
                                     {matchedTotal - PREVIEW_SIZE}개 종목이 더 있습니다
                                 </p>
                                 <p className="mt-1.5 text-xs text-neutral-500 dark:text-neutral-400">
-                                    필터·정렬은 계속 이용할 수 있습니다. 로그인하면 전체 결과와 관심종목 저장·팩터 실험실을 이용할 수 있습니다.
+                                    로그인하면 관심종목을 저장하고 팩터 실험실을 이용할 수 있습니다.
                                 </p>
                                 <button
                                     onClick={requireLogin}

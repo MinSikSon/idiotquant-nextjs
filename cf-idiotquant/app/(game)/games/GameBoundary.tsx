@@ -54,10 +54,9 @@ export default class GameBoundary extends Component<Props, State> {
         return (
             <div className="grid h-full w-full place-items-center bg-[var(--rg-bg)] p-4">
                 <div className="max-w-[420px] border border-[var(--rg-line)] bg-[var(--rg-panel)] p-4 font-[family-name:var(--font-plex-mono)] text-[13px] text-[var(--rg-text)]">
-                    <p className="mb-2 text-[var(--rg-strong)]">판을 이어서 굴리지 못했다.</p>
+                    <p className="mb-2 text-[var(--rg-strong)]">게임을 계속할 수 없습니다.</p>
                     <p className="mb-3 text-[var(--rg-muted)]">
-                        저장된 판이 지금 규칙과 안 맞습니다. 저장을 지우고 새로 시작하면 됩니다 —
-                        도감과 지난 판들은 지워지지 않습니다.
+                        진행 중인 판을 지우고 새 판을 시작할 수 있습니다. 도감과 지난 판 기록은 남습니다.
                     </p>
                     <button
                         type="button"

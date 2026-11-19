@@ -42,14 +42,14 @@ export default function GuestLanding() {
         <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 py-2 text-sm font-medium [&::-webkit-details-marker]:hidden">
           이용 방법 <ChevronDown size={16} aria-hidden="true" className="shrink-0 group-open:rotate-180" />
         </summary>
-        <p className="pb-3 leading-relaxed text-neutral-600 dark:text-neutral-300">종목 검색과 발굴은 가입 없이 이용할 수 있어요. 로그인 후 분석 화면에서 하트를 누르면 휴대폰과 PC에서 같은 관심종목을 볼 수 있습니다.</p>
+        <p className="pb-3 leading-relaxed text-neutral-600 dark:text-neutral-300">검색과 발굴은 로그인 없이 이용할 수 있습니다. 관심종목을 저장하려면 로그인한 뒤 분석 화면에서 하트를 누르세요.</p>
       </details>
-      <Link href="/login?callbackUrl=%2F" className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-brand-ink">로그인하고 시작<ArrowRight size={15} aria-hidden="true" /></Link>
+      <Link href="/login?callbackUrl=%2F" className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-brand-ink">로그인<ArrowRight size={15} aria-hidden="true" /></Link>
     </section>
     <footer className="text-xs leading-5 text-neutral-600 dark:text-neutral-400">
       <details className="group">
         <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">서비스 안내 <ChevronDown size={16} aria-hidden="true" className="shrink-0 group-open:rotate-180" /></summary>
-        <p className="pb-2">본 서비스는 투자 참고 정보이며 투자 판단과 결과는 이용자에게 있습니다.</p>
+        <p className="pb-2">이 사이트의 데이터와 분석은 투자 참고용입니다. 투자 결정은 이용자 본인의 책임입니다.</p>
       </details>
       <div className="flex flex-wrap items-center gap-x-5"><span>© 2026 IdiotQuant</span><Link className="inline-flex min-h-11 items-center" href="/terms">이용약관</Link><Link className="inline-flex min-h-11 items-center" href="/privacy">개인정보 처리방침</Link></div>
     </footer>
@@ -98,7 +98,7 @@ function GuestWatchlistSample() {
                             <dd>{model.targetPrice === null ? '계산 불가' : `₩${formatPrice(model.targetPrice)}`}{model.gapPercent !== null && <span className="ml-2 text-xs text-neutral-600 dark:text-neutral-400">{model.gapPercent > 0 ? '+' : ''}{model.gapPercent.toFixed(1)}%</span>}</dd>
                         </div>)}</dl>
                     </div>)}
-                    {data.items.length > 0 && <p className="text-xs leading-5 text-neutral-600 dark:text-neutral-400">스캔 재무를 바탕으로 계산한 추정치입니다. %는 기준가 대비 차이입니다.</p>}
+                    {data.items.length > 0 && <p className="text-xs leading-5 text-neutral-600 dark:text-neutral-400">적정주가는 스캔일 재무 데이터로 계산한 추정치입니다. 차이율은 스캔 기준가 대비입니다.</p>}
                 </>}
             </div>
         </details>

@@ -594,7 +594,7 @@ function AnalyzeContent() {
 
   const financialStatus = !waitResponse ? (
                 <div role="alert" className="rounded-xl border border-neutral-200 p-4 text-[15px] dark:border-neutral-700">
-                  <p>재무정보를 불러오지 못했습니다. 시세 정보는 확인할 수 있습니다.</p>
+                  <p>재무 데이터를 불러오지 못했습니다.</p>
                   <button type="button" onClick={() => { if (tickerFromUrl) onSearch(tickerFromUrl); }} className={`${PAGE_ACTION_CLS} mt-3`}>다시 조회</button>
                 </div>
               ) :
@@ -603,7 +603,7 @@ function AnalyzeContent() {
                   <Loader2 size={16} className="animate-spin" aria-hidden="true" />
                   재무 정보를 불러오는 중입니다
                 </div>
-                <p className="mt-1 text-sm leading-6 text-neutral-600 dark:text-neutral-300">시세는 먼저 표시됩니다. 분석 결과는 데이터가 도착하면 이어서 표시됩니다.</p>
+                <p className="mt-1 text-sm leading-6 text-neutral-600 dark:text-neutral-300">시세를 먼저 보여주고, 재무 데이터가 도착하면 분석 결과를 표시합니다.</p>
                 <div aria-hidden="true" className="mt-4 space-y-3 animate-pulse">
                   <div className="h-3 w-2/3 rounded bg-neutral-100 dark:bg-surface-dark-muted" />
                   <div className="h-3 w-1/2 rounded bg-neutral-100 dark:bg-surface-dark-muted" />
@@ -625,7 +625,7 @@ function AnalyzeContent() {
         containerClassName={ANALYZE_WIDTH}
         title={isPriceLoaded ? <StockName key={tickerFromUrl} name={displayName || tickerLabel} /> : !tickerFromUrl ? '종목 검색' : '종목 분석'}
         mobileTitle={isPriceLoaded ? displayName || tickerLabel : !tickerFromUrl ? '종목 검색' : '종목 분석'}
-        description={!isPriceLoaded ? '기업의 숫자를 읽고, 가치의 근거를 찾아보세요.' : undefined}
+        description={!tickerFromUrl ? '국내 종목명·종목코드 또는 미국 티커를 입력하세요.' : undefined}
         meta={tickerFromUrl ? <>
           <div className="flex min-w-0 items-center gap-1.5" aria-label="현재 종목 시세">
             <span className={styles.quoteTicker}>{isPriceLoaded ? tickerLabel : tickerFromUrl}</span>
@@ -954,7 +954,7 @@ function AnalyzeContent() {
 
                       <details className={styles.readingNote}>
                         <summary className="flex items-center justify-between gap-2">분기·연간 기준<ChevronDown size={16} aria-hidden="true" /></summary>
-                        <p>자산과 부채는 공시 기준일의 잔액입니다. 매출·이익·현금흐름은 표시된 기간 동안의 금액이므로 분기·누적·연간을 구분해 비교하세요.</p>
+                        <p>자산과 부채는 공시 기준일의 잔액입니다. 매출·이익·현금흐름을 비교할 때는 분기·누적·연간 중 같은 기간의 값을 보세요.</p>
                         <p>NCAV는 최신 재무상태표를, 연간 이익 기반 가치평가와 연속 적자 점검은 연간 자료를 사용합니다.</p>
                       </details>
                     </div>
@@ -977,8 +977,7 @@ function AnalyzeContent() {
             <span className="text-sm font-bold text-neutral-700 dark:text-neutral-300">IdiotQuant</span>
           </div>
           <p className="text-sm text-neutral-500 dark:text-neutral-400 text-center max-w-md leading-relaxed">
-            본 서비스의 분석 결과는 투자 참고 목적의 정량적 자료이며, 투자 권유를 목적으로 하지 않습니다.
-            실제 투자 결정은 본인의 판단과 책임 하에 이루어져야 합니다.
+            분석 결과는 투자 참고용입니다. 투자 결정은 이용자 본인의 책임입니다.
           </p>
           {krOrUs === 'KR' && <p className="text-sm text-neutral-500">국내 재무정보 출처: <a href="https://opendart.fss.or.kr/" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">금융감독원 OpenDART</a> · 공시자료를 가공하여 제공합니다.</p>}
           {isAdmin && <Link href="/data-sources" className="text-xs text-neutral-500 underline">데이터 출처 및 이용 조건</Link>}

@@ -45,27 +45,29 @@ export function worldcupRounds(country: 'KR' | 'US') {
     return [
         {
             label: '이익 상태', question: '적자 기업도 후보에 넣을까요?',
-            context: '다른 조건을 추가하기 전에, 살펴볼 기업의 범위를 정합니다.',
-            a: { title: '흑자만', description: '이익을 내는 기업부터 찾아요.', value: '적자 기업 제외', tradeoff: '회복 중인 적자 기업은 후보에서 빠집니다.' },
-            b: { title: '적자도 포함', description: '적자여도 회복 가능성을 봐요.', value: '적자 제외 미적용', tradeoff: 'PER 조건을 함께 적용하면 PER 비교가 어려운 적자 기업은 제외될 수 있습니다.' },
+            context: country === 'US'
+                ? '순이익이 양수인 기업을 흑자로 봅니다. 순이익 자료가 없으면 주당순이익(EPS)을 씁니다. PER 조건을 함께 적용하면 적자 기업은 결과에서 빠질 수 있습니다.'
+                : '주당순이익(EPS)이 양수인 기업을 흑자로 봅니다. PER 조건을 함께 적용하면 PER이 0 이하이거나 자료가 없는 기업은 빠집니다.',
+            a: { title: '흑자만', value: '적자 기업 제외' },
+            b: { title: '적자도 포함', value: '적자 제외 미적용' },
         },
         {
             label: '이익 대비 가격', question: 'PER로 후보를 좁힐까요?',
-            context: '낮은 PER이 더 좋은 기업이라는 뜻은 아닙니다. 탐색 범위의 선택입니다.',
-            a: { title: 'PER 20배 이하', description: '이익에 비해 가격이 낮은 기업부터 봐요.', value: 'PER 20배 이하', tradeoff: '높은 PER의 기업과 PER 비교가 어려운 기업은 빠집니다.' },
-            b: { title: '제한 없음', description: '이익 대비 가격은 종목별로 판단해요.', value: 'PER 상한 없음', tradeoff: '고평가 가능성을 종목별로 직접 확인해야 합니다.' },
+            context: 'PER은 주가를 주당순이익(EPS)으로 나눈 값입니다. 상한을 선택하면 PER이 0 이하이거나 자료가 없는 기업도 빠집니다.',
+            a: { title: 'PER 20배 이하', value: 'PER 20배 이하' },
+            b: { title: '제한 없음', value: 'PER 상한 없음' },
         },
         {
             label: '자산 대비 가격', question: 'PBR도 제한할까요?',
-            context: '이익 기준과 별개로, 순자산 대비 가격 조건을 추가할지 정합니다.',
-            a: { title: 'PBR 1.5배 이하', description: '보유 자산에 비해 가격이 낮은 기업부터 봐요.', value: 'PBR 1.5배 이하', tradeoff: '무형 자산의 비중이 큰 기업 등이 빠질 수 있습니다.' },
-            b: { title: '제한 없음', description: '자산 외의 가치도 함께 살펴봐요.', value: 'PBR 상한 없음', tradeoff: '자산 가치와 현재 가격의 관계를 따로 확인해야 합니다.' },
+            context: 'PBR은 주가를 주당순자산(BPS)으로 나눈 값입니다. 상한을 선택하면 PBR이 0 이하이거나 자료가 없는 기업도 빠집니다.',
+            a: { title: 'PBR 1.5배 이하', value: 'PBR 1.5배 이하' },
+            b: { title: '제한 없음', value: 'PBR 상한 없음' },
         },
         {
             label: '거래 규모', question: '거래가 적은 종목도 살펴볼까요?',
-            context: '스캔일 거래대금 기준입니다. 기간 평균이나 실시간 값이 아닙니다.',
-            a: { title: country === 'US' ? '100만 달러 이상' : '10억원 이상', description: '일정 거래 규모를 갖춘 종목부터 봐요.', value: country === 'US' ? '거래대금 1백만 달러 이상' : '거래대금 10억원 이상', tradeoff: '거래가 적은 종목의 기회도 함께 제외됩니다.' },
-            b: { title: '제한 없음', description: '거래 규모와 관계없이 기회를 찾아요.', value: '거래대금 하한 없음', tradeoff: '원하는 가격·시점에 거래하기 어려울 수 있습니다.' },
+            context: '스캔일 하루 거래대금으로 비교합니다. 거래대금이 적은 종목은 원하는 가격이나 시점에 거래하기 어려울 수 있습니다.',
+            a: { title: country === 'US' ? '100만 달러 이상' : '10억원 이상', value: country === 'US' ? '거래대금 1백만 달러 이상' : '거래대금 10억원 이상' },
+            b: { title: '제한 없음', value: '거래대금 하한 없음' },
         },
     ];
 }

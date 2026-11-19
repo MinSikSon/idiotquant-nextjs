@@ -6,7 +6,7 @@ import type { Metadata } from 'next';
 export const metadata: Metadata = {
   title: { absolute: '퀀트 투자란? 퀀트 주식 전략 9가지와 스크리너 | IdiotQuant' },
   description:
-    '퀀트(quant) 투자는 감이 아니라 숫자 규칙으로 종목을 고르는 방법입니다. NCAV·저PBR·저PER·S-RIM·마법공식 등 대표 퀀트 전략의 기준식과 한계를 정리하고, 코스피·코스닥 전 종목에 그 기준을 매일 적용한 결과를 확인하세요.',
+    '재무지표로 종목을 고르는 방법을 설명합니다. NCAV·저PBR·저PER·S-RIM 등 IdiotQuant 발굴 전략 9가지의 조건과 주의할 점을 확인하세요.',
   keywords: [
     '퀀트', 'quant', '퀀트 투자', '퀀트 주식', '퀀트 전략', '퀀트 투자란',
     '퀀트 스크리너', '퀀트 프로그램', '퀀트 종목 발굴',
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: '퀀트 투자란? 퀀트 주식 전략 9가지와 스크리너',
     description:
-      '퀀트 투자는 감이 아니라 숫자 규칙으로 종목을 고르는 방법입니다. 대표 퀀트 전략의 기준식과 한계, 그리고 시작하는 방법.',
+      'NCAV·저PBR·저PER·S-RIM 등 퀀트 전략 9가지의 조건과 주의할 점을 설명합니다.',
     url: 'https://idiotquant.com/quant',
     type: 'article',
     images: [{ url: 'https://idiotquant.com/icon-512.png', width: 512, height: 512, alt: 'IdiotQuant' }],
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     card: 'summary',
     images: ['https://idiotquant.com/icon-512.png'],
     title: '퀀트 투자란? 퀀트 주식 전략 9가지',
-    description: '감이 아니라 숫자 규칙으로 종목을 고르는 방법 — 기준식과 한계까지.',
+    description: '재무지표로 종목을 고르는 방법과 전략별 조건을 설명합니다.',
   },
 };
 
@@ -44,7 +44,7 @@ const jsonLdArticle = {
   '@type': 'Article',
   headline: '퀀트 투자란? 퀀트 주식 전략 9가지와 스크리너',
   description:
-    '퀀트(quant) 투자의 뜻과 절차, NCAV·저PBR·저PER·S-RIM 등 대표 전략의 기준식, 그리고 퀀트가 못 하는 일까지 정리했습니다.',
+    '재무지표로 종목을 고르는 절차와 NCAV·저PBR·저PER·S-RIM 등 전략의 조건과 주의할 점을 설명합니다.',
   inLanguage: 'ko',
   author: { '@type': 'Organization', name: 'IdiotQuant', url: 'https://idiotquant.com' },
   publisher: {

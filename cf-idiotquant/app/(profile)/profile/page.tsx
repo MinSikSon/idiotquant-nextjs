@@ -544,13 +544,13 @@ export default function ProfilePage() {
 
                 {/* 시각화 예시는 시작하기와 관심종목 확인 다음에 선택해서 본다. */}
                 {isNewUser && (
-                    <SecondarySection title="관심종목 탄탄함 예시">
+                    <SecondarySection title="관심종목 점수 예시">
                     <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
                         <div className="px-5 pt-4 pb-1 flex items-center justify-between">
                             <div className="flex items-center gap-1.5">
                                 <Blocks size={12} className="text-brand-ink" />
                                 <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
-                                    탄탄함이란
+                                    저평가 점수와 거래 상태
                                 </span>
                             </div>
                             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-surface-dark-muted text-neutral-500 dark:text-neutral-400">
@@ -564,13 +564,13 @@ export default function ProfilePage() {
 
                 {/* 포트폴리오 탄탄함 (관심 종목 기반 3D 레고 타워) */}
                 {likedList.length > 0 && (
-                    <SecondarySection title="관심종목 구성 · 탄탄함 분석">
+                    <SecondarySection title="관심종목 점수">
                     <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
                         <div className="px-5 pt-4 pb-2 flex items-center justify-between">
                             <div className="flex items-center gap-1.5">
                                 <Blocks size={12} className="text-brand-ink" />
                                 <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
-                                    포트폴리오 탄탄함
+                                    저평가 점수에 거래 상태와 업종 쏠림을 반영
                                 </span>
                             </div>
                             <span className="text-[10px] text-neutral-400">관심 {likedList.length}종목 기반</span>
@@ -584,7 +584,7 @@ export default function ProfilePage() {
                         {/* 탄탄함 지수 */}
                         <div className="px-5 py-4 flex items-end gap-4 border-t border-neutral-100 dark:border-border-subtle-dark">
                             <div className="shrink-0">
-                                <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">탄탄함 지수</p>
+                                <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">조정 점수</p>
                                 <p className="text-3xl font-black text-brand-ink tabular-nums leading-none mt-1">
                                     {solidity}<span className="text-base text-neutral-400 font-bold">/100</span>
                                 </p>
@@ -618,12 +618,12 @@ export default function ProfilePage() {
                                 <span className="text-[10px] text-neutral-400">
                                     저평가 <span className="font-mono font-bold">{solid.base}</span>
                                     <span className="mx-1">→</span>
-                                    탄탄함 <span className="font-mono font-bold">{solidity}</span>
+                                    조정 점수 <span className="font-mono font-bold">{solidity}</span>
                                 </span>
                                 {solid.riskCount > 0 && (
                                     <span
                                         className="text-[9.5px] font-black px-1.5 py-0.5 rounded bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400"
-                                        title="정리매매·거래정지·관리종목·시장경고·저유동 종목은 지금 팔기 어려워 탄탄함에 온전히 기여하지 못합니다"
+                                        title="정리매매·거래정지·관리종목·시장경고·저유동성에 해당하는 종목의 점수를 낮춥니다."
                                     >
                                         거래 위험 {solid.riskCount}종목
                                     </span>
@@ -631,7 +631,7 @@ export default function ProfilePage() {
                                 {solid.concentrationPenalty > 0 && solid.topSector && (
                                     <span
                                         className="text-[9.5px] font-black px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400"
-                                        title="한 업종에 몰리면 개별 종목이 좋아도 함께 무너집니다"
+                                        title="업종을 확인할 수 있는 종목 중 절반을 넘는 종목이 한 업종에 몰리면 점수를 낮춥니다."
                                     >
                                         {solid.topSector.name} {Math.round(solid.topSector.ratio * 100)}% 쏠림
                                     </span>

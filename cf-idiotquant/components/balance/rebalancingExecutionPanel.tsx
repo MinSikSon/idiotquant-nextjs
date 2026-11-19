@@ -68,7 +68,7 @@ export default function RebalancingExecutionPanel({ policy, currency, canExecute
       {current && <button type="button" className={buttonClass} disabled={busy} onClick={() => act("resume")}>체결 확인·이어가기</button>}
       {isActive(current) && <button type="button" className={buttonClass} disabled={busy || current?.stop_requested} onClick={() => act("stop")}>남은 주문 중단</button>}
     </div>
-    {!canExecute && <p className="text-xs text-neutral-500">변경사항을 먼저 저장하고 주문 미리보기를 조회하면 실제 실행할 수 있습니다.</p>}
+    {!canExecute && <p className="text-xs text-neutral-500">전략을 저장한 뒤 주문 미리보기를 불러오면 실행할 수 있습니다.</p>}
     {error && <p role="alert" className="text-xs text-rose-600">{error}</p>}
     {current && <div className="space-y-2 text-xs" aria-live="polite">
       <p className="font-bold">{labels[current.status]} · {reasons[current.reason] ?? labels[current.reason] ?? current.reason}</p>
@@ -78,7 +78,7 @@ export default function RebalancingExecutionPanel({ policy, currency, canExecute
       {current.orders.map((order,index) => <div key={index} className="rounded border border-neutral-200 p-2 dark:border-border-subtle-dark"><p>{order.symbol} · {order.side === "buy" ? "매수" : "매도"} {order.quantity}주 · {labels[order.status] ?? order.status}</p><p>체결 {order.filled_quantity}주 / {format(order.filled_minor)}{order.broker_id ? ` · 주문번호 ${order.broker_id}` : ""}</p></div>)}
       {current.preview && <details><summary className="cursor-pointer">최근 잔고 기준 비중</summary>{current.preview.rows.map(row => <p key={row.symbol} className="mt-1">{row.symbol} · 현재 {(row.current_bp/100).toFixed(2)}% / 목표 {(row.target_bp/100).toFixed(2)}%</p>)}</details>}
       {unknown && <div className="space-y-2">
-        <p>응답이 유실되었습니다. 증권사에서 종목·방향·수량·주문 시각을 확인한 후 주문번호를 연결하세요. 일치하는 주문이 없으면 계좌 잠금을 유지하고 운영자 확인이 필요합니다.</p>
+        <p>증권사의 주문 응답을 받지 못했습니다. 종목·매수 또는 매도·수량·주문 시각이 일치하는 주문을 찾아 주문번호를 연결하세요. 일치하는 주문이 없으면 관리자에게 확인을 요청하세요. 그동안 계좌는 잠긴 상태로 유지됩니다.</p>
         <label className="block">증권사 주문번호<input className="mt-1 min-h-11 w-full rounded border bg-transparent px-2" inputMode="numeric" value={brokerId} onChange={e => setBrokerId(e.target.value)} /></label>
         <label className="block">증권사 주문일자 (YYYYMMDD)<input className="mt-1 min-h-11 w-full rounded border bg-transparent px-2" inputMode="numeric" value={brokerDate} onChange={e => setBrokerDate(e.target.value)} /></label>
         <button type="button" className={buttonClass} disabled={busy || !/^\d{1,20}$/.test(brokerId) || !/^\d{8}$/.test(brokerDate)} onClick={() => act("attach")}>주문번호 연결·체결 조회</button>

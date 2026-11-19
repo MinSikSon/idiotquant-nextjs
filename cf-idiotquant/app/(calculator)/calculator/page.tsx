@@ -60,17 +60,6 @@ const TABLE_PREVIEW = 10;
 /** 손을 올리면 살짝 뜬다 — 홈의 버튼이 전부 이렇게 움직인다. */
 const LIFT = "transition-colors duration-150";
 
-/* 조건·결과·차트를 구분하는 조용한 섹션 머리표. */
-function StepLabel({ tag }: { tag: string }) {
-    return (
-        <div className="flex items-center gap-3 mb-2 sm:mb-3">
-            <span className="text-[10px] font-medium tracking-[0.12em] text-neutral-600 dark:text-neutral-400 shrink-0">
-                {tag}
-            </span>
-        </div>
-    );
-}
-
 /* 간단 단계에서 쓰는 눈금 범위.
    sanitize 의 한계값(초기 100만만원 등)을 그대로 쓰면 눈금 한 칸이 수백만원이라
    손가락으로 원하는 값을 짚을 수가 없다. 여기 값은 "흔히 넣는 범위"이고,
@@ -235,10 +224,9 @@ function RerollRow({ onReroll }: { onReroll: () => void }) {
     );
 }
 
-function SectionHead({ tag, title, note, action }: { tag: string; title: string; note?: string; action?: ReactNode }) {
+function SectionHead({ title, note, action }: { title: string; note?: string; action?: ReactNode }) {
     return (
         <div className="mt-8 sm:mt-10 mb-3">
-            <div className="hidden sm:block"><StepLabel tag={tag} /></div>
             <div className="flex min-h-12 items-center gap-3 flex-wrap">
                 <h2 className="text-[19px] sm:text-[21px] font-black tracking-tight text-neutral-900 dark:text-white break-keep">
                     {title}
@@ -401,7 +389,7 @@ function Calculator() {
                 <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,490px)_minmax(0,1fr)] lg:items-start">
                 <section className="min-w-0 [&>div:first-child]:mt-0" aria-label="계산 조건">
                 {/* ── 입력 ──────────────────────────────────────── */}
-                <SectionHead tag="Input" title="조건" action={
+                <SectionHead title="조건" action={
                     <Segmented
                         label="표시 항목"
                         value={detail}
@@ -618,7 +606,7 @@ function Calculator() {
 
                 <section className="min-w-0 [&>div:first-child]:mt-0" aria-label="계산 결과">
                 {/* ── 결과 ──────────────────────────────────────── */}
-                <SectionHead tag="Result" title="결과" note={basisOf(effective)} />
+                <SectionHead title="결과" note={basisOf(effective)} />
 
                 <div className={cn(CARD, "flex items-end justify-between gap-2 sm:gap-5 flex-wrap px-3 sm:px-5 py-3 sm:py-6")}>
                     <div>
@@ -673,7 +661,7 @@ function Calculator() {
                 </div>
 
                 {/* ── 그래프 ────────────────────────────────────── */}
-                <SectionHead tag="Growth" title="자산 구성 추이" note="가로축 연차 · 세로축 평가금액" />
+                <SectionHead title="자산 구성 추이" note="가로축 연차 · 세로축 평가금액" />
                 <div className="mt-3 sm:mt-4">
                     <GrowthChart rows={result.rows} />
                 </div>
@@ -849,14 +837,14 @@ function Calculator() {
                 <SecondarySection title="계산 방식과 가정" className="mt-4">
                     <ol className="list-decimal pl-5 space-y-0.5 marker:font-mono">
                         {[
-                            "적립금은 매월 초 납입되고, 이자는 매월 발생하여 선택한 주기마다 원금에 편입됩니다.",
-                            "단리를 고르면 이자는 원금에 편입되지 않고 따로 쌓이며, 납입 원금에 대해서만 발생합니다.",
-                            `이자소득세는 이자가 편입되는 시점에 ${TAX_RATE}%를 차감합니다.`,
+                            "매월 초에 적립금을 넣는 것으로 계산합니다. 복리를 선택하면 매월 계산한 이자를 설정한 주기마다 원금에 더합니다.",
+                            "단리를 선택하면 납입 원금에만 이자가 붙습니다.",
+                            `세후 계산에서는 이자를 반영할 때 이자소득세 ${TAX_RATE}%를 뺍니다.`,
                             "실질 금액은 만기 평가금액을 물가상승률로 할인해 오늘의 구매력으로 환산한 값입니다.",
                             "연평균(CAGR)은 원금이 한 번에 들어갔다고 본 근사값입니다 — 적립식에서는 실제보다 낮게 나옵니다.",
                             "달러·금 비교는 입력한 환율·금값 변동률을 복리로 적용하며, 매월 납입 시점부터 각각 보유한 경우와 비교합니다.",
                             "M2 비교는 입력한 통화량 증가율을 일정하게 적용한 시나리오이며, 실제 물가상승률이나 통화 가치 하락률을 뜻하지 않습니다.",
-                            "이 계산서는 단순 모형이며 거래비용·중도 인출을 반영하지 않습니다.",
+                            "거래비용과 중도 인출은 계산에서 제외합니다.",
                         ].map((n) => (
                             <li key={n} className="text-[11.5px] text-neutral-600 dark:text-neutral-400 leading-[1.85]">
                                 {n}
