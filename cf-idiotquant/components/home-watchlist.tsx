@@ -124,7 +124,7 @@ function WatchlistItems({ items, grouping, expanded, onToggle }: { items: Watchl
     </section>)}</div>;
 }
 
-export function WatchlistSample() {
+export function useWatchlistSample() {
     const [data, setData] = useState<WatchlistSampleData | null>(null);
     const [attempt, setAttempt] = useState(0);
     useEffect(() => {
@@ -132,10 +132,15 @@ export function WatchlistSample() {
         void getWatchlistSample().then(result => { if (active) setData(result); });
         return () => { active = false; };
     }, [attempt]);
+    return { data, retry: () => { setData(null); setAttempt(value => value + 1); } };
+}
+
+export function WatchlistSample() {
+    const { data, retry } = useWatchlistSample();
     return <section aria-label="관심종목 사용 예시" className="space-y-3 rounded-xl border border-dashed border-brand/40 bg-brand/5 p-3 sm:p-4">
         <div><span className="rounded bg-brand/10 px-2 py-1 text-xs font-semibold text-brand-ink">실제 데이터 예시</span><h3 className="mt-3 text-sm font-semibold">전략별 적정주가를 한눈에</h3><p className="mt-1 text-xs leading-5 text-neutral-500">실제 스캔 데이터로 계산한 예시입니다. 내 관심종목에는 저장되지 않습니다.</p></div>
         {!data ? <p role="status" className="py-3 text-sm text-neutral-500">실제 종목 데이터를 불러오는 중…</p> : <>
-            {data.failed > 0 && <div role="alert" className="text-xs leading-5 text-neutral-500"><p>일부 종목 데이터를 불러오지 못했습니다.</p><button type="button" className="min-h-11 underline" onClick={() => { setData(null); setAttempt(value => value + 1); }}>다시 불러오기</button></div>}
+            {data.failed > 0 && <div role="alert" className="text-xs leading-5 text-neutral-500"><p>일부 종목 데이터를 불러오지 못했습니다.</p><button type="button" className="min-h-11 underline" onClick={retry}>다시 불러오기</button></div>}
             {data.items.length > 0 ? <>
                 {data.items.map(item => <article key={item.ticker} className="rounded-xl bg-white p-3 dark:bg-surface-dark-card">
                     <Link href={analysisHref(item.ticker)} className="flex min-h-11 items-center justify-between gap-3 rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand">
