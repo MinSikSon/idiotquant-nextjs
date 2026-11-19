@@ -143,7 +143,11 @@ export function StockSearchModal({ open, label, purpose = "analyze", disabledMes
     onCancel={event => { event.preventDefault(); onClose(); }}
     onClick={event => { if (event.target === event.currentTarget) onClose(); }}>
     {open && <div ref={surface} className="stock-search-surface" onClick={event => event.stopPropagation()}
-      onPointerDownCapture={startSwipe} onPointerMoveCapture={moveSwipe} onPointerUpCapture={finishSwipe} onPointerCancelCapture={resetSwipe} onLostPointerCapture={resetSwipe}>
+      onPointerDownCapture={startSwipe} onPointerMoveCapture={moveSwipe} onPointerUpCapture={finishSwipe} onPointerCancelCapture={resetSwipe}
+      onLostPointerCapture={event => {
+        // 자식의 암시적 캡처에서 표면으로 넘어가는 이벤트는 무시한다.
+        if (event.target === event.currentTarget) resetSwipe();
+      }}>
       <h2 id="stock-search-title" className="sr-only">{label}</h2>
       <header className="stock-search-header" data-search-content>
         <button type="button" onClick={onClose} aria-label="검색창 닫기" title="뒤로" className="stock-search-back"><ChevronLeft size={26} strokeWidth={1.8} /></button>

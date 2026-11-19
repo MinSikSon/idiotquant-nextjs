@@ -58,7 +58,7 @@ function modal(purpose: StockSearchPurpose = 'analyze') {
     clientX: x, clientY: y, timeStamp, pointerType, pointerId: 1, isPrimary: true,
     target: new Element(interactive), currentTarget: target,
   });
-  return { find: (type: string) => find(type, tree), surface: tree.props.children.props, event, closed: () => closed, selected };
+  return { target, find: (type: string) => find(type, tree), surface: tree.props.children.props, event, closed: () => closed, selected };
 }
 
 test('모바일에서 오른쪽으로 충분히 스와이프하면 모달을 닫는다', () => {
@@ -70,12 +70,25 @@ test('모바일에서 오른쪽으로 충분히 스와이프하면 모달을 닫
   assert.equal(ui.closed(), 1);
 });
 
+test('모바일 검색 본문에서 왼쪽으로 충분히 스와이프하면 모달을 닫는다', () => {
+  const ui = modal();
+  ui.surface.onPointerDownCapture(ui.event(320, 200, 0));
+  ui.surface.onPointerMoveCapture(ui.event(300, 201, 100));
+  // 자식에서 표면으로 포인터 캡처가 옮겨갈 때 자식의 이벤트가 버블링한다.
+  ui.surface.onLostPointerCapture(ui.event(300, 201, 100));
+  ui.surface.onPointerMoveCapture(ui.event(180, 207, 400));
+  assert.equal(ui.closed(), 1);
+  ui.surface.onPointerUpCapture(ui.event(180, 207, 450));
+  assert.equal(ui.closed(), 1);
+  assert.deepEqual(ui.selected, []);
+});
+
 test('iOS가 충분한 스와이프 뒤 pointerup을 취소해도 한 번에 닫힌다', () => {
   const ui = modal();
   ui.surface.onPointerDownCapture(ui.event(5, 200, 0));
   ui.surface.onPointerMoveCapture(ui.event(170, 205, 400));
   ui.surface.onPointerCancelCapture();
-  ui.surface.onLostPointerCapture();
+  ui.surface.onLostPointerCapture({ target: ui.target, currentTarget: ui.target });
   assert.equal(ui.closed(), 1);
 });
 
@@ -83,12 +96,12 @@ test('닫기 거리 전에 포인터 캡처를 잃으면 다음 이벤트로 닫
   const ui = modal();
   ui.surface.onPointerDownCapture(ui.event(40, 200, 0));
   ui.surface.onPointerMoveCapture(ui.event(65, 205, 400));
-  ui.surface.onLostPointerCapture();
+  ui.surface.onLostPointerCapture({ target: ui.target, currentTarget: ui.target });
   ui.surface.onPointerUpCapture(ui.event(250, 205, 500));
   assert.equal(ui.closed(), 0);
 });
 
-for (const [label, endX, endY] of [['세로 스크롤', 50, 350], ['짧은 이동', 65, 205], ['왼쪽 이동', 0, 205], ['대각선 스크롤', 140, 280]] as const) {
+for (const [label, endX, endY] of [['세로 스크롤', 50, 350], ['짧은 이동', 65, 205], ['짧은 왼쪽 이동', 0, 205], ['대각선 스크롤', 140, 280]] as const) {
   test(`${label}은 모달을 닫지 않는다`, () => {
     const ui = modal();
     ui.surface.onPointerDownCapture(ui.event(40, 200, 0));
