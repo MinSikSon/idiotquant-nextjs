@@ -104,14 +104,13 @@ export default function CalculatorHistory({ detail, snapshot, onLoad }: Props) {
         return shell(
             <>
                 <p className="text-[11px] sm:text-xs font-semibold text-neutral-500 dark:text-neutral-400 leading-relaxed">
-                    로그인하면 지금 조건을 이름 붙여 저장하고,
-                    <br />나중에 그대로 불러와 비교할 수 있습니다.
+                    로그인하면 계산 조건에 이름을 붙여 저장하고 다시 불러올 수 있습니다.
                 </p>
                 <Link
                     href="/login?callbackUrl=/calculator"
                     className="inline-block mt-3 px-4 py-2 rounded-xl bg-brand hover:bg-brand-hover text-white text-[12px] font-bold transition-all duration-300 ease-out hover:-translate-y-0.5 active:translate-y-0"
                 >
-                    카카오로 로그인
+                    로그인
                 </Link>
             </>
         );
@@ -123,7 +122,8 @@ export default function CalculatorHistory({ detail, snapshot, onLoad }: Props) {
                 <input
                     type="text"
                     maxLength={30}
-                    placeholder="이름 (선택) — 예: 공격적 10%"
+                    aria-label="계산 이름 (선택)"
+                    placeholder="예: 월 30만 원 적립"
                     value={label}
                     onChange={(e) => setLabel(e.target.value)}
                     onKeyDown={(e) => { if (e.key === "Enter") handleSave(); }}

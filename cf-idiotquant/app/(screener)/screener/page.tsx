@@ -791,9 +791,10 @@ function ScreenerContent() {
     }, [queryString, country, activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludePreferred, excludeAdr, excludeChinaSmall, excludeLowLiquidity, excludeCashBurn, excludeHalted, excludeManaged, excludeDelisting, sectors, markets, maxW52Pos, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav, minIncomeTax, maxIncomeTax, showLikedOnly, groupMode, viewMode, router]);
 
     const handleRefresh = useCallback(() => {
-        dispatch(reqGetNcavDailyList({ date: requestedDate, weeklyPeriod, country, force: true }));
+        if (showLikedOnly) void dispatch(reqGetMyLikes());
+        else void dispatch(reqGetNcavDailyList({ date: requestedDate, weeklyPeriod, country, force: true }));
         setDisplayCount(DAILY_PAGE_SIZE);
-    }, [dispatch, country, requestedDate, weeklyPeriod]);
+    }, [dispatch, showLikedOnly, country, requestedDate, weeklyPeriod]);
 
     const toggleSort = useCallback((key: DiscoverySortKey) => {
         setSortKey(prev => {
@@ -1015,7 +1016,11 @@ function ScreenerContent() {
         per: item.per,
         roe: roeOf(item) || null,
     })), [accessibleList]);
-    const isLoading = !showLikedOnly && (ncavDailyList.state === "pending" || ncavDailyList.state === "init" || ncavDailyList.country !== country);
+    const scanLoading = ncavDailyList.state === 'pending' || ncavDailyList.state === 'init' || ncavDailyList.country !== country;
+    const isLoading = showLikedOnly ? likesState === 'pending' || likesState === 'init' : scanLoading;
+    const isRefreshing = !showLikedOnly && ncavDailyList.refreshing;
+    const resultsFailed = showLikedOnly ? likesState === 'rejected' : ncavDailyList.state === 'rejected';
+    const resultName = showLikedOnly ? '관심종목' : '스캔 데이터';
 
     const returnPath = `/screener${queryString ? `?${queryString}` : ''}`;
     const compareLimit = isLoggedIn ? 20 : 4;
@@ -1246,16 +1251,18 @@ function ScreenerContent() {
                 compactMeta={<span className="text-xs">
                     {country === 'KR' ? '국내' : '미국'} · {isLoading
                         ? '불러오는 중…'
-                        : !showLikedOnly && ncavDailyList.state === 'rejected'
+                        : resultsFailed
                             ? '조회 실패'
                             : `${matchedTotal}종목`}
                 </span>}
                 meta={(
-                    isLoading && !showLikedOnly ? (
+                    isLoading ? (
                         <span className="flex items-center gap-1.5">
                             <Loader2 size={11} className="animate-spin" />
-                            데이터 로딩 중...
+                            {resultName} 조회 중…
                         </span>
+                    ) : resultsFailed ? (
+                        <span>{resultName} 조회 실패</span>
                     ) : (
                         <>
                             {!showLikedOnly && formattedDate && <><span className="font-mono">{formattedDate}</span><span>·</span></>}
@@ -1277,8 +1284,8 @@ function ScreenerContent() {
                         </div>
                     )}
                 </>}
-                primaryAction={<button onClick={handleRefresh} disabled={isLoading || ncavDailyList.refreshing} className={PAGE_ACTION_CLS} title="목록 새로고침" aria-label="목록 새로고침">
-                        <RefreshCw size={13} className={isLoading || ncavDailyList.refreshing ? "animate-spin" : ""} />
+                primaryAction={<button onClick={handleRefresh} disabled={isLoading || isRefreshing} className={PAGE_ACTION_CLS} title="목록 새로고침" aria-label="목록 새로고침">
+                        <RefreshCw size={13} className={isLoading || isRefreshing ? "animate-spin" : ""} />
                         <span className="hidden sm:inline">새로고침</span>
                     </button>}
 
@@ -1370,7 +1377,7 @@ function ScreenerContent() {
                         >{label}</button>)}
                     </div>
                     <div className={filterMethod === 'worldcup' ? undefined : 'hidden'}>
-                        <FilterWorldcup key={`${country}:${worldcupAnswers.join()}`} country={country} initialAnswers={worldcupAnswers} hasTradingAmount={hasTrAmtData} loading={isLoading}
+                        <FilterWorldcup key={`${country}:${worldcupAnswers.join()}`} country={country} initialAnswers={worldcupAnswers} hasTradingAmount={hasTrAmtData} loading={scanLoading}
                             previewCount={proposal => applyFilters(baseList, { ...filters, ...proposal }).length}
                             onManual={() => setFilterMethod('manual')}
                             onApply={(proposal, answers) => {
@@ -1989,9 +1996,9 @@ function ScreenerContent() {
 
 
                 {isLoading && (
-                    <div className="flex flex-col items-center justify-center py-24 gap-4">
-                        <Loader2 size={32} className="animate-spin text-brand-ink/50" />
-                        <p className="text-sm font-bold text-neutral-400">스캔 데이터 불러오는 중...</p>
+                    <div role="status" className="flex flex-col items-center justify-center py-24 gap-4">
+                        <Loader2 size={32} aria-hidden="true" className="animate-spin text-brand-ink/50" />
+                        <p className="text-sm font-bold text-neutral-400">{resultName} 조회 중…</p>
                     </div>
                 )}
 
@@ -2004,46 +2011,41 @@ function ScreenerContent() {
                             }
                         </div>
                         <div>
-                            {ncavDailyList.state === 'rejected' && !showLikedOnly ? (
+                            {resultsFailed ? (
                                 <>
-                                    <p className="text-sm font-bold text-neutral-700 dark:text-neutral-300">스캔 데이터를 불러오지 못했습니다</p>
-                                    <button onClick={handleRefresh} className="text-xs font-bold text-brand-ink hover:underline mt-1">다시 시도</button>
+                                    <p role="alert" className="text-sm font-bold text-neutral-700 dark:text-neutral-300">{showLikedOnly ? "관심종목을" : "스캔 데이터를"} 불러오지 못했습니다</p>
+                                    <button type="button" onClick={handleRefresh} className={cn(PAGE_ACTION_CLS, "mt-2")}>다시 조회</button>
                                 </>
-                            ) : country === 'US' && !showLikedOnly && ncavDailyList.list.length === 0 ? (
+                            ) : baseList.length === 0 ? (
                                 <>
-                                    <p className="text-sm font-bold text-neutral-700 dark:text-neutral-300">미국 종목 데이터 수집 전입니다</p>
-                                    <p className="text-xs text-neutral-400 mt-1">수집이 시작되면 이곳에 발굴 결과가 표시됩니다.</p>
-                                </>
-                            ) : showLikedOnly ? (
-                                <>
-                                    <p className="text-sm font-bold text-neutral-700 dark:text-neutral-300">관심 종목이 없습니다</p>
-                                    <p className="text-xs text-neutral-400 mt-1">종목 목록에서 하트를 눌러 관심 종목을 추가해보세요.</p>
+                                    <p className="text-sm font-bold text-neutral-700 dark:text-neutral-300">
+                                        {country === 'US' ? '미국' : '국내'} {showLikedOnly ? '관심종목이 없습니다' : '스캔 데이터가 없습니다'}
+                                    </p>
+                                    {showLikedOnly && <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-300">발굴 목록에서 하트를 눌러 종목을 저장하세요.</p>}
+                                    <button type="button" onClick={() => showLikedOnly ? setShowLikedOnly(false) : handleRefresh()} className={cn(PAGE_ACTION_CLS, "mt-2")}>
+                                        {showLikedOnly ? '발굴 목록 보기' : '다시 조회'}
+                                    </button>
                                 </>
                             ) : (
                                 <>
-                                    <p className="text-sm font-bold text-neutral-700 dark:text-neutral-300">조건에 맞는 종목이 없습니다</p>
-                                    <p className="text-xs text-neutral-400 mt-1">전략이나 필터 조건을 조정해보세요.</p>
+                                    <p className="text-sm font-bold text-neutral-700 dark:text-neutral-300">
+                                        {showLikedOnly ? '현재 조건에 맞는 관심종목이 없습니다' : '조건에 맞는 종목이 없습니다'}
+                                    </p>
+                                    <div className="mt-2 flex flex-wrap justify-center gap-2">
+                                        {emptySuggestion ? (
+                                            <button type="button" onClick={() => { emptySuggestion.clear(); setDisplayCount(DAILY_PAGE_SIZE); }} className={PAGE_ACTION_CLS}>
+                                                &lsquo;{emptySuggestion.label}&rsquo; 해제 · {emptySuggestion.count}종목 충족
+                                            </button>
+                                        ) : activeConditions.length > 0 && (
+                                            <button type="button" onClick={clearDetailFilters} className={PAGE_ACTION_CLS}>상세 필터 해제</button>
+                                        )}
+                                        {activeStrategyIds.size > 0 && (
+                                            <button type="button" onClick={clearStrategies} className={PAGE_ACTION_CLS}>전략 선택 해제</button>
+                                        )}
+                                    </div>
                                 </>
                             )}
                         </div>
-                        {/* 어떤 조건을 풀면 몇 개가 돌아오는지 짚어준다 — 조건을 하나씩 꺼보게
-                            만들지 않는 것이 이 안내의 목적이다. */}
-                        {emptySuggestion && (
-                            <button
-                                onClick={() => { emptySuggestion.clear(); setDisplayCount(DAILY_PAGE_SIZE); }}
-                                className="px-4 py-2 rounded-xl bg-brand-light dark:bg-brand-muted/30 border border-brand-light-hover dark:border-brand/50 text-xs font-bold text-brand-ink-hover dark:text-brand-ink hover:bg-brand-light dark:hover:bg-brand-muted/50 transition-colors"
-                            >
-                                &lsquo;{emptySuggestion.label}&rsquo; 해제하면 {emptySuggestion.count}개
-                            </button>
-                        )}
-                        {activeStrategyIds.size > 0 && (
-                            <button
-                                onClick={clearStrategies}
-                                className="text-xs font-bold text-brand-ink hover:underline"
-                            >
-                                전략 필터 초기화
-                            </button>
-                        )}
                     </div>
                 )}
 

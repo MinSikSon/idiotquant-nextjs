@@ -205,7 +205,7 @@ const BlurGate = memo(({ children, isLoggedIn, loginHref = "/login" }: {
           className={styles.primary}
         >
           <Lock size={13} />
-          로그인하여 전체 보기
+          로그인하고 보기
           <ArrowRight size={13} />
         </Link>
       </div>
@@ -395,7 +395,7 @@ function AnalyzeContent() {
     setHasMounted(true);
     dispatch(reqGetSearchLog('10'));
     loadStaticStockData().then(setStaticStockData).catch(() => {
-      addToast('error', '주식 데이터를 불러올 수 없습니다.');
+      addToast('error', '종목 이름 목록을 불러오지 못했습니다. 종목코드나 티커로 검색하세요.');
     });
   }, [dispatch, addToast]);
 
@@ -472,7 +472,7 @@ function AnalyzeContent() {
       addToast('success', isInWatchlist ? '관심 종목에서 해제했습니다.' : '관심 종목에 저장했습니다.');
     } catch {
       await dispatch(reqGetMyLikes());
-      addToast('error', '관심 종목을 저장하지 못했습니다. 다시 시도해 주세요.');
+      addToast('error', isInWatchlist ? '관심종목에서 빼지 못했습니다. 다시 눌러 주세요.' : '관심종목에 저장하지 못했습니다. 하트를 다시 눌러 주세요.');
     } finally { setWatchSaving(false); }
   };
 
@@ -496,7 +496,7 @@ function AnalyzeContent() {
         addToast('success', '관심 종목에 저장했습니다.');
       } catch {
         await dispatch(reqGetMyLikes());
-        addToast('error', '관심 종목 저장을 완료하지 못했습니다. 담기 버튼으로 다시 시도해 주세요.');
+        addToast('error', '관심종목에 저장하지 못했습니다. 하트를 다시 눌러 주세요.');
       } finally { setWatchSaving(false); }
     })();
   }, [session?.user?.id, isPriceLoaded, watchStock.ticker, dispatch, addToast]);
@@ -812,19 +812,16 @@ function AnalyzeContent() {
                 {isLoaded && !isLoggedIn && (
                   <div className={cn(styles.loginNotice, "border-b border-neutral-200 dark:border-neutral-800 py-3 flex items-center gap-3")}>
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-neutral-900 dark:text-white flex items-center gap-1.5">
-                        <Lock size={11} className="shrink-0" />
-                        전체 분석은 로그인 후 제공됩니다
-                      </p>
-                      <p className="text-sm text-neutral-600 dark:text-neutral-300 mt-1 break-keep">
-                        구글/카카오로 로그인 · 재무제표 · 상장폐지 위험도 · 상세 지표 포함
+                      <p className="flex items-center gap-1.5 text-sm text-neutral-700 dark:text-neutral-300">
+                        <Lock size={14} aria-hidden="true" className="shrink-0" />
+                        로그인하면 재무제표, 상장폐지 위험 점검, 상세 지표를 볼 수 있습니다.
                       </p>
                     </div>
                     <Link
                       href={loginHref}
                       className={styles.primary}
                     >
-                      구글/카카오로 로그인
+                      로그인
                       <ArrowRight size={14} />
                     </Link>
                   </div>

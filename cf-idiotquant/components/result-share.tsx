@@ -17,6 +17,7 @@ export default function ResultShare({ getSnapshot, disabled = false, iconOnly = 
   const [image, setImage] = useState<File | null>(null);
   const [imageUrl, setImageUrl] = useState('');
   const [linkError, setLinkError] = useState('');
+  const [imageFailed, setImageFailed] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [linkAttempt, setLinkAttempt] = useState(0);
@@ -45,7 +46,7 @@ export default function ResultShare({ getSnapshot, disabled = false, iconOnly = 
       preview = URL.createObjectURL(file);
       setImage(file); setImageUrl(preview);
       setCanShareImage(typeof navigator.share === 'function' && !!navigator.canShare?.(imageShareData(snapshot, file)));
-    }).catch(() => { if (!cancelled) setError('이미지를 만들지 못했습니다. 결과 링크나 파일로 공유해 주세요.'); });
+    }).catch(() => { if (!cancelled) setImageFailed(true); });
     return () => { cancelled = true; if (preview) URL.revokeObjectURL(preview); };
   }, [snapshot]);
 
@@ -53,7 +54,8 @@ export default function ResultShare({ getSnapshot, disabled = false, iconOnly = 
     try {
       const captured = validateSnapshot(getSnapshot());
       serializeSnapshot(captured);
-      setUrl(''); setImage(null); setImageUrl(''); setLinkError(''); setError(''); setNotice('');
+      setUrl(''); setImage(null); setImageUrl(''); setImageFailed(false); setCanShareImage(false);
+      setLinkError(''); setError(''); setNotice('');
       setSnapshot(captured);
       dialog.current?.showModal();
     } catch (reason) { setError(reason instanceof Error ? reason.message : '결과를 준비하지 못했습니다.'); }
@@ -63,7 +65,7 @@ export default function ResultShare({ getSnapshot, disabled = false, iconOnly = 
     catch (reason) { if (!(reason instanceof Error) || reason.name !== 'AbortError') setError('공유하지 못했습니다. 복사하거나 파일로 저장해 주세요.'); }
   }
   async function copyLink() {
-    try { await navigator.clipboard.writeText(url); setNotice('결과를 볼 수 있는 짧은 링크를 복사했습니다.'); setError(''); }
+    try { await navigator.clipboard.writeText(url); setNotice('링크를 복사했습니다.'); setError(''); }
     catch { setError('링크를 복사하지 못했습니다. 아래 링크를 직접 복사해 주세요.'); }
   }
   async function copyImage() {
@@ -84,7 +86,7 @@ export default function ResultShare({ getSnapshot, disabled = false, iconOnly = 
         <h2 className="text-base font-semibold">결과 공유</h2><button type="button" onClick={close} aria-label="공유 창 닫기" className={PAGE_ACTION_CLS}><X size={16} /></button>
       </div>
       {snapshot && <div className="space-y-5 p-5">
-        <div><p className="font-medium">{snapshot.title}</p><p className="mt-1 text-xs leading-5 text-neutral-500 dark:text-neutral-400">현재 확인한 결과를 30일간 보관하고 짧은 링크로 전달합니다. 받는 사람은 시세 조회나 계산을 다시 실행하지 않고 결과를 볼 수 있습니다.</p></div>
+        <div><p className="font-medium">{snapshot.title}</p><p className="mt-1 text-xs leading-5 text-neutral-500 dark:text-neutral-400">공유 링크는 30일 동안 열 수 있습니다. 받는 사람에게는 지금 화면의 결과가 표시됩니다.</p></div>
         <section aria-label="결과 링크"><h3 className="text-sm font-medium">결과 링크</h3>
           <div className="mt-2 flex flex-wrap gap-2">
             <button type="button" disabled={!url} onClick={() => void copyLink()} className={PAGE_ACTION_CLS}><Copy size={14} /> 링크 복사</button>
@@ -95,8 +97,10 @@ export default function ResultShare({ getSnapshot, disabled = false, iconOnly = 
           {linkError && <div className="mt-2 space-y-2"><p role="alert" className="text-xs leading-5 text-neutral-500 dark:text-neutral-400">{linkError}</p><button type="button" onClick={() => setLinkAttempt(attempt => attempt + 1)} className={PAGE_ACTION_CLS}>링크 다시 만들기</button></div>}
         </section>
         <section aria-label="요약 이미지"><h3 className="text-sm font-medium">요약 이미지</h3>
-          <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">핵심 지표와 서비스 주소를 한 장에 담습니다. 이미지 공유 시 접속 링크도 함께 전달합니다.</p>
-          {imageUrl ? <img src={imageUrl} alt={`${snapshot.title} 요약 이미지`} className="mt-3 h-auto w-full rounded-xl border border-neutral-200 dark:border-neutral-700" /> : <p role="status" className="mt-3 text-xs text-neutral-500">이미지 준비 중…</p>}
+          <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">이미지에는 주요 수치와 서비스 주소를 표시합니다.</p>
+          {imageUrl ? <img src={imageUrl} alt={`${snapshot.title} 요약 이미지`} className="mt-3 h-auto w-full rounded-xl border border-neutral-200 dark:border-neutral-700" /> : imageFailed
+            ? <p role="alert" className="mt-3 text-sm text-rose-600 dark:text-rose-400">이미지를 만들지 못했습니다. 링크를 복사하거나 결과 파일을 저장하세요.</p>
+            : <p role="status" className="mt-3 text-xs text-neutral-500">이미지 준비 중…</p>}
           <div className="mt-3 flex flex-wrap gap-2">
             <button type="button" disabled={!image} onClick={() => image && downloadFile(image, image.name)} className={PAGE_ACTION_CLS}><Download size={14} /> 이미지 저장</button>
             {canCopyImage && <button type="button" disabled={!image} onClick={() => void copyImage()} className={PAGE_ACTION_CLS}><ImageIcon size={14} /> 이미지 복사</button>}
@@ -106,7 +110,7 @@ export default function ResultShare({ getSnapshot, disabled = false, iconOnly = 
         </section>
         <section className="border-t border-neutral-200 pt-4 dark:border-neutral-700" aria-label="결과 파일">
           <button type="button" onClick={() => downloadFile(new Blob([serializeSnapshot(snapshot)], { type: 'application/json' }), `idiotquant-${snapshot.kind}.json`)} className={PAGE_ACTION_CLS}><Download size={14} /> 결과 파일 저장</button>
-          <p className="mt-2 text-xs leading-5 text-neutral-500 dark:text-neutral-400">목록이 길면 파일로 전달할 수 있습니다. 받은 파일은 <Link href="/share" className="text-brand-ink underline">공유 결과 화면</Link>에서 열 수 있습니다.</p>
+          <p className="mt-2 text-xs leading-5 text-neutral-500 dark:text-neutral-400">받은 사람은 <Link href="/share" className="text-brand-ink underline">공유 결과 화면</Link>에서 이 파일을 열 수 있습니다.</p>
         </section>
         {notice && <p role="status" className="text-xs text-brand-ink">{notice}</p>}
         {error && <p role="alert" className="text-xs text-rose-600 dark:text-rose-400">{error}</p>}

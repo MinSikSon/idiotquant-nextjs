@@ -50,11 +50,14 @@ function SharedResult() {
     const current = ++request.current;
     setLoading(true); setError(''); setSnapshot(null);
     try {
-      if (file.size > MAX_SNAPSHOT_BYTES) throw new Error('2MB 이하의 결과 파일을 선택해 주세요.');
+      if (file.size > MAX_SNAPSHOT_BYTES) {
+        setError('파일이 2MB를 넘습니다. 2MB 이하의 결과 파일을 선택하세요.');
+        return;
+      }
       const result = parseSnapshot(await file.text());
       if (request.current === current) setSnapshot(result);
-    } catch (reason) {
-      if (request.current === current) setError(reason instanceof Error ? reason.message : '결과 파일을 열지 못했습니다.');
+    } catch {
+      if (request.current === current) setError('결과 파일을 읽지 못했습니다. IdiotQuant에서 저장한 JSON 파일을 선택하세요.');
     } finally { if (request.current === current) setLoading(false); }
   }
 
@@ -75,11 +78,14 @@ function SharedResult() {
         <div className="mt-6 space-y-2 text-xs leading-6 text-neutral-500 dark:text-neutral-400">{snapshot.notes.map((note, index) => <p key={index}>{note}</p>)}</div>
 
       </>}
-      {!loading && !snapshot && !error && <p className="mb-4 text-sm text-neutral-500">받은 공유 링크로 접속하거나 결과 파일을 선택해 주세요.</p>}
-      <ShareServiceMenu />
-      <div className="mt-8 border-t border-neutral-200 pt-5 dark:border-neutral-700">
-        <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 text-sm font-medium"><FileUp size={16} aria-hidden="true" /> 결과 파일 열기<input type="file" accept="application/json,.json" onChange={event => void openFile(event)} className="ml-2 max-w-52 text-xs" aria-label="공유 결과 파일 선택" /></label>
+      {!loading && !snapshot && !error && <p className="mb-4 text-sm text-neutral-500">받은 공유 링크를 열거나 아래에서 결과 파일을 선택하세요.</p>}
+      <div className="my-5 border-t border-neutral-200 pt-3 dark:border-neutral-700">
+        <label className="flex min-h-11 cursor-pointer flex-wrap items-center gap-x-3 gap-y-2 text-sm font-medium">
+          <span className="inline-flex items-center gap-2"><FileUp size={16} aria-hidden="true" />결과 파일 열기</span>
+          <input type="file" accept="application/json,.json" onChange={event => void openFile(event)} className="min-w-0 max-w-full text-sm" />
+        </label>
       </div>
+      <ShareServiceMenu />
     </main>
   </div>;
 }
