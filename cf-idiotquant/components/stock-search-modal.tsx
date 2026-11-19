@@ -105,8 +105,9 @@ export function StockSearchModal({ open, label, purpose = "analyze", disabledMes
     surface.current?.style.removeProperty("--search-swipe-offset");
     if (surface.current) delete surface.current.dataset.swiping;
   };
-  const point = (event: PointerEvent) => ({ x: event.clientX, y: event.clientY, time: event.timeStamp });
+  const point = (event: PointerEvent) => ({ x: event.clientX, y: event.clientY });
   const startSwipe = (event: PointerEvent<HTMLDivElement>) => {
+    if (event.currentTarget.dataset.swipeClosing) return;
     resetSwipe();
     if (event.pointerType !== "touch" || !event.isPrimary) return;
     const target = event.target;
@@ -118,24 +119,39 @@ export function StockSearchModal({ open, label, purpose = "analyze", disabledMes
     if (!start || start.pointerId !== event.pointerId) return;
     const gesture = backSwipe(start, point(event), event.currentTarget.clientWidth);
     if (gesture.cancelled) { resetSwipe(); return; }
-    // iOS 가장자리 제스처는 pointerup 대신 pointercancel로 끝날 수 있다.
-    // 닫기 거리를 넘긴 순간 완료해 손을 뗄 때의 이벤트에 의존하지 않는다.
-    if (gesture.dismiss) {
-      resetSwipe();
-      onClose();
-      return;
+    const element = event.currentTarget;
+    if (gesture.offset && !element.dataset.swiping) {
+      element.setPointerCapture(event.pointerId);
+      element.dataset.swiping = "true";
     }
-    if (gesture.offset) {
-      event.currentTarget.setPointerCapture(event.pointerId);
-      event.currentTarget.dataset.swiping = "true";
-      event.currentTarget.style.setProperty("--search-swipe-offset", `${gesture.offset}px`);
-    }
+    if (element.dataset.swiping) element.style.setProperty("--search-swipe-offset", `${gesture.offset}px`);
   };
   const finishSwipe = (event: PointerEvent<HTMLDivElement>) => {
     const start = swipe.current;
-    const dismiss = start?.pointerId === event.pointerId && backSwipe(start, point(event), event.currentTarget.clientWidth).dismiss;
-    resetSwipe();
-    if (dismiss) onClose();
+    if (!start || start.pointerId !== event.pointerId) return;
+
+    const element = event.currentTarget;
+    const gesture = backSwipe(start, point(event), element.clientWidth);
+    if (!gesture.dismiss) {
+      resetSwipe();
+      return;
+    }
+
+    swipe.current = null;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      onClose();
+      return;
+    }
+
+    element.dataset.swipeClosing = "true";
+    const currentOffset = element.style.getPropertyValue("--search-swipe-offset") || "0px";
+    const endOffset = gesture.offset < 0 ? "-100%" : "100%";
+    const animation = element.animate({
+      transform: [`translateX(${currentOffset})`, `translateX(${endOffset})`],
+    }, { duration: 180, easing: "ease-out", fill: "forwards" });
+    animation.onfinish = () => {
+      if (surface.current === element) onClose();
+    };
   };
 
   return <dialog ref={dialog} id="stock-search-modal" aria-labelledby="stock-search-title" aria-describedby="stock-search-note" aria-modal="true"
@@ -146,7 +162,7 @@ export function StockSearchModal({ open, label, purpose = "analyze", disabledMes
       onPointerDownCapture={startSwipe} onPointerMoveCapture={moveSwipe} onPointerUpCapture={finishSwipe} onPointerCancelCapture={resetSwipe}
       onLostPointerCapture={event => {
         // 자식의 암시적 캡처에서 표면으로 넘어가는 이벤트는 무시한다.
-        if (event.target === event.currentTarget) resetSwipe();
+        if (event.target === event.currentTarget && swipe.current?.pointerId === event.pointerId) resetSwipe();
       }}>
       <h2 id="stock-search-title" className="sr-only">{label}</h2>
       <header className="stock-search-header" data-search-content>
