@@ -13,7 +13,7 @@ export const shareNumber = (value: unknown, suffix = '', prefix = '') => {
 };
 const base = (kind: ResultSnapshot['kind'], title: string, sourcePath: string): ResultSnapshot => ({
   version: 1, kind, title, sourcePath, createdAt: new Date().toISOString(), summary: [], tables: [],
-  notes: ['공유자가 조회한 시점의 결과이며 실시간 데이터가 아닙니다.', '투자 참고 정보이며 수익을 보장하지 않습니다.'],
+  notes: ['공유자가 조회한 시점의 결과입니다.', '투자 참고 정보이며 수익을 보장하지 않습니다.'],
 });
 
 export function screenerSnapshot(items: Record<string, any>[], sourcePath: string, date: string | null, country: 'KR' | 'US', conditions: string[]): ResultSnapshot {
@@ -33,7 +33,7 @@ export function screenerSnapshot(items: Record<string, any>[], sourcePath: strin
     }),
   }];
   if (conditions.length) snapshot.notes.unshift(`적용 조건: ${conditions.join(' · ')}`);
-  snapshot.notes.push('공유자의 결과 목록 순서를 유지합니다. 전체 시장의 종목 수가 아닌 공유에 포함된 종목 수입니다.');
+  snapshot.notes.push('공유자가 선택한 목록 순서대로 표시합니다.');
   return snapshot;
 }
 
@@ -72,6 +72,6 @@ export function compareSnapshot(stocks: ComparisonStock[], dates: string[]): Res
     if (summary) stats.rows.push([date, shareNumber(summary.average, '%'), shareNumber(summary.median, '%'), `${summary.positiveCount} / ${summary.count}`]);
   }
   if (stats.rows.length) snapshot.tables.push(stats);
-  snapshot.notes.push('환산가 = 해당 거래일 시가총액 ÷ 조회 당시 현재 상장주식 수. 시총이 없으면 같은 시점에 저장된 가격 × 당시 상장주식 수로 역산합니다. 시총은 저장 시점 기준으로 종가와 차이가 있을 수 있으며 분할·병합 외 증자·감자도 반영합니다. 환산가가 없는 날짜가 있으면 해당 종목의 모든 날짜를 제공 종가 기준으로 비교하고 변화율 집계에 포함합니다. 종가 기준 비교에는 주식 수 변화가 반영되지 않을 수 있습니다. 재무지표는 조회 당시 기준이며 배당·비용은 포함하지 않습니다.');
+  snapshot.notes.push('시총 환산가는 해당 거래일 시가총액을 조회 당시 상장주식 수로 나눈 값입니다. 환산가가 빠진 날짜가 있으면 해당 종목의 모든 날짜를 종가로 비교합니다. 종가는 원본 시세의 조정 여부에 따라 분할·병합·증자·감자를 반영하지 않을 수 있습니다. 재무지표는 조회 당시 기준입니다. 주가 변화율에는 배당금·수수료·세금을 반영하지 않습니다.');
   return snapshot;
 }

@@ -85,13 +85,13 @@ test('선택·앞뒤 이동·다시 시작은 조건을 바꾸지 않고 마지�
     h.click('건너뛰기'); h.click('건너뛰기'); h.click('B');
     assert.equal(h.applications.length, 0);
     assert.match(h.text(), /2종목/);
-    h.click('기존 필터 직접 설정');
+    h.click('직접 필터 설정');
     assert.equal(h.manual(), 1);
     assert.equal(h.applications.length, 0);
     h.click('처음부터 다시 고르기');
     for (let index = 0; index < 4; index++) h.click('A');
     assert.equal(h.applications.length, 0);
-    h.click('이 조건 적용하고 후보 보기');
+    h.click('필터 적용');
     assert.deepEqual(h.applications, [worldcupFilters(['a', 'a', 'a', 'a'], 'KR')]);
 });
 
@@ -101,8 +101,8 @@ test('거래대금 자료가 없거나 사라지면 하한을 적용하지 않�
     h.props.hasTradingAmount = false; h.render();
     assert.match(h.text(), /미정 · 미적용/);
     h.props.loading = true; h.render();
-    assert.ok(h.buttons().find(button => h.textOf(button).includes('이 조건 적용하고 후보 보기'))?.props.disabled);
-    h.props.loading = false; h.render(); h.click('이 조건 적용하고 후보 보기');
+    assert.ok(h.buttons().find(button => h.textOf(button).includes('필터 적용'))?.props.disabled);
+    h.props.loading = false; h.render(); h.click('필터 적용');
     assert.equal(h.applications[0].minTrAmt, 0);
     h.click('처음부터 다시 고르기');
     for (let index = 0; index < 3; index++) h.click('B');
@@ -144,8 +144,8 @@ test('직접 필터 링크는 유지하고 짧은 코드와 함께 지정한 부
 test('완료한 월드컵은 짧은 주소를 복사하고 같은 선택으로 바로 다시 열린다', async () => {
     const answers: WorldcupAnswer[] = ['a', 'b', 'unknown', 'a'];
     const h = harness('US', true, answers);
-    assert.match(h.text(), /나의 투자 기준이 완성/);
-    h.click('짧은 링크 복사');
+    assert.match(h.text(), /적용할 필터/);
+    h.click('링크 복사');
     await new Promise(resolve => setImmediate(resolve)); h.render();
     assert.deepEqual(h.copied, ['https://idiotquant.com/screener?w=uabua']);
     assert.match(h.text(), /링크를 복사했습니다/);
@@ -156,7 +156,7 @@ test('완료한 월드컵은 짧은 주소를 복사하고 같은 선택으로 �
 
 test('클립보드가 거절되면 직접 복사할 주소와 안내를 제공한다', async () => {
     const h = harness('KR', true, ['a', 'a', 'a', 'a'], true);
-    h.click('짧은 링크 복사');
+    h.click('링크 복사');
     await new Promise(resolve => setImmediate(resolve)); h.render();
     assert.equal(h.copied.length, 0);
     assert.equal(h.nodes().find(node => node.type === 'input').props.value, 'https://idiotquant.com/screener?w=kaaaa');

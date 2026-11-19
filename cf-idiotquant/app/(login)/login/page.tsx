@@ -23,7 +23,7 @@ export default function LoginPage() {
                         <p className={styles.terms}>로그인 시 <Link href="/terms">이용약관</Link> 및 <Link href="/privacy">개인정보 처리방침</Link>에 동의합니다.</p>
                     </div>
                     <div className={styles.ticketBottom}>
-                        <Link href="/screener">종목 발굴 미리보기<ArrowUpRight size={16} aria-hidden="true" /></Link>
+                        <Link href="/screener">종목 발굴<ArrowUpRight size={16} aria-hidden="true" /></Link>
                     </div>
                 </section>
                 <ResearchPreview />

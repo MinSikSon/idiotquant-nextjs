@@ -203,7 +203,7 @@ function StatementCard({ model, unit }: { model: BarModel; unit: Unit }) {
             {model.stacks.length > 0 && (
                 <div className="px-3 sm:px-5 py-3 sm:py-4 bg-surface-canvas dark:bg-surface-dark border-b border-neutral-100 dark:border-border-subtle-dark flex flex-col gap-2 sm:gap-3.5">
                     <span className="font-mono text-[13px] font-bold uppercase tracking-[0.16em] text-neutral-600 dark:text-neutral-300">
-                        한눈에 보기 · {compactPeriod(model.periods[0] ?? "").date}
+                        재무 구성 · {compactPeriod(model.periods[0] ?? "").date}
                     </span>
                     {model.stacks.map(s => <Stack key={s.title} row={s} />)}
                 </div>

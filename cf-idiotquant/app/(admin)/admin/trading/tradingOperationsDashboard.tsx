@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Activity, ArrowLeft, Check, ChevronRight, Clock, Database, RefreshCw, Shield, X } from 'lucide-react';
+import { Activity, ArrowLeft, Check, ChevronRight, Clock, Database, RefreshCw, X } from 'lucide-react';
 import { PageHeader, PAGE_WIDTH } from '@/components/pageHeader';
 import { cn } from '@/lib/utils';
 import { fetchOperations, operationStatus, stepStatus, OPERATION_STATUS_LABELS,
@@ -159,28 +159,28 @@ export default function TradingOperationsDashboard() {
     const hasOldData = !!error || !!detailError;
 
     return <>
-        <PageHeader width="content" icon={<Activity size={18} />} title="자동매매 운영 현황" meta="관리자 전용 · 실행 단계와 내부 구성" />
+        <PageHeader width="content" icon={<Activity size={18} />} title="자동매매 운영 현황" />
         <main className={cn(PAGE_WIDTH.content, styles.dashboard)}>
-            <div className={styles.toolbar}><Link href="/admin" className={styles.back}><ArrowLeft size={14} />관리자 홈</Link><div className={styles.refresh}><span><Shield size={12} />관리자 전용</span><button onClick={() => setRefresh(value => value + 1)} disabled={loading} className={styles.button}><RefreshCw size={13} className={loading ? 'animate-spin' : ''} />새로고침</button></div></div>
+            <div className={styles.toolbar}><Link href="/admin" className={styles.back}><ArrowLeft size={14} />관리자 홈</Link><div className={styles.refresh}><button onClick={() => setRefresh(value => value + 1)} disabled={loading} className={styles.button}><RefreshCw size={13} className={loading ? 'animate-spin' : ''} />새로고침</button></div></div>
             {(error || detailError) && <div role="alert" className={styles.error}>{error || detailError} {(meta || run) && '· 마지막으로 조회한 데이터가 표시될 수 있습니다.'}</div>}
             <div className={styles.stats}>
-                <div className={styles.stat}><p>스케줄러</p><strong>{!meta ? '확인 중' : !meta.scheduler_enabled ? 'OFF' : !scheduler ? '실행 기록 없음' : schedulerStale ? '스케줄 진입 미확인' : 'ON · 매 분 확인'}</strong><small>마지막 진입 {time(scheduler?.started_at ?? null)} KST</small></div>
-                <div className={styles.stat}><p>{country} 매매 스케줄</p><strong>{currentWindow ? `${String(currentWindow.start).padStart(2, '0')}:00 ~ ${String(currentWindow.end).padStart(2, '0')}:00` : '확인 중'}</strong><small>5분 간격 · 스케줄 시간대이며 장 개장 여부와 다를 수 있습니다.</small></div>
-                <div className={styles.stat}><p>오늘 수집·아카이브 작업</p><strong>{meta ? `${meta.scan_country} ${meta.background_task === 'archive' ? `${meta.archive_period === 'weekly' ? '주간 ' : meta.archive_period === 'monthly' ? '월간 ' : ''}아카이브` : '수집'}` : '확인 중'}</strong><small>{meta?.schedule.scan ?? '운영일 확인 중'}</small></div>
+                <div className={styles.stat}><p>스케줄러</p><strong>{!meta ? '확인 중' : !meta.scheduler_enabled ? 'OFF' : !scheduler ? '실행 기록 없음' : schedulerStale ? '최근 3분간 실행 기록 없음' : 'ON · 매 분 확인'}</strong><small>마지막 진입 {time(scheduler?.started_at ?? null)} KST</small></div>
+                <div className={styles.stat}><p>{country} 매매 스케줄</p><strong>{currentWindow ? `${String(currentWindow.start).padStart(2, '0')}:00 ~ ${String(currentWindow.end).padStart(2, '0')}:00` : '확인 중'}</strong><small>5분마다 실행을 확인합니다. 개장 시간은 시장 일정을 따릅니다.</small></div>
+                <div className={styles.stat}><p>오늘 종목 수집 대상</p><strong>{meta ? `${meta.scan_country} 시장` : '확인 중'}</strong><small>매매·아카이브 분을 제외한 매 분 · 국장 1일 / 미장 2일</small></div>
             </div>
             <div className={styles.workbar}><div role="group" aria-label="관찰할 작업" className={styles.tabs}>{JOBS.map(item => <button key={item.id} aria-pressed={job === item.id} onClick={() => chooseJob(item.id)}>{item.label}</button>)}</div><div role="group" aria-label="시장 선택" className={styles.markets}>{(['KR', 'US'] as const).map(value => <button key={value} aria-pressed={country === value} onClick={() => chooseCountry(value)}>{value} {value === 'KR' ? '한국' : '미국'}</button>)}</div></div>
             <div className={styles.layout}>
                 <aside className={styles.sidebar}><h2>{job === 'trade' ? cursor ? '조회 범위 내 계좌' : '계좌별 최근 실행' : '최근 실행'}<small>{sidebar.length}개</small></h2>
                     {!runs.length && <p className={styles.empty}>{loading ? '실행 기록 조회 중…' : '최근 24시간 기록이 없습니다.'}</p>}
                     {sidebar.map(item => <button key={item.id} className={styles.account} aria-pressed={run?.user_id && job === 'trade' ? item.user_id === run.user_id : id === item.id} onClick={() => chooseRun(item.id)}><strong>{runTitle(item)}</strong><span>{time(item.started_at)}<Badge status={operationStatus(item, now)} /></span><small>{meta?.stages[job].find(stage => stage.id === item.current_stage)?.label ?? reason(item.reason) ?? '기록 확인'}</small></button>)}
-                    <p className={styles.sideFoot}>{job === 'trade' ? '계좌별 실행은 병렬로 진행됩니다. 같은 계좌도 실행 시각에 따라 별도 기록됩니다.' : '각 실행의 처리 범위와 저장·생략 결과를 확인합니다.'}</p>
+                    <p className={styles.sideFoot}>{job === 'trade' ? '계좌별 실행은 병렬로 진행됩니다. 같은 계좌도 실행 시각에 따라 별도 기록됩니다.' : '실행을 선택하면 저장하거나 건너뛴 항목을 볼 수 있습니다.'}</p>
                     <div className={styles.pagination}>{cursor && <button className={styles.button} onClick={() => { setCursor(null); chooseRun(''); }}>최신 기록</button>}{page?.key === query && page.data.next_cursor && <button className={styles.button} onClick={() => { setCursor(page.data.next_cursor); chooseRun(''); }}>이전 50건<ChevronRight size={12} /></button>}</div>
                 </aside>
                 <div className={styles.content}>
                     <section className={styles.panel} aria-label="실행 단계 진행도"><div className={styles.panelHead}><div><h2>{run ? runTitle(run) : '실행을 선택하세요'}</h2><p>{run ? `${time(run.started_at, true)} KST · ${run.country ?? '전체'}${run.user_id ? ` · ${run.user_id}` : ''}` : '실행 기록이 생성되면 단계별 진행 상태가 표시됩니다.'}</p></div><label className={styles.history}>실행 시각<select value={id} onChange={event => chooseRun(event.target.value)} aria-label="조회할 실행 시각"><option value="" disabled>실행 선택</option>{runs.map(item => <option key={item.id} value={item.id}>{time(item.started_at, true)} · {runTitle(item)} · {OPERATION_STATUS_LABELS[operationStatus(item, now)]}</option>)}</select></label></div>
                         {stages.length > 0 && <div className={styles.timelineScroll} ref={timelineRef}><ol className={styles.timeline}>{stages.map(item => { const record = run?.steps.filter(step => !step.parent_stage && step.stage === item.id).at(-1); const status = run ? stepStatus(record, run, now) : 'pending'; return <li key={item.id} className={cn(record && record.status !== 'skipped' && styles.connected)}><button onClick={() => setSelectedStage(item.id)} aria-pressed={stageId === item.id} aria-label={`${item.label} · ${OPERATION_STATUS_LABELS[status]}`}><Mark status={status} /><span>{item.label}</span><small>{OPERATION_STATUS_LABELS[status]}</small></button></li>; })}</ol></div>}
                         <div className={styles.current} aria-live="polite">{run ? <><Badge status={operationStatus(run, now)} /><span>{reason(run.reason) ?? (operationStatus(run, now) === 'unknown' ? '10분 이상 갱신되지 않아 현재 수행 상태를 확인할 수 없습니다.' : meta?.stages[job].find(stage => stage.id === run.current_stage)?.label ?? '실행 준비')}{run.context.symbol && ` · ${run.context.symbol}`}</span><small>{duration(run.started_at, run.finished_at ?? now)}</small></> : <span>{loading ? '불러오는 중…' : '아직 기록이 없습니다. Worker 배포 후 새 실행부터 수집합니다.'}</span>}</div>
-                        <p className={styles.note}>점을 선택하면 단계의 내부 처리와 연결 구성을 확인할 수 있습니다. 주문 접수와 실제 체결은 별도입니다.</p>
+                        <p className={styles.note}>단계를 누르면 실행 기록과 관련 서비스를 볼 수 있습니다. 체결 여부는 증권사에서 확인하세요.</p>
                     </section>
                     {stage && <section className={styles.panel}><div className={styles.panelHead}><h2>{stage.label} · 내부 동작</h2>{run && <Badge status={selectedStatus} />}</div><p className={styles.description}>{stage.description}</p>
                         {(reason(step?.reason) || (!step && run?.finished_at)) && <p className={styles.reason}>{reason(step?.reason) ?? reason(run?.reason) ?? '이 실행에서 도달하지 않았거나 기록되지 않은 단계입니다.'}</p>}

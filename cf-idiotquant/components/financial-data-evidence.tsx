@@ -60,9 +60,9 @@ function EvidenceRows({ market, kiBS, kiIS, finnhubData }: Props) {
   return <div className="mt-3 space-y-3">
     <p>제공처: <a href={source.url} target="_blank" rel="noreferrer" className="underline">{source.name} ↗</a></p>
     <p>{market === 'KR'
-      ? 'OpenDART 단일회사 주요계정 → 백엔드 계정 매핑·억 원 환산 → kiBS.output / kiIS.output · annualOutput. 기존 KIS 형태의 요청 경로를 유지하며 실제 재무 제공처는 OpenDART입니다. NCAV는 유동자산(cras) − 부채총계(total_lblt)를 사용합니다.'
-      : 'Financials As Reported → finnhubData.data · annualData. bs는 재무상태표, ic는 손익계산서, cf는 현금흐름표입니다. concept는 공시 항목 식별자입니다.'}</p>
-    <p>{market === 'KR' ? '백엔드에서 OpenDART 계정을 매핑하고 억 원으로 환산한 수신 값입니다. OpenDART 원문 금액과는 구분됩니다. fs_div는 연결(CFS)·별도(OFS), rcept_no는 공시 접수번호입니다.' : '화면의 단위 환산·반올림 전 수신 값입니다.'} 기간은 수집 시각이 아닌 재무 기준 기간입니다. 전체 API 응답이 아닌 재무 항목을 제공합니다.</p>
+      ? '국내 재무는 OpenDART의 단일회사 주요계정에서 가져옵니다. 서버가 서비스의 항목명에 맞춰 변환하고 금액을 억 원으로 표시합니다. NCAV는 유동자산(cras)에서 부채총계(total_lblt)를 뺀 값입니다.'
+      : '미국 재무는 Finnhub의 Financials As Reported에서 가져옵니다. bs는 재무상태표, ic는 손익계산서, cf는 현금흐름표입니다. concept는 공시 항목을 식별하는 코드입니다.'}</p>
+    <p>{market === 'KR' ? 'fs_div는 연결(CFS)과 별도(OFS)를 구분합니다. rcept_no는 공시 접수번호입니다.' : '표에는 단위 변환과 반올림 전의 금액을 표시합니다.'} 표의 기간은 재무제표의 기준일 또는 보고 기간입니다.</p>
     {rows.length ? <>
       <div role="region" aria-label="재무 원본 값 표" tabIndex={0} className="max-h-96 overflow-auto rounded-lg border border-neutral-200 dark:border-neutral-700">
         <table className="w-full text-left text-xs">

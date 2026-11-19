@@ -351,8 +351,7 @@ function ComparePageContent() {
     <PageHeader
       title="종목 비교"
       mobileTitleInNavigation
-      description="① 종목 추가 → ② 날짜 추가 → ③ 환산가 또는 종가로 변화율 비교"
-      meta={storageFailed ? "브라우저 저장을 사용할 수 없습니다. 현재 화면에서 비교할 수 있습니다." : "비교 내용은 이 브라우저에 저장됩니다. 시세·지표는 조회 당시 기준입니다."}
+      meta={storageFailed ? "이 브라우저에 저장하지 못했습니다. 이 화면을 벗어나기 전까지는 비교를 계속할 수 있습니다." : "비교 종목과 날짜는 이 브라우저에 저장합니다."}
       mobileCompact
       actions={<ResultShare getSnapshot={() => compareSnapshot(stocks, dates)} disabled={loading || dateLoading || !stocks.length} />}
     />
@@ -387,7 +386,7 @@ function ComparePageContent() {
         </div>
       </section>}
 
-      <p className="mt-4 text-xs text-neutral-600 dark:text-neutral-400">{dates.length ? `비교 기준일: ${dates.map(date => formatDate(date.replaceAll('-', ''))).join(', ')}` : '종목을 추가하면 최근 거래일 가격으로 비교합니다.'}</p>
+      {dates.length > 0 && <p className="mt-4 text-xs text-neutral-600 dark:text-neutral-400">비교 기준일: {dates.map(date => formatDate(date.replaceAll('-', ''))).join(', ')}</p>}
       <SecondarySection title="비교 날짜 추가·변경" className="mt-4">
         <p className="mt-2 text-xs text-neutral-600 dark:text-neutral-400">날짜 하나로 환산가를 나란히 보고, 서로 다른 거래일을 두 개 이상 추가하면 가장 이른 거래일 대비 변화율도 비교할 수 있습니다.</p>
         <div className="mt-4 grid min-w-0 gap-3 sm:flex sm:items-end">
@@ -410,8 +409,8 @@ function ComparePageContent() {
       </SecondarySection>
 
       {stocks.length === 0 ? <section className="mt-8 border-t border-neutral-200 px-0 py-8 dark:border-neutral-700">
-        <p className="text-sm font-medium">위의 종목 검색 버튼에서 비교할 종목을 추가해 주세요.</p>
-        <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">종목을 추가하면 최근 거래일 가격으로 시작합니다. 날짜를 추가하면 다른 시점의 가격도 비교할 수 있습니다.</p>
+        <p className="text-sm font-medium">상단 검색에서 비교할 종목을 추가하세요.</p>
+        <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">기본값은 최근 거래일입니다. 다른 날의 가격은 ‘비교 날짜 추가·변경’에서 조회하세요.</p>
       </section> : <section className="mt-5 sm:mt-8" aria-label="종목 비교 결과">
         <div className="space-y-2 md:hidden">
           {stocks.map(stock => {
@@ -505,7 +504,7 @@ function ComparePageContent() {
         </div>
       </section>}
       {returnStats.length > 0 && <SecondarySection title="날짜별 주가 변화율 통계" className="mt-5">
-        <p className="mt-1 hidden text-xs text-neutral-600 dark:text-neutral-400 sm:block">종목별 가장 이른 거래일 대비 변화율을 집계합니다. 환산가가 없는 날짜가 있으면 해당 종목은 모든 날짜를 종가 기준으로 비교합니다.</p>
+        <p className="mt-1 hidden text-xs text-neutral-600 dark:text-neutral-400 sm:block">종목마다 가장 이른 거래일 가격을 기준으로 변화율을 계산합니다.</p>
         <div className="mt-2 grid gap-1.5 sm:mt-3 sm:gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {returnStats.map(({ date, summary }) => summary && <div key={date} className="rounded-xl border border-neutral-200 bg-white px-3 py-2 dark:border-neutral-700 dark:bg-surface-dark-card sm:p-4">
             <div className="flex items-center justify-between gap-2 sm:block">
@@ -517,10 +516,12 @@ function ComparePageContent() {
         </div>
       </SecondarySection>}
       {isAdmin && <p className="mt-5 text-xs leading-5 text-neutral-500">출처: 한국투자증권(시세·지표), 금융위원회 · 공공데이터포털(과거 시가총액 보완). <Link href="/data-sources" className="underline">데이터별 출처 및 이용 조건</Link></p>}
-      <p className="mt-5 max-w-prose text-xs leading-5 text-neutral-600 dark:text-neutral-400">시세·지표는 조회 당시 기준입니다. 변화율은 배당·수수료·세금을 포함한 실제 투자 수익률과 다릅니다.</p>
+      <p className="mt-5 max-w-prose text-xs leading-5 text-neutral-600 dark:text-neutral-400">주가 변화율에는 배당금·수수료·세금을 반영하지 않습니다.</p>
       <SecondarySection title="가격 산정 방식과 데이터 기준" className="mt-3">
-        <p className="mt-2 max-w-prose text-xs leading-relaxed text-neutral-600 dark:text-neutral-400">환산가 = 해당 거래일 시가총액 ÷ 조회 당시 현재 상장주식 수. 국내 일별 저장값에 시총이나 당시 가격·상장주식 수가 없으면 공공데이터포털에서 해당 거래일의 시총을 조회합니다. 미국 종목은 종가 기준으로 비교합니다. 환산가가 없는 날짜가 있으면 해당 종목은 모든 날짜를 종가 기준으로 비교합니다. 휴장일은 선택일 이전의 최근 거래일을 사용합니다.</p>
-      <p className="mt-5 max-w-prose text-xs leading-relaxed text-neutral-600 dark:text-neutral-400">시총 환산가는 현재 주식 수 기준의 가격이며 액면분할·병합 외에 증자·감자에 따른 주식 수 변화도 반영합니다. 국내 일별 저장값은 수집 시점의 시총이므로 종가와 차이가 있을 수 있습니다. 외부 자료는 서비스의 제공 범위와 조회 권한에 따라 없을 수 있습니다. 환산가가 없는 날짜가 있으면 해당 종목의 모든 날짜에 제공 종가를 사용해 변화율을 집계합니다. 종가 기준 비교에는 주식 수 변화가 반영되지 않을 수 있습니다. 변화율은 배당금·수수료·세금을 포함한 실제 투자 수익률과 다릅니다. PER·PBR·EPS·BPS·ROE는 조회 당시 기준이며 저장된 값은 자동 갱신되지 않습니다.</p>
+        <p className="mt-2 text-sm leading-6 text-neutral-700 dark:text-neutral-300">국내 종목의 시총 환산가는 해당 거래일 시가총액을 조회 당시 상장주식 수로 나눈 값입니다. 저장 자료에 시총이 없고 당시 가격과 주식 수로도 시총을 구할 수 없으면 공공데이터포털에서 조회합니다.</p>
+        <p className="mt-3 text-sm leading-6 text-neutral-700 dark:text-neutral-300">미국 종목과 일부 날짜의 환산가를 구할 수 없는 종목은 모든 날짜를 종가로 비교합니다. 휴장일을 고르면 그날 이전의 가장 가까운 거래일을 사용합니다.</p>
+        <p className="mt-3 text-sm leading-6 text-neutral-700 dark:text-neutral-300">환산가는 액면분할·병합·증자·감자에 따른 주식 수 변화를 반영합니다. 수집 시점의 시총을 쓰므로 종가와 다를 수 있습니다. 종가로 비교할 때는 원본 시세의 조정 여부에 따라 주식 수 변화가 빠질 수 있습니다.</p>
+        <p className="mt-3 text-sm leading-6 text-neutral-700 dark:text-neutral-300">PER·PBR·EPS·BPS·ROE는 종목을 조회한 시점의 값입니다. 브라우저에 저장한 값은 자동으로 갱신하지 않습니다.</p>
       </SecondarySection>
     </main>
   </div>;
