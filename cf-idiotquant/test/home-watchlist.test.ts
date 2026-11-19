@@ -218,7 +218,7 @@ test('로그인 관심목록에도 추가 조회 없이 NCAV 비율·EPS·BPS로
     assert.equal(h.posts.length, 0);
 });
 
-test('미국 관심종목은 달러 소수점으로 표시하고 결측·적자 값은 계산 불가로 남긴다', async () => {
+test('미국 관심종목은 달러 소수점으로 표시하고 모든 모델이 결측·적자이면 안내로 묶는다', async () => {
     const h = harness();
     h.getWith(async () => ({ success: true, data: { items: [{
         ...item, ticker: 'US-TEST', stock_name: '미국 예시', is_us: 1,
@@ -233,5 +233,75 @@ test('미국 관심종목은 달러 소수점으로 표시하고 결측·적자 
         eps: 1.234, net_income: -100, bps: null,
     }], baseline } }));
     h.focus(); await h.settle();
-    assert.equal((h.text().match(/계산 불가/g) ?? []).length, 3);
+    assert.match(h.text(), /평가에 필요한 재무 수치 부족/);
+    assert.equal(h.nodes().filter(node => node.type === 'dl' && node.props['aria-label'] === '전략별 적정주가').length, 0);
+});
+
+
+test('필터는 평가 가능한 종목과 스캔 없는 종목을 구분하고 저장하지 않는다', async () => {
+    const h = harness();
+    h.getWith(async () => ({ success: true, data: { items: [item,
+        { ...item, ticker: 'ETF', stock_name: '스캔 없는 ETF', scan_date: null },
+        { ...item, ticker: 'NO-VALUATION', stock_name: '재무 부족 종목', eps: null, bps: null, ncav_ratio: null, lstn_stcn: null },
+    ], baseline } }));
+    await h.settle();
+    const selectFilter = (label: string) => {
+        h.nodes().find(node => node.type === 'button' && node.props.children?.[0]?.startsWith(label)).props.onClick();
+        h.render();
+    };
+    selectFilter('평가 가능');
+    assert.match(h.text(), /삼성전자/);
+    assert.doesNotMatch(h.text(), /스캔 없는 ETF|재무 부족 종목/);
+    assert.equal(h.nodes().filter(node => node.props?.['aria-pressed'] === true).length, 1);
+    selectFilter('스캔 없음');
+    assert.match(h.text(), /스캔 없는 ETF/);
+    assert.doesNotMatch(h.text(), /삼성전자|재무 부족 종목|₩66,000/);
+    selectFilter('전체');
+    assert.match(h.text(), /삼성전자/);
+    assert.match(h.text(), /재무 부족 종목/);
+    assert.equal(h.posts.length, 0);
+});
+
+test('각 시장에서 최신 스캔 다섯 종목부터 보여주고 나머지는 펼치고 접는다', async () => {
+    const h = harness();
+    h.getWith(async () => ({ success: true, data: { items: [
+        { ...item, ticker: 'ETF', stock_name: '스캔 없는 ETF', scan_date: null },
+        ...Array.from({ length: 6 }, (_, index) => ({ ...item, ticker: `KR${index}`, stock_name: `국내 예시 ${index}`, scan_date: `2026111${index}` })),
+        { ...item, ticker: 'US', is_us: 1, stock_name: '미국 예시' },
+    ], baseline } }));
+    await h.settle();
+    const links = () => h.nodes().filter(node => node.type === 'a' && node.props.href?.startsWith('/analyze?'));
+    assert.equal(links().length, 6);
+    assert.equal(links()[0].props.href, '/analyze?ticker=KR5');
+    assert.match(h.text(), /미국 예시/);
+    assert.doesNotMatch(h.text(), /스캔 없는 ETF/);
+    h.nodes().find(node => node.type === 'button' && node.props['aria-expanded'] === false).props.onClick();
+    h.render();
+    assert.equal(links().length, 8);
+    assert.match(h.text(), /스캔 없는 ETF/);
+    h.nodes().find(node => node.type === 'button' && node.props['aria-expanded'] === true).props.onClick();
+    h.render();
+    assert.equal(links().length, 6);
+    assert.equal(h.posts.length, 0);
+});
+
+test('평가 가능 필터가 빈 경우 목록 복귀가 가능한 빈 상태를 표시한다', async () => {
+    const h = harness();
+    h.getWith(async () => ({ success: true, data: { items: [{ ...item, scan_date: null }], baseline } }));
+    await h.settle();
+    h.nodes().find(node => node.type === 'button' && node.props.children?.[0]?.startsWith('평가 가능')).props.onClick();
+    h.render();
+    assert.match(h.text(), /평가 가능한 종목이 없습니다/);
+    assert.ok(h.nodes().some(node => node.type === 'button' && node.props.children?.[0]?.startsWith('전체')));
+    assert.doesNotMatch(h.text(), /먼저 관심종목을 담아보세요/);
+});
+
+test('백그라운드 조회가 실패해도 기존 목록을 유지한다', async () => {
+    const h = harness();
+    await h.settle();
+    h.getWith(async () => ({ success: false, error: '일시적인 조회 실패' }));
+    h.focus(); await h.settle();
+    assert.match(h.text(), /일시적인 조회 실패/);
+    assert.match(h.text(), /삼성전자/);
+    assert.match(h.text(), /다시 불러오기/);
 });
