@@ -35,8 +35,7 @@ import {
 import nasdaq_tickers from '@/public/data/usStockSymbols/nasdaq_tickers.json';
 import nyse_tickers from '@/public/data/usStockSymbols/nyse_tickers.json';
 import amex_tickers from '@/public/data/usStockSymbols/amex_tickers.json';
-import validCorpCodeArray from '@/public/data/validCorpCodeArray.json';
-import validCorpNameArray from '@/public/data/validCorpNameArray.json';
+import validCorpCode from '@/public/data/validCorpCode.json';
 import { CopyStockButtons, type CopyStock } from '@/components/copyStockButtons';
 
 // const MARKET_STOCK_MASTER = [
@@ -45,6 +44,16 @@ import { CopyStockButtons, type CopyStock } from '@/components/copyStockButtons'
 // ];
 
 // --- Helpers ---
+// 국내 자동매매의 종목명·숫자 코드와 증권사 잔고의 6자리 코드를 같은 키로 비교한다.
+const KR_NAME_TO_CODE = new Map(Object.entries(validCorpCode).map(([name, data]) => [name, data.stock_code]));
+function balanceTickerKey(value: unknown, isUs: boolean): string {
+    const ticker = String(value ?? "").trim();
+    if (isUs) return ticker.toUpperCase();
+    const code = KR_NAME_TO_CODE.get(ticker) ?? ticker;
+    if (/^A\d{6}$/i.test(code)) return code.slice(1);
+    return /^\d{1,6}$/.test(code) ? code.padStart(6, "0") : code;
+}
+
 const getFieldValue = (item: any, key: string) => {
     const map: any = {
         name: item.prdt_name || item.ovrs_item_name || item.itms_nm,
@@ -111,13 +120,13 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
             if (s.group_id === "__likes__") continue;
             const g: any = s.group_id ? gmap.get(s.group_id) : null;
             if (g && g.id !== "__likes__") {
-                map.set(String(s.symbol), { name: g.name, active: g.is_trading_active !== false, assigned: true });
+                map.set(balanceTickerKey(s.symbol, isUs), { name: g.name, active: g.is_trading_active !== false, assigned: true });
             } else {
-                map.set(String(s.symbol), { name: "미지정", active: false, assigned: false });
+                map.set(balanceTickerKey(s.symbol, isUs), { name: "미지정", active: false, assigned: false });
             }
         }
         return map;
-    }, [props.capital]);
+    }, [props.capital, isUs]);
 
     const evlu_smtl = Number(props.kiBalance?.output3?.evlu_amt_smtl ?? props.kiBalance?.output2?.[0]?.evlu_amt_smtl_amt ?? 0);
     const pchs_smtl = Number(props.kiBalance?.output3?.pchs_amt_smtl ?? props.kiBalance?.output2?.[0]?.pchs_amt_smtl_amt ?? 0);
@@ -144,9 +153,9 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
             amex_tickers.forEach(t => list.push({ pdno: t, prdt_name: t, ovrs_excg_cd: "AMEX" }));
             return list;
         } else {
-            return validCorpCodeArray.map((code, index) => ({
-                pdno: code,
-                prdt_name: validCorpNameArray[index] || "Unknown",
+            return Object.entries(validCorpCode).map(([name, data]) => ({
+                pdno: data.stock_code,
+                prdt_name: name,
                 ovrs_excg_cd: "",
             }));
         }
@@ -320,18 +329,18 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder, groupByTicker,
     const router = useRouter();
 
     const renderGroupBadge = (item: any) => {
-        const ticker = String(item.pdno || item.ovrs_pdno || "");
+        const ticker = balanceTickerKey(item.pdno || item.ovrs_pdno, isUs);
         const g = groupByTicker?.get(ticker);
         if (!g) return null; // 운용 풀에 없는(자동매매 비대상) 보유 종목
         const label = !g.active || !g.assigned ? "자동매매 제외" : countryTradingActive === false ? "자동매매 OFF" : "자동매매";
         const description = `${label} · ${g.name}`;
         return (
-            <span title={description} aria-label={description} className={`mt-0.5 inline-flex w-fit max-w-full items-center gap-1 rounded px-1.5 py-0.5 text-xs font-semibold ${
+            <span role="img" title={description} aria-label={description} className={`inline-flex shrink-0 items-center ${
                 g.assigned && g.active && countryTradingActive === true
-                    ? "bg-brand/10 text-brand-ink"
-                    : "bg-neutral-100 text-neutral-600 dark:bg-surface-dark-muted dark:text-neutral-400"
+                    ? "text-brand-ink"
+                    : "text-neutral-500 dark:text-neutral-400"
             }`}>
-                <Bot className="h-3 w-3 shrink-0" aria-hidden="true" /> {label}
+                <Bot className="h-3.5 w-3.5" aria-hidden="true" />
             </span>
         );
     };
@@ -405,7 +414,7 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder, groupByTicker,
                 return (
                     <details key={idx} className="group">
                         <summary className="grid grid-cols-[minmax(0,1fr)_4rem_3.5rem_1rem] items-center gap-1.5 px-2 py-2 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
-                            <span className="flex min-w-0 flex-col items-start">
+                            <span className="flex min-w-0 items-center gap-1">
                                 <span className="max-w-full break-words text-xs font-bold text-neutral-900 dark:text-neutral-100">{getFieldValue(item, "name") || item.pdno || item.ovrs_pdno}</span>
                                 {renderGroupBadge(item)}
                             </span>
@@ -418,7 +427,7 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder, groupByTicker,
                         <div className="px-3 pb-2.5 space-y-2 border-t border-neutral-100 dark:border-border-subtle-dark">
                             <div className="flex items-center gap-2 pt-2 text-[11px] font-mono text-neutral-500 dark:text-neutral-400">
                                 <span>{item.pdno || item.ovrs_pdno}</span>
-                                {groupByTicker?.get(String(item.pdno || item.ovrs_pdno || ""))?.name}
+                                {groupByTicker?.get(balanceTickerKey(item.pdno || item.ovrs_pdno, isUs))?.name}
                             </div>
                         {/* 항목명과 값을 한 줄에 배치 */}
                         <div className="grid grid-cols-1 min-[480px]:grid-cols-2 gap-x-4 gap-y-1 text-xs">

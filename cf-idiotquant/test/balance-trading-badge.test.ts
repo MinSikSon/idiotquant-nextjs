@@ -6,13 +6,14 @@ import { createRequire } from "node:module";
 import ts from "typescript";
 
 const require = createRequire(import.meta.url);
-const source = ts.transpileModule(readFileSync(new URL("../components/inquireBalanceResult.tsx", import.meta.url), "utf8") + "\nexports.Table = SortableBalanceTable;", {
+const source = ts.transpileModule(readFileSync(new URL("../components/inquireBalanceResult.tsx", import.meta.url), "utf8") + "\nexports.Table = SortableBalanceTable; exports.tickerKey = balanceTickerKey;", {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true },
 }).outputText;
 const exports: any = {};
 runInNewContext(source, { exports, Intl, require(name: string) {
   if (name === "react") return { useState: (value: unknown) => [value, () => {}], useMemo: (fn: () => unknown) => fn() };
   if (name === "next/navigation") return { useRouter: () => ({}) };
+  if (name.endsWith("validCorpCode.json")) return JSON.parse(readFileSync(new URL(`../public/data/${name.split("/").at(-1)}`, import.meta.url), "utf8"));
   if (name.endsWith(".json")) return [];
   if (name.startsWith("@/")) return {};
   return require(name);
@@ -35,8 +36,13 @@ for (const isUs of [false, true]) {
       const summary = nodes(tree).find(n => n.type === "summary");
       assert.ok(summary);
       if (expected) {
-        assert.ok(text(summary).includes(expected));
-        assert.ok(nodes(summary).some(n => n.props?.["aria-label"] === `${expected} · ${group!.name}`));
+        assert.ok(!text(summary).includes("자동매매"));
+        const icon = nodes(summary).find(n => n.props?.["aria-label"] === `${expected} · ${group!.name}`);
+        assert.ok(icon);
+        assert.equal(icon.props.role, "img");
+        assert.equal(text(icon), "");
+        const nameLine = summary.props.children[0];
+        assert.ok(!nameLine.props.className.includes("flex-col"));
       } else {
         assert.ok(!text(summary).includes("자동매매"));
       }
@@ -46,3 +52,57 @@ for (const isUs of [false, true]) {
     });
   }
 }
+
+for (const [input, expected] of [["전방", "000950"], [950, "000950"], ["A000950", "000950"], [" 000950 ", "000950"], ["삼정펄프", "009770"], ["디와이파워", "210540"]]) {
+  test(`국내 자동매매 ${input}와 잔고 ${expected}를 같은 종목으로 연결`, () => {
+    const key = exports.tickerKey(input, false);
+    assert.equal(key, expected);
+    const tree = exports.Table({ inventoryData: [{ pdno: expected, prdt_name: String(input) }], isUs: false, countryTradingActive: true, groupByTicker: new Map([[key, { name: "11월-04월", active: true, assigned: true }]]) });
+    const summary = nodes(tree).find(n => n.type === "summary");
+    assert.ok(nodes(summary).some(n => n.props?.["aria-label"] === "자동매매 · 11월-04월"));
+  });
+}
+
+test("미국 티커는 대소문자·공백만 정규화한다", () => {
+  assert.equal(exports.tickerKey(" aapl ", true), "AAPL");
+  assert.equal(exports.tickerKey("BRK.B", true), "BRK.B");
+  assert.equal(exports.tickerKey("950", true), "950");
+});
+
+test("자동매매 목록도 종목 마스터의 코드에 맞는 이름을 표시한다", () => {
+  const tableSource = ts.transpileModule(readFileSync(new URL("../components/balance/stockListTable.tsx", import.meta.url), "utf8") + "\nexports.displayName = resolveDisplayName;", {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true },
+  }).outputText;
+  const tableExports: any = {};
+  runInNewContext(tableSource, { exports: tableExports, require(name: string) {
+    if (name.endsWith("validCorpCode.json")) return JSON.parse(readFileSync(new URL("../public/data/validCorpCode.json", import.meta.url), "utf8"));
+    if (name.startsWith("@/") || name.startsWith("./")) return {};
+    return require(name);
+  } });
+  assert.equal(tableExports.displayName("000950"), "전방");
+  assert.equal(tableExports.displayName("032850"), "비트컴퓨터");
+  assert.equal(tableExports.displayName("210540"), "디와이파워");
+  assert.equal(tableExports.displayName("009770"), "삼정펄프");
+  assert.equal(tableExports.displayName("079960"), "동양이엔피");
+});
+
+test("자산 상단 네 탭의 아이콘을 작은 화면에서도 숨기지 않는다", () => {
+  const navSource = ts.transpileModule(readFileSync(new URL("../components/balance/sectionNav.tsx", import.meta.url), "utf8"), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
+  }).outputText;
+  const navExports: any = {};
+  runInNewContext(navSource, { exports: navExports, require(name: string) {
+    if (name === "@/lib/utils") return { cn: (...classes: string[]) => classes.join(" ") };
+    return require(name);
+  } });
+  const sections = ["자산", "자동매매", "주문내역", "계정"].map((label, index) => ({ id: String(index), label, icon: `icon-${index}` }));
+  const tree = navExports.SectionNav({ sections, mobileTab: "0" });
+  const buttons = nodes(tree).filter(n => n.type === "button");
+  assert.equal(buttons.length, 4);
+  for (const [index, button] of buttons.entries()) {
+    const icon = button.props.children[0];
+    assert.equal(text(icon), `icon-${index}`);
+    assert.ok(!icon.props.className.includes("hidden"));
+    assert.ok(button.props.className.includes("min-h-11"));
+  }
+});

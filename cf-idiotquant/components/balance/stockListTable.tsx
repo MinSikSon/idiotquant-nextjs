@@ -40,8 +40,7 @@ import { UsCapitalStockItem, KrUsCapitalType, StockGroup, LIKES_GROUP_ID, QuantR
 import { LikedStockItem } from "@/lib/features/stockLikes/stockLikesSlice";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import validCorpCodeArray from "@/public/data/validCorpCodeArray.json";
-import validCorpNameArray from "@/public/data/validCorpNameArray.json";
+import validCorpCode from "@/public/data/validCorpCode.json";
 import { CopyStockButtons, type CopyStock } from "@/components/copyStockButtons";
 
 /** Tailwind 클래스 병합 유틸리티 */
@@ -55,14 +54,10 @@ function ComponentNumber({ value }: { value: string }) {
 
 const formatSectionNumber = (value: number) => String(value).padStart(2, "0");
 
-// KR 종목코드(6자리) → 종목명 매핑. validCorpCodeArray / validCorpNameArray 는 같은 순서의 병렬 배열.
-const KR_CODE_TO_NAME: Record<string, string> = (() => {
-  const codes = validCorpCodeArray as string[];
-  const names = validCorpNameArray as string[];
-  const map: Record<string, string> = {};
-  for (let i = 0; i < codes.length; i++) map[codes[i]] = names[i];
-  return map;
-})();
+// 이름과 코드가 함께 저장된 마스터로 매핑한다. 개별 배열은 순서가 다를 수 있다.
+const KR_CODE_TO_NAME: Record<string, string> = Object.fromEntries(
+  Object.entries(validCorpCode).map(([name, data]) => [data.stock_code, name])
+);
 
 /** symbol/ticker 에 대응하는 표시용 종목명 결정. 백엔드 name 우선, 없으면 KR 코드맵으로 보강. */
 function resolveDisplayName(symbol: string, rawName?: string | null): string | undefined {
