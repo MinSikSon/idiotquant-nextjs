@@ -126,13 +126,13 @@ export function DelistingRisk({ kiBS, kiIS }: DelistingRiskProps) {
         note = "완전자본잠식 — 즉시 관리종목 지정, 다음 사업연도에도 지속 시 상장폐지";
       } else if (rate >= 50) {
         status = "위험";
-        note = `자본잠식률 ${rate.toFixed(1)}% — 50% 이상 시 관리종목, 2년 연속 유지 시 상장폐지`;
+        note = "50% 이상 시 관리종목, 2년 연속 유지 시 상장폐지";
       } else if (rate > 0) {
         status = "주의";
-        note = `자본잠식률 ${rate.toFixed(1)}% — 50% 미만이나 잠식 진행 중`;
+        note = "50% 미만이나 잠식 진행 중";
       } else {
         status = "양호";
-        note = "자본잠식 없음";
+        note = "";
       }
       criteria.push({ label: "자본잠식률", value: `${rate.toFixed(1)}%`, status, note, law: "유가증권 제47조 / 코스닥 제38조" });
     } else {
@@ -144,7 +144,7 @@ export function DelistingRisk({ kiBS, kiIS }: DelistingRiskProps) {
       label: "영업이익",
       value: fmt(bsopPrti),
       status: bsopPrti >= 0 ? "양호" : "주의",
-      note: bsopPrti < 0 ? "영업손실 — KOSPI: 4년 연속 시 관리종목 지정" : "영업이익 흑자",
+      note: bsopPrti < 0 ? "KOSPI: 영업손실 4년 연속 시 관리종목 지정" : "",
       law: "유가증권 제47조",
     });
 
@@ -153,7 +153,7 @@ export function DelistingRisk({ kiBS, kiIS }: DelistingRiskProps) {
       label: "당기순이익",
       value: fmt(thtrNtin),
       status: thtrNtin >= 0 ? "양호" : "주의",
-      note: thtrNtin < 0 ? "당기순손실 — 자본잠식 가속 요인" : "당기순이익 흑자",
+      note: thtrNtin < 0 ? "자본잠식 가속 요인" : "",
       law: "참고지표",
     });
 
@@ -162,13 +162,13 @@ export function DelistingRisk({ kiBS, kiIS }: DelistingRiskProps) {
       let status: CriterionStatus;
       let note: string;
       if (saleAccount <= 0) {
-        status = "—"; note = "데이터 없음";
+        status = "—"; note = "";
       } else if (saleAccount < 50) {
-        status = "위험"; note = `${fmtJoEok(saleAccount)} — KOSPI 50억 미만 관리종목 기준`;
+        status = "위험"; note = "KOSPI 50억 미만 관리종목 기준";
       } else if (saleAccount < 100) {
-        status = "주의"; note = `${fmtJoEok(saleAccount)} — 100억 미만, 추이 모니터링 권장`;
+        status = "주의"; note = "100억 미만, 추이 모니터링 권장";
       } else {
-        status = "양호"; note = `${fmtJoEok(saleAccount)}`;
+        status = "양호"; note = "";
       }
       criteria.push({ label: "매출액", value: saleAccount > 0 ? fmtJoEok(saleAccount) : "—", status, note, law: "유가증권 제47조 / 코스닥 제38조" });
     }
@@ -180,7 +180,7 @@ export function DelistingRisk({ kiBS, kiIS }: DelistingRiskProps) {
         label: "유동비율",
         value: `${ratio.toFixed(0)}%`,
         status: ratio < 100 ? "주의" : "양호",
-        note: ratio < 100 ? `유동비율 ${ratio.toFixed(0)}% — 단기 유동성 부족 가능성` : `유동비율 ${ratio.toFixed(0)}%`,
+        note: ratio < 100 ? "단기 유동성 부족 가능성" : "",
         law: "참고지표",
       });
     } else {
@@ -292,26 +292,25 @@ export function DelistingRisk({ kiBS, kiIS }: DelistingRiskProps) {
         {criteria.map(c => {
           const Icon = STATUS_ICON[c.status];
           const hasLaw = c.law !== "참고지표";
-          const Row = hasLaw ? "details" : "div";
-          const RowBody = hasLaw ? "summary" : "div";
+          const hasDetails = hasLaw || Boolean(c.note);
+          const Row = hasDetails ? "details" : "div";
+          const RowBody = hasDetails ? "summary" : "div";
           return (
             <Row key={c.label} data-share-risk-row data-share-label={c.label} data-share-status={c.status} data-share-value={c.value} data-share-note={c.note} data-share-law={c.law} className={cn("group rounded-lg border", STATUS_ROW_CLS[c.status])}>
-              <RowBody className={cn("flex items-center gap-2.5 rounded-lg px-3 py-2", hasLaw && "min-h-11 cursor-pointer list-none focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-current [&::-webkit-details-marker]:hidden")}>
+              <RowBody className={cn("flex min-h-11 items-center gap-2.5 rounded-lg px-3 py-2", hasDetails && "cursor-pointer list-none focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-current [&::-webkit-details-marker]:hidden")}>
                 <Icon size={14} aria-hidden="true" className={cn("shrink-0", STATUS_COLOR[c.status])} />
-                <span className="min-w-0 flex-1">
-                  <span className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                    <span className="mr-auto break-words text-[0.8125rem] font-bold text-neutral-700 dark:text-neutral-300">{c.label}</span>
-                    <span className={cn("min-w-0 break-words font-mono text-sm font-semibold tabular-nums", STATUS_COLOR[c.status])}>{c.value}</span>
-                    <span className={cn("whitespace-nowrap text-[0.8125rem] font-semibold", STATUS_COLOR[c.status])}>{c.status === "—" ? "자료 없음" : c.status}</span>
-                  </span>
-                  <span className="mt-0.5 block break-words text-[0.8125rem] leading-snug text-neutral-600 dark:text-neutral-400">{c.note}</span>
+                <span className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                  <span className="mr-auto break-words text-[0.8125rem] font-bold text-neutral-700 dark:text-neutral-300">{c.label}</span>
+                  {c.value !== "—" && <span className={cn("min-w-0 break-words font-mono text-sm font-semibold tabular-nums", STATUS_COLOR[c.status])}>{c.value}</span>}
+                  <span className={cn("whitespace-nowrap text-[0.8125rem] font-semibold", STATUS_COLOR[c.status])}>{c.status === "—" ? "자료 없음" : c.status}</span>
                 </span>
-                {hasLaw && <ChevronDown size={14} aria-hidden="true" className="shrink-0 text-neutral-500 group-open:rotate-180 dark:text-neutral-400" />}
+                {hasDetails && <ChevronDown size={14} aria-hidden="true" className="shrink-0 text-neutral-500 group-open:rotate-180 dark:text-neutral-400" />}
               </RowBody>
-              {hasLaw && (
-                <p className="px-3 pb-2 pl-9 text-[0.8125rem] leading-relaxed text-neutral-600 dark:text-neutral-400">
-                  판정 기준 · {c.law}
-                </p>
+              {hasDetails && (
+                <div className="space-y-1 break-words pb-2 pl-9 pr-3 text-[0.8125rem] leading-relaxed text-neutral-600 dark:text-neutral-400">
+                  {c.note && <p>{c.note}</p>}
+                  {hasLaw && <p>판정 기준 · {c.law}</p>}
+                </div>
               )}
             </Row>
           );
