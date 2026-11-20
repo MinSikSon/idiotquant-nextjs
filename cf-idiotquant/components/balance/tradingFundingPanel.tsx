@@ -120,7 +120,27 @@ export default function TradingFundingPanel({ country, capital, cash, tradingAct
                 </svg>
                 <div className="flex justify-between text-xs tabular-nums text-neutral-500 dark:text-neutral-400"><span>{observedAt ? time(buckets[0].at) : "—"}</span><span>{observedAt ? time(buckets[Math.floor(buckets.length / 2)].at) : "—"}</span><span>{observedAt ? time(observedAt) : "—"}</span></div>
                 {!tickCount && <p className="mt-2 text-center text-xs text-neutral-500 dark:text-neutral-400">선택한 시간에 확인된 충전 기록이 없습니다.</p>}
-                {history.length > 0 && <details className="mt-2 text-xs text-neutral-600 dark:text-neutral-300"><summary className="min-h-11 cursor-pointer py-3 font-medium">최근 충전 내역 보기</summary><ul className="divide-y divide-neutral-100 dark:divide-border-subtle-dark">{[...history].sort((a, b) => b.at - a.at).slice(0, 12).map((tick, i) => <li key={`${tick.at}-${i}`} className="flex flex-wrap justify-between gap-2 py-2"><span>{new Date(tick.at).toLocaleDateString("ko-KR", { timeZone: "Asia/Seoul", month: "2-digit", day: "2-digit" })} {time(tick.at)}</span><span className="font-bold tabular-nums">매수 +{won(tick.buy_krw)} · 매도 +{won(tick.sell_krw)}</span></li>)}</ul></details>}
+                {history.length > 0 && <details className="mt-2 text-xs text-neutral-600 dark:text-neutral-300">
+                    <summary className="min-h-11 cursor-pointer py-3 font-medium">최근 충전 내역 보기</summary>
+                    <ul className="divide-y divide-neutral-100 dark:divide-border-subtle-dark">
+                        {[...history].sort((a, b) => b.at - a.at).slice(0, 12).map((tick, i) => (
+                            <li key={`${tick.at}-${i}`} className="space-y-1.5 py-2">
+                                <div className="flex flex-wrap justify-between gap-x-3 gap-y-1">
+                                    <span>{new Date(tick.at).toLocaleDateString("ko-KR", { timeZone: "Asia/Seoul", month: "2-digit", day: "2-digit" })} {time(tick.at)}</span>
+                                    <span className="font-bold tabular-nums">매수 +{won(tick.buy_krw)} · 매도 +{won(tick.sell_krw)}</span>
+                                </div>
+                                {!!tick.groups?.length && <ul className="space-y-1 pl-2">
+                                    {tick.groups.map(group => (
+                                        <li key={group.group_id ?? "unassigned"} className="flex flex-wrap justify-between gap-x-3 gap-y-1">
+                                            <span className="break-words [overflow-wrap:anywhere]">{group.side === "sell" ? "매도" : "매수"} · {group.name || group.group_id || "미지정"}</span>
+                                            <span className="tabular-nums">+{won(group.stock_count * group.per_stock_krw)} · {group.stock_count}종목 × {won(group.per_stock_krw)}</span>
+                                        </li>
+                                    ))}
+                                </ul>}
+                            </li>
+                        ))}
+                    </ul>
+                </details>}
             </div></details>
         </section>
     );
