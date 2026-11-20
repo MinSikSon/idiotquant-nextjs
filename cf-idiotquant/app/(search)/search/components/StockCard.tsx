@@ -3,7 +3,6 @@
 import { AlertTriangle } from "lucide-react";
 import LineChart from "@/components/LineChart";
 import { SecondarySection } from "@/components/secondary-section";
-import { CopyStockButtons } from "@/components/copyStockButtons";
 import { cn } from "@/lib/utils";
 import ui from "@/components/research/research-ui.module.css";
 
@@ -62,9 +61,6 @@ export function StockCard({ stock, chartConfig, chartNotice }: StockCardProps) {
           {chartNotice === 'suspended' ? '거래정지로 주가 추이를 표시할 수 없습니다.' : '상장폐지로 주가 추이를 표시할 수 없습니다.'}
         </p>
       )}
-      <SecondarySection title="종목 정보 복사" className="m-3">
-        <CopyStockButtons rows={[{ name: stock.name, ticker: stock.ticker, pbr, per }]} />
-      </SecondarySection>
     </div>
   );
 }

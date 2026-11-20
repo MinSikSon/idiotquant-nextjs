@@ -1,7 +1,6 @@
 "use client";
 
-import { ChevronDown, MoreHorizontal } from "lucide-react";
-import { NavigationPopover } from "@/components/navigation-popover";
+import { PageShareTools, type ScreenShare } from "@/components/page-share";
 import { cn } from "@/lib/utils";
 import { CONTROL_FOCUS_CLS, CONTROL_DISABLED_CLS } from "@/lib/ui-controls";
 import { useEffect, useState } from "react";
@@ -55,6 +54,7 @@ export function PageHeader({
   meta,
   compactMeta,
   actions,
+  share,
   primaryAction,
   tabs,
   children,
@@ -76,6 +76,7 @@ export function PageHeader({
   /** 모바일 헤더에 남길 핵심 정보(예: 현재가). */
   compactMeta?: React.ReactNode;
   actions?: React.ReactNode;
+  share?: ScreenShare;
   /** 상단 한 줄에 표시할 핵심 작업 하나. */
   primaryAction?: React.ReactNode;
   /** 상단바 바로 아래에 고정할 한 줄의 내용 전환 탭. */
@@ -126,10 +127,12 @@ export function PageHeader({
     {integrated && mobile && mobileTitleOnScroll && slots?.scrollTitleTarget && createPortal(titleContent, slots.scrollTitleTarget)}
     {integrated && createPortal(<div data-page-actions className="flex flex-nowrap items-center">
       {primaryAction && <div data-primary-action>{primaryAction}</div>}
-          {(actions || description || meta) && <NavigationPopover label="페이지 도구" trigger={<button type="button" aria-label="페이지 도구" className={cn("inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1 rounded px-2 text-sm font-medium text-neutral-600 hover:bg-neutral-200/70 dark:text-neutral-400 dark:hover:bg-surface-dark-hover", CONTROL_FOCUS_CLS)}><MoreHorizontal size={20} className="md:hidden" aria-hidden="true" /><span className="hidden md:inline">도구</span><ChevronDown size={14} className="hidden md:block" aria-hidden="true" /></button>}>
-        <div data-page-secondary-actions className="flex flex-col gap-2">{actions}</div>
-        {(description || meta) && <div className="border-t border-neutral-200 p-3 text-xs leading-6 dark:border-neutral-700">{description}{meta && <div>{meta}</div>}</div>}
-      </NavigationPopover>}
+      <PageShareTools share={share}>
+        {(actions || description || meta) && <div className="mt-2 border-t border-neutral-200 pt-2 dark:border-neutral-700">
+          <div data-page-secondary-actions className="flex flex-col gap-2">{actions}</div>
+          {(description || meta) && <div className="p-3 text-xs leading-6">{description}{meta && <div>{meta}</div>}</div>}
+        </div>}
+      </PageShareTools>
     </div>, actionsTarget!)}
     {slots?.tabsTarget && tabs && createPortal(<div data-page-tabs>{tabs}</div>, slots.tabsTarget)}
     <header

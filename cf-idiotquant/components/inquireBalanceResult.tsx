@@ -37,7 +37,6 @@ import nasdaq_tickers from '@/public/data/usStockSymbols/nasdaq_tickers.json';
 import nyse_tickers from '@/public/data/usStockSymbols/nyse_tickers.json';
 import amex_tickers from '@/public/data/usStockSymbols/amex_tickers.json';
 import validCorpCode from '@/public/data/validCorpCode.json';
-import { CopyStockButtons, type CopyStock } from '@/components/copyStockButtons';
 
 // const MARKET_STOCK_MASTER = [
 //     ...KR_TICKER_MASTER,
@@ -374,15 +373,6 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder, groupByTicker,
         setSortConfig({ key, direction: sortConfig.key === key && sortConfig.direction === "desc" ? "asc" : "desc" });
     };
 
-    // 잔고 복사용 행 (보유수량·평가금액·수익률)
-    const copyRows = useMemo<CopyStock[]>(() => inventoryData.map(item => ({
-        name: getFieldValue(item, "name") || String(item.pdno || item.ovrs_pdno || ""),
-        ticker: String(item.pdno || item.ovrs_pdno || ""),
-        qty: getFieldValue(item, "qty"),
-        evluAmt: getFieldValue(item, "evlu_amt"),
-        profitRate: getFieldValue(item, "profit_rt"),
-    })), [inventoryData]);
-
     // 모바일 카드 뷰
     const MobileCardList = () => (
         <div className="divide-y divide-neutral-100 dark:divide-border-subtle-dark">
@@ -488,14 +478,6 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder, groupByTicker,
 
     return (
         <>
-            {/* 잔고 목록 복사 (종목명만 / 상세) */}
-            {copyRows.length > 0 && (
-                <div className="flex items-center justify-end gap-2 px-2.5 py-1.5 md:px-4 md:py-2 border-b border-neutral-100 dark:border-border-subtle-dark">
-                    <span className="text-[11px] text-neutral-400 font-medium">잔고 복사</span>
-                    <CopyStockButtons rows={copyRows} label="잔고" />
-                </div>
-            )}
-
             {/* 모바일: 카드 뷰 */}
             <div className="md:hidden">
                 {MobileCardList()}

@@ -19,7 +19,6 @@ import {
     reqGetMyLikes, reqToggleLike,
 } from "@/lib/features/stockLikes/stockLikesSlice";
 import { cn } from "@/lib/utils";
-import { CopyStockButtons, type CopyStock } from "@/components/copyStockButtons";
 import { computeValueScore, type ValueTone } from "@/lib/utils/valueScore";
 import { computeSolidity, quadrantOf, type SolidityPoint } from "@/lib/utils/portfolioSolidity";
 import SolidityPlane from "@/components/profile/solidityPlane";
@@ -88,16 +87,6 @@ export default function ProfilePage() {
     const likesState = useAppSelector(selectLikesState);
     const [watchlistMarket, setWatchlistMarket] = useState<WatchlistMarket>("all");
     const filteredLikedList = likedList.filter(item => matchesWatchlistMarket(item, watchlistMarket));
-
-    // 관심 종목 복사용 행 (ROE는 EPS/BPS로 계산)
-    const likedCopyRows: CopyStock[] = filteredLikedList.map(item => ({
-        name: item.stock_name ?? item.ticker,
-        ticker: item.ticker,
-        ncav: item.ncav_ratio,
-        pbr: item.pbr,
-        per: item.per,
-        roe: Number(item.bps) > 0 ? (Number(item.eps) / Number(item.bps)) * 100 : null,
-    }));
 
     // 포트폴리오 탄탄함 — 저평가 점수를 거래상태·업종 쏠림으로 깎은 값 (computeSolidity 주석 참고)
     const scored = likedList.map(item => computeValueScore(item));
@@ -420,12 +409,6 @@ export default function ProfilePage() {
                             </div>
                             <div className="flex items-center justify-between gap-2 pt-1">
                                 <span role="status" className="text-[10px] text-neutral-400 font-medium">전체 {likedList.length}개 중 {filteredLikedList.length}개</span>
-                                {filteredLikedList.length > 0 && (
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-[10px] text-neutral-400 font-medium">목록 복사</span>
-                                        <CopyStockButtons rows={likedCopyRows} label="관심 종목" />
-                                    </div>
-                                )}
                             </div>
                         </div>
                     )}

@@ -39,26 +39,27 @@ const source = ts.transpileModule(readFileSync(new URL('../app/(screener)/screen
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
 }).outputText;
 
-function harness(country: 'KR' | 'US' = 'KR', hasTradingAmount = true, initialAnswers: WorldcupAnswer[] = [], copyFails = false) {
-    const copied: string[] = [];
+function harness(country: 'KR' | 'US' = 'KR', hasTradingAmount = true, initialAnswers: WorldcupAnswer[] = []) {
+    let sharePath: string | undefined;
     const slots: unknown[] = [];
     let cursor = 0;
     let tree: any;
     const applications: WorldcupFilters[] = [];
     let manual = 0;
     const props = { initialAnswers, country, hasTradingAmount, loading: false, previewCount: () => 2,
-        onApply: (proposal: WorldcupFilters) => applications.push(proposal), onManual: () => manual++ };
+        onApply: (proposal: WorldcupFilters) => applications.push(proposal), onManual: () => manual++,
+        onSharePathChange: (path?: string) => { sharePath = path; } };
     const react = {
         useState(initial: unknown) {
             const index = cursor++;
             if (!(index in slots)) slots[index] = initial;
             return [slots[index], (next: any) => { slots[index] = typeof next === 'function' ? next(slots[index]) : next; }];
         },
-        useEffect() {},
+        useEffect(effect: () => void) { effect(); },
         useRef() { return { current: null }; },
     };
     const output = { exports: {} as { FilterWorldcup: (input: typeof props) => any } };
-    runInNewContext(source, { URL, window: { location: { origin: 'https://idiotquant.com' } }, navigator: { clipboard: { writeText: async (url: string) => { if (copyFails) throw new Error('denied'); copied.push(url); } } }, module: output, exports: output.exports, require(name: string) {
+    runInNewContext(source, { module: output, exports: output.exports, require(name: string) {
         if (name === 'react') return react;
         if (name === 'react/jsx-runtime') return { jsx: (type: any, props: any) => ({ type, props }), jsxs: (type: any, props: any) => ({ type, props }) };
         if (name === '../worldcup') return { worldcupFilters, worldcupRounds, worldcupCode };
@@ -76,7 +77,7 @@ function harness(country: 'KR' | 'US' = 'KR', hasTradingAmount = true, initialAn
         button.props.onClick(); render();
     };
     render();
-    return { click, props, render, applications, copied, nodes: () => nodes(tree), manual: () => manual, text: () => text(tree), buttons, textOf: text };
+    return { click, props, render, applications, sharePath: () => sharePath, manual: () => manual, text: () => text(tree), buttons, textOf: text };
 }
 
 test('선택·앞뒤 이동·다시 시작은 조건을 바꾸지 않고 마지막 적용만 필터를 갱신한다', () => {
@@ -141,24 +142,11 @@ test('직접 필터 링크는 유지하고 짧은 코드와 함께 지정한 부
     assert.equal(params.get('group'), 'sector');
 });
 
-test('완료한 월드컵은 짧은 주소를 복사하고 같은 선택으로 바로 다시 열린다', async () => {
-    const answers: WorldcupAnswer[] = ['a', 'b', 'unknown', 'a'];
-    const h = harness('US', true, answers);
-    assert.match(h.text(), /적용할 필터/);
-    h.click('링크 복사');
-    await new Promise(resolve => setImmediate(resolve)); h.render();
-    assert.deepEqual(h.copied, ['https://idiotquant.com/screener?w=uabua']);
-    assert.match(h.text(), /링크를 복사했습니다/);
-    assert.equal(h.nodes().find(node => node.type === 'input').props.value, h.copied[0]);
+test('완료한 월드컵은 공통 헤더에 짧은 경로를 전달하고 다시 고르면 지운다', () => {
+    const h = harness('US', true, ['a', 'b', 'unknown', 'a']);
+    assert.equal(h.sharePath(), '/screener?w=uabua');
+    h.props.hasTradingAmount = false; h.render();
+    assert.equal(h.sharePath(), '/screener?w=uabuu');
     h.click('처음부터 다시 고르기');
-    assert.doesNotMatch(h.text(), /링크를 복사했습니다/);
-});
-
-test('클립보드가 거절되면 직접 복사할 주소와 안내를 제공한다', async () => {
-    const h = harness('KR', true, ['a', 'a', 'a', 'a'], true);
-    h.click('링크 복사');
-    await new Promise(resolve => setImmediate(resolve)); h.render();
-    assert.equal(h.copied.length, 0);
-    assert.equal(h.nodes().find(node => node.type === 'input').props.value, 'https://idiotquant.com/screener?w=kaaaa');
-    assert.match(h.text(), /위 링크를 직접 복사/);
+    assert.equal(h.sharePath(), undefined);
 });
