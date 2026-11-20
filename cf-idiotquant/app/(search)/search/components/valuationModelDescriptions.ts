@@ -7,7 +7,7 @@ export interface ValuationModelDescription {
 export const VALUATION_MODEL_DESCRIPTIONS: Record<"NCAV" | "PBR" | "SRIM" | "DCF" | "PER" | "PEG", ValuationModelDescription> = {
   NCAV: {
     short: "빚을 갚고 남는 단기 자산을 봅니다.",
-    detail: "유동자산에서 모든 부채를 빼고 주식 수로 나눕니다. 이 값을 1.0·1.2·1.5로 나눈 가격을 각각 비교합니다.",
+    detail: "유동자산에서 모든 부채를 빼고 주식 수로 나눕니다. 총부채가 유동자산보다 크면 음수가 됩니다. 이 값을 1.0·1.2·1.5로 나눈 평가액을 비교합니다.",
     caution: "재고나 받을 돈이 장부에 적힌 금액대로 현금이 된다는 보장은 없습니다.",
   },
   PBR: {

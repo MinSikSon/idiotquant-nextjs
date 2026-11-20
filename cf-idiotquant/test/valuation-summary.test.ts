@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { valuationModels } from '@/lib/utils/valuationModels';
 import { valuationSummary, scanValuationSummary, valuationComparisonAxis } from '@/lib/utils/valuationSummary';
-import type { ValuationResult } from '@/lib/utils/financeCalc';
+import { calculateKrNcav, calculateUsNcav, type FinnhubFinancialsAsReportedType, type ValuationResult } from '@/lib/utils/financeCalc';
 
 const model = (type: string, targetPrice: number, returnPct = 10) => ({
     type,
@@ -55,6 +55,35 @@ test('가격은 유효해도 괴리율이 무효면 퍼센트를 표시하지 �
     const [row] = valuationSummary([model('PBR', 6506, NaN)]);
     assert.equal(row.targetPrice, 6506);
     assert.equal(row.returnPct, null);
+});
+
+test('NAVER의 음수 NCAV를 보존하고 결측 재무정보와 구분한다', () => {
+    const chart = { output1: { lstn_stcn: '152126544', stck_prpr: '161300' } };
+    const balance = { stac_yymm: '202609', cras: 103593.2143691, total_lblt: 126939.49659996 };
+    const summarize = (result: ValuationResult) => valuationSummary([{ type: 'NCAV', result }])[0];
+    const result = calculateKrNcav({ output: [balance] }, chart);
+    assert.deepEqual(result.rows.map(row => row.targetPrice), [-15347, -12789, -10231]);
+    assert.deepEqual(summarize(result), { type: 'NCAV', targetPrice: -15347, returnPct: -109.51, notice: null });
+    const zero = summarize(calculateKrNcav({ output: [{ ...balance, cras: balance.total_lblt }] }, chart));
+    assert.equal(zero.targetPrice, 0);
+    assert.equal(zero.notice, null);
+    for (const incomplete of [{ ...balance, cras: '' }, { ...balance, total_lblt: undefined }]) {
+        assert.equal(summarize(calculateKrNcav({ output: [incomplete] }, chart)).targetPrice, null);
+    }
+    assert.equal(summarize(calculateKrNcav({ output: [balance] }, {})).targetPrice, null);
+});
+
+test('미국 NCAV는 음수와 센트 단위를 보존하고 누락된 계정을 계산 불가로 표시한다', () => {
+    const assets = { concept: 'us-gaap_AssetsCurrent', value: '100' };
+    const liabilities = { concept: 'us-gaap_Liabilities', value: '234' };
+    const run = (bs: (typeof assets)[]) => {
+        const finance = { data: [{ report: { bs } }] } as FinnhubFinancialsAsReportedType;
+        const result = calculateUsNcav(finance, { output: { shar: '100', last: '10' } });
+        assert.notEqual(typeof result, 'string');
+        return valuationSummary([{ type: 'NCAV', result: result as ValuationResult }])[0];
+    };
+    assert.equal(run([assets, liabilities]).targetPrice, -1.34);
+    assert.equal(run([liabilities]).targetPrice, null);
 });
 
 
@@ -118,11 +147,20 @@ test('비교 축은 모든 모델에 0 기준의 같은 가격 비율을 쓰고 
 
 test('시세·적정가가 없거나 무효면 차이율을 만들지 않고 축 위치는 유한하게 유지한다', () => {
     for (const current of [0, NaN, Infinity]) {
-        const axis = valuationComparisonAxis(current, [null, -1, NaN, Infinity]);
+        const axis = valuationComparisonAxis(current, [null, NaN, Infinity]);
         assert.equal(axis.difference(100), null);
         assert.equal(axis.position(current), 0);
     }
     const axis = valuationComparisonAxis(0.5, [0.25, null]);
     assert.equal(axis.difference(0.25), -50);
     assert.equal(axis.difference(null), null);
+});
+
+test('음수 NCAV는 같은 선형 축에서 0 왼쪽에 배치하고 현재가 대비 차이율을 표시한다', () => {
+    const axis = valuationComparisonAxis(200, [-100, 100, 300]);
+    assert.ok(axis.position(-100) > 0);
+    assert.ok(axis.position(-100) < axis.position(0));
+    assert.ok(Math.abs((axis.position(100) - axis.position(0)) - (axis.position(0) - axis.position(-100))) < 1e-8);
+    assert.equal(axis.difference(-100), -150);
+    assert.equal(axis.difference(0), -100);
 });

@@ -76,7 +76,11 @@ const DEFAULT_CONFIG: ModelConfig = {
   description: { short: "추가 설명이 없는 모델입니다.", detail: "계산 방식은 아래 모델 표를 확인하세요.", caution: "" },
 };
 
-// 가격·괴리율의 실제 너비를 모든 행이 공유하고, 남은 공간을 트랙에 쓴다.
+function formatValuationPrice(value: number | null, currency: string) {
+  return value !== null && Number.isFinite(value)
+    ? `${value < 0 ? "−" : ""}${currency}${Math.abs(value).toLocaleString()}`
+    : "산출 불가";
+}
 
 // =========================================================================
 // ValuationSection
@@ -178,6 +182,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true }: ValuationSec
               const difference = axis.difference(r.targetPrice);
               const isPositive = difference !== null && difference >= 0;
               const target = r.targetPrice !== null ? axis.pos(r.targetPrice) : null;
+              const priceLabel = formatValuationPrice(r.targetPrice, currency);
               const isExplained = (hoveredModel ?? selectedModel) === r.type;
               return (
                 <div
@@ -208,7 +213,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true }: ValuationSec
                   <div
                     className={styles.track}
                     role="img"
-                    aria-label={`${r.config.name}: ${axis.usedMarketPrice ? "현재가" : "계산 기준가"} ${currency}${axis.curPrice.toLocaleString()}, 적정가 ${r.targetPrice !== null ? `${currency}${r.targetPrice.toLocaleString()}` : "산출 불가"}${difference !== null ? `, 차이 ${difference.toFixed(1)}%` : ""}`}
+                    aria-label={`${r.config.name}: ${axis.usedMarketPrice ? "현재가" : "계산 기준가"} ${currency}${axis.curPrice.toLocaleString()}, 평가액 ${priceLabel}${difference !== null ? `, 차이 ${difference.toFixed(1)}%` : ""}`}
                   >
                     <div className={styles.baseline} />
                     {target !== null && difference !== null && <div
@@ -223,7 +228,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true }: ValuationSec
                   </div>
 
                   <span className={cn(styles.price, "whitespace-nowrap text-[0.875rem] font-semibold tabular-nums text-neutral-900 dark:text-neutral-100 text-right")}>
-                    {r.targetPrice !== null ? `${currency}${r.targetPrice.toLocaleString()}` : "산출 불가"}
+                    {priceLabel}
                   </span>
                   <span className={cn(
                     styles.returnPct,
@@ -414,7 +419,7 @@ function StrategyCard({ modelType, result, currency, showScenarios }: StrategyCa
                         </div>
                       </td>
                       <td className="px-2 sm:px-5 py-3 text-right whitespace-nowrap">
-                        {locked ? <LockedAnalysisValue /> : <span className={cn(
+                        {locked ? <LockedAnalysisValue /> : !Number.isFinite(row.returnPct) ? "—" : <span className={cn(
                           "text-[0.8125rem] font-semibold font-mono tabular-nums px-2.5 py-0.5 rounded-lg inline-block",
                           isPositive
                             ? "text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30"
@@ -427,7 +432,7 @@ function StrategyCard({ modelType, result, currency, showScenarios }: StrategyCa
                         "px-2 sm:px-5 py-3 text-[0.8125rem] font-semibold font-mono text-right tabular-nums whitespace-nowrap",
                         isBase ? "text-neutral-900 dark:text-white" : "text-neutral-700 dark:text-neutral-300"
                       )}>
-                        {locked ? <LockedAnalysisValue /> : `${currency}${row.targetPrice.toLocaleString()}`}
+                        {locked ? <LockedAnalysisValue /> : formatValuationPrice(row.targetPrice, currency)}
                       </td>
                     </tr>
                   );

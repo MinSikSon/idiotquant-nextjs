@@ -90,8 +90,8 @@ export interface FinnhubFinancialsAsReportedType {
 // ============================================================================
 // [재무 데이터 안전 추출 헬퍼 함수 - us-gaap_ 접두사 완벽 대응]
 // ============================================================================
-function findFinnhubValue(list: FinnhubFinancialsAsReportedDataReportCommonType[], targetConcepts: string[]): number {
-    if (!list || !Array.isArray(list)) return 0;
+function findFinnhubValue(list: FinnhubFinancialsAsReportedDataReportCommonType[], targetConcepts: string[], fallback = 0): number {
+    if (!Array.isArray(list)) return fallback;
 
     // 비교 편의를 위해 찾고자 하는 concept 목록에서 'us-gaap_'을 제거한 순수 이름들을 준비합니다.
     const cleanTargets = targetConcepts.map(c => c.replace(/^us-gaap_/, ""));
@@ -104,11 +104,11 @@ function findFinnhubValue(list: FinnhubFinancialsAsReportedDataReportCommonType[
             return cleanItemConcept === target;
         });
 
-        if (item && item.value !== undefined) {
+        if (item && String(item.value ?? "").trim()) {
             return Number(item.value);
         }
     }
-    return 0;
+    return fallback;
 }
 
 // ============================================================================
@@ -116,21 +116,22 @@ function findFinnhubValue(list: FinnhubFinancialsAsReportedDataReportCommonType[
 // ============================================================================
 
 export function calculateKrNcav(kiBS: any, kiChart: any): ValuationResult {
-    const cras = Number(latestFirst<any>(kiBS?.output)?.[0]?.cras ?? 0) * ONE_HUNDRED_MILLION;
-    const lblt = Number(latestFirst<any>(kiBS?.output)?.[0]?.total_lblt ?? 0) * ONE_HUNDRED_MILLION;
-    const lstn = Number(kiChart?.output1?.lstn_stcn ?? 1);
+    const balanceSheet = latestFirst<any>(kiBS?.output)[0];
+    const cras = Number(String(balanceSheet?.cras ?? "").trim() || NaN) * ONE_HUNDRED_MILLION;
+    const lblt = Number(String(balanceSheet?.total_lblt ?? "").trim() || NaN) * ONE_HUNDRED_MILLION;
+    const lstn = Number(kiChart?.output1?.lstn_stcn);
     const prpr = Number(kiChart?.output1?.stck_prpr ?? 0);
 
     const netCurrentAsset = cras - lblt;
-    const target = netCurrentAsset / lstn;
+    const target = Number.isFinite(lstn) && lstn > 0 ? netCurrentAsset / lstn : NaN;
 
     const rows = [1.0, 1.2, 1.5].map(r => {
         const adjustedTarget = target / r;
-        const returnPct = prpr > 0 ? (adjustedTarget / prpr - 1) * 100 : 0;
+        const returnPct = Number.isFinite(prpr) && prpr > 0 ? (adjustedTarget / prpr - 1) * 100 : NaN;
         return {
             multiplier: `${r.toFixed(1)}배`,
             returnPct: Number(returnPct.toFixed(2)),
-            targetPrice: Math.max(0, Math.round(adjustedTarget))
+            targetPrice: Math.round(adjustedTarget)
         };
     });
 
@@ -138,11 +139,11 @@ export function calculateKrNcav(kiBS: any, kiChart: any): ValuationResult {
         title: "NCAV 청산가치 모델",
         description: "벤자민 그레이엄의 청산가치 기반 계량 모델입니다.",
         formula: "NCAV = 유동자산 - 총부채",
-        headers: ["가중치 (배수)", "기대 수익률", "적정 주가"],
+        headers: ["가중치 (배수)", "기준가 대비", "주당 평가액"],
         rows,
         metrics: [
-            { label: "순유동자산", value: `${fmtEok(netCurrentAsset)}` },
-            { label: "총부채", value: `${fmtEok(lblt)}` },
+            { label: "순유동자산", value: Number.isFinite(netCurrentAsset) ? fmtEok(netCurrentAsset) : "—" },
+            { label: "총부채", value: Number.isFinite(lblt) ? fmtEok(lblt) : "—" },
             { label: "현재가", value: `${prpr.toLocaleString()}원` }
         ],
         footerNotice: "시가총액이 순유동자산의 2/3(약 0.67배) 이하일 때 강력한 자산 안전마진 확보로 간주합니다."
@@ -317,25 +318,23 @@ export function calculateUsNcav(finnhub: FinnhubFinancialsAsReportedType, detail
     const bs = latestFirst(finnhub?.data)?.[0]?.report?.bs ?? [];
     
     // us-gaap_ 유무와 상관없이 매칭 처리
-    const cras = findFinnhubValue(bs, ["AssetsCurrent"]);
-    const lblt = findFinnhubValue(bs, ["Liabilities", "LiabilitiesTotal"]);
+    const cras = findFinnhubValue(bs, ["AssetsCurrent"], NaN);
+    const lblt = findFinnhubValue(bs, ["Liabilities", "LiabilitiesTotal"], NaN);
     
     const rawShar = detail?.output?.shar;
     const last = Number(detail?.output?.last || 0);
 
-    if (!rawShar || rawShar === "" || Number(rawShar) === 0 || last === 0) return "ERROR_INSUFFICIENT_DATA";
-
     const lstn = Number(rawShar);
     const netCurrentAsset = cras - lblt;
-    const target = netCurrentAsset / lstn;
+    const target = Number.isFinite(lstn) && lstn > 0 ? netCurrentAsset / lstn : NaN;
 
     const rows = [1.0, 1.2, 1.5].map(r => {
         const adjustedTarget = target / r;
-        const returnPct = (adjustedTarget / last - 1) * 100;
+        const returnPct = Number.isFinite(last) && last > 0 ? (adjustedTarget / last - 1) * 100 : NaN;
         return {
             multiplier: `${r.toFixed(1)}배`,
             returnPct: Number(returnPct.toFixed(2)),
-            targetPrice: Number(Math.max(0, adjustedTarget).toFixed(2))
+            targetPrice: Number(adjustedTarget.toFixed(2))
         };
     });
 
@@ -343,11 +342,11 @@ export function calculateUsNcav(finnhub: FinnhubFinancialsAsReportedType, detail
         title: "미국 NCAV 청산가치 모델",
         description: "Benjamin Graham's Asset-driven Strategy.",
         formula: "NCAV = Current Assets - Total Liabilities",
-        headers: ["평가 기준 (배수)", "기대 수익률", "적정 주가"],
+        headers: ["평가 기준 (배수)", "기준가 대비", "주당 평가액"],
         rows,
         metrics: [
-            { label: "순유동자산", value: `$${(netCurrentAsset / 1000000).toLocaleString()}M` },
-            { label: "총부채", value: `$${(lblt / 1000000).toLocaleString()}M` },
+            { label: "순유동자산", value: Number.isFinite(netCurrentAsset) ? `$${(netCurrentAsset / 1000000).toLocaleString()}M` : "—" },
+            { label: "총부채", value: Number.isFinite(lblt) ? `$${(lblt / 1000000).toLocaleString()}M` : "—" },
             { label: "현재가", value: `$${last.toLocaleString()}` }
         ],
         footerNotice: "청산가치가 시가총액을 압도하는 극단적 저평가 기업 발굴용 기법입니다."
