@@ -1,12 +1,9 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import styles from "./ValuationSection.module.css";
-import Link from "next/link";
-import {
-  Calculator, BarChart3, TrendingUp, ChevronDown, ChevronUp,
-  Layers, Zap, Sparkles, Activity, Target, Lock, ArrowRight,
-} from "lucide-react";
+import { ChevronDown } from "lucide-react";
+import { AnalysisLoginPrompt } from "@/app/(analyze)/analyze/components/AnalysisLoginPrompt";
 import { cn } from "@/lib/utils";
 import { VALUATION_MODEL_DESCRIPTIONS, type ValuationModelDescription } from "./valuationModelDescriptions";
 import type { ValuationResult } from "@/lib/utils/financeCalc";
@@ -23,28 +20,15 @@ interface ModelConfig {
   name: string;
   category: "ASSET" | "EARNING";
   description: ValuationModelDescription;
-  icon: React.ReactNode;
-  dotBg: string;
-  accentLine: string;
-  iconBg: string;
-  iconColor: string;
-  badgeClass: string;
-  textColor: string;
+
   extendMetrics?: (baseMetrics: any[], rows: any[]) => any[];
 }
 
 const MODEL_CONFIG: Record<string, ModelConfig> = {
   NCAV: {
-    name: "NCAV 청산가치",
+    name: "NCAV",
     category: "ASSET",
     description: VALUATION_MODEL_DESCRIPTIONS.NCAV,
-    icon: <Calculator size={14} />,
-    dotBg: "bg-neutral-500 dark:bg-neutral-300",
-    accentLine: "bg-neutral-200 dark:bg-neutral-700",
-    iconBg: "bg-neutral-100 dark:bg-neutral-800",
-    iconColor: "text-neutral-600 dark:text-neutral-300",
-    badgeClass: "bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300",
-    textColor: "text-neutral-700 dark:text-neutral-200",
     extendMetrics: (base, rows) => {
       const priceMetric = base.find((m: any) => /현재가|주가|price/i.test(m.label));
       const curPrice = priceMetric ? parseFloat(priceMetric.value.replace(/[^0-9.-]/g, "")) : 0;
@@ -60,64 +44,29 @@ const MODEL_CONFIG: Record<string, ModelConfig> = {
     },
   },
   PBR: {
-    name: "PBR 자본밴드",
+    name: "PBR",
     category: "ASSET",
     description: VALUATION_MODEL_DESCRIPTIONS.PBR,
-    icon: <Layers size={14} />,
-    dotBg: "bg-neutral-500 dark:bg-neutral-300",
-    accentLine: "bg-neutral-200 dark:bg-neutral-700",
-    iconBg: "bg-neutral-100 dark:bg-neutral-800",
-    iconColor: "text-neutral-600 dark:text-neutral-300",
-    badgeClass: "bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300",
-    textColor: "text-neutral-700 dark:text-neutral-200",
   },
   SRIM: {
-    name: "S-RIM 초과수익",
+    name: "S-RIM",
     category: "EARNING",
     description: VALUATION_MODEL_DESCRIPTIONS.SRIM,
-    icon: <Activity size={14} />,
-    dotBg: "bg-neutral-500 dark:bg-neutral-300",
-    accentLine: "bg-neutral-200 dark:bg-neutral-700",
-    iconBg: "bg-neutral-100 dark:bg-neutral-800",
-    iconColor: "text-neutral-600 dark:text-neutral-300",
-    badgeClass: "bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300",
-    textColor: "text-neutral-700 dark:text-neutral-200",
   },
   DCF: {
-    name: "DCF 현금흐름할인",
+    name: "DCF",
     category: "EARNING",
     description: VALUATION_MODEL_DESCRIPTIONS.DCF,
-    icon: <TrendingUp size={14} />,
-    dotBg: "bg-neutral-500 dark:bg-neutral-300",
-    accentLine: "bg-neutral-200 dark:bg-neutral-700",
-    iconBg: "bg-neutral-100 dark:bg-neutral-800",
-    iconColor: "text-neutral-600 dark:text-neutral-300",
-    badgeClass: "bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300",
-    textColor: "text-neutral-700 dark:text-neutral-200",
   },
   PER: {
-    name: "PER 멀티플",
+    name: "PER",
     category: "EARNING",
     description: VALUATION_MODEL_DESCRIPTIONS.PER,
-    icon: <BarChart3 size={14} />,
-    dotBg: "bg-neutral-500 dark:bg-neutral-300",
-    accentLine: "bg-neutral-200 dark:bg-neutral-700",
-    iconBg: "bg-neutral-100 dark:bg-neutral-800",
-    iconColor: "text-neutral-600 dark:text-neutral-300",
-    badgeClass: "bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300",
-    textColor: "text-neutral-700 dark:text-neutral-200",
   },
   PEG: {
-    name: "PEG 가치성장",
+    name: "PEG",
     category: "EARNING",
     description: VALUATION_MODEL_DESCRIPTIONS.PEG,
-    icon: <Zap size={14} />,
-    dotBg: "bg-neutral-500 dark:bg-neutral-300",
-    accentLine: "bg-neutral-200 dark:bg-neutral-700",
-    iconBg: "bg-neutral-100 dark:bg-neutral-800",
-    iconColor: "text-neutral-600 dark:text-neutral-300",
-    badgeClass: "bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300",
-    textColor: "text-neutral-700 dark:text-neutral-200",
   },
 };
 
@@ -125,13 +74,6 @@ const DEFAULT_CONFIG: ModelConfig = {
   name: "기타",
   category: "ASSET",
   description: { short: "추가 설명이 없는 모델입니다.", detail: "계산 방식은 아래 모델 표를 확인하세요.", caution: "" },
-  icon: <BarChart3 size={14} />,
-  dotBg: "bg-neutral-500 dark:bg-neutral-300",
-  accentLine: "bg-neutral-200 dark:bg-neutral-700",
-  iconBg: "bg-neutral-100 dark:bg-neutral-800",
-  iconColor: "text-neutral-600 dark:text-neutral-300",
-  badgeClass: "bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300",
-  textColor: "text-neutral-700 dark:text-neutral-200",
 };
 
 // 가격·괴리율의 실제 너비를 모든 행이 공유하고, 남은 공간을 트랙에 쓴다.
@@ -198,16 +140,8 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
     return models.filter(m => (MODEL_CONFIG[m.type] ?? DEFAULT_CONFIG).category === activeTab);
   }, [models, activeTab]);
 
-  const assetCount = models.filter(m => (MODEL_CONFIG[m.type] ?? DEFAULT_CONFIG).category === "ASSET").length;
-  const earningCount = models.filter(m => (MODEL_CONFIG[m.type] ?? DEFAULT_CONFIG).category === "EARNING").length;
-
   if (models.length === 0) {
-    return (
-      <div className="py-16 flex flex-col items-center justify-center gap-3 text-neutral-600 dark:text-neutral-300">
-        <Target size={32} className="opacity-30" />
-        <p className="text-[0.9375rem] font-medium">재무 데이터가 부족하여 밸류에이션을 계산할 수 없습니다.</p>
-      </div>
-    );
+    return <p className="py-4 text-sm text-neutral-600 dark:text-neutral-300">적정주가를 계산할 재무 자료가 없습니다.</p>;
   }
 
   return (
@@ -216,27 +150,13 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
       {/* ────── 모델별 적정주가 (모델별 트랙) ────── */}
       {axis && (
         <div className={cn(styles.chartHeader, "px-0 sm:px-5 pt-1 pb-2 md:pt-2 md:pb-4 border-b border-neutral-100 dark:border-border-subtle-dark")}>
-          <div className="flex items-center gap-2 mb-1 md:mb-3">
-            <Target size={13} className="text-neutral-600 dark:text-neutral-300 shrink-0" />
-            <span className="text-[0.84375rem] font-semibold text-neutral-700 dark:text-neutral-200 tracking-tight">
-              모델별 적정주가
-            </span>
-            <span className="ml-auto text-[0.8125rem] font-mono font-bold text-neutral-600 dark:text-neutral-300 bg-surface-canvas dark:bg-surface-dark-card px-2 py-0.5 rounded-md uppercase tracking-normal">
-              {axis.rows.length}개 모델
-            </span>
-          </div>
-          <p className="hidden md:block mb-3 text-[0.9375rem] text-neutral-500 dark:text-neutral-400 break-keep">
-            마름모는 현재가, 원은 모델별 적정가입니다. 모든 모델은 0부터 같은 가격 눈금을 쓰며, 연결 구간과 오른쪽 %는 현재가와의 차이를 표시합니다.
-          </p>
-
-          <p className="mb-1 text-[0.75rem] text-neutral-500 dark:text-neutral-400 md:hidden">
+          <p className="mb-1 text-sm font-semibold">모델별 적정주가</p>
+          <p className="mb-2 text-[0.8125rem] text-neutral-600 dark:text-neutral-300">
             같은 가격 눈금 · 차이율은 {axis.usedMarketPrice ? "현재가" : "계산 기준가"} 대비
           </p>
-
-          {showBaseNote && (
+          {isLoggedIn && showBaseNote && (
             <p className="mb-2.5 text-[0.9375rem] leading-relaxed text-neutral-600 dark:text-neutral-300 break-keep">
-              상세 모델의 괴리율은 모델이 계산에 쓴 {currency}{axis.modelBase.toLocaleString(undefined, { maximumFractionDigits: isUs ? 2 : 0 })} 기준입니다
-              (현재 시세 {currency}{axis.curPrice.toLocaleString(undefined, { maximumFractionDigits: isUs ? 2 : 0 })}).
+              세부 계산의 차이율은 {currency}{axis.modelBase.toLocaleString(undefined, { maximumFractionDigits: isUs ? 2 : 0 })} 기준입니다.
             </p>
           )}
 
@@ -284,7 +204,6 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
                     >
                       <span>{r.config.name}</span><ChevronDown size={12} aria-hidden="true" className={cn("shrink-0 text-neutral-600 dark:text-neutral-300 transition-transform", isExplained && "rotate-180")} />
                     </button>
-                    <p className="hidden md:block text-[0.8125rem] leading-6 text-neutral-600 dark:text-neutral-300 break-keep">{r.config.description.short}</p>
                   </div>
 
                   <div
@@ -337,75 +256,38 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
         </div>
       )}
 
-      {/* ────── 세부 모델 (필터탭 + 카드 그리드) ────── */}
-      <div className="relative">
-        <div className={cn(!isLoggedIn && "blur-sm select-none pointer-events-none")}>
-
-          {/* 필터 탭 */}
-          <div className={cn(styles.modelFilters, "px-0 sm:px-5 py-3 border-b border-neutral-100 dark:border-border-subtle-dark flex items-center gap-1")}>
+      {isLoggedIn ? (
+        <>
+          <div role="group" aria-label="세부 계산 모델" className={cn(styles.modelFilters, "flex flex-wrap items-center gap-2 border-b border-neutral-200 py-2 dark:border-border-subtle-dark")}>
             {([
-              { id: "ALL",     label: "전체",     count: models.length },
-              { id: "ASSET",   label: "자산가치", count: assetCount },
-              { id: "EARNING", label: "수익가치", count: earningCount },
-            ] as { id: FilterTabType; label: string; count: number }[]).map(tab => (
+              { id: "ALL", label: "전체" },
+              { id: "ASSET", label: "자산가치" },
+              { id: "EARNING", label: "수익가치" },
+            ] as const).map(tab => (
               <button
                 key={tab.id}
+                type="button"
                 onClick={() => setActiveTab(tab.id)}
                 aria-pressed={activeTab === tab.id}
-                className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.8125rem] font-bold transition-all duration-150",
-                  activeTab === tab.id
-                    ? "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900"
-                    : "text-neutral-500 dark:text-neutral-400 hover:bg-surface-muted-hover dark:hover:bg-surface-dark-card hover:text-neutral-800 dark:hover:text-neutral-200"
-                )}
+                className={cn("min-h-11 rounded px-2.5 text-sm", activeTab === tab.id
+                  ? "bg-surface-canvas font-semibold text-brand-ink dark:bg-surface-dark-muted"
+                  : "text-neutral-600 hover:bg-surface-canvas dark:text-neutral-300 dark:hover:bg-surface-dark-muted")}
               >
                 {tab.label}
-                <span className={cn(
-                  "text-[0.8125rem] font-semibold px-1.5 py-0.5 rounded-full",
-                  activeTab === tab.id
-                    ? "bg-white/20 dark:bg-black/20"
-                    : "bg-surface-canvas dark:bg-surface-dark-card text-neutral-500 dark:text-neutral-500"
-                )}>
-                  {tab.count}
-                </span>
               </button>
             ))}
           </div>
-
-          {/* 카드 그리드 */}
           {filteredModels.length > 0 ? (
-            <div className={cn(styles.modelCards, "py-3 sm:p-5 grid grid-cols-1 xl:grid-cols-2 gap-3 sm:gap-4")}>
-              {filteredModels.map(m => (
-                <StrategyCard
-                  key={m.type}
-                  modelType={m.type}
-                  result={m.result}
-                  currency={currency}
-                />
+            <div className={cn(styles.modelCards, "grid grid-cols-1 gap-2 py-3")}>
+              {filteredModels.map(model => (
+                <StrategyCard key={model.type} modelType={model.type} result={model.result} currency={currency} />
               ))}
             </div>
           ) : (
-            <div className="py-12 flex flex-col items-center justify-center gap-2 text-neutral-600 dark:text-neutral-300">
-              <Layers size={28} className="opacity-30" />
-              <span className="text-[0.8125rem] font-medium">해당 카테고리의 모델이 없습니다.</span>
-            </div>
+            <p className="py-3 text-sm text-neutral-600 dark:text-neutral-300">이 분류에서 계산할 수 있는 모델이 없습니다.</p>
           )}
-        </div>
-
-        {/* 블러 오버레이 */}
-        {!isLoggedIn && (
-          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-white/40 to-white/95 dark:from-surface-dark-card/40 dark:to-surface-dark-card/95">
-            <Link
-              href={loginHref}
-              className="flex min-h-11 items-center gap-2 px-4 py-2 rounded-lg bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900 text-[0.9375rem] font-medium transition-colors"
-            >
-              <Lock size={13} />
-              로그인하여 세부 모델 보기
-              <ArrowRight size={13} />
-            </Link>
-          </div>
-        )}
-      </div>
+        </>
+      ) : <AnalysisLoginPrompt href={loginHref}>가정별 세부 계산은 로그인 후 볼 수 있습니다.</AnalysisLoginPrompt>}
     </div>
   );
 };
@@ -444,42 +326,15 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
   return (
     <div className="bg-transparent sm:bg-white dark:sm:bg-surface-dark-card rounded-none border-0 sm:rounded-xl sm:border border-neutral-200 dark:border-border-subtle-dark overflow-hidden flex flex-col">
 
-      {/* 상단 컬러 액센트 라인 */}
-      <div className={cn("h-0.5 w-full shrink-0", config.accentLine)} />
-
-      {/* 카드 헤더 */}
       <button
         type="button"
         onClick={() => setIsExpanded(open => !open)}
         aria-expanded={isExpanded}
         aria-label={`${config.name} 세부 계산 ${isExpanded ? '접기' : '보기'}`}
-        className="group w-full rounded-lg sm:rounded-none px-3 sm:px-5 py-4 border-b border-neutral-100 dark:border-border-subtle-dark bg-neutral-50/70 dark:bg-white/[0.025] sm:bg-transparent dark:sm:bg-transparent text-left hover:bg-neutral-100/60 dark:hover:bg-white/5 active:bg-neutral-100 dark:active:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand transition-colors"
+        className="flex min-h-11 w-full items-center justify-between gap-2 border-b border-neutral-100 px-3 py-2 text-left text-sm font-semibold hover:bg-neutral-100 dark:border-border-subtle-dark dark:hover:bg-white/5"
       >
-        <div className="flex items-start gap-2.5 min-w-0">
-          <div className={cn(
-            "w-8 h-8 rounded-xl flex items-center justify-center shrink-0",
-            config.iconBg, config.iconColor
-          )}>
-            {config.icon}
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="text-[0.9375rem] font-semibold text-neutral-900 dark:text-white tracking-tight break-keep">
-                {config.name}
-              </h3>
-              <span className={cn(
-                "text-[0.8125rem] font-semibold uppercase tracking-normal px-2 py-0.5 rounded-full shrink-0",
-                config.badgeClass
-              )}>
-                {config.category === "ASSET" ? "자산가치" : "수익가치"}
-              </span>
-            </div>
-          </div>
-          <span aria-hidden="true" className="shrink-0 grid h-8 w-8 place-items-center rounded-full border border-neutral-200 dark:border-neutral-700 text-neutral-500 group-hover:bg-neutral-200/60 dark:group-hover:bg-white/10">
-            {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-          </span>
-        </div>
-        <p className="mt-2 text-[0.9375rem] leading-relaxed text-neutral-600 dark:text-neutral-400 break-keep">{config.description.short}</p>
+        <span>{config.name} 세부 계산</span>
+        <ChevronDown size={15} aria-hidden="true" className={cn("shrink-0 text-neutral-600 transition-transform dark:text-neutral-300", isExpanded && "rotate-180")} />
       </button>
 
       {/* 카드 바디 */}
@@ -495,16 +350,16 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
 
           {/* 핵심 지표 그리드 */}
           {extendedMetrics.length > 0 && (
-            <div className="px-0 sm:px-5 py-4 grid grid-cols-2 sm:grid-cols-4 gap-2.5 border-b border-neutral-100 dark:border-border-subtle-dark">
+            <div className="grid grid-cols-2 gap-x-3 px-3 py-2 border-b border-neutral-100 dark:border-border-subtle-dark">
               {extendedMetrics.map((m: any, i: number) => (
                 <div
                   key={i}
-                  className="px-0 py-2 sm:p-3 border-b border-neutral-100 dark:border-border-subtle-dark"
+                  className="min-w-0 py-2"
                 >
-                  <p className="text-[0.8125rem] text-neutral-600 dark:text-neutral-300 font-bold uppercase tracking-normal mb-1 truncate">
+                  <p className="text-[0.8125rem] text-neutral-600 dark:text-neutral-300 mb-1 font-medium break-words">
                     {m.label}
                   </p>
-                  <p className="text-[0.8125rem] font-semibold font-mono text-neutral-900 dark:text-white tabular-nums truncate">
+                  <p className="text-[0.8125rem] font-semibold font-mono text-neutral-900 dark:text-white tabular-nums break-words">
                     {m.value}
                   </p>
                 </div>
@@ -549,10 +404,6 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
                       <td className="px-2 sm:px-5 py-3 whitespace-nowrap">
                         <div className="flex items-center gap-2">
                           <span className={cn(
-                            "w-1.5 h-1.5 rounded-full shrink-0",
-                            isBase ? config.dotBg : "bg-transparent"
-                          )} />
-                          <span className={cn(
                             "text-[0.8125rem] font-bold font-mono tracking-tight",
                             isBase ? "text-neutral-900 dark:text-white" : "text-neutral-600 dark:text-neutral-400"
                           )}>
@@ -560,7 +411,7 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
                           </span>
                           {isBase && (
                             <span className="text-[0.8125rem] font-semibold text-neutral-600 dark:text-neutral-300 font-mono uppercase tracking-normal">
-                              적정
+                              기본 가정
                             </span>
                           )}
                         </div>
@@ -590,7 +441,6 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
 
           {/* 푸터 노트 */}
           <div className="px-0 sm:px-5 py-3 border-t border-neutral-100 dark:border-border-subtle-dark bg-surface-canvas/30 dark:bg-surface-dark-card/10 flex items-start gap-2">
-            <Sparkles size={12} className="text-amber-500 shrink-0 mt-0.5" />
             <p className="text-[0.9375rem] text-neutral-600 dark:text-neutral-300 leading-relaxed">
               {result.footerNotice}
             </p>

@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { cn } from "@/lib/utils";
 import styles from "../analyze.module.css";
 import {
-  AlertTriangle, CheckCircle2, XCircle, ShieldAlert, Minus, Eye, ChevronDown,
+  AlertTriangle, CheckCircle2, XCircle, Minus, ChevronDown,
 } from "lucide-react";
 
 type Status = "위험" | "주의" | "양호" | "—";
@@ -291,11 +291,7 @@ export function UsDelistingRisk({ finnhubData, usDetail }: Props) {
     <div data-share-risk data-share-overall={overallGrade} className="w-full bg-transparent sm:bg-white dark:sm:bg-surface-dark-card rounded-none border-0 sm:rounded-xl sm:border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
       {/* 헤더 */}
       <div className={cn(styles.riskHeader, "flex items-center justify-between px-0 sm:px-5 py-4 border-b border-neutral-100 dark:border-border-subtle-dark")}>
-        <div className="flex items-center gap-2">
-          <ShieldAlert size={16} className="text-neutral-500 dark:text-neutral-400" />
-          <span className="text-[15px] font-bold text-neutral-800 dark:text-neutral-100">미국 상장유지 위험도</span>
-          <span className="hidden sm:inline text-[13px] text-neutral-600 dark:text-neutral-300 font-mono">NYSE / NASDAQ</span>
-        </div>
+        <h3 className="text-sm font-semibold">미국 상장유지 점검 결과</h3>
         <span className={cn("px-2.5 py-0.5 rounded-lg text-[15px] font-semibold border", cfg.badge)}>
           {overallGrade}
         </span>
@@ -361,11 +357,10 @@ export function UsDelistingRisk({ finnhubData, usDetail }: Props) {
         {isAvoidancePattern && (
           <div className="p-3 rounded-xl bg-orange-50 dark:bg-orange-950/20 border border-orange-200/60 dark:border-orange-800/40">
             <div className="flex items-center gap-2 mb-1.5">
-              <Eye size={13} className="text-orange-600 dark:text-orange-400" />
-              <span className="text-[13px] font-bold text-orange-700 dark:text-orange-400">흑자전환 의심 패턴 감지</span>
+              <span className="text-[13px] font-bold text-orange-700 dark:text-orange-400">연속 영업손실 후 흑자 전환</span>
             </div>
             <p className="text-[15px] text-orange-600 dark:text-orange-400 mb-2">
-              직전 {opYears.length - 1}개 연도 영업손실 후 흑자전환 — 재무 왜곡 여부 확인 권장
+              직전 {opYears.length - 1}개 연도에 영업손실을 기록한 뒤 최근 연도에 흑자로 전환했습니다.
             </p>
             {flags.map(f => (
               <div key={f.label} className="flex items-start gap-1.5 mt-1">
@@ -376,7 +371,7 @@ export function UsDelistingRisk({ finnhubData, usDetail }: Props) {
               </div>
             ))}
             {flags.length === 0 && (
-              <p className="text-[13px] text-orange-600 dark:text-orange-400">패턴 감지, 특정 의심 신호 없음</p>
+              <p className="text-[13px] text-orange-600 dark:text-orange-400">조회한 재무 항목에서 추가 신호를 찾지 못했습니다.</p>
             )}
           </div>
         )}

@@ -5,8 +5,8 @@ import { annualKrIncomeRows, latestFirst } from "@/lib/utils/financialPeriods";
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
 import {
-  AlertTriangle, CheckCircle2, XCircle, ShieldAlert,
-  Minus, TrendingUp, TrendingDown, Eye,
+  AlertTriangle, CheckCircle2, XCircle,
+  Minus, TrendingUp, TrendingDown,
 } from "lucide-react";
 import { fmtJoEok } from "@/lib/utils/financeCalc";
 import styles from "../analyze.module.css";
@@ -65,15 +65,15 @@ const STATUS_ROW_CLS: Record<CriterionStatus, string> = {
 const OVERALL_CONFIG = {
   "위험": {
     badge: "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400 border-red-200 dark:border-red-900/50",
-    sub: "상장폐지 기준 해당 항목 확인 필요",
+    sub: "위험으로 분류한 항목이 있습니다.",
   },
   "주의": {
     badge: "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 border-amber-200 dark:border-amber-900/50",
-    sub: "관리종목 지정 가능성 요인 있음",
+    sub: "주의로 분류한 항목이 있습니다.",
   },
   "양호": {
     badge: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900/50",
-    sub: "주요 상장유지 기준 충족",
+    sub: "확인한 수치에서 주의·위험 신호를 찾지 못했습니다.",
   },
 } as const;
 
@@ -278,19 +278,7 @@ export function DelistingRisk({ kiBS, kiIS }: DelistingRiskProps) {
 
       {/* ── 헤더 ── */}
       <div className={cn(styles.riskHeader, "px-0 sm:px-5 py-4 border-b border-neutral-100 dark:border-border-subtle-dark flex items-center justify-between shrink-0")}>
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 bg-surface-canvas dark:bg-surface-dark-card rounded-lg flex items-center justify-center border border-neutral-200 dark:border-surface-dark-border shrink-0">
-            <ShieldAlert size={14} className="text-neutral-500 dark:text-neutral-400" />
-          </div>
-          <div>
-            <h4 className="text-[13px] font-semibold text-neutral-800 dark:text-neutral-200 tracking-tight leading-tight">
-              상장폐지 위험도
-            </h4>
-            <p className="text-[13px] text-neutral-600 dark:text-neutral-300 font-mono font-bold uppercase tracking-normal mt-0.5">
-              Delisting Risk · KRX 기준
-            </p>
-          </div>
-        </div>
+        <h3 className="text-sm font-semibold">상장폐지 점검 결과 <span className="font-normal text-neutral-600 dark:text-neutral-300">· KRX 기준</span></h3>
         <span className={cn("px-2.5 py-1 rounded-lg text-[15px] font-semibold border shrink-0", cfg.badge)}>
           {overall}
         </span>
@@ -313,7 +301,12 @@ export function DelistingRisk({ kiBS, kiIS }: DelistingRiskProps) {
                   <span className={cn("col-span-2 min-w-0 break-words text-sm font-semibold font-mono tabular-nums sm:col-span-1 sm:text-[13px]", STATUS_COLOR[c.status])}>{c.value}</span>
                 </div>
                 <p className="text-[13px] text-neutral-500 dark:text-neutral-400 leading-relaxed">{c.note}</p>
-                <details className="mt-2 text-[13px] leading-relaxed text-neutral-500 dark:text-neutral-400"><summary className="cursor-pointer py-1 font-medium">판정 기준 보기</summary><p className="mt-1">{c.law}</p></details>
+                {c.law !== "참고지표" && (
+                  <details className="text-sm text-neutral-600 dark:text-neutral-300">
+                    <summary className="min-h-11 cursor-pointer py-2.5 font-medium">판정 기준</summary>
+                    <p>{c.law}</p>
+                  </details>
+                )}
               </div>
             </div>
           );
@@ -336,7 +329,7 @@ export function DelistingRisk({ kiBS, kiIS }: DelistingRiskProps) {
                   ? <TrendingDown size={13} className="text-amber-500 shrink-0" />
                   : <TrendingUp size={13} className="text-emerald-500 shrink-0" />
                 }
-                <span className="text-[15px] font-bold text-neutral-700 dark:text-neutral-300">영업이익 연속 손실 이력</span>
+                <span className="text-[15px] font-bold text-neutral-700 dark:text-neutral-300">연간 영업이익</span>
               </div>
               <span className={cn(
                 "text-[13px] font-semibold px-2 py-0.5 rounded font-mono",
@@ -344,7 +337,7 @@ export function DelistingRisk({ kiBS, kiIS }: DelistingRiskProps) {
                 : consLossCount >= 2 ? "text-amber-600 bg-amber-100 dark:bg-amber-950/30 dark:text-amber-400"
                 : "text-emerald-600 bg-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-400"
               )}>
-                {consLossCount >= 1 ? `현재 ${consLossCount}년 연속 손실` : "연속 손실 없음"}
+                {consLossCount >= 1 ? `${consLossCount}년 연속 영업손실` : "연속 손실 없음"}
               </span>
             </div>
 
@@ -379,13 +372,12 @@ export function DelistingRisk({ kiBS, kiIS }: DelistingRiskProps) {
         {isAvoidancePattern && (
           <div className="px-3.5 py-3.5 rounded-xl border bg-orange-50/60 dark:bg-orange-950/10 border-orange-200/70 dark:border-orange-900/40">
             <div className="flex items-start gap-2 mb-2.5">
-              <Eye size={14} className="text-orange-600 dark:text-orange-400 mt-0.5 shrink-0" />
               <div>
                 <span className="text-[13px] font-bold text-orange-700 dark:text-orange-400">
-                  관리종목 회피 의심 패턴
+                  연속 영업손실 후 흑자 전환
                 </span>
                 <p className="text-[13px] text-orange-600/80 dark:text-orange-400/70 mt-0.5 leading-relaxed">
-                  직전 {prevLossCount}년 연속 영업손실 후 당기 흑자전환 — 4년차 관리종목 지정을 피하기 위해 영업이익을 조정했을 가능성을 검토합니다.
+                  직전 {prevLossCount}년 연속 영업손실 뒤 최근 연도에 흑자로 전환했습니다.
                 </p>
               </div>
             </div>
@@ -404,12 +396,12 @@ export function DelistingRisk({ kiBS, kiIS }: DelistingRiskProps) {
               </div>
             ) : (
               <p className="text-[13px] text-orange-600/70 dark:text-orange-400/60 pl-5">
-                패턴은 감지되었으나 구체적 의심 신호는 데이터 범위 내에서 발견되지 않았습니다.
+                조회한 재무 항목에서 추가 신호를 찾지 못했습니다.
               </p>
             )}
 
             <p className="text-[13px] text-orange-500/60 dark:text-orange-400/50 mt-2 font-mono">
-              ※ 이 분석은 정량적 패턴 탐지이며 실제 분식 판단은 감사보고서 확인 필요
+              흑자 전환의 배경은 공시와 감사보고서에서 확인하세요.
             </p>
           </div>
         )}

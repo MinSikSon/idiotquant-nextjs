@@ -1,7 +1,10 @@
 .stackLabels { display: none; }
 
+@container analysis-column (min-width: 0px) {
+  .groupItems { grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); }
+}
+
 @container analysis-column (max-width: 380px) {
-  .groupItems { grid-template-columns: minmax(0, 1fr); }
   .statementBody { padding-inline: 8px; }
   .stackText { display: none; }
   .stackLabels { display: flex; }
