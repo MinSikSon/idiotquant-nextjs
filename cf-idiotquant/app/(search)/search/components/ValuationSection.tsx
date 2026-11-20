@@ -215,7 +215,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
 
       {/* ────── 모델별 적정주가 (모델별 트랙) ────── */}
       {axis && (
-        <div className="px-0 sm:px-5 pt-1 pb-2 md:pt-2 md:pb-4 border-b border-neutral-100 dark:border-border-subtle-dark">
+        <div className={cn(styles.chartHeader, "px-0 sm:px-5 pt-1 pb-2 md:pt-2 md:pb-4 border-b border-neutral-100 dark:border-border-subtle-dark")}>
           <div className="flex items-center gap-2 mb-1 md:mb-3">
             <Target size={13} className="text-neutral-600 dark:text-neutral-300 shrink-0" />
             <span className="text-[0.84375rem] font-semibold text-neutral-700 dark:text-neutral-200 tracking-tight">
@@ -342,7 +342,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
         <div className={cn(!isLoggedIn && "blur-sm select-none pointer-events-none")}>
 
           {/* 필터 탭 */}
-          <div className="px-0 sm:px-5 py-3 border-b border-neutral-100 dark:border-border-subtle-dark flex items-center gap-1">
+          <div className={cn(styles.modelFilters, "px-0 sm:px-5 py-3 border-b border-neutral-100 dark:border-border-subtle-dark flex items-center gap-1")}>
             {([
               { id: "ALL",     label: "전체",     count: models.length },
               { id: "ASSET",   label: "자산가치", count: assetCount },
@@ -374,7 +374,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
 
           {/* 카드 그리드 */}
           {filteredModels.length > 0 ? (
-            <div className="py-3 sm:p-5 grid grid-cols-1 xl:grid-cols-2 gap-3 sm:gap-4">
+            <div className={cn(styles.modelCards, "py-3 sm:p-5 grid grid-cols-1 xl:grid-cols-2 gap-3 sm:gap-4")}>
               {filteredModels.map(m => (
                 <StrategyCard
                   key={m.type}

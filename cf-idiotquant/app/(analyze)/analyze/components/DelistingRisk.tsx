@@ -9,6 +9,7 @@ import {
   Minus, TrendingUp, TrendingDown, Eye,
 } from "lucide-react";
 import { fmtJoEok } from "@/lib/utils/financeCalc";
+import styles from "../analyze.module.css";
 
 interface DelistingRiskProps {
   kiBS: any;
@@ -276,7 +277,7 @@ export function DelistingRisk({ kiBS, kiIS }: DelistingRiskProps) {
     <div data-share-risk data-share-overall={overall} className="bg-transparent sm:bg-white dark:sm:bg-surface-dark-card rounded-none border-0 sm:rounded-xl sm:border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
 
       {/* ── 헤더 ── */}
-      <div className="px-0 sm:px-5 py-4 border-b border-neutral-100 dark:border-border-subtle-dark flex items-center justify-between shrink-0">
+      <div className={cn(styles.riskHeader, "px-0 sm:px-5 py-4 border-b border-neutral-100 dark:border-border-subtle-dark flex items-center justify-between shrink-0")}>
         <div className="flex items-center gap-2.5">
           <div className="w-7 h-7 bg-surface-canvas dark:bg-surface-dark-card rounded-lg flex items-center justify-center border border-neutral-200 dark:border-surface-dark-border shrink-0">
             <ShieldAlert size={14} className="text-neutral-500 dark:text-neutral-400" />
@@ -296,7 +297,7 @@ export function DelistingRisk({ kiBS, kiIS }: DelistingRiskProps) {
       </div>
 
       {/* ── 본문 ── */}
-      <div className="p-0 sm:p-5 space-y-2">
+      <div className={cn(styles.riskBody, "p-0 sm:p-5 space-y-2")}>
         <p className="text-[13px] text-neutral-600 dark:text-neutral-300 pb-1">{cfg.sub}</p>
 
         {/* 기준 항목 목록 */}
@@ -306,7 +307,7 @@ export function DelistingRisk({ kiBS, kiIS }: DelistingRiskProps) {
             <div key={c.label} data-share-risk-row data-share-label={c.label} data-share-status={c.status} data-share-value={c.value} data-share-note={c.note} data-share-law={c.law} className={cn("flex items-start gap-3 px-3.5 py-3 rounded-xl border", STATUS_ROW_CLS[c.status])}>
               <Icon size={14} className={cn("mt-0.5 shrink-0", STATUS_COLOR[c.status])} />
               <div className="flex-1 min-w-0">
-                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2 mb-1.5 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
+                <div className={cn(styles.riskCheck, "grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2 mb-1.5 sm:grid-cols-[minmax(0,1fr)_auto_auto]")}>
                   <span className="text-[13px] font-bold text-neutral-700 dark:text-neutral-300">{c.label}</span>
                   <span className={cn("rounded-md px-2 py-0.5 text-[13px] font-semibold", STATUS_COLOR[c.status])}>{c.status === "—" ? "자료 없음" : c.status}</span>
                   <span className={cn("col-span-2 min-w-0 break-words text-sm font-semibold font-mono tabular-nums sm:col-span-1 sm:text-[13px]", STATUS_COLOR[c.status])}>{c.value}</span>
@@ -350,7 +351,7 @@ export function DelistingRisk({ kiBS, kiIS }: DelistingRiskProps) {
             {/* 연도별 바 */}
             <div className="space-y-4 sm:space-y-3">
               {opYears.map((y, i) => (
-                <div key={y.year} className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 sm:grid-cols-[6rem_minmax(0,1fr)_auto]">
+                <div key={y.year} className={cn(styles.riskYear, "grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 sm:grid-cols-[6rem_minmax(0,1fr)_auto]")}>
                   <span className="flex items-center gap-2 whitespace-nowrap text-[15px] font-mono tabular-nums text-neutral-600 dark:text-neutral-300">
                     {y.year}
                     {i === 0 && <span className="text-[13px] font-sans text-neutral-500 dark:text-neutral-400">최신</span>}

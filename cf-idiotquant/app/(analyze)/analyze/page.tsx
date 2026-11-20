@@ -190,18 +190,19 @@ ResultSkeleton.displayName = 'ResultSkeleton';
 // =========================================================================
 // BlurGate — 비로그인 시 섹션 블러 처리 + 그라디언트 로그인 오버레이
 // =========================================================================
-const BlurGate = memo(({ children, isLoggedIn, loginHref = "/login" }: {
+const BlurGate = memo(({ children, isLoggedIn, loginHref = "/login", compact = false }: {
   children: React.ReactNode;
   isLoggedIn: boolean;
   loginHref?: string;
+  compact?: boolean;
 }) => {
   if (isLoggedIn) return <>{children}</>;
   return (
     <div className="relative rounded-2xl overflow-hidden">
-      <div className="blur-sm select-none pointer-events-none">
+      {!compact && <div className="blur-sm select-none pointer-events-none">
         {children}
-      </div>
-      <div className={cn(styles.gateOverlay, "absolute inset-0 flex items-center justify-center")}>
+      </div>}
+      <div className={cn(styles.gateOverlay, "flex items-center justify-center", compact ? "p-4" : "absolute inset-0")}>
         <Link
           href={loginHref}
           className={styles.primary}
@@ -225,7 +226,7 @@ BlurGate.displayName = 'BlurGate';
 // StockCard에 전달할 기본 XP 프로필
 const DEFAULT_XP_PROFILE = { level: 1, xp: 0, maxXp: 100, totalXp: 0, lastGain: 0, awardCount: 0 };
 
-// 작은 화면의 탭과 데스크톱 본문 목차가 같은 항목을 사용한다.
+// 작은 화면의 탭과 데스크톱 열 제목이 같은 항목을 사용한다.
 const DETAIL_TABS = {
   strategy: '적정가치',
   // 카드(시세·등급·차트)와 상세 지표는 둘 다 "지금 이 종목의 숫자"다. 탭을 갈라 두면
@@ -251,16 +252,21 @@ function AnalysisSection({ tab, desktop, children }: {
   desktop: boolean;
   children: ReactNode;
 }) {
-  const id = `analysis-${tab}`;
+  const titleId = `analysis-${tab}-title`;
   return (
     <Tabs.Content value={tab} forceMount asChild
       className={desktop ? styles.analysisSection : styles.tabPanel}
-      {...(desktop && { id, role: 'region', 'aria-labelledby': `${id}-title`, tabIndex: -1 })}
+      {...(desktop && { role: 'presentation', 'aria-labelledby': undefined, tabIndex: undefined })}
     >
-      <section>
-        {desktop && <h2 id={`${id}-title`} className={styles.sectionTitle}>{DETAIL_TABS[tab]}</h2>}
-        {children}
-      </section>
+      <div>
+        {desktop && <h2 id={titleId} className={styles.sectionTitle}>{DETAIL_TABS[tab]}</h2>}
+        <div className={desktop ? styles.columnScroll : undefined}
+          {...(desktop && { role: 'region', 'aria-labelledby': titleId, tabIndex: 0 })}
+        >
+          {children}
+          {desktop && <AnalysisGuide tab={tab} />}
+        </div>
+      </div>
     </Tabs.Content>
   );
 }
@@ -287,6 +293,19 @@ const TAB_GUIDES: Record<DetailTab, { title: string; description: string; steps:
     steps: ['공시 기준일과 단위 확인', '같은 항목의 기간별 변화 비교', '숫자표로 세부 금액 확인'],
   },
 };
+
+function AnalysisGuide({ tab }: { tab: DetailTab }) {
+  const guide = TAB_GUIDES[tab];
+  return (
+    <details className={styles.tabGuide}>
+      <summary className="flex items-center justify-between gap-2">분석 읽는 법<ChevronDown size={16} aria-hidden="true" /></summary>
+      <div key={tab} className="mt-4">
+        <h3>{guide.title}</h3><p>{guide.description}</p>
+        <ol>{guide.steps.map((step, index) => <li key={step}><span>{index + 1}</span>{step}</li>)}</ol>
+      </div>
+    </details>
+  );
+}
 
 
 // =========================================================================
@@ -411,7 +430,6 @@ function AnalyzeContent() {
   const [financeView, setFinanceView] = useState<'bars' | 'table'>('bars');
   const [detailTab, setDetailTab] = useState<DetailTab>('strategy');
   const [visitedTabs, setVisitedTabs] = useState<DetailTab[]>(['strategy']);
-  const [desktopSection, setDesktopSection] = useState<DetailTab>('strategy');
   const detailStart = useRef<HTMLDivElement>(null);
   const isDesktop = useSyncExternalStore(subscribeToDesktopAnalysis, getDesktopAnalysis, getServerDesktopAnalysis);
 
@@ -454,7 +472,6 @@ function AnalyzeContent() {
     setPreviousTicker(tickerFromUrl);
     setDetailTab('strategy');
     setVisitedTabs(['strategy']);
-    setDesktopSection('strategy');
     setFinanceView('bars');
     setVerdictOpen(false);
   }
@@ -479,35 +496,6 @@ function AnalyzeContent() {
       (krOrUs === 'KR' && data.kiPrice.state === 'fulfilled') ||
       (krOrUs === 'US' && usAvailability.priceReady)
     );
-
-  useEffect(() => {
-    if (!isDesktop || !isPriceLoaded || !detailStart.current) return;
-    const content = detailStart.current;
-    const sections = DETAIL_TAB_KEYS.map(key => ({
-      key,
-      element: document.getElementById(`analysis-${key}`),
-    }));
-    const updateSection = () => {
-      let active: DetailTab = 'strategy';
-      for (const { key, element } of sections) {
-        if (!element) continue;
-        const offset = parseFloat(getComputedStyle(element).scrollMarginTop);
-        if (element.getBoundingClientRect().top > offset + 1) break;
-        active = key;
-      }
-      setDesktopSection(active);
-    };
-    const observer = new ResizeObserver(updateSection);
-    observer.observe(content);
-    window.addEventListener('scroll', updateSection, { passive: true });
-    window.addEventListener('resize', updateSection);
-    updateSection();
-    return () => {
-      observer.disconnect();
-      window.removeEventListener('scroll', updateSection);
-      window.removeEventListener('resize', updateSection);
-    };
-  }, [isDesktop, isPriceLoaded, tickerFromUrl]);
 
   const currency = krOrUs === 'US' ? '$' : '₩';
   const watchStock = useMemo(() => ({ ticker: tickerFromUrl ?? '', name: displayName ?? tickerFromUrl ?? '', isUs: krOrUs === 'US' }), [tickerFromUrl, displayName, krOrUs]);
@@ -724,17 +712,9 @@ function AnalyzeContent() {
             return snapshot;
           }} />
         </div> : undefined}
-        tabs={isPriceLoaded ? (isDesktop ? (
-          <nav aria-label="종목 분석 섹션" className={styles.analysisTabs}>
-            {DETAIL_TAB_KEYS.map(tab => (
-              <a key={tab} href={`#analysis-${tab}`} className={styles.analysisTab}
-                aria-current={desktopSection === tab ? 'location' : undefined}
-              >{DETAIL_TABS[tab]}</a>
-            ))}
-          </nav>
-        ) : <Tabs.List aria-label="종목 분석" className={styles.analysisTabs}>
+        tabs={isPriceLoaded && !isDesktop ? <Tabs.List aria-label="종목 분석" className={styles.analysisTabs}>
           {DETAIL_TAB_KEYS.map(tab => <Tabs.Trigger key={tab} value={tab} className={styles.analysisTab}>{DETAIL_TABS[tab]}</Tabs.Trigger>)}
-        </Tabs.List>) : undefined}
+        </Tabs.List> : undefined}
         mobileCompact
         mobileTitleOnScroll={isPriceLoaded}
 
@@ -803,7 +783,7 @@ function AnalyzeContent() {
               </div>
             )}
 
-            <div className={cn(!isPriceLoaded && 'hidden')}>
+            <div className={cn(!isPriceLoaded && 'hidden', isPriceLoaded && isDesktop && styles.desktopResults)}>
               {krOrUs === 'US' && data.usSearchInfo.state === 'rejected' && (
                 <p role="status" className="mb-4 text-sm leading-6 text-neutral-600 dark:text-neutral-300">
                   종목 기본정보를 불러오지 못해 티커로 표시합니다. 조회된 시세와 재무정보는 계속 표시합니다.
@@ -813,9 +793,7 @@ function AnalyzeContent() {
                 <FinancialFreshnessNotice periods={analysisFinancialPeriods(data, krOrUs)} banner />
               )}
 
-              <div className={styles.analysisWorkspace}>
               <aside className={styles.analysisSidebar} aria-label="분석 요약과 도움말">
-                <p className={styles.sidebarLabel}>분석 요약</p>
               {/* 종합 판단 — 지표 나열보다 먼저 결론을 준다 (판단 → 근거 → 원자료 순서).
                   모바일은 한 줄(충족 개수 + 결론 문장)만 남긴다. 지표 4개는 세로로 쌓이면서
                   화면 첫 장을 다 먹었는데, 같은 값이 바로 아래 '카드' 탭에도 있다. */}
@@ -869,13 +847,7 @@ function AnalyzeContent() {
                 </div>
               )}
 
-              <details className={styles.tabGuide}>
-                <summary className="flex items-center justify-between gap-2">분석 읽는 법<ChevronDown size={16} aria-hidden="true" /></summary>
-                {[isDesktop ? desktopSection : detailTab].map(key => <div key={key} className="mt-4">
-                  <h2>{TAB_GUIDES[key].title}</h2><p>{TAB_GUIDES[key].description}</p>
-                  <ol>{TAB_GUIDES[key].steps.map((step, index) => <li key={step}><span>{index + 1}</span>{step}</li>)}</ol>
-                </div>)}
-              </details>
+              {!isDesktop && <AnalysisGuide tab={detailTab} />}
 
               </aside>
               <div ref={detailStart} className={styles.detailContent} key={tickerFromUrl}>
@@ -896,8 +868,7 @@ function AnalyzeContent() {
                     </Link>
                   </div>
                 )}
-
-
+                <div className={isDesktop ? styles.analysisColumns : undefined}>
                 <AnalysisSection tab="strategy" desktop={isDesktop}>
                   {visitedTabs.includes('strategy') && (isLoaded ? (
                   <ValuationSection
@@ -951,7 +922,7 @@ function AnalyzeContent() {
 
                     {isLoaded ? <div className="space-y-5">
                       <TechnicalSummary bars={technicalBars} currency={currency} />
-                    <BlurGate isLoggedIn={isLoggedIn} loginHref={loginHref}>
+                    <BlurGate isLoggedIn={isLoggedIn} loginHref={loginHref} compact={isDesktop}>
                       <StockMetrics data={data} isUs={krOrUs === 'US'} />
                     </BlurGate>
                     </div> : financialStatus}
@@ -962,12 +933,12 @@ function AnalyzeContent() {
                 <AnalysisSection tab="risk" desktop={isDesktop}>
                   {isLoaded ? <>
                   {krOrUs === 'KR' && (
-                    <BlurGate isLoggedIn={isLoggedIn} loginHref={loginHref}>
+                    <BlurGate isLoggedIn={isLoggedIn} loginHref={loginHref} compact={isDesktop}>
                       <DelistingRisk kiBS={data.kiBS} kiIS={data.kiIS} />
                     </BlurGate>
                   )}
                   {krOrUs === 'US' && (
-                    <BlurGate isLoggedIn={isLoggedIn} loginHref={loginHref}>
+                    <BlurGate isLoggedIn={isLoggedIn} loginHref={loginHref} compact={isDesktop}>
                       <UsDelistingRisk finnhubData={data.finnhubData} usDetail={data.usDetail} />
                     </BlurGate>
                   )}
@@ -979,9 +950,9 @@ function AnalyzeContent() {
                   {krOrUs === 'US' && (
                     <FinancialFreshnessNotice periods={analysisFinancialPeriods(data, krOrUs)} source={data.finnhubData?.source} banner />
                   )}
-                  <BlurGate isLoggedIn={isLoggedIn} loginHref={loginHref}>
+                  <BlurGate isLoggedIn={isLoggedIn} loginHref={loginHref} compact={isDesktop}>
                     <div className={cn(styles.panel, styles.financialPanel, "flex min-w-0 flex-col gap-3 sm:gap-4")}>
-                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+                      <div className={cn(styles.financialControls, "flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3")}>
                         <p className="text-sm sm:text-[15px] text-neutral-600 dark:text-neutral-300">
                           {krOrUs === 'KR' ? '분기 공시 · 억 원' : '공시 · USD'}
                         </p>

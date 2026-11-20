@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import styles from "./FinancialBars.module.css";
 import {
     barGeometry, periodDelta, fmtEok, usdBlockFormatter,
     type BarModel, type BarItem, type StackRow, type Tone,
@@ -43,8 +44,16 @@ function Stack({ row }: { row: StackRow }) {
                         )}
                     >
                         {seg.pale && <span aria-hidden="true" className="absolute inset-0 bg-white/70 dark:bg-black/30" />}
-                        <span className="relative">{seg.pct >= 20 ? `${seg.label} ${Math.round(seg.pct)}%` : seg.pct >= 6 ? `${Math.round(seg.pct)}%` : ""}</span>
+                        <span className={cn(styles.stackText, "relative")}>{seg.pct >= 20 ? `${seg.label} ${Math.round(seg.pct)}%` : seg.pct >= 6 ? `${Math.round(seg.pct)}%` : ""}</span>
                     </div>
+                ))}
+            </div>
+            <div className={cn(styles.stackLabels, "flex-wrap gap-x-3 gap-y-1 text-[13px] text-neutral-600 dark:text-neutral-300")}>
+                {row.segs.map(seg => (
+                    <span key={seg.label} className="inline-flex items-center gap-1.5">
+                        <i aria-hidden="true" className={cn("h-2 w-2 shrink-0 rounded-sm", TONE_BG[seg.tone])} />
+                        {seg.label} {Math.round(seg.pct)}%
+                    </span>
                 ))}
             </div>
             {row.legend && (
@@ -209,14 +218,14 @@ function StatementCard({ model, unit }: { model: BarModel; unit: Unit }) {
                 </div>
             )}
 
-            <div className="px-0 sm:px-5 pb-3 sm:pb-5">
+            <div className={cn(styles.statementBody, "px-0 sm:px-5 pb-3 sm:pb-5")}>
                 {model.groups.map(g => (
                     <div key={g.labelEn}>
                         <div className="flex items-center gap-1.5 mt-3 sm:mt-5 mb-1.5 sm:mb-2 font-mono text-[13px] font-bold uppercase tracking-[0.16em] text-neutral-600 dark:text-neutral-300">
                             <i className={cn("w-[7px] h-[7px] rounded-full shrink-0", TONE_BG[g.tone])} />
                             {g.labelEn}
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 sm:gap-y-4">
+                        <div className={cn(styles.groupItems, "grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 sm:gap-y-4")}>
                             {g.items.map(item => (
                                 <TrendBlock key={item.label} item={item} periods={model.periods} unit={unit} />
                             ))}

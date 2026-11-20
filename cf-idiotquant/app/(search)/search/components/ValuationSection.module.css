@@ -31,3 +31,11 @@
   .notice, .explanation { font-size: 0.8125rem; overflow-wrap: anywhere; }
   .notice { line-height: 1.5; }
 }
+@container analysis-column (max-width: 380px) {
+  .axis { grid-template-columns: minmax(4.5rem, 6rem) minmax(32px, 1fr) max-content max-content; column-gap: 6px; }
+  .modelLabel button { line-height: 1.4; }
+  .modelLabel p { display: none; }
+  .modelCards { grid-template-columns: minmax(0, 1fr); padding-inline: 0; }
+  .chartHeader, .modelFilters { padding-inline: 0; }
+  .modelFilters { flex-wrap: wrap; }
+}
