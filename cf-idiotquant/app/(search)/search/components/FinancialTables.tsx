@@ -5,11 +5,13 @@ import { latestFirst } from "@/lib/utils/financialPeriods";
 import React, { useMemo } from "react";
 import { formatKoreanUnit, ONE_HUNDRED_MILLION } from "@/lib/utils/financeCalc";
 import { cn } from "@/lib/utils";
+import { LockedAnalysisValue } from "@/components/locked-analysis-value";
 import * as Tabs from "@radix-ui/react-tabs";
 import * as Popover from "@radix-ui/react-popover";
 import { TrendingUp, TrendingDown, Info, BookOpen, BarChart2, Minus } from "lucide-react";
 
 interface FinancialTablesProps {
+    showHistory?: boolean;
     kiBS: any;
     kiIS: any;
 }
@@ -135,10 +137,11 @@ function InfoPopover({ label, description, isTotal }: { label: string; descripti
     );
 }
 
-function YoYBadge({ pct }: { pct: number | null }) {
+function YoYBadge({ pct, showHistory }: { pct: number | null; showHistory: boolean }) {
     if (pct === null || Math.abs(pct) < 0.05) {
         return <span className="text-[13px] font-mono text-neutral-300 dark:text-neutral-700"><Minus size={8} /></span>;
     }
+    if (!showHistory) return <LockedAnalysisValue />;
     const isUp = pct >= 0;
     return (
         <span className={cn(
@@ -158,7 +161,7 @@ const TAB_TRIGGER_BASE = [
     "data-[state=active]:shadow-sm",
 ].join(" ");
 
-function FinancialTable({ sections, data }: { sections: SectionDef[]; data: any }) {
+function FinancialTable({ sections, data, showHistory }: { sections: SectionDef[]; data: any; showHistory: boolean }) {
     const periods: any[] = useMemo(() => latestFirst<any>(data?.output).slice(0, 5), [data]);
 
     if (!periods.length) return (
@@ -170,12 +173,12 @@ function FinancialTable({ sections, data }: { sections: SectionDef[]; data: any 
     return (
         <div className="min-w-0">
             <p className="border-b border-neutral-200 px-3 py-2 text-[13px] leading-5 text-neutral-600 dark:border-border-subtle-dark dark:text-neutral-300 sm:hidden">좌우로 밀어 이전 공시와 비교하세요. 항목명은 왼쪽에 고정됩니다.</p>
-        <div className="max-w-full overflow-x-auto overscroll-x-contain focus-visible:outline focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-brand" role="region" aria-label="기간별 재무 수치" tabIndex={0}>
-            <table className="w-full table-fixed border-separate border-spacing-0 text-[15px]" style={{ minWidth: `${160 + periods.length * 160}px` }}>
+        <div className="relative max-w-full overflow-x-auto overscroll-x-contain focus-visible:outline focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-brand" role="region" aria-label="기간별 재무 수치" tabIndex={0}>
+            <table className="w-full table-fixed border-separate border-spacing-0 text-[15px]" style={{ minWidth: `${128 + periods.length * 144}px` }}>
                 <caption className="sr-only">계정과목별 최근 공시와 이전 공시의 재무 수치</caption>
                 <colgroup>
-                    <col className="w-[160px] sm:w-44" />
-                    {periods.map((_, index) => <col key={index} className="w-[160px] sm:w-44" />)}
+                    <col className="w-32 sm:w-44" />
+                    {periods.map((_, index) => <col key={index} className="w-36 sm:w-44" />)}
                 </colgroup>
                 <thead>
                     <tr className="border-b border-neutral-200 dark:border-border-subtle-dark">
@@ -272,16 +275,16 @@ function FinancialTable({ sections, data }: { sections: SectionDef[]; data: any 
                                                     <span className={cn(
                                                         isNeg0 && i === 0
                                                             ? "text-rose-600 dark:text-rose-400 font-bold"
-                                                            : val !== null && val < 0
+                                                            : showHistory && val !== null && val < 0
                                                                 ? "text-rose-500 dark:text-rose-500 font-medium"
                                                                 : row.isTotal
                                                                     ? "font-bold text-neutral-900 dark:text-neutral-100"
                                                                     : "font-medium text-neutral-700 dark:text-neutral-300",
                                                         "text-[15px]"
                                                     )}>
-                                                        {val === null ? "—" : formatKoreanUnit(val * ONE_HUNDRED_MILLION)}
+                                                        {!showHistory && i > 0 && val !== null ? <LockedAnalysisValue /> : val === null ? "—" : formatKoreanUnit(val * ONE_HUNDRED_MILLION)}
                                                     </span>
-                                                    {i === 0 && row.key !== "tax_difference" && <YoYBadge pct={yoy} />}
+                                                    {i === 0 && row.key !== "tax_difference" && <YoYBadge pct={yoy} showHistory={showHistory} />}
                                                 </div>
                                             </td>
                                         ))}
@@ -297,7 +300,7 @@ function FinancialTable({ sections, data }: { sections: SectionDef[]; data: any 
     );
 }
 
-export default function FinancialTables({ kiBS, kiIS }: FinancialTablesProps) {
+export default function FinancialTables({ kiBS, kiIS, showHistory = true }: FinancialTablesProps) {
     if (!kiBS?.output?.length || !kiIS?.output?.length) return null;
 
     const footer = (
@@ -340,12 +343,12 @@ export default function FinancialTables({ kiBS, kiIS }: FinancialTablesProps) {
             </div>
 
             <Tabs.Content value="bs" className="focus:outline-none">
-                <FinancialTable sections={BS_SECTIONS} data={kiBS} />
+                <FinancialTable sections={BS_SECTIONS} data={kiBS} showHistory={showHistory} />
                 {footer}
             </Tabs.Content>
 
             <Tabs.Content value="is" className="focus:outline-none">
-                <FinancialTable sections={IS_SECTIONS} data={kiIS} />
+                <FinancialTable sections={IS_SECTIONS} data={kiIS} showHistory={showHistory} />
                 {footer}
             </Tabs.Content>
         </Tabs.Root>

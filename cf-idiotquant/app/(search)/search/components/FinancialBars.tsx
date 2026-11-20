@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { LockedAnalysisValue } from "@/components/locked-analysis-value";
 import styles from "./FinancialBars.module.css";
 import {
     barGeometry, periodDelta, fmtEok, usdBlockFormatter,
@@ -71,9 +72,10 @@ function Stack({ row }: { row: StackRow }) {
 }
 
 // ── 증감 배지 ────────────────────────────────────────────────────────────
-function DeltaBadge({ item }: { item: BarItem }) {
+function DeltaBadge({ item, showHistory }: { item: BarItem; showHistory: boolean }) {
     if (item.hideDelta) return null;
     const d = periodDelta(item.values);
+    if (!showHistory) return d.pct !== null || d.turnedLoss ? <LockedAnalysisValue /> : null;
     if (d.turnedLoss) return <span className="font-mono text-[15px] font-bold text-rose-700 dark:text-rose-300">적자전환</span>;
 
     // 현금흐름처럼 음수가 정상인 항목은 변화율이 오해를 부른다 — 유출이 −4,200 → −5,900 으로
@@ -114,10 +116,11 @@ function compactPeriod(period: string) {
     return { date, basis };
 }
 
-function TrendBlock({ item, periods, unit }: { item: BarItem; periods: string[]; unit: Unit }) {
-    const geo = barGeometry(item.values);
-    const f = blockFormatter(unit, item.values);
-    const latest = item.values.find(v => v !== null) ?? null;
+function TrendBlock({ item, periods, unit, showHistory }: { item: BarItem; periods: string[]; unit: Unit; showHistory: boolean }) {
+    const visibleValues = showHistory ? item.values : item.values.slice(0, 1);
+    const geo = barGeometry(visibleValues);
+    const f = blockFormatter(unit, visibleValues);
+    const latest = visibleValues.find(v => v !== null) ?? null;
 
     if (item.values.every(v => v === null)) {
         return (
@@ -138,7 +141,7 @@ function TrendBlock({ item, periods, unit }: { item: BarItem; periods: string[];
                     {item.isTotal && <i className={cn("w-[3px] h-3 rounded-full shrink-0", TONE_BG[item.tone])} />}
                     {item.label}
                 </span>
-                <DeltaBadge item={item} />
+                <DeltaBadge item={item} showHistory={showHistory} />
                 <span className={cn(
                     "ml-auto hidden sm:block shrink-0 whitespace-nowrap font-mono text-[13px] font-semibold tabular-nums",
                     latest !== null && latest < 0 ? "text-rose-700 dark:text-rose-300" : "text-neutral-900 dark:text-white"
@@ -150,10 +153,11 @@ function TrendBlock({ item, periods, unit }: { item: BarItem; periods: string[];
             {item.values.map((v, i) => {
                 const bar = geo.bars[i];
                 const isLatest = i === 0;
+                const locked = !showHistory && !isLatest && v !== null;
                 const period = periods[i] ?? "";
                 const { date, basis } = compactPeriod(period);
                 return (
-                    <div key={periods[i] ?? i} className="grid min-h-7 sm:min-h-8 grid-cols-[3.25rem_minmax(0,1fr)_4.25rem] sm:grid-cols-[4.5rem_minmax(0,1fr)_4rem] items-center gap-1.5">
+                    <div key={periods[i] ?? i} className="grid min-h-7 sm:min-h-8 grid-cols-[4rem_minmax(0,1fr)_4.25rem] sm:grid-cols-[4.5rem_minmax(0,1fr)_4rem] items-center gap-1.5">
                         <span className={cn(
                             "flex flex-col whitespace-nowrap font-mono text-[13px] leading-4 tabular-nums",
                             isLatest ? "font-bold text-neutral-700 dark:text-neutral-200" : "text-neutral-500 dark:text-neutral-400"
@@ -166,10 +170,11 @@ function TrendBlock({ item, periods, unit }: { item: BarItem; periods: string[];
                             "relative rounded bg-neutral-100 dark:bg-[#322f2a]",
                             isLatest ? "h-3" : "h-2"
                         )}>
-                            {geo.zeroPct > 0 && (
+                            {bar && geo.zeroPct > 0 && (
                                 <span className="absolute -inset-y-0.5 w-px bg-neutral-400/50 dark:bg-neutral-500/50" style={{ left: `${geo.zeroPct}%` }} />
                             )}
-                            {!bar.empty && bar.pct > 0 && (
+                            {locked && <span aria-hidden="true" className="absolute inset-y-0 left-0 w-1/2 rounded bg-neutral-400 blur-[3px] dark:bg-neutral-500" />}
+                            {bar && !bar.empty && bar.pct > 0 && (
                                 <span
                                     className={cn(
                                         "absolute inset-y-0 rounded",
@@ -186,9 +191,9 @@ function TrendBlock({ item, periods, unit }: { item: BarItem; periods: string[];
                         <span className={cn(
                             "whitespace-nowrap text-right font-mono tabular-nums",
                             isLatest ? "text-[13px] font-bold text-neutral-800 dark:text-neutral-100" : "text-[13px] text-neutral-500 dark:text-neutral-400",
-                            v !== null && v < 0 && "text-rose-700 dark:text-rose-300"
+                            !locked && v !== null && v < 0 && "text-rose-700 dark:text-rose-300"
                         )}>
-                            {f(v)}
+                            {locked ? <LockedAnalysisValue /> : f(v)}
                         </span>
                     </div>
                 );
@@ -198,7 +203,7 @@ function TrendBlock({ item, periods, unit }: { item: BarItem; periods: string[];
 }
 
 // ── 명세서 한 장 ─────────────────────────────────────────────────────────
-function StatementCard({ model, unit }: { model: BarModel; unit: Unit }) {
+function StatementCard({ model, unit, showHistory }: { model: BarModel; unit: Unit; showHistory: boolean }) {
     return (
         <div className="bg-transparent sm:bg-white dark:sm:bg-surface-dark-card rounded-none border-0 sm:rounded-xl sm:border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
             <div className="px-0 sm:px-5 py-2 sm:py-3.5 border-b border-neutral-100 dark:border-border-subtle-dark flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -227,7 +232,7 @@ function StatementCard({ model, unit }: { model: BarModel; unit: Unit }) {
                         </div>
                         <div className={cn(styles.groupItems, "grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 sm:gap-y-4")}>
                             {g.items.map(item => (
-                                <TrendBlock key={item.label} item={item} periods={model.periods} unit={unit} />
+                                <TrendBlock key={item.label} item={item} periods={model.periods} unit={unit} showHistory={showHistory} />
                             ))}
                         </div>
                     </div>
@@ -237,16 +242,16 @@ function StatementCard({ model, unit }: { model: BarModel; unit: Unit }) {
     );
 }
 
-export function FinancialBars({ bs, is, unit }: { bs: BarModel | null; is: BarModel | null; unit: Unit }) {
+export function FinancialBars({ bs, is, unit, showHistory = true }: { bs: BarModel | null; is: BarModel | null; unit: Unit; showHistory?: boolean }) {
     if (!bs && !is) return null;
     return (
         <div className="flex min-w-0 flex-col gap-3 sm:gap-4">
-            {bs && <StatementCard model={bs} unit={unit} />}
-            {is && <StatementCard model={is} unit={unit} />}
+            {bs && <StatementCard model={bs} unit={unit} showHistory={showHistory} />}
+            {is && <StatementCard model={is} unit={unit} showHistory={showHistory} />}
             <details className="text-[13px] leading-relaxed text-neutral-600 dark:text-neutral-400">
                 <summary className="flex min-h-11 cursor-pointer items-center font-medium">그래프 읽는 법</summary>
-                <p>각 항목의 첫 줄이 최신 자료입니다. 막대 길이는 같은 항목의 기간별 변화만 비교하세요. 증감률은 표시된 자료 중 가장 오래된 값과 최신 값을 비교합니다.</p>
-                <p className="mt-2">항목별 최댓값을 100%로 표시하며, 항목끼리 막대 길이를 비교할 수 없습니다. 구성 막대는 한 줄의 합계가 100%입니다.</p>
+                <p>각 항목의 첫 줄이 최신 자료입니다. {showHistory ? "막대 길이는 같은 항목의 기간별 변화만 비교하세요. 증감률은 표시된 자료 중 가장 오래된 값과 최신 값을 비교합니다." : "이전 막대와 증감률은 로그인 후 볼 수 있습니다."}</p>
+                <p className="mt-2">{showHistory && "항목별 최댓값을 100%로 표시하며, 항목끼리 막대 길이를 비교할 수 없습니다. "}구성 막대는 한 줄의 합계가 100%입니다.</p>
                 {unit === "eok" && <p className="mt-2">세전손익(계산)은 경상이익 + 특별이익 − 특별손실, 법인세 등(차액)은 여기에서 당기순이익을 뺀 값입니다. 법인세 외 조정이 포함될 수 있으며, 필요한 값이 없으면 제공 자료 없음 또는 —로 표시합니다.</p>}
                 {unit === "usd" && <p className="mt-2">법인세비용(혜택)은 공시된 비용이며 현금 납부액과 다릅니다. 음수는 세금 혜택입니다. 세전이익은 계속영업 기준입니다.</p>}
                 {unit === "usd" && <p className="mt-2">USD · K = 천 달러 · M = 백만 달러 · B = 십억 달러. —는 공시 자료에 값이 없다는 뜻이며 0과 다릅니다.</p>}

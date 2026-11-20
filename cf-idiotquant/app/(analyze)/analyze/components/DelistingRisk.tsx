@@ -2,8 +2,9 @@
 
 import { annualKrIncomeRows, latestFirst } from "@/lib/utils/financialPeriods";
 
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { LockedAnalysisValue } from "@/components/locked-analysis-value";
 import {
   AlertTriangle, CheckCircle2, XCircle,
   Minus, TrendingUp, TrendingDown, ChevronDown,
@@ -12,6 +13,7 @@ import { fmtJoEok } from "@/lib/utils/financeCalc";
 import styles from "../analyze.module.css";
 
 interface DelistingRiskProps {
+  showHistory: boolean;
   kiBS: any;
   kiIS: any;
 }
@@ -38,7 +40,7 @@ interface OpYear {
 // ── 의심 신호 ────────────────────────────────────────────────────────
 interface SuspicionFlag {
   label: string;
-  desc: string;
+  desc: ReactNode;
 }
 
 const STATUS_ICON: Record<CriterionStatus, React.ElementType> = {
@@ -91,7 +93,7 @@ function OpBar({ val, max }: { val: number; max: number }) {
   );
 }
 
-export function DelistingRisk({ kiBS, kiIS }: DelistingRiskProps) {
+export function DelistingRisk({ kiBS, kiIS, showHistory }: DelistingRiskProps) {
   const result = useMemo(() => {
     const bs = latestFirst<any>(kiBS?.output)[0];
     const rawPeriods: any[] = annualKrIncomeRows<any>(kiIS);
@@ -227,7 +229,7 @@ export function DelistingRisk({ kiBS, kiIS }: DelistingRiskProps) {
         if (sgnaDrop >= 0.30) {
           flags.push({
             label: "판관비 급감",
-            desc: `판관비 전년 대비 ${(sgnaDrop * 100).toFixed(0)}% 감소 (${fmtJoEok(prevOp.sgna)} → ${fmtJoEok(curOp.sgna)}) — 비용 절감으로 흑자 조작 가능성`,
+            desc: <>판관비 전년 대비 {showHistory ? `${(sgnaDrop * 100).toFixed(0)}%` : <LockedAnalysisValue />} 감소 ({showHistory ? fmtJoEok(prevOp.sgna) : <LockedAnalysisValue />} → {fmtJoEok(curOp.sgna)}) — 비용 절감으로 흑자 조작 가능성</>,
           });
         }
       }
@@ -236,7 +238,7 @@ export function DelistingRisk({ kiBS, kiIS }: DelistingRiskProps) {
       if (prevOp && prevOp.rev > 0 && curOp.rev < prevOp.rev) {
         flags.push({
           label: "매출 감소 + 흑자전환",
-          desc: `매출 ${fmtJoEok(prevOp.rev)} → ${fmtJoEok(curOp.rev)} 감소세임에도 영업이익 흑자 전환 — 매출 성장이 아닌 비용 조정으로 인한 흑자일 가능성`,
+          desc: <>매출 {showHistory ? fmtJoEok(prevOp.rev) : <LockedAnalysisValue />} → {fmtJoEok(curOp.rev)} 감소세임에도 영업이익 흑자 전환 — 매출 성장이 아닌 비용 조정으로 인한 흑자일 가능성</>,
         });
       }
 
@@ -266,7 +268,7 @@ export function DelistingRisk({ kiBS, kiIS }: DelistingRiskProps) {
     const overall: "위험" | "주의" | "양호" = hasDanger ? "위험" : hasCaution ? "주의" : "양호";
 
     return { criteria, overall, opYears, maxAbsOp, consLossCount, consLossStatus, isAvoidancePattern, flags, prevLossCount };
-  }, [kiBS, kiIS]);
+  }, [kiBS, kiIS, showHistory]);
 
   if (!result) return null;
 
@@ -341,7 +343,7 @@ export function DelistingRisk({ kiBS, kiIS }: DelistingRiskProps) {
                 : consLossCount >= 2 ? "text-amber-600 bg-amber-100 dark:bg-amber-950/30 dark:text-amber-400"
                 : "text-emerald-600 bg-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-400"
               )}>
-                {consLossCount >= 1 ? `${consLossCount}년 연속 영업손실` : "연속 손실 없음"}
+                {consLossCount >= 1 ? <>{showHistory ? consLossCount : <LockedAnalysisValue />}년 연속 영업손실</> : "연속 손실 없음"}
               </span>
             </div>
 
@@ -355,12 +357,14 @@ export function DelistingRisk({ kiBS, kiIS }: DelistingRiskProps) {
                   </span>
                   <span className={cn(
                     "text-right text-[15px] font-bold font-mono tabular-nums whitespace-nowrap sm:order-3",
-                    y.op >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400",
+                    (showHistory || i === 0) && (y.op >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400"),
                   )}>
-                    {y.op >= 0 ? "+" : "-"}{fmtJoEok(Math.abs(y.op))}
+                    {!showHistory && i > 0 ? <LockedAnalysisValue /> : <>{y.op >= 0 ? "+" : "-"}{fmtJoEok(Math.abs(y.op))}</>}
                   </span>
                   <div className="col-span-2 min-w-0 sm:order-2 sm:col-span-1">
-                    <OpBar val={y.op} max={maxAbsOp} />
+                    {showHistory || i === 0
+                      ? <OpBar val={y.op} max={showHistory ? maxAbsOp : Math.abs(y.op)} />
+                      : <div aria-hidden="true" className="h-2.5 w-1/2 rounded-full bg-neutral-400 blur-[3px] dark:bg-neutral-500" />}
                   </div>
                 </div>
               ))}
@@ -381,7 +385,7 @@ export function DelistingRisk({ kiBS, kiIS }: DelistingRiskProps) {
                   연속 영업손실 후 흑자 전환
                 </span>
                 <p className="text-[13px] text-orange-600/80 dark:text-orange-400/70 mt-0.5 leading-relaxed">
-                  직전 {prevLossCount}년 연속 영업손실 뒤 최근 연도에 흑자로 전환했습니다.
+                  직전 {showHistory ? prevLossCount : <LockedAnalysisValue />}년 연속 영업손실 뒤 최근 연도에 흑자로 전환했습니다.
                 </p>
               </div>
             </div>

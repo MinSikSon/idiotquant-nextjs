@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import styles from "./ValuationSection.module.css";
 import { ChevronDown } from "lucide-react";
-import { AnalysisLoginPrompt } from "@/app/(analyze)/analyze/components/AnalysisLoginPrompt";
+import { LockedAnalysisValue } from "@/components/locked-analysis-value";
 import { cn } from "@/lib/utils";
 import { VALUATION_MODEL_DESCRIPTIONS, type ValuationModelDescription } from "./valuationModelDescriptions";
 import type { ValuationResult } from "@/lib/utils/financeCalc";
@@ -85,10 +85,9 @@ interface ValuationSectionProps {
   data: any;
   isUs: boolean;
   isLoggedIn?: boolean;
-  loginHref?: string;
 }
 
-export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/login" }: ValuationSectionProps) => {
+export const ValuationSection = ({ data, isUs, isLoggedIn = true }: ValuationSectionProps) => {
   const [activeTab, setActiveTab] = useState<FilterTabType>("ALL");
   const [selectedModel, setSelectedModel] = useState<string | null>(null);
   const [hoveredModel, setHoveredModel] = useState<string | null>(null);
@@ -154,7 +153,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
           <p className="mb-2 text-[0.8125rem] text-neutral-600 dark:text-neutral-300">
             같은 가격 눈금 · 차이율은 {axis.usedMarketPrice ? "현재가" : "계산 기준가"} 대비
           </p>
-          {isLoggedIn && showBaseNote && (
+          {showBaseNote && (
             <p className="mb-2.5 text-[0.9375rem] leading-relaxed text-neutral-600 dark:text-neutral-300 break-keep">
               세부 계산의 차이율은 {currency}{axis.modelBase.toLocaleString(undefined, { maximumFractionDigits: isUs ? 2 : 0 })} 기준입니다.
             </p>
@@ -256,38 +255,34 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
         </div>
       )}
 
-      {isLoggedIn ? (
-        <>
-          <div role="group" aria-label="세부 계산 모델" className={cn(styles.modelFilters, "flex flex-wrap items-center gap-2 border-b border-neutral-200 py-2 dark:border-border-subtle-dark")}>
-            {([
-              { id: "ALL", label: "전체" },
-              { id: "ASSET", label: "자산가치" },
-              { id: "EARNING", label: "수익가치" },
-            ] as const).map(tab => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id)}
-                aria-pressed={activeTab === tab.id}
-                className={cn("min-h-11 rounded px-2.5 text-sm", activeTab === tab.id
-                  ? "bg-surface-canvas font-semibold text-brand-ink dark:bg-surface-dark-muted"
-                  : "text-neutral-600 hover:bg-surface-canvas dark:text-neutral-300 dark:hover:bg-surface-dark-muted")}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-          {filteredModels.length > 0 ? (
-            <div className={cn(styles.modelCards, "grid grid-cols-1 gap-2 py-3")}>
-              {filteredModels.map(model => (
-                <StrategyCard key={model.type} modelType={model.type} result={model.result} currency={currency} />
-              ))}
-            </div>
-          ) : (
-            <p className="py-3 text-sm text-neutral-600 dark:text-neutral-300">이 분류에서 계산할 수 있는 모델이 없습니다.</p>
-          )}
-        </>
-      ) : <AnalysisLoginPrompt href={loginHref}>가정별 세부 계산은 로그인 후 볼 수 있습니다.</AnalysisLoginPrompt>}
+      <div role="group" aria-label="세부 계산 모델" className={cn(styles.modelFilters, "flex flex-wrap items-center gap-2 border-b border-neutral-200 py-2 dark:border-border-subtle-dark")}>
+        {([
+          { id: "ALL", label: "전체" },
+          { id: "ASSET", label: "자산가치" },
+          { id: "EARNING", label: "수익가치" },
+        ] as const).map(tab => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => setActiveTab(tab.id)}
+            aria-pressed={activeTab === tab.id}
+            className={cn("min-h-11 rounded px-2.5 text-sm", activeTab === tab.id
+              ? "bg-surface-canvas font-semibold text-brand-ink dark:bg-surface-dark-muted"
+              : "text-neutral-600 hover:bg-surface-canvas dark:text-neutral-300 dark:hover:bg-surface-dark-muted")}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+      {filteredModels.length > 0 ? (
+        <div className={cn(styles.modelCards, "grid grid-cols-1 gap-2 py-3")}>
+          {filteredModels.map(model => (
+            <StrategyCard key={model.type} modelType={model.type} result={model.result} currency={currency} showScenarios={isLoggedIn} />
+          ))}
+        </div>
+      ) : (
+        <p className="py-3 text-sm text-neutral-600 dark:text-neutral-300">이 분류에서 계산할 수 있는 모델이 없습니다.</p>
+      )}
     </div>
   );
 };
@@ -299,9 +294,10 @@ interface StrategyCardProps {
   modelType: ValuationModelType;
   result: ValuationResult;
   currency: string;
+  showScenarios: boolean;
 }
 
-function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
+function StrategyCard({ modelType, result, currency, showScenarios }: StrategyCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const config = MODEL_CONFIG[modelType] ?? DEFAULT_CONFIG;
@@ -368,7 +364,7 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
           )}
 
           {/* 목표주가 테이블 */}
-          <div className="overflow-x-auto">
+          <div className="relative overflow-x-auto">
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-surface-canvas dark:bg-surface-dark-card/30">
@@ -388,6 +384,7 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
               <tbody>
                 {result.rows.map((row: any, idx: number) => {
                   const isBase = idx === baseRowIndex;
+                  const locked = !showScenarios && idx !== Math.max(0, baseRowIndex);
                   const isPositive = row.returnPct >= 0;
                   const displayMultiplier = row.multiplier || row.label || row.weight || "—";
 
@@ -417,20 +414,20 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
                         </div>
                       </td>
                       <td className="px-2 sm:px-5 py-3 text-right whitespace-nowrap">
-                        <span className={cn(
+                        {locked ? <LockedAnalysisValue /> : <span className={cn(
                           "text-[0.8125rem] font-semibold font-mono tabular-nums px-2.5 py-0.5 rounded-lg inline-block",
                           isPositive
                             ? "text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30"
                             : "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30"
                         )}>
                           {isPositive ? "+" : ""}{row.returnPct.toFixed(2)}%
-                        </span>
+                        </span>}
                       </td>
                       <td className={cn(
                         "px-2 sm:px-5 py-3 text-[0.8125rem] font-semibold font-mono text-right tabular-nums whitespace-nowrap",
                         isBase ? "text-neutral-900 dark:text-white" : "text-neutral-700 dark:text-neutral-300"
                       )}>
-                        {currency}{row.targetPrice.toLocaleString()}
+                        {locked ? <LockedAnalysisValue /> : `${currency}${row.targetPrice.toLocaleString()}`}
                       </td>
                     </tr>
                   );

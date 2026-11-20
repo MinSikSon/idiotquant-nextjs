@@ -719,6 +719,9 @@ function AnalyzeContent() {
               )}
 
               <div ref={detailStart} className={styles.detailContent} key={tickerFromUrl}>
+                {isLoaded && !isLoggedIn && (
+                  <AnalysisLoginPrompt href={loginHref}>이전 공시와 적정가치 시나리오의 상세 수치는 로그인 후 볼 수 있습니다.</AnalysisLoginPrompt>
+                )}
                 <div className={isDesktop ? styles.analysisColumns : undefined}>
                 <AnalysisSection tab="strategy" desktop={isDesktop}>
                   {visitedTabs.includes('strategy') && (isLoaded ? (
@@ -726,7 +729,6 @@ function AnalyzeContent() {
                     data={data}
                     isUs={krOrUs === 'US'}
                     isLoggedIn={isLoggedIn}
-                    loginHref={loginHref}
                   />
                   ) : financialStatus)}
                 </AnalysisSection>
@@ -751,27 +753,24 @@ function AnalyzeContent() {
 
                     {isLoaded ? <div className="space-y-5">
                       <TechnicalSummary bars={technicalBars} currency={currency} />
-                      {isLoggedIn ? <StockMetrics data={data} isUs={krOrUs === 'US'} />
-                        : <AnalysisLoginPrompt href={loginHref}>상세 지표는 로그인 후 볼 수 있습니다.</AnalysisLoginPrompt>}
+                      <StockMetrics data={data} isUs={krOrUs === 'US'} />
                     </div> : financialStatus}
                   </>}
                 </AnalysisSection>
 
                 {/* 공유 결과에 필요한 위험 데이터는 방문하지 않아도 준비한다. */}
                 <AnalysisSection tab="risk" desktop={isDesktop}>
-                  {!isLoaded ? financialStatus : !isLoggedIn ? (
-                    <AnalysisLoginPrompt href={loginHref}>상장폐지 위험 점검은 로그인 후 볼 수 있습니다.</AnalysisLoginPrompt>
-                  ) : (
+                  {!isLoaded ? financialStatus : (
                     <>
                       <p className="mb-2 text-sm text-neutral-600 dark:text-neutral-300">재무 수치로 점검한 참고 결과입니다. 공식 상장폐지 결정은 거래소 공시에서 확인하세요.</p>
-                      {krOrUs === 'KR' ? <DelistingRisk kiBS={data.kiBS} kiIS={data.kiIS} />
-                        : <UsDelistingRisk finnhubData={data.finnhubData} usDetail={data.usDetail} />}
+                      {krOrUs === 'KR' ? <DelistingRisk kiBS={data.kiBS} kiIS={data.kiIS} showHistory={isLoggedIn} />
+                        : <UsDelistingRisk finnhubData={data.finnhubData} usDetail={data.usDetail} showHistory={isLoggedIn} />}
                     </>
                   )}
                 </AnalysisSection>
 
                 <AnalysisSection tab="financials" desktop={isDesktop}>
-                  {((isDesktop && isPriceLoaded) || visitedTabs.includes('financials')) && (!isLoaded ? financialStatus : isLoggedIn ? (
+                  {((isDesktop && isPriceLoaded) || visitedTabs.includes('financials')) && (!isLoaded ? financialStatus : (
                     <div className={cn(styles.panel, styles.financialPanel, "flex min-w-0 flex-col gap-3 sm:gap-4")}>
                       <div className={cn(styles.financialControls, "flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3")}>
                         <p className="text-sm sm:text-[15px] text-neutral-600 dark:text-neutral-300">
@@ -798,13 +797,13 @@ function AnalyzeContent() {
 
                       {financeView === 'bars' ? (
                         krOrUs === 'KR'
-                          ? <FinancialBars {...buildKrBars(data.kiBS, data.kiIS)} unit="eok" />
-                          : <FinancialBars {...buildUsBars(data.finnhubData?.data ?? [])} unit="usd" />
+                          ? <FinancialBars {...buildKrBars(data.kiBS, data.kiIS)} unit="eok" showHistory={isLoggedIn} />
+                          : <FinancialBars {...buildUsBars(data.finnhubData?.data ?? [])} unit="usd" showHistory={isLoggedIn} />
                       ) : (
                         <div className="min-w-0 overflow-hidden bg-white dark:bg-surface-dark-card sm:rounded-2xl sm:border border-neutral-200 dark:border-border-subtle-dark">
                           {krOrUs === 'KR'
-                            ? <FinancialTables kiBS={data.kiBS} kiIS={data.kiIS} />
-                            : <FinnhubTable data={data.finnhubData.data} source={data.finnhubData.source} />
+                            ? <FinancialTables kiBS={data.kiBS} kiIS={data.kiIS} showHistory={isLoggedIn} />
+                            : <FinnhubTable data={data.finnhubData.data} source={data.finnhubData.source} showHistory={isLoggedIn} />
                           }
                         </div>
                       )}
@@ -817,7 +816,7 @@ function AnalyzeContent() {
                         <p>NCAV는 최신 재무상태표를, 연간 이익 기반 가치평가와 연속 적자 점검은 연간 자료를 사용합니다.</p>
                       </details>
                     </div>
-                  ) : <AnalysisLoginPrompt href={loginHref}>재무제표는 로그인 후 볼 수 있습니다.</AnalysisLoginPrompt>)}
+                  ))}
                 </AnalysisSection>
 
               </div>
