@@ -20,6 +20,8 @@
 }
 
 .page .container { max-width: 1440px; }
+:global(.desktop-workspace):has(.desktopResults) { --desktop-workspace-width: 100%; }
+.page:has(.desktopResults) .container { max-width: none; }
 .page .header { background: var(--analysis-panel); border-color: var(--analysis-line); }
 .page .header h1 { font-size: 1.625rem; font-weight: 600; line-height: 1.4; letter-spacing: -.025em; color: var(--analysis-ink); }
 .page .header p { color: var(--analysis-muted); font-size: 0.9375rem; line-height: 1.75; }
