@@ -37,10 +37,8 @@ import FinancialFreshnessNotice from '@/components/financial-freshness';
 import { analysisFinancialPeriods } from '@/lib/utils/financialFreshness';
 import { usAnalysisAvailability } from '@/lib/utils/usAnalysisAvailability';
 import { resolveStockSearchInput } from '@/lib/utils/stockSearchInput';
-import ResultShare from '@/components/result-share';
 import { StockLogo } from '@/components/stockLogo';
 import { analysisHref, comparisonHref, completeWatchRequest, matchesWatchStock, PENDING_WATCH_KEY, readPendingWatch, screenerReturnPath } from '@/lib/investmentFlow';
-import { analysisSnapshot } from '@/lib/share/analysis';
 import { useToast, ToastContainer } from '@/components/ui/toast';
 import { buildKrBars, buildUsBars } from '@/app/(search)/search/components/financialBarsData';
 import styles from './analyze.module.css';
@@ -328,9 +326,11 @@ function AnalyzeContent() {
   // 모바일 종합 판단 — 한 줄 요약을 눌러 지표 4개(기준·값·충족 여부)를 펼친다
   const [verdictOpen, setVerdictOpen] = useState(false);
   // 재무 탭 — 추이 그래프와 기간별 숫자표를 전환한다
-  const [financeView, setFinanceView] = useState<'bars' | 'table'>('bars');
-  const [detailTab, setDetailTab] = useState<DetailTab>('strategy');
-  const [visitedTabs, setVisitedTabs] = useState<DetailTab[]>(['strategy']);
+  const requestedTab = DETAIL_TAB_KEYS.find(tab => tab === searchParams.get('tab')) ?? 'strategy';
+  const requestedFinanceView = searchParams.get('finance') === 'table' ? 'table' : 'bars';
+  const [financeView, setFinanceView] = useState<'bars' | 'table'>(requestedFinanceView);
+  const [detailTab, setDetailTab] = useState<DetailTab>(requestedTab);
+  const [visitedTabs, setVisitedTabs] = useState<DetailTab[]>([requestedTab]);
   const detailStart = useRef<HTMLDivElement>(null);
   const isDesktop = useSyncExternalStore(subscribeToDesktopAnalysis, getDesktopAnalysis, getServerDesktopAnalysis);
 
@@ -368,13 +368,21 @@ function AnalyzeContent() {
 
   const tickerFromUrl = searchParams.get('ticker');
 
-  const [previousTicker, setPreviousTicker] = useState(tickerFromUrl);
-  if (previousTicker !== tickerFromUrl) {
-    setPreviousTicker(tickerFromUrl);
-    setDetailTab('strategy');
-    setVisitedTabs(['strategy']);
-    setFinanceView('bars');
+  const analysisIdentity = JSON.stringify([tickerFromUrl, requestedTab, requestedFinanceView]);
+  const [previousIdentity, setPreviousIdentity] = useState(analysisIdentity);
+  if (previousIdentity !== analysisIdentity) {
+    setPreviousIdentity(analysisIdentity);
+    setDetailTab(requestedTab);
+    setVisitedTabs([requestedTab]);
+    setFinanceView(requestedFinanceView);
     setVerdictOpen(false);
+  }
+
+  const shareParams = new URLSearchParams();
+  if (tickerFromUrl) {
+    shareParams.set('ticker', tickerFromUrl);
+    if (detailTab !== 'strategy') shareParams.set('tab', detailTab);
+    if (financeView === 'table') shareParams.set('finance', financeView);
   }
 
   // API 응답에서 실제 종목명·종목코드 추출 (검색 입력값과 무관하게 항상 정확한 정보 표시)
@@ -588,6 +596,7 @@ function AnalyzeContent() {
           <span className="font-semibold tabular-nums text-neutral-900 dark:text-white">{headerPrice}</span>
         </> : undefined}
         primaryAction={isPriceLoaded ? <Link href={comparisonHref(krOrUs, [tickerLabel], new Date().toLocaleDateString('sv-SE'))} className="inline-flex min-h-11 items-center px-2 text-xs text-neutral-500 underline-offset-4 hover:text-brand-ink hover:underline dark:text-neutral-400">비교에 추가</Link> : undefined}
+        share={{ path: tickerFromUrl ? `/analyze?${shareParams}` : "/analyze" }}
         actions={isPriceLoaded ? <div className="flex min-w-0 flex-col gap-3">
           <button type="button" onClick={() => void handleToggleLike()} disabled={likeBusy}
             aria-label={isInWatchlist ? '관심 종목에서 빼기' : '관심 종목에 담기'} aria-pressed={isInWatchlist}
@@ -595,21 +604,6 @@ function AnalyzeContent() {
             <Heart size={16} fill={isInWatchlist ? 'currentColor' : 'none'} />{likeBusy ? '저장 중…' : isInWatchlist ? '관심 종목 해제' : '관심 종목 담기'}
           </button>
           {gradeLabel && <GradeHelp key={tickerLabel} grade={gradeLabel} upside={stockData?.ncavRatio ?? 0} />}
-          <ResultShare disabled={!stockData || waitResponse} getSnapshot={() => {
-            const snapshot = analysisSnapshot({
-              title: displayName || tickerLabel, sourcePath: `/analyze?ticker=${encodeURIComponent(tickerFromUrl || tickerLabel)}`,
-              market: krOrUs, values: stockData!, ncav: ncavMultiple, roe, data, bars: technicalBars,
-              includeDetails: isLoggedIn && isLoaded, verdict,
-            });
-            if (isLoggedIn && isLoaded) {
-              const risk = document.querySelector('[data-share-risk]');
-              if (risk) {
-                snapshot.summary.push({ label: '상장유지 위험도', value: risk.getAttribute('data-share-overall') || '—' });
-                snapshot.tables.push({ title: '상장유지 위험도 확인', columns: ['항목', '판정', '값', '설명', '기준'], rows: Array.from(risk.querySelectorAll('[data-share-risk-row]')).map(row => ['label', 'status', 'value', 'note', 'law'].map(key => row.getAttribute(`data-share-${key}`) || '—')) });
-              }
-            }
-            return snapshot;
-          }} />
         </div> : undefined}
         tabs={isPriceLoaded && !isDesktop ? <Tabs.List aria-label="종목 분석" className={styles.analysisTabs}>
           {DETAIL_TAB_KEYS.map(tab => <Tabs.Trigger key={tab} value={tab} className={styles.analysisTab}>{DETAIL_TABS[tab]}</Tabs.Trigger>)}
@@ -758,7 +752,6 @@ function AnalyzeContent() {
                   </>}
                 </AnalysisSection>
 
-                {/* 공유 결과에 필요한 위험 데이터는 방문하지 않아도 준비한다. */}
                 <AnalysisSection tab="risk" desktop={isDesktop}>
                   {!isLoaded ? financialStatus : (
                     <>

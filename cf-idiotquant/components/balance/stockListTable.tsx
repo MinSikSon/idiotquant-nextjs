@@ -41,7 +41,6 @@ import { LikedStockItem } from "@/lib/features/stockLikes/stockLikesSlice";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import validCorpCode from "@/public/data/validCorpCode.json";
-import { CopyStockButtons, type CopyStock } from "@/components/copyStockButtons";
 
 /** Tailwind 클래스 병합 유틸리티 */
 function cn(...inputs: ClassValue[]) {
@@ -819,13 +818,10 @@ function StockListTable({
                   <Info className="w-3 h-3" />
                   <span>Technical Metadata</span>
                 </div>
-                <div className="relative group">
+                <div>
                   <pre className="max-h-[300px] overflow-auto rounded-xl border border-neutral-200 bg-[#fcfaf7] p-4 tabular-nums text-xs leading-relaxed dark:border-border-subtle-dark dark:bg-surface-dark-canvas dark:text-neutral-400">
                     {JSON.stringify(selectedDetail, null, 2)}
                   </pre>
-                  <button onClick={() => navigator.clipboard.writeText(JSON.stringify(selectedDetail))} className="absolute right-3 top-3 rounded-md bg-white p-2 shadow-none border border-neutral-200 opacity-0 group-hover:opacity-100 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-all dark:bg-surface-dark-muted dark:border-surface-dark-elevated">
-                    <Copy className="h-3.5 w-3.5 text-neutral-600 dark:text-neutral-300" />
-                  </button>
                 </div>
               </div>
             </div>
@@ -902,15 +898,6 @@ function GroupSection({
   const showRefill = isMaster && rows.some(r => r.movable);
   const showCheck = isMaster && rows.length > 0; // 모든 행 선택 가능(좋아요는 복사용)
   const selectableTickers = useMemo(() => rows.map(r => r.symbol), [rows]);
-  // 복사용 행: 종목명/티커 + 지표(ROE는 EPS/BPS로 계산)
-  const copyRows = useMemo<CopyStock[]>(() => rows.map(r => ({
-    name: r.name || r.symbol,
-    ticker: r.symbol,
-    ncav: r.ncavRatio,
-    pbr: r.pbr,
-    per: r.per,
-    roe: Number(r.bps) > 0 ? (Number(r.eps) / Number(r.bps)) * 100 : null,
-  })), [rows]);
   // 그룹 예산(토큰) 합계 — 그룹 단위 운용 현황을 헤더에 표시
   const tokenTotal = useMemo(() => rows.reduce((s, r) => s + (r.movable ? (Number(r.token) || 0) : 0), 0), [rows]);
   // 선택 여부는 이 섹션 키 기준으로만 판단(다른 섹션의 동일 종목과 분리)
@@ -1034,8 +1021,6 @@ function GroupSection({
         </div>
 
         <div className="contents">
-          {/* 종목 목록 복사 (종목명만 / 상세) */}
-          <CopyStockButtons rows={copyRows} label={title} />
           {onDistributeBudget && (
             <button type="button" disabled={distributing || rows.length < 2 || tokenTotal <= 0}
               onClick={async () => {

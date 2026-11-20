@@ -7,6 +7,7 @@ import { useSession, signOut } from "next-auth/react";
 import ThemeChanger from "@/components/theme_changer";
 import { useMobilePageHeader } from "@/components/mobile-page-header";
 import { StockSearchTrigger } from "@/components/stock-search-provider";
+import { PageShareTools } from "@/components/page-share";
 import { NavigationPopover } from "@/components/navigation-popover";
 import { navigationScroll, type NavigationScrollState } from "@/lib/navigation-scroll";
 import QuickNavigation from "@/components/quick-navigation";
@@ -548,8 +549,9 @@ export function NavbarWithSimpleLinks() {
             <div ref={pageHeader?.setInfoTarget} data-navigation-info />
             <div ref={pageHeader?.setScrollTitleTarget} data-navigation-scroll-title hidden={!identityScrolled} />
           </div>
-          <div ref={pageHeader?.setActionsTarget} data-navigation-actions className="shrink-0" />
           <div className="navigation-search flex shrink-0 items-center"><StockSearchTrigger /></div>
+          <div ref={pageHeader?.setActionsTarget} data-navigation-actions className="shrink-0" />
+          {!pageHeader?.active && <PageShareTools key={pathname} share={pathname.startsWith("/ledger/join/") ? { path: "/ledger" } : undefined} />}
           <div className="hidden shrink-0 md:block">
             <NavigationPopover label="사용자 및 서비스 메뉴" trigger={<button type="button" aria-label="사용자 및 서비스 메뉴" className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-sm text-neutral-600 dark:text-neutral-300"><MoreHorizontal size={20} aria-hidden="true" />더 보기</button>}>
               {serviceMenu(false)}
@@ -586,6 +588,7 @@ export function NavbarWithSimpleLinks() {
             {!pageHeader?.active && <QuickNavigation compact items={[...MAIN_NAV, ...utilityNav]} />}
             <ThemeChanger compact />
             <MiniSession session={session} status={status} />
+            <PageShareTools key={pathname} />
           </div>
         </div>
         <div ref={pageHeader?.setActionsTarget} data-navigation-actions className={cn("navigation-mobile-actions px-4 pb-1.5", !pageHeader?.active && "hidden")} />

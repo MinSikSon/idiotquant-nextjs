@@ -21,10 +21,7 @@ import {
     reqGetMyLikes, reqToggleLike,
 } from "@/lib/features/stockLikes/stockLikesSlice";
 import { cn } from "@/lib/utils";
-import { CopyStockButtons, type CopyStock } from "@/components/copyStockButtons";
 import { PageHeader, PAGE_ACTION_CLS } from "@/components/pageHeader";
-import ResultShare from "@/components/result-share";
-import { screenerSnapshot } from "@/lib/share/builders";
 import { buildGroups, defaultOpenGroups, GroupedResults, type Group, type GroupMode } from "./components/GroupedResults";
 import { ResultSummary, TermStrip } from "./components/ResultSummary";
 import { StockGridCard } from "./components/StockGridCard";
@@ -508,7 +505,9 @@ function ScreenerContent() {
     const rawSearchParams = useSearchParams();
     const searchParams = useMemo(() => expandWorldcupParams(rawSearchParams.toString()), [rawSearchParams]);
     const [sharedWorldcup] = useState(() => readWorldcupCode(rawSearchParams.get('w')));
+    const fromSharedScreen = rawSearchParams.get('from') === 'share';
     const [worldcupAnswers, setWorldcupAnswers] = useState<WorldcupAnswer[]>(sharedWorldcup?.answers ?? []);
+    const [worldcupSharePath, setWorldcupSharePath] = useState<string>();
     const { data: session, status: sessionStatus } = useSession();
     const isLoggedIn = !!session;
     const viewAsUser = useViewAsUser();
@@ -534,7 +533,7 @@ function ScreenerContent() {
     // (다른 페이지 다녀와 URL 파라미터가 없어도 마지막 필터를 그대로 복원)
     const [saved] = useState(() => {
         // 공개 미리보기에서 이어오면 이전 개인 필터 대신 명시한 조건부터 시작한다.
-        if (sharedWorldcup || searchParams.get("from") === "preview" || typeof window === 'undefined') return {} as Record<string, any>;
+        if (sharedWorldcup || fromSharedScreen || searchParams.get("from") === "preview" || typeof window === 'undefined') return {} as Record<string, any>;
         try { return JSON.parse(localStorage.getItem('screener:filters') || '{}') as Record<string, any>; }
         catch { return {} as Record<string, any>; }
     });
@@ -600,7 +599,7 @@ function ScreenerContent() {
     // 일 거래대금 하한 (KR: 억원, US: 백만 달러, URL param: mintr)
     const [minTrAmt, setMinTrAmt] = useState<number>(() => initNum('mintr', 'mintr', country === 'US' ? US_TR_AMT_PRESETS : KR_TR_AMT_PRESETS));
     const [filterOpen, setFilterOpen] = useState(false);
-    const [filterMethod, setFilterMethod] = useState<'manual' | 'worldcup'>(sharedWorldcup ? 'worldcup' : 'manual');
+    const [filterMethod, setFilterMethod] = useState<'manual' | 'worldcup'>(sharedWorldcup && !fromSharedScreen ? 'worldcup' : 'manual');
     const [likedOnlyRequested, setShowLikedOnly] = useState(() =>
         (searchParams.get('filter') ?? saved.filter) === 'liked'
     );
@@ -734,8 +733,9 @@ function ScreenerContent() {
         if (showLikedOnly) params.set('filter', 'liked');
         if (groupMode !== 'none') params.set('group', groupMode);
         if (viewMode !== DEFAULT_VIEW) params.set('view', viewMode);
+        if (fromSharedScreen) params.set('from', 'share');
         return params.toString();
-    }, [worldcupAnswers, country, activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludePreferred, excludeAdr, excludeChinaSmall, excludeLowLiquidity, excludeCashBurn, excludeHalted, excludeManaged, excludeDelisting, sectors, markets, maxW52Pos, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav, minIncomeTax, maxIncomeTax, showLikedOnly, groupMode, viewMode]);
+    }, [worldcupAnswers, country, activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludePreferred, excludeAdr, excludeChinaSmall, excludeLowLiquidity, excludeCashBurn, excludeHalted, excludeManaged, excludeDelisting, sectors, markets, maxW52Pos, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav, minIncomeTax, maxIncomeTax, showLikedOnly, groupMode, viewMode, fromSharedScreen]);
 
     // 필터 상태 → URL 동기화 + localStorage 저장 (페이지 이동 후 재진입 시에도 전체 필터 유지)
     useEffect(() => {
@@ -1007,15 +1007,6 @@ function ScreenerContent() {
     const highlightMap: HighlightMap | null =
         activeStrategyIds.size === 1 ? (STRATEGY_HIGHLIGHT[Array.from(activeStrategyIds)[0]] ?? null) : null;
 
-    // 목록 복사용 행 (관심 뷰·일반 발굴 목록 공용)
-    const copyRows = useMemo<CopyStock[]>(() => accessibleList.map(item => ({
-        name: item.name,
-        ticker: item.ticker,
-        ncav: item.ncav_ratio,
-        pbr: item.pbr,
-        per: item.per,
-        roe: roeOf(item) || null,
-    })), [accessibleList]);
     const scanLoading = ncavDailyList.state === 'pending' || ncavDailyList.state === 'init' || ncavDailyList.country !== country;
     const isLoading = showLikedOnly ? likesState === 'pending' || likesState === 'init' : scanLoading;
     const isRefreshing = !showLikedOnly && ncavDailyList.refreshing;
@@ -1023,6 +1014,8 @@ function ScreenerContent() {
     const resultName = showLikedOnly ? '관심종목' : '스캔 데이터';
 
     const returnPath = `/screener${queryString ? `?${queryString}` : ''}`;
+    const shareParams = new URLSearchParams(queryString);
+    if (filterMethod === 'manual' || !shareParams.has('w')) shareParams.set('from', 'share');
     const compareLimit = isLoggedIn ? 20 : 4;
     const compareTickers = comparisonSelection.country === country ? comparisonSelection.tickers.slice(0, compareLimit) : [];
     const toggleComparison = (ticker: string) => setComparisonSelection(current => ({ country,
@@ -1273,6 +1266,7 @@ function ScreenerContent() {
                         </>
                     )
                 )}
+                share={{ path: filterMethod === 'worldcup' && worldcupSharePath ? worldcupSharePath : `/screener?${shareParams}` }}
                 actions={<>
                     <ScreenerUsageGuide />
                     {scanningInProgress && !showLikedOnly && filterMethod === 'manual' && (
@@ -1380,6 +1374,7 @@ function ScreenerContent() {
                         <FilterWorldcup key={`${country}:${worldcupAnswers.join()}`} country={country} initialAnswers={worldcupAnswers} hasTradingAmount={hasTrAmtData} loading={scanLoading}
                             previewCount={proposal => applyFilters(baseList, { ...filters, ...proposal }).length}
                             onManual={() => setFilterMethod('manual')}
+                            onSharePathChange={setWorldcupSharePath}
                             onApply={(proposal, answers) => {
                                 setWorldcupAnswers(answers);
                                 setExcludeDeficit(proposal.excludeDeficit); setMaxPer(proposal.maxPer);
@@ -2099,44 +2094,33 @@ function ScreenerContent() {
                                 {filteredList.find((item: any) => item.ticker === ticker)?.name ?? ticker} ×
                             </button>)}</div>
                         </div>}
-                        <SecondarySection title="묶기 · 복사 · 공유" className="mb-3">
-                        <ResultShare disabled={isLoading || !filteredList.length}
-                        getSnapshot={() => screenerSnapshot(
-                            accessibleList,
-                            `/screener${queryString ? `?${queryString}` : ''}`,
-                            ncavDailyList.scanDate, country,
-                            activeConditions.map(condition => condition.label)
-                        )} />
-                        <div className="flex flex-nowrap items-center gap-2 overflow-x-auto whitespace-nowrap">
-                            <div role="group" aria-label="결과 묶기" className="shrink-0 flex items-center gap-0.5 p-0.5 rounded-lg bg-surface-canvas dark:bg-surface-dark-hover">
-                                {([
-                                    { id: 'none',     label: '안 묶기' },
-                                    { id: 'sector',   label: '업종', disabled: !hasSectorData },
-                                    { id: 'strategy', label: '전략' },
-                                ] as { id: GroupMode; label: string; disabled?: boolean }[]).map(o => (
-                                    <button
-                                        key={o.id}
-                                        disabled={o.disabled}
-                                        aria-pressed={groupMode === o.id}
-                                        onClick={() => setGroupMode(o.id)}
-                                        title={o.disabled ? "업종 데이터 연동 예정" : undefined}
-                                        className={cn(
-                                            "px-2.5 py-1.5 rounded-lg text-xs transition-colors whitespace-nowrap",
-                                            o.disabled && "opacity-40 cursor-not-allowed",
-                                            groupMode === o.id
-                                                ? "bg-white dark:bg-surface-dark font-extrabold text-neutral-900 dark:text-white underline decoration-2 underline-offset-4"
-                                                : "font-bold text-neutral-500 dark:text-neutral-400"
-                                        )}
-                                    >
-                                        {o.label}
-                                    </button>
-                                ))}
+                        <SecondarySection title="결과 묶기" className="mb-3">
+                            <div className="flex flex-nowrap items-center gap-2 overflow-x-auto whitespace-nowrap">
+                                <div role="group" aria-label="결과 묶기" className="shrink-0 flex items-center gap-0.5 p-0.5 rounded-lg bg-surface-canvas dark:bg-surface-dark-hover">
+                                    {([
+                                        { id: 'none',     label: '안 묶기' },
+                                        { id: 'sector',   label: '업종', disabled: !hasSectorData },
+                                        { id: 'strategy', label: '전략' },
+                                    ] as { id: GroupMode; label: string; disabled?: boolean }[]).map(o => (
+                                        <button
+                                            key={o.id}
+                                            disabled={o.disabled}
+                                            aria-pressed={groupMode === o.id}
+                                            onClick={() => setGroupMode(o.id)}
+                                            title={o.disabled ? "업종 데이터 연동 예정" : undefined}
+                                            className={cn(
+                                                "px-2.5 py-1.5 rounded-lg text-xs transition-colors whitespace-nowrap",
+                                                o.disabled && "opacity-40 cursor-not-allowed",
+                                                groupMode === o.id
+                                                    ? "bg-white dark:bg-surface-dark font-extrabold text-neutral-900 dark:text-white underline decoration-2 underline-offset-4"
+                                                    : "font-bold text-neutral-500 dark:text-neutral-400"
+                                            )}
+                                        >
+                                            {o.label}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
-                            <div className="flex shrink-0 items-center gap-2">
-                                <CopyStockButtons rows={copyRows} label={showLikedOnly ? "관심 종목" : "발굴 종목"} />
-                            </div>
-                        </div>
-
                         </SecondarySection>
                         {viewMode === 'table' && metricHighlight && <p className="mb-3 text-xs text-neutral-600 dark:text-neutral-400">✓ 강조 기준 충족 · × 강조 기준 미충족</p>}
 

@@ -7,15 +7,13 @@ import { Dice5, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CONTROL_FOCUS_CLS, CONTROL_INPUT_CLS } from "@/lib/ui-controls";
 import { PageHeader, PAGE_WIDTH } from "@/components/pageHeader";
-import ResultShare from "@/components/result-share";
 import AssetGoal from "@/components/AssetGoal";
-import { calculatorSnapshot } from "@/lib/share/calculator";
 import GrowthChart from "./GrowthChart";
 import CalculatorHistory from "./CalculatorHistory";
 import { NumberField } from "./NumberField";
 import {
     DEFAULTS, TAX_RATE, SIMPLE_ASSUMPTIONS, PERIOD_LABEL,
-    sanitize, maskDetail, simulate, parse, won, pct, basisOf,
+    sanitize, maskDetail, simulate, parse, serialize, won, pct, basisOf,
     type CalcInputs, type Detail, type Periods, type RateMode,
 } from "./calc";
 
@@ -362,6 +360,7 @@ function Calculator() {
                     mobileTitle="복리 계산기"
                     containerClassName="p-0"
                     className="border-0 bg-transparent dark:bg-transparent [&>[data-header-main]]:p-0 [&_h1]:text-[18px] [&_h1]:min-[380px]:text-xl [&_h1]:sm:text-2xl [&_h1]:font-semibold [&_h1]:leading-[1.28]"
+                    share={{ path: `/calculator?${serialize(effective, detail)}` }}
                     actions={<>
                         {/* 설명 스위치는 좁은 화면에만 둔다 — 넓은 화면에서는 접는 것이 없으니
                             눌러도 아무 일이 일어나지 않는 버튼이 된다. */}
@@ -382,7 +381,6 @@ function Calculator() {
                             <Info size={13} strokeWidth={2} />
                             <span className="hidden min-[380px]:inline">설명</span>
                         </button>
-                        <ResultShare getSnapshot={() => calculatorSnapshot(effective, detail, result)} />
                     </>}
                 />
 
