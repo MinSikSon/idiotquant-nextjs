@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
+import { LockedAnalysisValue } from "@/components/locked-analysis-value";
 import styles from "../analyze.module.css";
 import {
   AlertTriangle, CheckCircle2, XCircle, Minus, ChevronDown,
@@ -112,11 +113,12 @@ function OpBar({ val, max }: { val: number; max: number }) {
 }
 
 interface Props {
+  showHistory: boolean;
   finnhubData: any;
   usDetail: any;
 }
 
-export function UsDelistingRisk({ finnhubData, usDetail }: Props) {
+export function UsDelistingRisk({ finnhubData, usDetail, showHistory }: Props) {
   const result = useMemo(() => {
     const allReports: any[] = finnhubData?.annualData ?? finnhubData?.data ?? [];
     const annuals = allReports
@@ -330,24 +332,26 @@ export function UsDelistingRisk({ finnhubData, usDetail }: Props) {
               연간 공시 기준 영업이익 추이
             </p>
             <div className="space-y-4 sm:space-y-3">
-              {opYears.map(y => (
+              {opYears.map((y, i) => (
                 <div key={y.year} className={cn(styles.riskYear, "grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 sm:grid-cols-[3rem_minmax(0,1fr)_auto]")}>
                   <span className="whitespace-nowrap text-[15px] font-mono tabular-nums text-neutral-600 dark:text-neutral-300">{y.year}</span>
                   <span className={cn(
                     "text-right text-[15px] font-bold font-mono tabular-nums whitespace-nowrap sm:order-3",
-                    y.op >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400",
+                    (showHistory || i === 0) && (y.op >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400"),
                   )}>
-                    {fmtUSD(y.op)}
+                    {!showHistory && i > 0 ? <LockedAnalysisValue /> : fmtUSD(y.op)}
                   </span>
                   <div className="col-span-2 min-w-0 sm:order-2 sm:col-span-1">
-                    <OpBar val={y.op} max={maxAbsOp} />
+                    {showHistory || i === 0
+                      ? <OpBar val={y.op} max={showHistory ? maxAbsOp : Math.abs(y.op)} />
+                      : <div aria-hidden="true" className="h-2.5 w-1/2 rounded-full bg-neutral-400 blur-[3px] dark:bg-neutral-500" />}
                   </div>
                 </div>
               ))}
             </div>
             {consLossCount > 0 && (
               <p className="text-[15px] font-semibold text-amber-600 dark:text-amber-400 mt-2">
-                현재 {consLossCount}년 연속 영업손실
+                현재 {showHistory ? consLossCount : <LockedAnalysisValue />}년 연속 영업손실
               </p>
             )}
           </div>
@@ -360,7 +364,7 @@ export function UsDelistingRisk({ finnhubData, usDetail }: Props) {
               <span className="text-[13px] font-bold text-orange-700 dark:text-orange-400">연속 영업손실 후 흑자 전환</span>
             </div>
             <p className="text-[15px] text-orange-600 dark:text-orange-400 mb-2">
-              직전 {opYears.length - 1}개 연도에 영업손실을 기록한 뒤 최근 연도에 흑자로 전환했습니다.
+              직전 {showHistory ? opYears.length - 1 : <LockedAnalysisValue />}개 연도에 영업손실을 기록한 뒤 최근 연도에 흑자로 전환했습니다.
             </p>
             {flags.map(f => (
               <div key={f.label} className="flex items-start gap-1.5 mt-1">

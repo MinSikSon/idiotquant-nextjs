@@ -5,6 +5,7 @@ import React, { useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { useViewAsUser } from "@/lib/viewAsUser";
 import { cn } from "@/lib/utils";
+import { LockedAnalysisValue } from "@/components/locked-analysis-value";
 import { visibleFinancialSourceLabel } from "@/lib/utils/financialFreshness";
 import * as Tabs from "@radix-ui/react-tabs";
 import * as Popover from "@radix-ui/react-popover";
@@ -26,6 +27,7 @@ type FinnhubReport = {
 };
 
 interface Props {
+    showHistory?: boolean;
     data: FinnhubReport[];
     className?: string;
     source?: string | null;
@@ -236,10 +238,11 @@ function InfoPopover({ label, description, isTotal }: { label: string; descripti
     );
 }
 
-function YoYBadge({ pct }: { pct: number | null }) {
+function YoYBadge({ pct, showHistory }: { pct: number | null; showHistory: boolean }) {
     if (pct === null || !Number.isFinite(pct) || Math.abs(pct) < 0.05) {
         return <span className="text-neutral-300 dark:text-neutral-700"><Minus size={8} /></span>;
     }
+    if (!showHistory) return <LockedAnalysisValue />;
     const isUp = pct >= 0;
     return (
         <span className={cn(
@@ -262,8 +265,10 @@ const TAB_TRIGGER_BASE = [
 function SectionTable({
     sections,
     columns,
+    showHistory,
 }: {
     sections: SectionDef[];
+    showHistory: boolean;
     columns: { label: string; map: Map<string, number | null> }[];
 }) {
     if (!columns.length) return null;
@@ -271,12 +276,12 @@ function SectionTable({
     return (
         <div className="min-w-0">
             <p className="border-b border-neutral-200 px-3 py-2 text-[13px] leading-5 text-neutral-600 dark:border-border-subtle-dark dark:text-neutral-300 sm:hidden">좌우로 밀어 이전 공시와 비교하세요. 항목명은 왼쪽에 고정됩니다.</p>
-        <div className="max-w-full overflow-x-auto overscroll-x-contain focus-visible:outline focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-brand" role="region" aria-label="기간별 재무 수치" tabIndex={0}>
-            <table className="w-full table-fixed border-separate border-spacing-0 text-[15px]" style={{ minWidth: `${160 + columns.length * 160}px` }}>
+        <div className="relative max-w-full overflow-x-auto overscroll-x-contain focus-visible:outline focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-brand" role="region" aria-label="기간별 재무 수치" tabIndex={0}>
+            <table className="w-full table-fixed border-separate border-spacing-0 text-[15px]" style={{ minWidth: `${128 + columns.length * 144}px` }}>
                 <caption className="sr-only">계정과목별 최근 공시와 이전 공시의 재무 수치</caption>
                 <colgroup>
-                    <col className="w-[160px] sm:w-44" />
-                    {columns.map((_, index) => <col key={index} className="w-[160px] sm:w-44" />)}
+                    <col className="w-32 sm:w-44" />
+                    {columns.map((_, index) => <col key={index} className="w-36 sm:w-44" />)}
                 </colgroup>
                 <thead>
                     <tr className="border-b border-neutral-200 dark:border-border-subtle-dark">
@@ -366,16 +371,16 @@ function SectionTable({
                                             >
                                                 <div className="flex flex-col items-end gap-0.5">
                                                     <span className={cn(
-                                                        v !== null && v < 0
+                                                        (showHistory || colIdx === 0) && v !== null && v < 0
                                                             ? "text-rose-600 dark:text-rose-400 font-bold"
                                                             : item.isTotal
                                                                 ? "font-bold text-neutral-900 dark:text-neutral-100"
                                                                 : "font-medium text-neutral-700 dark:text-neutral-300",
                                                         "text-[15px]"
                                                     )}>
-                                                        {fmtUSD(v)}
+                                                        {!showHistory && colIdx > 0 && v !== null ? <LockedAnalysisValue /> : fmtUSD(v)}
                                                     </span>
-                                                    {colIdx === 0 && <YoYBadge pct={yoy} />}
+                                                    {colIdx === 0 && <YoYBadge pct={yoy} showHistory={showHistory} />}
                                                 </div>
                                             </td>
                                         ))}
@@ -391,7 +396,7 @@ function SectionTable({
     );
 }
 
-export default function FinnhubTable({ data = [], className = "", source }: Props) {
+export default function FinnhubTable({ data = [], className = "", source, showHistory = true }: Props) {
     const { data: session } = useSession();
     const viewAsUser = useViewAsUser();
     const isAdmin = (session?.user as { role?: string } | undefined)?.role === "admin" && !viewAsUser;
@@ -464,17 +469,17 @@ export default function FinnhubTable({ data = [], className = "", source }: Prop
                 </div>
 
                 <Tabs.Content value="bs" className="focus:outline-none">
-                    <SectionTable sections={BS_SECTIONS} columns={columns} />
+                    <SectionTable sections={BS_SECTIONS} columns={columns} showHistory={showHistory} />
                     {footer}
                 </Tabs.Content>
 
                 <Tabs.Content value="is" className="focus:outline-none">
-                    <SectionTable sections={IS_SECTIONS} columns={columns} />
+                    <SectionTable sections={IS_SECTIONS} columns={columns} showHistory={showHistory} />
                     {footer}
                 </Tabs.Content>
 
                 <Tabs.Content value="cf" className="focus:outline-none">
-                    <SectionTable sections={CF_SECTIONS} columns={columns} />
+                    <SectionTable sections={CF_SECTIONS} columns={columns} showHistory={showHistory} />
                     {footer}
                 </Tabs.Content>
             </Tabs.Root>
