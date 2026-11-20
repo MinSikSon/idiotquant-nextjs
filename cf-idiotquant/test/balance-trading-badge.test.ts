@@ -22,33 +22,37 @@ const nodes = (node: any): any[] => !node || typeof node !== "object" ? [] : Arr
 const text = (node: any): string => typeof node === "string" || typeof node === "number" ? String(node) : Array.isArray(node) ? node.map(text).join("") : node?.props ? text(node.props.children) : "";
 
 for (const isUs of [false, true]) {
-  for (const [group, enabled, expected] of [
-    [{ name: "운용", active: true, assigned: true }, true, "자동매매"],
-    [{ name: "운용", active: true, assigned: true }, false, "자동매매 OFF"],
-    [{ name: "제외 그룹", active: false, assigned: true }, true, "자동매매 제외"],
-    [{ name: "미지정", active: false, assigned: false }, true, "자동매매 제외"],
-    [undefined, true, ""],
+  for (const [group, enabled, expected, color] of [
+    [{ name: "운용", active: true, assigned: true, side: "buy" }, true, "자동매매 · 매수", "text-brand-ink"],
+    [{ name: "운용", active: true, assigned: true, side: "sell" }, true, "자동매매 · 매도", "text-rose-600 dark:text-rose-400"],
+    [{ name: "운용", active: true, assigned: true }, true, "자동매매 · 매수", "text-brand-ink"],
+    [{ name: "운용", active: true, assigned: true, side: "sell" }, false, "자동매매 OFF · 매도", "text-neutral-500 dark:text-neutral-400"],
+    [{ name: "제외 그룹", active: false, assigned: true }, true, "자동매매 제외 · 매수", "text-neutral-500 dark:text-neutral-400"],
+    [{ name: "미지정", active: false, assigned: false }, true, "자동매매 제외", "text-neutral-500 dark:text-neutral-400"],
+    [undefined, true, "", ""],
   ] as const) {
-    test(`${isUs ? "US" : "KR"}: 접힌 자산 행에 ${expected || "배지 없음"} 표시`, () => {
+    test(`${isUs ? "US" : "KR"}: ${group?.name ?? "미등록 종목"}의 ${expected || "아이콘 없음"} 표시`, () => {
       const ticker = isUs ? "AAPL" : "005930";
       const item = isUs ? { ovrs_pdno: ticker, ovrs_item_name: "긴 미국 종목명" } : { pdno: ticker, prdt_name: "긴 국내 종목명" };
       const tree = exports.Table({ inventoryData: [item], isUs, onOpenOrder: () => {}, countryTradingActive: enabled, groupByTicker: new Map(group ? [[ticker, group]] : []) });
       const summary = nodes(tree).find(n => n.type === "summary");
       assert.ok(summary);
-      if (expected) {
-        assert.ok(!text(summary).includes("자동매매"));
-        const icon = nodes(summary).find(n => n.props?.["aria-label"] === `${expected} · ${group!.name}`);
-        assert.ok(icon);
-        assert.equal(icon.props.role, "img");
-        assert.equal(text(icon), "");
-        const nameLine = summary.props.children[0];
-        assert.ok(!nameLine.props.className.includes("flex-col"));
-      } else {
-        assert.ok(!text(summary).includes("자동매매"));
-      }
+      assert.ok(!text(summary).includes("자동매매"));
+      const nameLine = summary.props.children[0];
+      assert.ok(!nameLine.props.className.includes("flex-col"));
       const desktop = nodes(tree).find(n => n.type === "table");
-      const desktopBadges = nodes(desktop).filter(n => n.props?.["aria-label"]?.startsWith("자동매매"));
-      assert.equal(desktopBadges.length, expected ? 1 : 0);
+      for (const view of [summary, desktop]) {
+        const icons = nodes(view).filter(n => n.props?.["aria-label"]?.startsWith("자동매매"));
+        assert.equal(icons.length, group ? 1 : 0);
+        if (!group) continue;
+        const [icon] = icons;
+        const description = `${expected} · ${group.name}`;
+        assert.equal(icon.props["aria-label"], description);
+        assert.equal(icon.props.title, description);
+        assert.equal(icon.props.role, "img");
+        assert.equal(icon.props.className, `inline-flex shrink-0 items-center ${color}`);
+        assert.equal(text(icon), "");
+      }
     });
   }
 }
@@ -59,7 +63,7 @@ for (const [input, expected] of [["전방", "000950"], [950, "000950"], ["A00095
     assert.equal(key, expected);
     const tree = exports.Table({ inventoryData: [{ pdno: expected, prdt_name: String(input) }], isUs: false, countryTradingActive: true, groupByTicker: new Map([[key, { name: "11월-04월", active: true, assigned: true }]]) });
     const summary = nodes(tree).find(n => n.type === "summary");
-    assert.ok(nodes(summary).some(n => n.props?.["aria-label"] === "자동매매 · 11월-04월"));
+    assert.ok(nodes(summary).some(n => n.props?.["aria-label"] === "자동매매 · 매수 · 11월-04월"));
   });
 }
 

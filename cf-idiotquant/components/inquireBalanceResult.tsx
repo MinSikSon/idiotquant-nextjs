@@ -23,6 +23,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useToast, ToastContainer, EmptyState, EmptyRow } from "@/components/balance/shared";
+import type { StockGroup } from "@/lib/features/capital/capitalSlice";
 import {
     reqGetInquirePrice,
     getKoreaInvestmentInquirePrice,
@@ -86,6 +87,13 @@ function formatValue(value: number | string, type: "MONEY" | "QTY") {
 const compactMoney = (value: number | string) =>
     `₩${new Intl.NumberFormat("ko-KR", { notation: "compact", maximumFractionDigits: 1 }).format(Math.floor(Number(value) || 0))}`;
 
+type BalanceTradingGroup = {
+    name: string;
+    active: boolean;
+    assigned: boolean;
+    side?: StockGroup["side"];
+};
+
 interface InquireBalanceResultProps {
     balanceKey: any;
     setBalanceKey: any;
@@ -113,14 +121,14 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
 
     // 운용 종목(capital stock_list)의 ticker → 그룹 매핑 (잔고 종목에 그룹 배지 표시용)
     const groupByTicker = useMemo(() => {
-        const map = new Map<string, { name: string; active: boolean; assigned: boolean }>();
-        const groups: any[] = props.capital?.groups ?? [];
-        const gmap = new Map(groups.map((g: any) => [g.id, g]));
+        const map = new Map<string, BalanceTradingGroup>();
+        const groups: StockGroup[] = props.capital?.groups ?? [];
+        const gmap = new Map(groups.map(g => [g.id, g]));
         for (const s of (props.capital?.stock_list ?? [])) {
             if (s.group_id === "__likes__") continue;
-            const g: any = s.group_id ? gmap.get(s.group_id) : null;
+            const g = s.group_id ? gmap.get(s.group_id) : null;
             if (g && g.id !== "__likes__") {
-                map.set(balanceTickerKey(s.symbol, isUs), { name: g.name, active: g.is_trading_active !== false, assigned: true });
+                map.set(balanceTickerKey(s.symbol, isUs), { name: g.name, active: g.is_trading_active !== false, assigned: true, side: g.side });
             } else {
                 map.set(balanceTickerKey(s.symbol, isUs), { name: "미지정", active: false, assigned: false });
             }
@@ -324,7 +332,7 @@ function SummaryItem({ icon, label, value, subValue, colorClass = "dark:text-whi
     );
 }
 
-function SortableBalanceTable({ inventoryData, isUs, onOpenOrder, groupByTicker, countryTradingActive }: { inventoryData: any[], isUs: boolean, onOpenOrder: (stock: any, mode?: "buy" | "sell", qty?: string) => void, groupByTicker?: Map<string, { name: string; active: boolean; assigned: boolean }>; countryTradingActive?: boolean | null }) {
+function SortableBalanceTable({ inventoryData, isUs, onOpenOrder, groupByTicker, countryTradingActive }: { inventoryData: any[], isUs: boolean, onOpenOrder: (stock: any, mode?: "buy" | "sell", qty?: string) => void, groupByTicker?: Map<string, BalanceTradingGroup>; countryTradingActive?: boolean | null }) {
     const [sortConfig, setSortConfig] = useState<any>({ key: "evlu_amt", direction: "desc" });
     const router = useRouter();
 
@@ -333,13 +341,13 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder, groupByTicker,
         const g = groupByTicker?.get(ticker);
         if (!g) return null; // 운용 풀에 없는(자동매매 비대상) 보유 종목
         const label = !g.active || !g.assigned ? "자동매매 제외" : countryTradingActive === false ? "자동매매 OFF" : "자동매매";
-        const description = `${label} · ${g.name}`;
+        const isSell = g.side === "sell";
+        const description = g.assigned ? `${label} · ${isSell ? "매도" : "매수"} · ${g.name}` : `${label} · ${g.name}`;
+        const color = g.assigned && g.active && countryTradingActive === true
+            ? (isSell ? "text-rose-600 dark:text-rose-400" : "text-brand-ink")
+            : "text-neutral-500 dark:text-neutral-400";
         return (
-            <span role="img" title={description} aria-label={description} className={`inline-flex shrink-0 items-center ${
-                g.assigned && g.active && countryTradingActive === true
-                    ? "text-brand-ink"
-                    : "text-neutral-500 dark:text-neutral-400"
-            }`}>
+            <span role="img" title={description} aria-label={description} className={`inline-flex shrink-0 items-center ${color}`}>
                 <Bot className="h-3.5 w-3.5" aria-hidden="true" />
             </span>
         );
