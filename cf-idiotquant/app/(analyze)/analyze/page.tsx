@@ -11,6 +11,8 @@ import {
   useMemo,
   useRef,
   useCallback,
+  useSyncExternalStore,
+  type ReactNode,
   memo,
   startTransition
 } from 'react';
@@ -223,17 +225,45 @@ BlurGate.displayName = 'BlurGate';
 // StockCard에 전달할 기본 XP 프로필
 const DEFAULT_XP_PROFILE = { level: 1, xp: 0, maxXp: 100, totalXp: 0, lastGain: 0, awardCount: 0 };
 
-// 상세 분석 탭 — 화면 크기와 무관하게 같은 사용 모델을 쓴다.
-// (예전엔 모바일만 탭이고 데스크톱은 네 섹션이 전부 펼쳐져 스크롤이 길었다)
-const DETAIL_TABS = [
-  { key: 'strategy', label: '적정가치' },
+// 작은 화면의 탭과 데스크톱 본문 목차가 같은 항목을 사용한다.
+const DETAIL_TABS = {
+  strategy: '적정가치',
   // 카드(시세·등급·차트)와 상세 지표는 둘 다 "지금 이 종목의 숫자"다. 탭을 갈라 두면
   // PER·PBR 같은 같은 값을 양쪽에서 다시 보게 되고, 어느 탭을 눌러야 할지 매번 판단해야 한다.
-  { key: 'metrics', label: '주요 지표' },
-  { key: 'risk', label: '위험 점검' },
-  { key: 'financials', label: '재무 흐름' },
-] as const;
-type DetailTab = typeof DETAIL_TABS[number]['key'];
+  metrics: '주요 지표',
+  risk: '위험 점검',
+  financials: '재무 흐름',
+};
+type DetailTab = keyof typeof DETAIL_TABS;
+const DETAIL_TAB_KEYS = Object.keys(DETAIL_TABS) as DetailTab[];
+
+const DESKTOP_ANALYSIS = '(min-width: 1024px)';
+const subscribeToDesktopAnalysis = (onChange: () => void) => {
+  const query = window.matchMedia(DESKTOP_ANALYSIS);
+  query.addEventListener('change', onChange);
+  return () => query.removeEventListener('change', onChange);
+};
+const getDesktopAnalysis = () => window.matchMedia(DESKTOP_ANALYSIS).matches;
+const getServerDesktopAnalysis = () => false;
+
+function AnalysisSection({ tab, desktop, children }: {
+  tab: DetailTab;
+  desktop: boolean;
+  children: ReactNode;
+}) {
+  const id = `analysis-${tab}`;
+  return (
+    <Tabs.Content value={tab} forceMount asChild
+      className={desktop ? styles.analysisSection : styles.tabPanel}
+      {...(desktop && { id, role: 'region', 'aria-labelledby': `${id}-title`, tabIndex: -1 })}
+    >
+      <section>
+        {desktop && <h2 id={`${id}-title`} className={styles.sectionTitle}>{DETAIL_TABS[tab]}</h2>}
+        {children}
+      </section>
+    </Tabs.Content>
+  );
+}
 
 const TAB_GUIDES: Record<DetailTab, { title: string; description: string; steps: string[] }> = {
   strategy: {
@@ -381,7 +411,9 @@ function AnalyzeContent() {
   const [financeView, setFinanceView] = useState<'bars' | 'table'>('bars');
   const [detailTab, setDetailTab] = useState<DetailTab>('strategy');
   const [visitedTabs, setVisitedTabs] = useState<DetailTab[]>(['strategy']);
+  const [desktopSection, setDesktopSection] = useState<DetailTab>('strategy');
   const detailStart = useRef<HTMLDivElement>(null);
+  const isDesktop = useSyncExternalStore(subscribeToDesktopAnalysis, getDesktopAnalysis, getServerDesktopAnalysis);
 
   const changeDetailTab = (value: string) => {
     const tab = value as DetailTab;
@@ -422,6 +454,7 @@ function AnalyzeContent() {
     setPreviousTicker(tickerFromUrl);
     setDetailTab('strategy');
     setVisitedTabs(['strategy']);
+    setDesktopSection('strategy');
     setFinanceView('bars');
     setVerdictOpen(false);
   }
@@ -446,6 +479,35 @@ function AnalyzeContent() {
       (krOrUs === 'KR' && data.kiPrice.state === 'fulfilled') ||
       (krOrUs === 'US' && usAvailability.priceReady)
     );
+
+  useEffect(() => {
+    if (!isDesktop || !isPriceLoaded || !detailStart.current) return;
+    const content = detailStart.current;
+    const sections = DETAIL_TAB_KEYS.map(key => ({
+      key,
+      element: document.getElementById(`analysis-${key}`),
+    }));
+    const updateSection = () => {
+      let active: DetailTab = 'strategy';
+      for (const { key, element } of sections) {
+        if (!element) continue;
+        const offset = parseFloat(getComputedStyle(element).scrollMarginTop);
+        if (element.getBoundingClientRect().top > offset + 1) break;
+        active = key;
+      }
+      setDesktopSection(active);
+    };
+    const observer = new ResizeObserver(updateSection);
+    observer.observe(content);
+    window.addEventListener('scroll', updateSection, { passive: true });
+    window.addEventListener('resize', updateSection);
+    updateSection();
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('scroll', updateSection);
+      window.removeEventListener('resize', updateSection);
+    };
+  }, [isDesktop, isPriceLoaded, tickerFromUrl]);
 
   const currency = krOrUs === 'US' ? '$' : '₩';
   const watchStock = useMemo(() => ({ ticker: tickerFromUrl ?? '', name: displayName ?? tickerFromUrl ?? '', isUs: krOrUs === 'US' }), [tickerFromUrl, displayName, krOrUs]);
@@ -662,9 +724,17 @@ function AnalyzeContent() {
             return snapshot;
           }} />
         </div> : undefined}
-        tabs={isPriceLoaded ? <Tabs.List aria-label="종목 분석" className={styles.analysisTabs}>
-          {DETAIL_TABS.map(tab => <Tabs.Trigger key={tab.key} value={tab.key} className={styles.analysisTab}>{tab.label}</Tabs.Trigger>)}
-        </Tabs.List> : undefined}
+        tabs={isPriceLoaded ? (isDesktop ? (
+          <nav aria-label="종목 분석 섹션" className={styles.analysisTabs}>
+            {DETAIL_TAB_KEYS.map(tab => (
+              <a key={tab} href={`#analysis-${tab}`} className={styles.analysisTab}
+                aria-current={desktopSection === tab ? 'location' : undefined}
+              >{DETAIL_TABS[tab]}</a>
+            ))}
+          </nav>
+        ) : <Tabs.List aria-label="종목 분석" className={styles.analysisTabs}>
+          {DETAIL_TAB_KEYS.map(tab => <Tabs.Trigger key={tab} value={tab} className={styles.analysisTab}>{DETAIL_TABS[tab]}</Tabs.Trigger>)}
+        </Tabs.List>) : undefined}
         mobileCompact
         mobileTitleOnScroll={isPriceLoaded}
 
@@ -801,7 +871,7 @@ function AnalyzeContent() {
 
               <details className={styles.tabGuide}>
                 <summary className="flex items-center justify-between gap-2">분석 읽는 법<ChevronDown size={16} aria-hidden="true" /></summary>
-                {[detailTab].map(key => <div key={key} className="mt-4">
+                {[isDesktop ? desktopSection : detailTab].map(key => <div key={key} className="mt-4">
                   <h2>{TAB_GUIDES[key].title}</h2><p>{TAB_GUIDES[key].description}</p>
                   <ol>{TAB_GUIDES[key].steps.map((step, index) => <li key={step}><span>{index + 1}</span>{step}</li>)}</ol>
                 </div>)}
@@ -828,7 +898,7 @@ function AnalyzeContent() {
                 )}
 
 
-                <Tabs.Content value="strategy" forceMount className={styles.tabPanel}>
+                <AnalysisSection tab="strategy" desktop={isDesktop}>
                   {visitedTabs.includes('strategy') && (isLoaded ? (
                   <ValuationSection
                     data={data}
@@ -837,10 +907,10 @@ function AnalyzeContent() {
                     loginHref={loginHref}
                   />
                   ) : financialStatus)}
-                </Tabs.Content>
+                </AnalysisSection>
 
-                <Tabs.Content value="metrics" forceMount className={styles.tabPanel}>
-                  {visitedTabs.includes('metrics') && <>
+                <AnalysisSection tab="metrics" desktop={isDesktop}>
+                  {((isDesktop && isPriceLoaded) || visitedTabs.includes('metrics')) && <>
               <div className="mb-6">
                 <StockCard
                   showLogo={false}
@@ -886,10 +956,10 @@ function AnalyzeContent() {
                     </BlurGate>
                     </div> : financialStatus}
                   </>}
-                </Tabs.Content>
+                </AnalysisSection>
 
                 {/* 공유 결과에 필요한 위험 데이터는 방문하지 않아도 준비한다. */}
-                <Tabs.Content value="risk" forceMount className={styles.tabPanel}>
+                <AnalysisSection tab="risk" desktop={isDesktop}>
                   {isLoaded ? <>
                   {krOrUs === 'KR' && (
                     <BlurGate isLoggedIn={isLoggedIn} loginHref={loginHref}>
@@ -902,10 +972,10 @@ function AnalyzeContent() {
                     </BlurGate>
                   )}
                   </> : financialStatus}
-                </Tabs.Content>
+                </AnalysisSection>
 
-                <Tabs.Content value="financials" forceMount className={styles.tabPanel}>
-                  {visitedTabs.includes('financials') && (isLoaded ? <>
+                <AnalysisSection tab="financials" desktop={isDesktop}>
+                  {((isDesktop && isPriceLoaded) || visitedTabs.includes('financials')) && (isLoaded ? <>
                   {krOrUs === 'US' && (
                     <FinancialFreshnessNotice periods={analysisFinancialPeriods(data, krOrUs)} source={data.finnhubData?.source} banner />
                   )}
@@ -957,7 +1027,7 @@ function AnalyzeContent() {
                     </div>
                   </BlurGate>
                   </> : financialStatus)}
-                </Tabs.Content>
+                </AnalysisSection>
 
               </div>
               </div>
