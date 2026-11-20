@@ -27,7 +27,10 @@
 }
 @container analysis-column (max-width: 380px) {
   .stockMain, .sectionHead { padding: 12px; }
-  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 12px; }
+  .stats { gap: 12px; padding: 12px; }
   .technicalSummary { padding: 12px; }
   .technicalSummary dl { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+}
+@container analysis-column (max-width: 27rem) {
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
