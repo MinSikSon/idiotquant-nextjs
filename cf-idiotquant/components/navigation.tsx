@@ -404,6 +404,20 @@ export function NavbarWithSimpleLinks() {
     </div>;
   };
 
+  const mobileIdentity = (
+    <div
+      className={cn("flex min-h-11 items-center gap-3 px-3", fixedPageIdentity && "h-[56px]")}
+      style={fixedPageIdentity ? { transform: `translateY(-${identityOffset}px)`, visibility: identityScrolled ? "hidden" : undefined } : undefined}
+      aria-hidden={fixedPageIdentity && identityScrolled || undefined}
+    >
+      <Link href="/" aria-label="idiotquant 홈" className="inline-flex min-h-11 shrink-0 items-center self-start text-xl font-bold tracking-tight text-neutral-900 dark:text-white">
+        <span>idiot<span className="text-brand-ink">quant</span></span>
+      </Link>
+      <div ref={mobile ? pageHeader?.setTitleTarget : undefined} className={cn("min-w-0 flex-1", !pageHeader?.active && "hidden")} />
+      {!pageHeader?.active && pathname !== "/" && <span className="truncate text-base font-semibold">{mobilePageTitle}</span>}
+    </div>
+  );
+
   return (
     <>
       {/* 게임은 전체 높이 지도에 맞춘 사이드바를 유지한다. */}
@@ -543,23 +557,15 @@ export function NavbarWithSimpleLinks() {
           </div>
         </div>
         {fixedPageIdentity && (
-        <div className="navigation-analysis-identity overflow-hidden md:hidden" style={{ height: 56 - identityOffset }}>
-        <div ref={identity} className="flex h-[56px] items-center gap-3 px-3 py-1" style={{ transform: `translateY(-${identityOffset}px)`, visibility: identityScrolled ? "hidden" : undefined }} aria-hidden={identityScrolled}>
-          <Link href="/" className="shrink-0 text-xl font-bold tracking-tight text-neutral-900 dark:text-white">idiot<span className="text-brand-ink">quant</span></Link>
-          <div ref={mobile ? pageHeader?.setTitleTarget : undefined} className={cn("min-w-0 flex-1", !pageHeader?.active && "hidden")} />
-          {!pageHeader?.active && <span className="truncate text-base font-semibold">{mobilePageTitle}</span>}
-        </div>
-        </div>
+          <div className="navigation-analysis-identity overflow-hidden md:hidden" style={{ height: 56 - identityOffset }}>
+            {mobileIdentity}
+          </div>
         )}
         <div ref={pageHeader?.setTabsTarget} data-navigation-tabs />
       </header>}
 
       {!inGame && !fixedPageIdentity && <div ref={identity} className="navigation-identity bg-surface-canvas dark:bg-surface-dark-canvas md:hidden">
-        <div className="flex min-h-10 items-center gap-3 px-3 py-1">
-          <Link href="/" className="shrink-0 text-xl font-bold tracking-tight text-neutral-900 dark:text-white">idiot<span className="text-brand-ink">quant</span></Link>
-          <div ref={mobile ? pageHeader?.setTitleTarget : undefined} className={cn("min-w-0 flex-1", !pageHeader?.active && "hidden")} />
-          {!pageHeader?.active && pathname !== "/" && <span className="truncate text-base font-semibold">{mobilePageTitle}</span>}
-        </div>
+        {mobileIdentity}
       </div>}
 
       {/* 게임 전용 모바일 헤더는 기존 구성을 유지한다. */}
