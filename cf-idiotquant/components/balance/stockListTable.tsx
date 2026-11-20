@@ -52,6 +52,15 @@ function ComponentNumber({ value }: { value: string }) {
   return <span className="inline-flex min-h-6 min-w-7 shrink-0 items-center justify-center rounded-md border border-neutral-200 bg-white px-1.5 text-xs font-semibold tabular-nums leading-none text-neutral-600 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">{value}</span>;
 }
 
+function TradingCursorBadge({ index }: { index?: number }) {
+  return (
+    <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded bg-blue-700 px-1.5 py-0.5 text-xs font-bold leading-tight text-white dark:bg-blue-300 dark:text-blue-950">
+      <ChevronRight size={12} aria-hidden="true" />
+      다음 순회{index != null && <span className="tabular-nums">#{index}</span>}
+    </span>
+  );
+}
+
 const formatSectionNumber = (value: number) => String(value).padStart(2, "0");
 
 // 이름과 코드가 함께 저장된 마스터로 매핑한다. 개별 배열은 순서가 다를 수 있다.
@@ -305,6 +314,9 @@ function StockListTable({
   const realGroups = useMemo(() => groups.filter(g => g.id !== LIKES_GROUP_ID), [groups]);
   const likesGroup = useMemo(() => groups.find(g => g.id === LIKES_GROUP_ID), [groups]);
   const likesActive = likesGroup?.is_trading_active ?? false;
+  const cursorGroupName = cursorStock?.group_id === LIKES_GROUP_ID
+    ? "좋아요 종목"
+    : realGroups.find(group => group.id === cursorStock?.group_id)?.name ?? "미지정";
 
   // 종목을 그룹별 버킷으로 분류 + 상태 계산
   // group_id === "__likes__" 인 운용 종목은 '미지정'이 아니라 좋아요 섹션으로 보낸다.
@@ -512,11 +524,15 @@ function StockListTable({
           </DetailHelp>
         </div>
 
-        {cursorStock && <div className="flex min-h-7 items-center gap-1.5 text-xs text-blue-600 dark:text-blue-300">
-          <span className="shrink-0 font-semibold">현재 IDX {cursorIndex}</span>
-          <span className="min-w-0 truncate font-medium" title={cursorStock.name || cursorStock.symbol}>{cursorStock.name || cursorStock.symbol}</span>
-          <DetailHelp label="현재 IDX">저장된 전체 종목 목록의 순회 시작 위치입니다(0부터 시작). 다음 실행에서 비활성 종목은 건너뛰므로 실제 주문 중인 종목을 뜻하지 않습니다. 자동매매가 OFF여도 마지막 위치는 유지됩니다.</DetailHelp>
-        </div>}
+        {cursorStock && cursorIndex !== null && (
+          <div className="flex min-h-11 flex-wrap items-center gap-x-2 gap-y-1 py-1 text-sm">
+            <TradingCursorBadge index={cursorIndex} />
+            <span className="min-w-0 break-words font-medium text-neutral-900 dark:text-neutral-100">
+              {cursorGroupName} <span aria-hidden="true">›</span><span className="sr-only"> 그룹의 </span> {resolveDisplayName(cursorStock.symbol, cursorStock.name) ?? cursorStock.symbol}
+            </span>
+            <DetailHelp label="다음 순회 위치">전체 종목 목록에서 다음 자동매매 실행이 확인을 시작하는 위치입니다. 인덱스는 0부터 시작하며 비활성 종목은 건너뜁니다. 자동매매가 OFF여도 마지막 위치는 유지됩니다.</DetailHelp>
+          </div>
+        )}
 
         {/* 적용 조건 */}
         <details className="hidden mt-2 border-t border-neutral-100 dark:border-border-subtle-dark md:block"><summary className="min-h-11 cursor-pointer py-3 text-xs font-bold text-neutral-500 dark:text-neutral-400">계좌 기본 조건 {conditionChips.length}개</summary><div className="flex flex-wrap items-center gap-1.5">
@@ -905,17 +921,34 @@ function GroupSection({
   const colSpan = baseCols + 1 /*token*/ + (showCheck ? 1 : 0) + (showRefill ? 1 : 0) + (onDeleteStock ? 1 : 0);
 
   const highlightTrading = !hideTrading && tradingActive;
+  const containsCursor = rows.some(row => row.currentCursor);
+  const direction = accent === "green" && !groupRebalancing
+    ? groupSide === "sell" ? (groupDca ? "매도" : "전량 매도") : "매수"
+    : null;
   return (
     <section id={`trading-pool-${sectionKey}`} className="scroll-mt-36 overflow-hidden rounded-none border-0 border-b border-neutral-200 bg-white shadow-none dark:border-border-subtle-dark dark:bg-surface-dark-canvas">
-      <button type="button" onClick={onToggleCollapse} aria-expanded={!collapsed} aria-controls={`pool-content-${sectionKey}`} aria-label={`${title} ${collapsed ? "펼치기" : "접기"}`}
-        className={cn("flex min-h-14 w-full items-center gap-2 px-2 py-3 text-left", highlightTrading ? "bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:hover:bg-emerald-950/50" : "bg-neutral-50 hover:bg-neutral-100 dark:bg-neutral-800/50 dark:hover:bg-neutral-800")}>
+      <button type="button" onClick={onToggleCollapse} aria-expanded={!collapsed} aria-controls={`pool-content-${sectionKey}`} aria-label={`${title}${direction ? ` · ${direction}` : ""}${containsCursor ? " · 다음 순회" : ""} ${collapsed ? "펼치기" : "접기"}`}
+        className={cn("flex min-h-14 w-full items-center gap-2 px-2 py-3 text-left",
+          containsCursor ? "bg-blue-50 shadow-[inset_3px_0_0_0] shadow-blue-600 hover:bg-blue-100 dark:bg-blue-950/50 dark:shadow-blue-400 dark:hover:bg-blue-950"
+            : highlightTrading ? "bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:hover:bg-emerald-950/50"
+            : "bg-neutral-50 hover:bg-neutral-100 dark:bg-neutral-800/50 dark:hover:bg-neutral-800")}>
         <ComponentNumber value={numberLabel} />
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-semibold text-neutral-900 dark:text-neutral-100" title={title}>{title}</span>
+          <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="min-w-0 break-words text-sm font-semibold text-neutral-900 dark:text-neutral-100">{title}</span>
+            {direction && (
+              <span className={cn("shrink-0 whitespace-nowrap rounded px-1.5 py-0.5 text-xs font-bold leading-tight",
+                groupSide === "sell" ? "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-200"
+                  : "bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-200")}>
+                {direction}
+              </span>
+            )}
+            {containsCursor && <TradingCursorBadge />}
+          </span>
           <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-neutral-500 dark:text-neutral-400">
             <span>{count}종목</span>
             {!hideTrading && <span className={cn("inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-bold", highlightTrading ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300" : "text-neutral-500 dark:text-neutral-400")}><Power size={12} />자동매매 {tradingActive ? "ON" : "OFF"}</span>}
-            {accent === "green" && <span>{groupRebalancing ? "목표 비중" : `${groupDca ? "DCA · 정액" : "퀀트"} · ${groupSide === "sell" ? (groupDca ? "매도" : "전량 매도") : "매수"}`}</span>}
+            {accent === "green" && <span>{groupRebalancing ? "목표 비중" : groupDca ? "DCA · 정액" : "퀀트"}</span>}
             {tokenTotal > 0 && <span className="font-medium tabular-nums">적립 ₩{Math.round(tokenTotal).toLocaleString("ko-KR")}</span>}
           </span>
         </span>
@@ -1100,8 +1133,8 @@ function GroupSection({
                 rows.map((row, idx) => (
                   <tr key={`${sectionKey}-${row.symbol}-${idx}`} className={cn(
                     "group transition-colors",
-                    row.currentCursor && "bg-blue-50 dark:bg-blue-950/30",
-                    isPicked(row.symbol) ? "bg-neutral-100 dark:bg-neutral-800/20" : "hover:bg-neutral-100/30 dark:hover:bg-neutral-800/10"
+                    row.currentCursor ? "bg-blue-50 dark:bg-blue-950/50"
+                    : isPicked(row.symbol) ? "bg-neutral-100 dark:bg-neutral-800/20" : "hover:bg-neutral-100/30 dark:hover:bg-neutral-800/10"
                   )}>
                     {showCheck && (
                       <td className="px-3 py-3">
@@ -1114,7 +1147,7 @@ function GroupSection({
                       </td>
                     )}
                     <td className="px-4 py-3">
-                      {row.currentCursor && <span className="mb-1 block text-xs font-semibold text-blue-600 dark:text-blue-300">현재 IDX</span>}
+                      {row.currentCursor && <div className="mb-1"><TradingCursorBadge /></div>}
                       <button onClick={() => openDetail(row.raw)} className="flex items-center gap-2 group/btn min-w-0">
                         <div className="shrink-0 p-1.5 rounded-md bg-surface-canvas dark:bg-surface-dark-muted transition-all">
                           <TrendingUp className="w-3.5 h-3.5" />
@@ -1236,15 +1269,24 @@ function GroupSection({
             rows.map((row, idx) => (
               <div
                 key={`m-${sectionKey}-${row.symbol}-${idx}`}
-                className={cn("flex items-start gap-1 px-3", row.currentCursor && "bg-blue-50 dark:bg-blue-950/30", isPicked(row.symbol) && "bg-neutral-100 dark:bg-neutral-800/20")}
+                className={cn("flex items-start gap-1 px-3",
+                  row.currentCursor ? "bg-blue-50 shadow-[inset_3px_0_0_0] shadow-blue-600 dark:bg-blue-950/50 dark:shadow-blue-400"
+                    : isPicked(row.symbol) && "bg-neutral-100 dark:bg-neutral-800/20")}
               >
                 {showCheck && <label className="flex min-h-11 w-7 shrink-0 cursor-pointer items-center justify-center">
                   <input type="checkbox" aria-label={`${row.name || row.symbol} 선택`} checked={isPicked(row.symbol)} onChange={() => onTogglePick(sectionKey, row.symbol)} className="h-4 w-4 rounded border-neutral-300 text-neutral-900 dark:text-neutral-100 focus:ring-neutral-500 dark:focus:ring-neutral-400" />
                 </label>}
                 <details className="group/stock min-w-0 flex-1">
-                  <summary className="flex min-h-11 cursor-pointer list-none items-center gap-1.5 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-neutral-500 dark:focus-visible:ring-neutral-400 [&::-webkit-details-marker]:hidden">
-                    {row.currentCursor && <span aria-label="현재 IDX" title="현재 IDX · 다음 순회 시작 위치" className="shrink-0 text-xs font-bold text-blue-600 dark:text-blue-300">IDX</span>}
-                    <span className="min-w-0 flex-1 truncate text-[14px] font-medium tracking-tight text-neutral-900 dark:text-neutral-100">{row.name || row.symbol}</span>
+                  <summary className={cn("flex min-h-11 cursor-pointer list-none items-center gap-1.5 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-neutral-500 dark:focus-visible:ring-neutral-400 [&::-webkit-details-marker]:hidden",
+                    row.currentCursor && "flex-wrap justify-end gap-y-1 py-1.5")}>
+                    {row.currentCursor ? (
+                      <span className="flex min-w-0 basis-full flex-wrap items-center gap-x-2 gap-y-1">
+                        <TradingCursorBadge />
+                        <span className="min-w-0 break-words text-sm font-bold text-neutral-900 dark:text-neutral-100">{row.name || row.symbol}</span>
+                      </span>
+                    ) : (
+                      <span className="min-w-0 flex-1 truncate text-[14px] font-medium tracking-tight text-neutral-900 dark:text-neutral-100">{row.name || row.symbol}</span>
+                    )}
                     {row.isLiked && <Heart className="h-3.5 w-3.5 shrink-0 fill-current text-rose-500" role="img" aria-label="좋아요한 종목" />}
                     {!!row.groupNames?.length && (
                       <span className="max-w-[50%] overflow-x-auto whitespace-nowrap text-xs font-semibold text-neutral-700 dark:text-neutral-300" aria-label={`소속 그룹: ${row.groupNames.join(", ")}`}>
