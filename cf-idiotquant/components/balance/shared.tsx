@@ -70,11 +70,11 @@ export function SectionHeader({
 }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 mb-2 pb-1.5 md:gap-3 md:mb-5 md:pb-4 border-b border-neutral-100 dark:border-border-subtle-dark/80">
-      <div className="flex items-center gap-1.5 md:gap-3">
+      <div className="flex min-w-0 items-center gap-1.5 md:gap-3">
         <div className="p-1.5 md:p-2 text-neutral-600 dark:text-neutral-400 shrink-0">
           {icon}
         </div>
-        <div>
+        <div className="min-w-0">
           <div className="flex items-center gap-1.5 md:gap-2 flex-wrap [&>button]:min-h-11 [&>button]:justify-center [&>button]:px-2 md:gap-2 md:[&>button]:px-3">
             <h3 className="font-semibold text-base text-neutral-900 dark:text-neutral-100 tracking-tight">{title}</h3>
             {badge}
@@ -82,7 +82,7 @@ export function SectionHeader({
           </div>
         </div>
       </div>
-      {action && <div className="shrink-0 self-start sm:self-center">{action}</div>}
+      {action && <div className="max-w-full shrink-0 self-start sm:self-center">{action}</div>}
     </div>
   );
 }

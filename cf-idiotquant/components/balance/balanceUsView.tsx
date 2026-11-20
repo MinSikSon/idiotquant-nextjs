@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import {
   Globe, ChevronRight, DollarSign, Building2,
   Wallet, TrendingUp, BarChart3, RefreshCw,
-  AlertCircle, Database,
+  AlertCircle,
   PieChart, ClipboardList, TrendingDown, Power, Bot, KeyRound,
   ArrowDownToLine, ArrowUpFromLine, ArrowLeftRight, Landmark, Banknote, Layers, Coins,
 } from "lucide-react";
@@ -63,6 +63,7 @@ import QuantRuleEditor from "@/components/balance/quantRuleEditor";
 import TradingFundingPanel from "@/components/balance/tradingFundingPanel";
 import { tradingCash } from "@/lib/features/capital/fundingInsights";
 import TradingMobileWorkspace from "@/components/balance/tradingMobileWorkspace";
+import TradingProgressHeader from "@/components/balance/tradingProgressHeader";
 import TradingCyclePanel from "@/components/balance/tradingCyclePanel";
 import TradingFlowSummary from "@/components/balance/tradingFlowSummary";
 import TradingActivityPanel from "@/components/balance/tradingActivityPanel";
@@ -663,18 +664,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
           id: "section-stocks",
           node: hasCapital ? (
             <SectionPanel id="section-stocks" className="rounded-none border-x-0 px-0 sm:px-0 md:px-0">
-              <SectionHeader
-                icon={<Database size={16} />}
-                title="자동매매 운영"
-                subtitle="그룹별 매매 대상 종목과 예산 포인트를 설정하세요."
-                badge={
-                  usCapital.state === "pending"
-                    ? <span className="text-xs tabular-nums text-amber-500 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800 animate-pulse">로딩 중</span>
-                    : usCapital.stock_list?.length > 0
-                    ? <span className="text-xs tabular-nums text-neutral-500 dark:text-neutral-400 bg-surface-canvas dark:bg-surface-dark-card px-2 py-0.5 rounded-full">{usCapital.stock_list.length}종목</span>
-                    : null
-                }
-              />
+              <TradingProgressHeader country="US" capital={usCapital} tradingActive={tradingStatus.US} />
               <TradingMobileWorkspace overview={<>
               <TradingFundingPanel country="US" capital={usCapital} cash={tradingCash("US", kiBalance)} tradingActive={tradingStatus.US} live={autoRefresh} />
               <TradingFlowSummary
