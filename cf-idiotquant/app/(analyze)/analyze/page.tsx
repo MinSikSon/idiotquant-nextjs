@@ -26,7 +26,7 @@ import { useStockSearch } from '@/app/(search)/search/hooks/useStockSearch';
 import { selectKrMarketHistory } from '@/lib/features/searchHistory/searchHistorySlice';
 import {
   AlertCircle, Loader2, Flame, CheckCircle,
-  Heart, TrendingUp, ChevronDown, Lock, ArrowRight,
+  Heart, ChevronDown,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PageHeader, PAGE_WIDTH, PAGE_ACTION_CLS } from '@/components/pageHeader';
@@ -44,6 +44,7 @@ import { analysisSnapshot } from '@/lib/share/analysis';
 import { useToast, ToastContainer } from '@/components/ui/toast';
 import { buildKrBars, buildUsBars } from '@/app/(search)/search/components/financialBarsData';
 import styles from './analyze.module.css';
+import { AnalysisLoginPrompt } from './components/AnalysisLoginPrompt';
 
 const ANALYZE_WIDTH = cn(PAGE_WIDTH.data, styles.container);
 
@@ -187,45 +188,6 @@ const ResultSkeleton = memo(() => (
 ));
 ResultSkeleton.displayName = 'ResultSkeleton';
 
-// =========================================================================
-// BlurGate — 비로그인 시 섹션 블러 처리 + 그라디언트 로그인 오버레이
-// =========================================================================
-const BlurGate = memo(({ children, isLoggedIn, loginHref = "/login", compact = false }: {
-  children: React.ReactNode;
-  isLoggedIn: boolean;
-  loginHref?: string;
-  compact?: boolean;
-}) => {
-  if (isLoggedIn) return <>{children}</>;
-  return (
-    <div className="relative rounded-2xl overflow-hidden">
-      {!compact && <div className="blur-sm select-none pointer-events-none">
-        {children}
-      </div>}
-      <div className={cn(styles.gateOverlay, "flex items-center justify-center", compact ? "p-4" : "absolute inset-0")}>
-        <Link
-          href={loginHref}
-          className={styles.primary}
-        >
-          <Lock size={13} />
-          로그인하고 보기
-          <ArrowRight size={13} />
-        </Link>
-      </div>
-    </div>
-  );
-});
-BlurGate.displayName = 'BlurGate';
-
-// =========================================================================
-// Toast — components/ui/toast.tsx 를 쓴다.
-// 예전에는 이 파일이 같은 것을 따로 갖고 있어서, 잔고·매매창의 알림은
-// 오른쪽에서 아이콘과 함께 들어오고 여기 알림만 위에서 아이콘 없이 들어왔다.
-// =========================================================================
-
-// StockCard에 전달할 기본 XP 프로필
-const DEFAULT_XP_PROFILE = { level: 1, xp: 0, maxXp: 100, totalXp: 0, lastGain: 0, awardCount: 0 };
-
 // 작은 화면의 탭과 데스크톱 열 제목이 같은 항목을 사용한다.
 const DETAIL_TABS = {
   strategy: '적정가치',
@@ -264,49 +226,11 @@ function AnalysisSection({ tab, desktop, children }: {
           {...(desktop && { role: 'region', 'aria-labelledby': titleId, tabIndex: 0 })}
         >
           {children}
-          {desktop && <AnalysisGuide tab={tab} />}
         </div>
       </div>
     </Tabs.Content>
   );
 }
-
-const TAB_GUIDES: Record<DetailTab, { title: string; description: string; steps: string[] }> = {
-  strategy: {
-    title: '현재 가격을 여러 기준으로 비교해 보세요',
-    description: '자산, 이익, 현금흐름에 따라 계산한 가격이 달라집니다. 모델별 차이를 먼저 보고 관심 있는 모델의 가정을 확인하세요.',
-    steps: ['현재가와 계산 가격 비교', '모델 이름을 눌러 의미 확인', '세부 계산에서 가정 비교'],
-  },
-  metrics: {
-    title: '가격과 기업의 기초 체력을 함께 살펴보세요',
-    description: '핵심 지표로 자산·이익 대비 가격을 보고 가격 추이와 거래 지표를 함께 확인할 수 있습니다. — 표시는 값이 없거나 계산할 수 없는 항목입니다.',
-    steps: ['핵심 지표 확인', '가격 추이 살펴보기', '주당 가치와 거래 규모 확인'],
-  },
-  risk: {
-    title: '주의가 필요한 항목과 그 근거를 확인하세요',
-    description: '항목별 판정과 실제 수치를 함께 보세요. 재무 수치에 따른 점검 결과이며, 거래소의 공식 상장폐지 결정이나 확률을 뜻하지 않습니다.',
-    steps: ['전체 점검 결과', '주의·위험 항목의 근거', '연간 손익 흐름 확인'],
-  },
-  financials: {
-    title: '회사의 재산과 돈의 흐름을 읽어보세요',
-    description: '재무상태표는 가진 자산과 갚을 빚을, 손익계산서는 일정 기간의 매출과 이익을 보여줍니다. 추이는 그래프로, 정확한 수치는 표로 확인하세요.',
-    steps: ['공시 기준일과 단위 확인', '같은 항목의 기간별 변화 비교', '숫자표로 세부 금액 확인'],
-  },
-};
-
-function AnalysisGuide({ tab }: { tab: DetailTab }) {
-  const guide = TAB_GUIDES[tab];
-  return (
-    <details className={styles.tabGuide}>
-      <summary className="flex items-center justify-between gap-2">분석 읽는 법<ChevronDown size={16} aria-hidden="true" /></summary>
-      <div key={tab} className="mt-4">
-        <h3>{guide.title}</h3><p>{guide.description}</p>
-        <ol>{guide.steps.map((step, index) => <li key={step}><span>{index + 1}</span>{step}</li>)}</ol>
-      </div>
-    </details>
-  );
-}
-
 
 // =========================================================================
 // 종합 판단 — 지표 값에서 문장과 색을 생성한다.
@@ -326,19 +250,19 @@ const VERDICT_CHECKS: {
 }[] = [
   {
     label: 'NCAV 배수',
-    criterion: '1.00x 이상',
+    criterion: '1배 이상',
     test: m => m.ncavMultiple !== null && m.ncavMultiple >= 1,
     value: m => m.ncavMultiple !== null ? `${m.ncavMultiple.toFixed(2)}x` : '—',
   },
   {
     label: 'PBR',
-    criterion: '1.00x 미만',
+    criterion: '0배 초과 1배 미만',
     test: m => m.pbr > 0 && m.pbr < 1,
     value: m => m.pbr > 0 ? `${m.pbr.toFixed(2)}x` : '—',
   },
   {
     label: 'PER',
-    criterion: '10.0x 미만',
+    criterion: '0배 초과 10배 미만',
     test: m => m.per > 0 && m.per < 10,
     value: m => m.per > 0 ? `${m.per.toFixed(1)}x` : '—',
   },
@@ -350,36 +274,13 @@ const VERDICT_CHECKS: {
   },
 ];
 
-const VERDICT_LEAD = {
-  good: '저평가 기준을 대체로 충족합니다.',
-  neutral: '저평가 신호가 일부에서만 나타납니다.',
-  caution: '저평가 신호가 나타나지 않습니다.',
-} as const;
-
-function buildVerdict(m: VerdictMetrics) {
-  const checks = VERDICT_CHECKS.map(c => ({
-    label: c.label, criterion: c.criterion, value: c.value(m), ok: c.test(m),
+function buildVerdict(metrics: VerdictMetrics) {
+  const checks = VERDICT_CHECKS.map(check => ({
+    label: check.label, criterion: check.criterion, value: check.value(metrics), ok: check.test(metrics),
   }));
-  const metCount = checks.filter(c => c.ok).length;
-  const tone: 'good' | 'neutral' | 'caution' =
-    metCount >= 3 ? 'good' : metCount >= 1 ? 'neutral' : 'caution';
-  return { tone, lead: VERDICT_LEAD[tone], checks, metCount };
+  const metCount = checks.filter(check => check.ok).length;
+  return { lead: `저평가 기준 ${metCount}/${checks.length} 충족`, checks };
 }
-
-const VERDICT_TONE = {
-  good: {
-    label: 'text-neutral-500 dark:text-neutral-400',
-    text: 'text-neutral-800 dark:text-neutral-200',
-  },
-  neutral: {
-    label: 'text-neutral-600 dark:text-neutral-300',
-    text: 'text-neutral-600 dark:text-neutral-300',
-  },
-  caution: {
-    label: 'text-neutral-500 dark:text-neutral-400',
-    text: 'text-neutral-800 dark:text-neutral-200',
-  },
-} as const;
 
 // =========================================================================
 // 메인 콘텐츠
@@ -651,9 +552,8 @@ function AnalyzeContent() {
               <div role="status" aria-live="polite" className="rounded-2xl border border-neutral-200 bg-white p-5 dark:border-border-subtle-dark dark:bg-surface-dark-card">
                 <div className="flex items-center gap-2 text-[15px] text-neutral-600 dark:text-neutral-300">
                   <Loader2 size={16} className="animate-spin" aria-hidden="true" />
-                  재무 정보를 불러오는 중입니다
+                  재무 데이터 조회 중…
                 </div>
-                <p className="mt-1 text-sm leading-6 text-neutral-600 dark:text-neutral-300">시세를 먼저 보여주고, 재무 데이터가 도착하면 분석 결과를 표시합니다.</p>
                 <div aria-hidden="true" className="mt-4 space-y-3 animate-pulse">
                   <div className="h-3 w-2/3 rounded bg-neutral-100 dark:bg-surface-dark-muted" />
                   <div className="h-3 w-1/2 rounded bg-neutral-100 dark:bg-surface-dark-muted" />
@@ -694,7 +594,6 @@ function AnalyzeContent() {
             className="inline-flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm text-neutral-600 hover:bg-neutral-100 disabled:opacity-50 dark:text-neutral-300 dark:hover:bg-neutral-800">
             <Heart size={16} fill={isInWatchlist ? 'currentColor' : 'none'} />{likeBusy ? '저장 중…' : isInWatchlist ? '관심 종목 해제' : '관심 종목 담기'}
           </button>
-          <p className="text-sm font-semibold">공유 · 등급 기준</p>
           {gradeLabel && <GradeHelp key={tickerLabel} grade={gradeLabel} upside={stockData?.ncavRatio ?? 0} />}
           <ResultShare disabled={!stockData || waitResponse} getSnapshot={() => {
             const snapshot = analysisSnapshot({
@@ -771,7 +670,7 @@ function AnalyzeContent() {
         {!tickerFromUrl ? (
           <>
             <StockLikeStats />
-            <AnalysisIntro onSearch={handleSearch} />
+            <AnalysisIntro />
           </>
         ) : (
           <>
@@ -786,88 +685,40 @@ function AnalyzeContent() {
             <div className={cn(!isPriceLoaded && 'hidden', isPriceLoaded && isDesktop && styles.desktopResults)}>
               {krOrUs === 'US' && data.usSearchInfo.state === 'rejected' && (
                 <p role="status" className="mb-4 text-sm leading-6 text-neutral-600 dark:text-neutral-300">
-                  종목 기본정보를 불러오지 못해 티커로 표시합니다. 조회된 시세와 재무정보는 계속 표시합니다.
+                  종목명을 불러오지 못해 티커를 표시합니다.
                 </p>
               )}
               {isLoaded && (
-                <FinancialFreshnessNotice periods={analysisFinancialPeriods(data, krOrUs)} banner />
+                <FinancialFreshnessNotice periods={analysisFinancialPeriods(data, krOrUs)} source={krOrUs === 'US' ? data.finnhubData?.source : undefined} banner />
               )}
 
-              <aside className={styles.analysisSidebar} aria-label="분석 요약과 도움말">
-              {/* 종합 판단 — 지표 나열보다 먼저 결론을 준다 (판단 → 근거 → 원자료 순서).
-                  모바일은 한 줄(충족 개수 + 결론 문장)만 남긴다. 지표 4개는 세로로 쌓이면서
-                  화면 첫 장을 다 먹었는데, 같은 값이 바로 아래 '카드' 탭에도 있다. */}
               {verdict && (
-                <div className={styles.verdict} data-tone={verdict.tone} data-open={verdictOpen}>
-                  {/* 종합 판단은 짧게 보여주고, 클릭하면 근거 지표를 펼친다. */}
+                <div className={styles.verdict}>
                   <button
                     type="button"
-                    onClick={() => setVerdictOpen(o => !o)}
+                    onClick={() => setVerdictOpen(open => !open)}
                     aria-expanded={verdictOpen}
-                    className="w-full min-h-11 flex items-center gap-2 text-left"
+                    className="flex min-h-11 w-full items-center justify-between gap-2 text-left font-semibold"
                   >
-                    <span className={cn(
-                      "shrink-0 px-1.5 py-0.5 rounded-full text-[0.8125rem] font-semibold font-mono tabular-nums bg-white/70 dark:bg-surface-dark-canvas/50",
-                      VERDICT_TONE[verdict.tone].label
-                    )}>
-                      {verdict.metCount}/{verdict.checks.length} 충족
-                    </span>
-                    <span className={cn("min-w-0 flex-1 text-[0.9375rem] font-semibold leading-relaxed", VERDICT_TONE[verdict.tone].text)}>
-                      {verdict.lead}
-                    </span>
-                    <ChevronDown
-                      size={11}
-                      className={cn("shrink-0 transition-transform", VERDICT_TONE[verdict.tone].label, verdictOpen && "rotate-180")}
-                    />
+                    <span className="tabular-nums">{verdict.lead}</span>
+                    <ChevronDown size={15} aria-hidden="true" className={cn("shrink-0 transition-transform", verdictOpen && "rotate-180")} />
                   </button>
-
-                  {/* 펼친 내용 — 좁은 폭이라 한 줄에 하나씩. 기준을 같이 적어야 왜 ✓/✕ 인지 읽힌다 */}
                   {verdictOpen && (
-                    <div className={cn(styles.verdictChecks, "mt-2.5 pt-2.5 border-t border-neutral-200/70 dark:border-surface-dark-border/70 grid grid-cols-1 sm:grid-cols-2 gap-3")}>
-                      {verdict.checks.map(c => (
-                        <div key={c.label} className="flex items-center gap-2">
-                          <span className={cn(
-                            "w-4 h-4 rounded-full grid place-items-center text-sm font-semibold text-white shrink-0",
-                            c.ok ? "bg-emerald-600" : "bg-neutral-300 dark:bg-surface-dark-elevated"
-                          )}>
-                            {c.ok ? '✓' : '✕'}
-                          </span>
-                          <span className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 shrink-0">{c.label}</span>
-                          <span className="text-sm text-neutral-700 dark:text-neutral-300 break-words">{c.criterion}</span>
-                          <span className={cn(
-                            "ml-auto text-sm font-semibold font-mono tabular-nums shrink-0",
-                            c.ok ? "text-neutral-500 dark:text-neutral-400" : "text-neutral-600 dark:text-neutral-300"
-                          )}>
-                            {c.value}
-                          </span>
-                        </div>
+                    <ul className={styles.verdictChecks}>
+                      {verdict.checks.map(check => (
+                        <li key={check.label} className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 py-1.5 text-sm">
+                          <span className="font-semibold">{check.label}</span>
+                          <span className="text-neutral-600 dark:text-neutral-300">{check.criterion}</span>
+                          <span className="ml-auto tabular-nums">{check.value === '—' ? '자료 없음' : check.value}</span>
+                          {check.value !== '—' && <span className="text-neutral-600 dark:text-neutral-300">{check.ok ? '충족' : '미충족'}</span>}
+                        </li>
                       ))}
-                    </div>
+                    </ul>
                   )}
                 </div>
               )}
 
-              {!isDesktop && <AnalysisGuide tab={detailTab} />}
-
-              </aside>
               <div ref={detailStart} className={styles.detailContent} key={tickerFromUrl}>
-                {isLoaded && !isLoggedIn && (
-                  <div className={cn(styles.loginNotice, "border-b border-neutral-200 dark:border-neutral-800 py-3 flex items-center gap-3")}>
-                    <div className="min-w-0 flex-1">
-                      <p className="flex items-center gap-1.5 text-sm text-neutral-700 dark:text-neutral-300">
-                        <Lock size={14} aria-hidden="true" className="shrink-0" />
-                        로그인하면 재무제표, 상장폐지 위험 점검, 상세 지표를 볼 수 있습니다.
-                      </p>
-                    </div>
-                    <Link
-                      href={loginHref}
-                      className={styles.primary}
-                    >
-                      로그인
-                      <ArrowRight size={14} />
-                    </Link>
-                  </div>
-                )}
                 <div className={isDesktop ? styles.analysisColumns : undefined}>
                 <AnalysisSection tab="strategy" desktop={isDesktop}>
                   {visitedTabs.includes('strategy') && (isLoaded ? (
@@ -882,82 +733,52 @@ function AnalyzeContent() {
 
                 <AnalysisSection tab="metrics" desktop={isDesktop}>
                   {((isDesktop && isPriceLoaded) || visitedTabs.includes('metrics')) && <>
-              <div className="mb-6">
+              <div className="mb-4">
                 <StockCard
-                  showLogo={false}
-                  stock={krOrUs === 'US' ? {
-                    code: tickerFromUrl, isUs: true, name: displayName, ticker: name,
-                    grade: stockData?.grade,
-                    curPrice: stockData?.curPrice?.toFixed(2) ?? 0,
-                    fairValue: currency + (stockData?.fairValue ?? 0),
-                    ncavScore: stockData?.ncavRatio ?? 0,
+                  stock={{
+                    name: displayName,
+                    ticker: tickerLabel,
+                    isUs: krOrUs === 'US',
+                    sector: krOrUs === 'KR' ? data?.kiPrice?.output?.bstp_kor_isnm : undefined,
                     ncavMultiple, roe,
-                    srimScore: stockData?.srimScore,
                     per: stockData?.per ?? 0,
                     pbr: stockData?.pbr ?? 0,
-                    eps: currency + (stockData?.eps ?? 0),
-                    sector: data?.usDetail?.output?.e_icod ?? "DEFAULT",
-                    market: data?.usSearchInfo?.output?.tr_mket_name || data?.usSearchInfo?.output?.ovrs_excg_name || "",
-                  } : {
-                    code: tickerFromUrl, isUs: false, name: displayName,
-                    ticker: stockData?.stockTicker ?? '',
-                    grade: stockData?.grade,
-                    curPrice: stockData?.curPrice ?? 0,
-                    fairValue: currency + (stockData?.fairValue ?? 0),
-                    ncavScore: stockData?.ncavRatio ?? 0,
-                    ncavMultiple, roe,
-                    srimScore: stockData?.srimScore,
-                    per: stockData?.per ?? 0,
-                    pbr: stockData?.pbr ?? 0,
-                    eps: currency + (stockData?.eps ?? 0).toFixed(0),
-                    sector: data?.kiPrice?.output?.bstp_kor_isnm ?? "DEFAULT",
-                    market: data?.kiPrice?.output?.rprs_mrkt_kor_name ?? "",
                   }}
                   chartConfig={chartConfig}
                   chartNotice={chartNotice}
-                  rawData={data}
-                  stockXpProfile={DEFAULT_XP_PROFILE}
                 />
               </div>
 
                     {isLoaded ? <div className="space-y-5">
                       <TechnicalSummary bars={technicalBars} currency={currency} />
-                    <BlurGate isLoggedIn={isLoggedIn} loginHref={loginHref} compact={isDesktop}>
-                      <StockMetrics data={data} isUs={krOrUs === 'US'} />
-                    </BlurGate>
+                      {isLoggedIn ? <StockMetrics data={data} isUs={krOrUs === 'US'} />
+                        : <AnalysisLoginPrompt href={loginHref}>상세 지표는 로그인 후 볼 수 있습니다.</AnalysisLoginPrompt>}
                     </div> : financialStatus}
                   </>}
                 </AnalysisSection>
 
                 {/* 공유 결과에 필요한 위험 데이터는 방문하지 않아도 준비한다. */}
                 <AnalysisSection tab="risk" desktop={isDesktop}>
-                  {isLoaded ? <>
-                  {krOrUs === 'KR' && (
-                    <BlurGate isLoggedIn={isLoggedIn} loginHref={loginHref} compact={isDesktop}>
-                      <DelistingRisk kiBS={data.kiBS} kiIS={data.kiIS} />
-                    </BlurGate>
+                  {!isLoaded ? financialStatus : !isLoggedIn ? (
+                    <AnalysisLoginPrompt href={loginHref}>상장폐지 위험 점검은 로그인 후 볼 수 있습니다.</AnalysisLoginPrompt>
+                  ) : (
+                    <>
+                      <p className="mb-2 text-sm text-neutral-600 dark:text-neutral-300">재무 수치로 점검한 참고 결과입니다. 공식 상장폐지 결정은 거래소 공시에서 확인하세요.</p>
+                      {krOrUs === 'KR' ? <DelistingRisk kiBS={data.kiBS} kiIS={data.kiIS} />
+                        : <UsDelistingRisk finnhubData={data.finnhubData} usDetail={data.usDetail} />}
+                    </>
                   )}
-                  {krOrUs === 'US' && (
-                    <BlurGate isLoggedIn={isLoggedIn} loginHref={loginHref} compact={isDesktop}>
-                      <UsDelistingRisk finnhubData={data.finnhubData} usDetail={data.usDetail} />
-                    </BlurGate>
-                  )}
-                  </> : financialStatus}
                 </AnalysisSection>
 
                 <AnalysisSection tab="financials" desktop={isDesktop}>
-                  {((isDesktop && isPriceLoaded) || visitedTabs.includes('financials')) && (isLoaded ? <>
-                  {krOrUs === 'US' && (
-                    <FinancialFreshnessNotice periods={analysisFinancialPeriods(data, krOrUs)} source={data.finnhubData?.source} banner />
-                  )}
-                  <BlurGate isLoggedIn={isLoggedIn} loginHref={loginHref} compact={isDesktop}>
+                  {((isDesktop && isPriceLoaded) || visitedTabs.includes('financials')) && (!isLoaded ? financialStatus : isLoggedIn ? (
                     <div className={cn(styles.panel, styles.financialPanel, "flex min-w-0 flex-col gap-3 sm:gap-4")}>
                       <div className={cn(styles.financialControls, "flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3")}>
                         <p className="text-sm sm:text-[15px] text-neutral-600 dark:text-neutral-300">
                           {krOrUs === 'KR' ? '분기 공시 · 억 원' : '공시 · USD'}
                         </p>
                         <div className={cn(styles.segmented, "grid grid-cols-2 gap-0.5 sm:ml-auto sm:flex sm:shrink-0 p-0.5 rounded-lg")}>
-                          {([['bars', '추이 그래프'], ['table', '숫자표']] as const).map(([mode, label]) => (
+                          {([['bars', '그래프'], ['table', '표']] as const).map(([mode, label]) => (
                             <button
                               key={mode}
                               onClick={() => setFinanceView(mode)}
@@ -996,8 +817,7 @@ function AnalyzeContent() {
                         <p>NCAV는 최신 재무상태표를, 연간 이익 기반 가치평가와 연속 적자 점검은 연간 자료를 사용합니다.</p>
                       </details>
                     </div>
-                  </BlurGate>
-                  </> : financialStatus)}
+                  ) : <AnalysisLoginPrompt href={loginHref}>재무제표는 로그인 후 볼 수 있습니다.</AnalysisLoginPrompt>)}
                 </AnalysisSection>
 
               </div>
@@ -1008,18 +828,13 @@ function AnalyzeContent() {
       </main>
 
       {/* ── 푸터 ── */}
-      <footer className={cn(ANALYZE_WIDTH, styles.footer, "pt-8 pb-12 mt-12 border-t")}>
+      <footer className={cn(ANALYZE_WIDTH, styles.footer, "py-5 border-t")}>
         <div className="flex flex-col items-center gap-3">
-          <div className="flex items-center gap-2">
-            <TrendingUp size={13} className="text-brand-ink" strokeWidth={2.5} />
-            <span className="text-sm font-bold text-neutral-700 dark:text-neutral-300">IdiotQuant</span>
-          </div>
           <p className="text-sm text-neutral-500 dark:text-neutral-400 text-center max-w-md leading-relaxed">
             분석 결과는 투자 참고용입니다. 투자 결정은 이용자 본인의 책임입니다.
           </p>
           {krOrUs === 'KR' && <p className="text-sm text-neutral-500">국내 재무정보 출처: <a href="https://opendart.fss.or.kr/" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">금융감독원 OpenDART</a> · 공시자료를 가공하여 제공합니다.</p>}
           {isAdmin && <Link href="/data-sources" className="text-xs text-neutral-500 underline">데이터 출처 및 이용 조건</Link>}
-          <span className="text-sm font-mono text-neutral-500 dark:text-neutral-500">© 2026 IdiotQuant</span>
         </div>
       </footer>
     </div>
@@ -1033,14 +848,9 @@ function AnalyzeContent() {
 export default function AnalyzePage() {
   return (
     <Suspense fallback={
-      <div className="flex flex-col items-center justify-center py-40 gap-5 bg-surface-canvas dark:bg-surface-dark-canvas min-h-screen">
-        <div className="p-4 bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark">
-          <Loader2 className="animate-spin text-brand-ink dark:text-brand-ink" size={24} />
-        </div>
-        <p className="text-sm font-bold text-neutral-600 dark:text-neutral-300 tracking-normal font-mono uppercase">
-          분석 엔진 초기화 중...
-        </p>
-      </div>
+      <p role="status" className="flex items-center gap-2 px-4 py-6 text-sm text-neutral-600 dark:text-neutral-300">
+        <Loader2 size={16} className="animate-spin" aria-hidden="true" />종목 분석 화면을 여는 중…
+      </p>
     }>
       <AnalyzeContent />
     </Suspense>

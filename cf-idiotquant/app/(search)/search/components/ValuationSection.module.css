@@ -3,7 +3,7 @@
 .currentKey, .targetKey { display: inline-block; width: 8px; height: 8px; flex-shrink: 0; }
 .currentKey { background: rgb(var(--brand-ink)); transform: rotate(45deg); }
 .targetKey { border-radius: 50%; background: currentColor; }
-.axis { position: relative; isolation: isolate; overflow-x: auto; display: grid; grid-template-columns: minmax(0, 9.375rem) minmax(40px, 1fr) max-content max-content; column-gap: 12px; }
+.axis { position: relative; isolation: isolate; overflow-x: auto; display: grid; grid-template-columns: minmax(3rem, 5rem) minmax(40px, 1fr) max-content max-content; column-gap: 12px; }
 .referenceColumn { grid-column: 2; position: relative; min-width: 0; pointer-events: none; z-index: 1; }
 .modelRow { grid-column: 1 / -1; min-width: 0; }
 .modelLabel { grid-column: 1; }
@@ -23,7 +23,7 @@
 :global(.dark) .higher { background: #6ee7b7; }
 :global(.dark) .lower { background: #fb7185; }
 @media (max-width: 767px) {
-  .axis { grid-template-columns: minmax(4.5rem, 6rem) minmax(40px, 1fr) max-content max-content; column-gap: 6px; }
+  .axis { grid-template-columns: minmax(3rem, 4.5rem) minmax(40px, 1fr) max-content max-content; column-gap: 6px; }
   .modelRow { padding-block: 6px; }
   .modelLabel button { font-size: 0.8125rem; line-height: 1.4; }
   .price { text-align: right; font-size: 0.875rem; }
@@ -32,9 +32,8 @@
   .notice { line-height: 1.5; }
 }
 @container analysis-column (max-width: 380px) {
-  .axis { grid-template-columns: minmax(4.5rem, 6rem) minmax(32px, 1fr) max-content max-content; column-gap: 6px; }
+  .axis { grid-template-columns: minmax(3rem, 4.5rem) minmax(32px, 1fr) max-content max-content; column-gap: 6px; }
   .modelLabel button { line-height: 1.4; }
-  .modelLabel p { display: none; }
   .modelCards { grid-template-columns: minmax(0, 1fr); padding-inline: 0; }
   .chartHeader, .modelFilters { padding-inline: 0; }
   .modelFilters { flex-wrap: wrap; }

@@ -211,7 +211,7 @@ function StatementCard({ model, unit }: { model: BarModel; unit: Unit }) {
 
             {model.stacks.length > 0 && (
                 <div className="px-3 sm:px-5 py-3 sm:py-4 bg-surface-canvas dark:bg-surface-dark border-b border-neutral-100 dark:border-border-subtle-dark flex flex-col gap-2 sm:gap-3.5">
-                    <span className="font-mono text-[13px] font-bold uppercase tracking-[0.16em] text-neutral-600 dark:text-neutral-300">
+                    <span className="text-sm font-semibold text-neutral-600 dark:text-neutral-300">
                         재무 구성 · {compactPeriod(model.periods[0] ?? "").date}
                     </span>
                     {model.stacks.map(s => <Stack key={s.title} row={s} />)}
@@ -221,7 +221,7 @@ function StatementCard({ model, unit }: { model: BarModel; unit: Unit }) {
             <div className={cn(styles.statementBody, "px-0 sm:px-5 pb-3 sm:pb-5")}>
                 {model.groups.map(g => (
                     <div key={g.labelEn}>
-                        <div className="flex items-center gap-1.5 mt-3 sm:mt-5 mb-1.5 sm:mb-2 font-mono text-[13px] font-bold uppercase tracking-[0.16em] text-neutral-600 dark:text-neutral-300">
+                        <div className="flex items-center gap-1.5 mt-3 sm:mt-5 mb-1.5 sm:mb-2 text-sm font-semibold text-neutral-600 dark:text-neutral-300">
                             <i className={cn("w-[7px] h-[7px] rounded-full shrink-0", TONE_BG[g.tone])} />
                             {g.labelEn}
                         </div>
