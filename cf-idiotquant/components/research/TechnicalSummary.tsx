@@ -5,7 +5,7 @@ export default function TechnicalSummary({ bars, currency }: { bars: PriceBar[];
     const result = technicalSummary(bars);
     const format = (v: number | null, unit = '') => v == null ? '데이터 부족' : `${v.toLocaleString('ko-KR', { maximumFractionDigits: 2 })}${unit}`;
     return (
-        <section aria-label="모멘텀과 기술적 지표" className={`${ui.surface} p-4 sm:p-6`}>
+        <section aria-label="모멘텀과 기술적 지표" className={`${ui.surface} ${ui.technicalSummary} p-4 sm:p-6`}>
             <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <h2 className="text-base font-semibold">모멘텀 · 기술적 지표</h2>
                 <span className="text-[13px] text-neutral-600 dark:text-neutral-300">{result.date ? `${result.date.slice(0, 4)}.${result.date.slice(4, 6)}.${result.date.slice(6)} 기준 · 시세 ${result.count}개` : '시세를 불러오는 중입니다'}</span>

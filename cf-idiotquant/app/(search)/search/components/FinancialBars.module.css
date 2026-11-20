@@ -1,0 +1,8 @@
+.stackLabels { display: none; }
+
+@container analysis-column (max-width: 380px) {
+  .groupItems { grid-template-columns: minmax(0, 1fr); }
+  .statementBody { padding-inline: 8px; }
+  .stackText { display: none; }
+  .stackLabels { display: flex; }
+}
