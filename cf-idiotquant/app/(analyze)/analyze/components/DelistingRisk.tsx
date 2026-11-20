@@ -6,7 +6,7 @@ import { useMemo } from "react";
 import { cn } from "@/lib/utils";
 import {
   AlertTriangle, CheckCircle2, XCircle,
-  Minus, TrendingUp, TrendingDown,
+  Minus, TrendingUp, TrendingDown, ChevronDown,
 } from "lucide-react";
 import { fmtJoEok } from "@/lib/utils/financeCalc";
 import styles from "../analyze.module.css";
@@ -291,24 +291,29 @@ export function DelistingRisk({ kiBS, kiIS }: DelistingRiskProps) {
         {/* 기준 항목 목록 */}
         {criteria.map(c => {
           const Icon = STATUS_ICON[c.status];
+          const hasLaw = c.law !== "참고지표";
+          const Row = hasLaw ? "details" : "div";
+          const RowBody = hasLaw ? "summary" : "div";
           return (
-            <div key={c.label} data-share-risk-row data-share-label={c.label} data-share-status={c.status} data-share-value={c.value} data-share-note={c.note} data-share-law={c.law} className={cn("flex items-start gap-3 px-3.5 py-3 rounded-xl border", STATUS_ROW_CLS[c.status])}>
-              <Icon size={14} className={cn("mt-0.5 shrink-0", STATUS_COLOR[c.status])} />
-              <div className="flex-1 min-w-0">
-                <div className={cn(styles.riskCheck, "grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2 mb-1.5 sm:grid-cols-[minmax(0,1fr)_auto_auto]")}>
-                  <span className="text-[13px] font-bold text-neutral-700 dark:text-neutral-300">{c.label}</span>
-                  <span className={cn("rounded-md px-2 py-0.5 text-[13px] font-semibold", STATUS_COLOR[c.status])}>{c.status === "—" ? "자료 없음" : c.status}</span>
-                  <span className={cn("col-span-2 min-w-0 break-words text-sm font-semibold font-mono tabular-nums sm:col-span-1 sm:text-[13px]", STATUS_COLOR[c.status])}>{c.value}</span>
-                </div>
-                <p className="text-[13px] text-neutral-500 dark:text-neutral-400 leading-relaxed">{c.note}</p>
-                {c.law !== "참고지표" && (
-                  <details className="text-sm text-neutral-600 dark:text-neutral-300">
-                    <summary className="min-h-11 cursor-pointer py-2.5 font-medium">판정 기준</summary>
-                    <p>{c.law}</p>
-                  </details>
-                )}
-              </div>
-            </div>
+            <Row key={c.label} data-share-risk-row data-share-label={c.label} data-share-status={c.status} data-share-value={c.value} data-share-note={c.note} data-share-law={c.law} className={cn("group rounded-lg border", STATUS_ROW_CLS[c.status])}>
+              <RowBody className={cn("flex items-center gap-2.5 rounded-lg px-3 py-2", hasLaw && "min-h-11 cursor-pointer list-none focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-current [&::-webkit-details-marker]:hidden")}>
+                <Icon size={14} aria-hidden="true" className={cn("shrink-0", STATUS_COLOR[c.status])} />
+                <span className="min-w-0 flex-1">
+                  <span className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                    <span className="mr-auto break-words text-[0.8125rem] font-bold text-neutral-700 dark:text-neutral-300">{c.label}</span>
+                    <span className={cn("min-w-0 break-words font-mono text-sm font-semibold tabular-nums", STATUS_COLOR[c.status])}>{c.value}</span>
+                    <span className={cn("whitespace-nowrap text-[0.8125rem] font-semibold", STATUS_COLOR[c.status])}>{c.status === "—" ? "자료 없음" : c.status}</span>
+                  </span>
+                  <span className="mt-0.5 block break-words text-[0.8125rem] leading-snug text-neutral-600 dark:text-neutral-400">{c.note}</span>
+                </span>
+                {hasLaw && <ChevronDown size={14} aria-hidden="true" className="shrink-0 text-neutral-500 group-open:rotate-180 dark:text-neutral-400" />}
+              </RowBody>
+              {hasLaw && (
+                <p className="px-3 pb-2 pl-9 text-[0.8125rem] leading-relaxed text-neutral-600 dark:text-neutral-400">
+                  판정 기준 · {c.law}
+                </p>
+              )}
+            </Row>
           );
         })}
 
