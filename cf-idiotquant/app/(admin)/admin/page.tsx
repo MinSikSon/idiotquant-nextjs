@@ -11,6 +11,7 @@ import { PageHeader, PAGE_WIDTH } from "@/components/pageHeader";
 interface UserRow {
   id: string;
   name: string | null;
+  nickname?: string | null;
   email: string | null;
   plan: string;
   role: string;
@@ -213,7 +214,7 @@ export default function AdminPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-neutral-100 dark:border-surface-dark-hover bg-surface-canvas dark:bg-surface-dark-card">
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-neutral-600 dark:text-neutral-300 uppercase tracking-wider">이름</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-neutral-600 dark:text-neutral-300 uppercase tracking-wider">기존 이름 / 닉네임</th>
                   <th className="text-left px-5 py-3 text-xs font-semibold text-neutral-600 dark:text-neutral-300 uppercase tracking-wider">이메일</th>
                   <th className="text-left px-5 py-3 text-xs font-semibold text-neutral-600 dark:text-neutral-300 uppercase tracking-wider">가입 경로</th>
                   <th className="text-left px-5 py-3 text-xs font-semibold text-neutral-600 dark:text-neutral-300 uppercase tracking-wider">플랜</th>
@@ -230,7 +231,10 @@ export default function AdminPage() {
                         <div className="w-7 h-7 rounded-full bg-neutral-100 dark:bg-surface-dark-muted flex items-center justify-center text-xs font-black text-neutral-600 dark:text-neutral-300 shrink-0">
                           {u.name?.[0] ?? "?"}
                         </div>
-                        <span className="font-medium text-neutral-800 dark:text-neutral-200">{u.name ?? "—"}</span>
+                        <div className="min-w-0">
+                          <span className="block font-medium text-neutral-800 dark:text-neutral-200">{u.name ?? "—"}</span>
+                          {u.nickname && <span className="mt-0.5 block text-xs text-neutral-500 dark:text-neutral-400">닉네임: {u.nickname}</span>}
+                        </div>
                       </div>
                     </td>
                     <td className="px-5 py-3 text-neutral-500 dark:text-neutral-400 text-xs">{u.email ?? "—"}</td>
