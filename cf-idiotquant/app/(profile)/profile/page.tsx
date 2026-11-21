@@ -86,6 +86,10 @@ export default function ProfilePage() {
     const likedList = useAppSelector(selectLikedList);
     const likesState = useAppSelector(selectLikesState);
     const [watchlistMarket, setWatchlistMarket] = useState<WatchlistMarket>("all");
+    const [nickname, setNickname] = useState("");
+    const [nicknameInput, setNicknameInput] = useState("");
+    const [nicknameMessage, setNicknameMessage] = useState("");
+    const [savingNickname, setSavingNickname] = useState(false);
     const filteredLikedList = likedList.filter(item => matchesWatchlistMarket(item, watchlistMarket));
 
     // 포트폴리오 탄탄함 — 저평가 점수를 거래상태·업종 쏠림으로 깎은 값 (computeSolidity 주석 참고)
@@ -145,6 +149,40 @@ export default function ProfilePage() {
     }, []);
 
     useEffect(() => {
+        if (status !== "authenticated") return;
+        fetch("/api/user/nickname")
+            .then(r => r.ok ? r.json() : Promise.reject())
+            .then(d => { setNickname(d.nickname ?? ""); setNicknameInput(d.nickname ?? ""); })
+            .catch(() => {});
+    }, [status]);
+
+    const saveNickname = async () => {
+        const value = nicknameInput.trim();
+        if (value.length < 2 || value.length > 20) {
+            setNicknameMessage("닉네임은 2~20자로 입력해 주세요.");
+            return;
+        }
+        setSavingNickname(true);
+        setNicknameMessage("");
+        try {
+            const response = await fetch("/api/user/nickname", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ nickname: value }),
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error ?? "닉네임을 저장하지 못했습니다.");
+            setNickname(data.nickname);
+            setNicknameInput(data.nickname);
+            setNicknameMessage("저장했습니다.");
+        } catch (error) {
+            setNicknameMessage(error instanceof Error ? error.message : "닉네임을 저장하지 못했습니다.");
+        } finally {
+            setSavingNickname(false);
+        }
+    };
+
+    useEffect(() => {
         if (status === "unauthenticated") {
             router.replace("/login");
         }
@@ -163,7 +201,7 @@ export default function ProfilePage() {
 
     if (!session) return null;
 
-    const initial = session.user?.name?.[0]?.toUpperCase() ?? "U";
+    const initial = (nickname || session.user?.name)?.[0]?.toUpperCase() ?? "U";
 
     return (
         <div className="landing-style-page min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas">
@@ -238,7 +276,7 @@ export default function ProfilePage() {
                         </div>
                         <div className="min-w-0">
                             <p className="text-sm font-bold text-neutral-900 dark:text-neutral-50 truncate">
-                                {session.user?.name}
+                                {nickname || session.user?.name}
                             </p>
                             {session.user?.email && (
                                 <p className="text-xs text-neutral-400 dark:text-neutral-500 truncate mt-0.5">
@@ -251,6 +289,28 @@ export default function ProfilePage() {
                                 </span>
                             )}
                         </div>
+                    </div>
+                    <div className="border-t border-neutral-100 dark:border-border-subtle-dark px-5 py-4">
+                        <label htmlFor="account-nickname" className="mb-2 block text-xs font-semibold text-neutral-600 dark:text-neutral-300">닉네임</label>
+                        <div className="flex items-center gap-2">
+                            <input
+                                id="account-nickname"
+                                value={nicknameInput}
+                                onChange={event => { setNicknameInput(event.target.value); setNicknameMessage(""); }}
+                                maxLength={20}
+                                minLength={2}
+                                autoComplete="nickname"
+                                className="min-h-11 min-w-0 flex-1 rounded-lg border border-neutral-300 bg-white px-3 text-base text-neutral-900 outline-none focus:border-brand dark:border-border-subtle-dark dark:bg-surface-dark-muted dark:text-neutral-50"
+                                placeholder="2~20자"
+                            />
+                            <button
+                                type="button"
+                                onClick={saveNickname}
+                                disabled={savingNickname || nicknameInput.trim() === nickname}
+                                className="min-h-11 rounded-lg bg-brand px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                            >{savingNickname ? "저장 중" : "저장"}</button>
+                        </div>
+                        <p role="status" className="mt-2 min-h-5 text-xs text-neutral-500 dark:text-neutral-400">{nicknameMessage || "프로필에 표시할 이름입니다."}</p>
                     </div>
                 </div>
 
