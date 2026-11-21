@@ -110,6 +110,11 @@
         "koreanName": "ALPHA ARCHITECT US EQUITY 4"
     },
     {
+        "symbol": "AAUD",
+        "name": "ALPHA ARCHITECT US EQUITY 5 ETF",
+        "koreanName": "ALPHA ARCHITECT US EQUITY 5 ETF"
+    },
+    {
         "symbol": "AAUS",
         "name": "ALPHA ARCHITECT US EQUITY ETF",
         "koreanName": "ALPHA ARCHITECT US EQUITY"
@@ -245,6 +250,11 @@
         "koreanName": "프로프랙 홀딩"
     },
     {
+        "symbol": "ACEM",
+        "name": "AMERICAN CENTURY EMERGING MARKETS INSIGHTS ETF",
+        "koreanName": "AMERICAN CENTURY EMERGING MARKETS INSIGHTS"
+    },
+    {
         "symbol": "ACEP",
         "name": "ARS CORE EQUITY PORTFOLIO ETF",
         "koreanName": "ARS CORE EQUITY PORTFOLIO"
@@ -292,7 +302,7 @@
     {
         "symbol": "ACHP",
         "name": "GLOBAL X ASIA SEMICONDUCTOR ETF",
-        "koreanName": "GLOBAL X ASIA SEMICONDUCTOR ETF"
+        "koreanName": "GLOBAL X ASIA SEMICONDUCTOR US"
     },
     {
         "symbol": "ACHV",
@@ -346,7 +356,7 @@
     },
     {
         "symbol": "ACONW",
-        "name": "ACLARION INC C/WTS 21/04/2027 (TO PUR COM)",
+        "name": "ACLARION INC C/WTS 26/04/2027 (TO PUR COM)",
         "koreanName": "애클래리언 콜 워런트(2027-04-21)"
     },
     {
@@ -635,6 +645,11 @@
         "koreanName": "AEON 애퀴지션 I 유닛/워런트"
     },
     {
+        "symbol": "AETR",
+        "name": "AETHERION TECHNOLOGIES INC",
+        "koreanName": "에테리온 테크놀로지스"
+    },
+    {
         "symbol": "AEVA",
         "name": "AEVA TECHNOLOGIES INC",
         "koreanName": "애바 테크놀로지스"
@@ -735,6 +750,11 @@
         "koreanName": "KRANESHARES ARTIFICIAL INTELLIGENCE AND TECHNOLOGY"
     },
     {
+        "symbol": "AGLT",
+        "name": "AGILITY ROBOTICS INC",
+        "koreanName": "어질리티 로보틱스"
+    },
+    {
         "symbol": "AGMB",
         "name": "AGOMAB THERAPEUTICS NV SPON ADS EA REP 1 COM",
         "koreanName": "아고맙 테라퓨틱스(ADR)"
@@ -830,9 +850,19 @@
         "koreanName": "악소 헬스 그룹(ADR)"
     },
     {
+        "symbol": "AHIC",
+        "name": "ALLSPRING SHORT-TERM HIGH INCOME FUND ETF",
+        "koreanName": "ALLSPRING SHORT TERM HIGH INCOME"
+    },
+    {
         "symbol": "AHMA",
         "name": "AMBITIONS ENTERPRISE MANAG CO. LLC",
         "koreanName": "앰비션스 엔터프라이즈 매니지먼트"
+    },
+    {
+        "symbol": "AHYM",
+        "name": "ALLSPRING HIGH YIELD MUNICIPAL BOND FUND ETF",
+        "koreanName": "ALLSPRING HIGH YIELD MUNICIPAL BOND"
     },
     {
         "symbol": "AIA",
@@ -1008,11 +1038,6 @@
         "symbol": "AIX",
         "name": "DEFIANCE US 100 TECH AI MOAT ETF",
         "koreanName": "DEFIANCE US 100 TECH AI MOAT"
-    },
-    {
-        "symbol": "AIXC",
-        "name": "AIXCRYPTO HLDGS INC",
-        "koreanName": "AIXCRYPTO HLDGS INC"
     },
     {
         "symbol": "AIXI",
@@ -1570,6 +1595,11 @@
         "koreanName": "리치 스파클 홀딩스"
     },
     {
+        "symbol": "ANT",
+        "name": "ANTHROPIC PBC",
+        "koreanName": "앤트로픽"
+    },
+    {
         "symbol": "ANTA",
         "name": "ANTALPHA PLATFORM HOLDING COMPANY",
         "koreanName": "앤트알파 플랫폼 홀딩"
@@ -1583,11 +1613,6 @@
         "symbol": "ANV",
         "name": "GRANITESHARES AUTOCALLABLE NVDA ETF",
         "koreanName": "GRANITESHARES AUTOCALLABLE NVDA"
-    },
-    {
-        "symbol": "ANY",
-        "name": "SPHERE 3D CORP NEW",
-        "koreanName": "스피어 3D"
     },
     {
         "symbol": "AOHY",
@@ -1715,6 +1740,11 @@
         "koreanName": "아시아 퍼시픽 와이어 앤드 케이블"
     },
     {
+        "symbol": "APXC",
+        "name": "APEX CRITICAL METALS CORP SPON ADS EACH REP 6 COM",
+        "koreanName": "에이펙스 크리티컬 메탈스(ADR)"
+    },
+    {
         "symbol": "APXT",
         "name": "APEX TREASURY CORPORATION",
         "koreanName": "에이펙스 트레저리"
@@ -1773,11 +1803,6 @@
         "symbol": "ARBE",
         "name": "ARBE ROBOTICS LTD",
         "koreanName": "아베 로보틱스"
-    },
-    {
-        "symbol": "ARBEW",
-        "name": "ARBE ROBOTICS LTD C/WTS 07/10/2026 (TO PUR COM)",
-        "koreanName": "아베 로보틱스 콜 워런트(2026-10-07)"
     },
     {
         "symbol": "ARBK",
@@ -2010,6 +2035,11 @@
         "koreanName": "A 스팩 애퀴지션 3 유닛"
     },
     {
+        "symbol": "ASPE",
+        "name": "ASPEN NEUROSCIENCE INC",
+        "koreanName": "아스펜 뉴로사이언스"
+    },
+    {
         "symbol": "ASPI",
         "name": "ASP ISOTOPES INC",
         "koreanName": "ASP 아이소토프"
@@ -2055,6 +2085,11 @@
         "koreanName": "알고마 스틸 그룹"
     },
     {
+        "symbol": "ASTM",
+        "name": "ALLSPRING STRATEGIC MUNICIPAL BOND FUND ETF",
+        "koreanName": "ALLSPRING STRATEGIC MUNICIPAL BOND"
+    },
+    {
         "symbol": "ASTS",
         "name": "AST SPACEMOBILE INC",
         "koreanName": "AST 스페이스모바일"
@@ -2068,11 +2103,6 @@
         "symbol": "ASYS",
         "name": "AMTECH SYSTEMS INC",
         "koreanName": "암테크 시스템스"
-    },
-    {
-        "symbol": "ATAI",
-        "name": "ATAIBECKLEY INC",
-        "koreanName": "아타이 라이프 사이언시스"
     },
     {
         "symbol": "ATAT",
@@ -2447,7 +2477,7 @@
     {
         "symbol": "AXNX",
         "name": "AXONEX AI GROUP LTD",
-        "koreanName": "AXONEX AI GROUP LTD"
+        "koreanName": "엑소넥스 AI그룹"
     },
     {
         "symbol": "AXON",
@@ -2488,6 +2518,11 @@
         "symbol": "AZIO",
         "name": "AZIO AI HOLDINGS INC",
         "koreanName": "아지오 AI 홀딩스"
+    },
+    {
+        "symbol": "AZR",
+        "name": "AZORA THERAPEUTICS INC",
+        "koreanName": "아조라 테라퓨틱스"
     },
     {
         "symbol": "AZTA",
@@ -2645,11 +2680,6 @@
         "koreanName": "본 바이오로직스"
     },
     {
-        "symbol": "BBLGW",
-        "name": "BONE BIOLOGICS CORP C/WTS 13/10/2026 (TO PUR COM)",
-        "koreanName": "본 바이오로직스 콜 워런트(2027-10-12)"
-    },
-    {
         "symbol": "BBNX",
         "name": "BETA BIONICS INC",
         "koreanName": "베타 바이오닉스"
@@ -2663,6 +2693,11 @@
         "symbol": "BBSI",
         "name": "BARRETT BUSINESS SERVICES",
         "koreanName": "바렛 비즈니스 서비시스"
+    },
+    {
+        "symbol": "BBTX",
+        "name": "BAMBUSA THERAPEUTICS INC",
+        "koreanName": "밤부사 테라퓨틱스"
     },
     {
         "symbol": "BBUL",
@@ -2781,7 +2816,7 @@
     },
     {
         "symbol": "BDRX",
-        "name": "BIODEXA PHARMACEUTICALS PLC SPON ADS EA RP 50 ORD SHS",
+        "name": "BIODEXA PHARMACEUTICALS PLC SPON ADS EACH REP 400 ORD",
         "koreanName": "바이오덱사 파머슈티컬스(ADR)"
     },
     {
@@ -2826,8 +2861,8 @@
     },
     {
         "symbol": "BEATW",
-        "name": "HEARTBEAM INC C/WTS 31/10/2026 (TO PUR COM)",
-        "koreanName": "허트빔 콜 워런트(2026-10-31)"
+        "name": "HEARTBEAM INC C/WTS 15/11/2026 (TO PUR COM)",
+        "koreanName": "허트빔 콜 워런트(2026-11-15)"
     },
     {
         "symbol": "BEDY",
@@ -2990,14 +3025,19 @@
         "koreanName": "BAILLIE GIFFORD US EQUITY GROWTH"
     },
     {
+        "symbol": "BHAIU",
+        "name": "BHAV ACQUISITION CORPORATION II UNIT 1 CL A & 1 RT",
+        "koreanName": "바브 애퀴지션 II 유닛"
+    },
+    {
         "symbol": "BHAV",
         "name": "BHAV ACQUISITION COR",
-        "koreanName": "브하브 애퀴지션"
+        "koreanName": "바브 애퀴지션"
     },
     {
         "symbol": "BHAVU",
         "name": "BHAV ACQUISITION COR UNIT 1 CL A & 1 RT (18/03/2031)",
-        "koreanName": "BHAV 애퀴지션 유닛/권리"
+        "koreanName": "바브 애퀴지션 유닛/권리"
     },
     {
         "symbol": "BHDG",
@@ -3215,11 +3255,6 @@
         "koreanName": "발라드 파워 시스템스"
     },
     {
-        "symbol": "BLFS",
-        "name": "BIOLIFE SOLUTIONS INC",
-        "koreanName": "바이오라이프 솔루션스"
-    },
-    {
         "symbol": "BLIN",
         "name": "BRIDGELINE DIGITAL INC",
         "koreanName": "브리지라인 디지털"
@@ -3337,7 +3372,7 @@
     {
         "symbol": "BMMX",
         "name": "BLACK MAMMOTH METALS CORPORATION",
-        "koreanName": "BLACK MAMMOTH METALS CORPORATION"
+        "koreanName": "블랙 매머드 메탈스"
     },
     {
         "symbol": "BMNG",
@@ -3640,9 +3675,9 @@
         "koreanName": "BURNEY US FACTOR ROTATION"
     },
     {
-        "symbol": "BRR",
-        "name": "PROCAP FINANCIAL INC",
-        "koreanName": "컬럼버스 서클 캐피털"
+        "symbol": "BRRK",
+        "name": "BLUEROCK ACQUISITION CORPORATION II",
+        "koreanName": "BLUEROCK ACQUISITION CORPORATION II"
     },
     {
         "symbol": "BRRKU",
@@ -4335,6 +4370,11 @@
         "koreanName": "패스워드 파이낸셜"
     },
     {
+        "symbol": "CASK",
+        "name": "Sempreon Inc",
+        "koreanName": "셈프레온"
+    },
+    {
         "symbol": "CASS",
         "name": "CASS INFORMATION SYSTEMS",
         "koreanName": "캐스 인포메이션 시스템스"
@@ -4500,6 +4540,11 @@
         "koreanName": "CCH 홀딩스"
     },
     {
+        "symbol": "CCHP",
+        "name": "GLOBAL X CHINA SEMICONDUCTOR ETF",
+        "koreanName": "GLOBAL X CHINA SEMICONDUCTOR ETF"
+    },
+    {
         "symbol": "CCII",
         "name": "COHEN CIRCLE ACQUISITION CORP II",
         "koreanName": "코헨 서클 애퀴지션 2"
@@ -4626,7 +4671,7 @@
     },
     {
         "symbol": "CDROW",
-        "name": "CODERE ONLINE LUXEMBOURG SA C/WTS 23/11/2026 (TO PUR COM)",
+        "name": "CODERE ONLINE LUXEMBOURG SA C/WTS 30/11/2026(TO PUR COM)",
         "koreanName": "코데레 온라인 룩셈부르크 콜 워런트(2026-11-23)"
     },
     {
@@ -4658,11 +4703,6 @@
         "symbol": "CDZIP",
         "name": "CADIZ INC DEP SHS 1/1000TH SER A PFD CUM STK",
         "koreanName": "카디즈 우선주 A"
-    },
-    {
-        "symbol": "CECO",
-        "name": "CECO ENVIRONMENTAL CORP",
-        "koreanName": "시코 인바이런멘틀"
     },
     {
         "symbol": "CEFA",
@@ -5057,7 +5097,7 @@
     {
         "symbol": "CHWM",
         "name": "CHILWA MINERALS LTD SPON ADS REP ORD SHS",
-        "koreanName": "칠와 미네랄스(ADS)"
+        "koreanName": "칠와 미네랄스(ADR)"
     },
     {
         "symbol": "CHY",
@@ -5480,16 +5520,6 @@
         "koreanName": "코카콜라 컨솔리데이티드"
     },
     {
-        "symbol": "COLA",
-        "name": "COLUMBUS ACQUISITION CORP",
-        "koreanName": "컬럼버스 애퀴지션"
-    },
-    {
-        "symbol": "COLAU",
-        "name": "COLUMBUS ACQUISITION CORP UNITS 26/12/2029 (1 ORD SHS &",
-        "koreanName": "컬럼버스 애퀴지션 유닛"
-    },
-    {
         "symbol": "COLB",
         "name": "COLUMBIA BANKING SYSTEMS INC",
         "koreanName": "컬럼비아 뱅킹 시스템스"
@@ -5790,6 +5820,11 @@
         "koreanName": "크리티컬 메탈스"
     },
     {
+        "symbol": "CRMN",
+        "name": "SKYLINE BUILDERS GROUP HOLDING",
+        "koreanName": "SKYLINE BUILDERS GROUP HOLDING"
+    },
+    {
         "symbol": "CRMT",
         "name": "AMERICA S CAR-MART INC",
         "koreanName": "아메리카스 카 마트"
@@ -6052,7 +6087,7 @@
     {
         "symbol": "CTY",
         "name": "CITY THERAPEUTICS INC",
-        "koreanName": "CITY THERAPEUTICS INC"
+        "koreanName": "시티 테라퓨틱스"
     },
     {
         "symbol": "CUB",
@@ -6155,6 +6190,16 @@
         "koreanName": "캘리버코스"
     },
     {
+        "symbol": "CWPD",
+        "name": "CWP PREMIUM DIVIDEND ETF",
+        "koreanName": "CWP PREMIUM DIVIDEND ETF"
+    },
+    {
+        "symbol": "CWPG",
+        "name": "CWP PREMIUM GROWTH ETF",
+        "koreanName": "CWP PREMIUM GROWTH ETF"
+    },
+    {
         "symbol": "CWST",
         "name": "CASELLA WASTE SYSTEMS",
         "koreanName": "카셀라 웨이스트 시스템스"
@@ -6245,6 +6290,11 @@
         "koreanName": "시티즌스 커뮤니티 뱅코프"
     },
     {
+        "symbol": "CZZL",
+        "name": "CIZZLE BRANDS CORPORATION",
+        "koreanName": "CIZZLE BRANDS CORPORATION"
+    },
+    {
         "symbol": "DAAQ",
         "name": "DIGITAL ASSET ACQUISITION CORP.",
         "koreanName": "디지털 에셋 애퀴지션"
@@ -6300,6 +6350,11 @@
         "koreanName": "도어대시"
     },
     {
+        "symbol": "DAU",
+        "name": "GRANITESHARES AUTOCALLABLE AMD ETF",
+        "koreanName": "GRANITESHARES AUTOCALLABLE AMD ETF"
+    },
+    {
         "symbol": "DAVE",
         "name": "DAVE INC",
         "koreanName": "데이브"
@@ -6308,6 +6363,11 @@
         "symbol": "DAVEW",
         "name": "DAVE INC C/WTS 05/01/2027 (TO PUR COM)",
         "koreanName": "데이브 콜 워런트(2027-01-05)"
+    },
+    {
+        "symbol": "DAVI",
+        "name": "DAVION HEALTHCARE PLC",
+        "koreanName": "데이비온 헬스케어"
     },
     {
         "symbol": "DAX",
@@ -6417,7 +6477,7 @@
     {
         "symbol": "DFGV",
         "name": "DFA INTERMEDIATE GOVERNMENT FIXED INCOME PORTFOLIO ETF",
-        "koreanName": "DFA INTERMEDIATE GOVERNMENT FIXED INCOME PORTFOLIO ETF"
+        "koreanName": "DFA INTERMEDIATE GOVERNMENT FIXED INCOME PORTFOLIO"
     },
     {
         "symbol": "DFGX",
@@ -6690,11 +6750,6 @@
         "koreanName": "도미너리 홀딩스"
     },
     {
-        "symbol": "DOMO",
-        "name": "DOMO INC",
-        "koreanName": "도모"
-    },
-    {
         "symbol": "DOO",
         "name": "BRP INC",
         "koreanName": "BRP"
@@ -6730,9 +6785,9 @@
         "koreanName": "도미노 피자"
     },
     {
-        "symbol": "DRCT",
-        "name": "DIRECT DIGITAL HOLDINGS INC",
-        "koreanName": "다이렉트 디지털 홀딩스"
+        "symbol": "DRAC",
+        "name": "GRANITESHARES AUTOCALLABLE DRAM ETF",
+        "koreanName": "GRANITESHARES AUTOCALLABLE DRAM ETF"
     },
     {
         "symbol": "DRDB",
@@ -7395,6 +7450,11 @@
         "koreanName": "엘라우윗 커넥션"
     },
     {
+        "symbol": "EMAG",
+        "name": "EMERGING MARKETS AI MAG 3 ETF",
+        "koreanName": "EMERGING MARKETS AI MAG 3"
+    },
+    {
         "symbol": "EMAT",
         "name": "EVOLUTION METALS & TECHS CORP",
         "koreanName": "에볼루션 메탈&테크"
@@ -7443,11 +7503,6 @@
         "symbol": "EMPD",
         "name": "EMPERY DIGITAL INC",
         "koreanName": "엠퍼리 디지털"
-    },
-    {
-        "symbol": "EMSC",
-        "name": "SOPHUS CAPITAL EMERGING MARKET SMALL CAP ETF",
-        "koreanName": "SOPHUS CAPITAL EMERGING MARKET SMALL CAP"
     },
     {
         "symbol": "EMXC",
@@ -8050,6 +8105,11 @@
         "koreanName": "퍼스트 브리치"
     },
     {
+        "symbol": "FBEQ",
+        "name": "FRANKLIN TEMPLETON ETF TR US EQUITY BITCOIN DRIP INDEX ETF",
+        "koreanName": "FRANKLIN US EQUITY BITCOIN DRIP"
+    },
+    {
         "symbol": "FBGL",
         "name": "FBS GLOBAL LIMITED",
         "koreanName": "FBS 글로벌"
@@ -8083,6 +8143,11 @@
         "symbol": "FBLG",
         "name": "FIBROBIOLOGICS INC",
         "koreanName": "파이브로바이오로직스"
+    },
+    {
+        "symbol": "FBLLU",
+        "name": "FOOTBALL MANAGER SPAC INC UNIT 1 CL A SH & 1 WT EXP",
+        "koreanName": "FOOTBALL MANAGER SPAC INC UNIT 1 CL A SH & 1 WT EXP"
     },
     {
         "symbol": "FBNC",
@@ -8133,6 +8198,11 @@
         "symbol": "FCCO",
         "name": "FIRST COMMUNITY CORP(SC)",
         "koreanName": "퍼스트 커뮤니티"
+    },
+    {
+        "symbol": "FCDH",
+        "name": "FORCENDRA HOLDING LTD",
+        "koreanName": "포센드라 홀딩"
     },
     {
         "symbol": "FCEF",
@@ -8213,6 +8283,16 @@
         "symbol": "FDFF",
         "name": "FIDELITY COVINGTON TRUST DISRUPTIVE FINANCE ETF USD",
         "koreanName": "FIDELITY DISRUPTIVE FINANCE"
+    },
+    {
+        "symbol": "FDGX",
+        "name": "FIRST DIGITAL ACQUISITION CORP LTD",
+        "koreanName": "FIRST DIGITAL ACQUISITION CORP LTD"
+    },
+    {
+        "symbol": "FDGXU",
+        "name": "FIRST DIGITAL ACQUISITION CORP LTD UNIT 1 CL A  & 1/2 RE",
+        "koreanName": "FIRST DIGITAL ACQUISITION CORP LTD UNIT 1 CL A  & 1/2 RE"
     },
     {
         "symbol": "FDIF",
@@ -8298,11 +8378,6 @@
         "symbol": "FEBO",
         "name": "FENBO HOLDINGS LIMITED",
         "koreanName": "펜보 홀딩스"
-    },
-    {
-        "symbol": "FEED",
-        "name": "ENVUE MED INC",
-        "koreanName": "엔뷰메드"
     },
     {
         "symbol": "FEIM",
@@ -8400,6 +8475,11 @@
         "koreanName": "FF EAI 로보틱스 에코시스템"
     },
     {
+        "symbol": "FFTT",
+        "name": "MASONGLORY LTD",
+        "koreanName": "메이슨글로리"
+    },
+    {
         "symbol": "FFUT",
         "name": "FIDELITY MANAGED FUTURES ETF",
         "koreanName": "FIDELITY MANAGED FUTURES"
@@ -8450,16 +8530,6 @@
         "koreanName": "FIRST TRUST GERMANY ALPHADEX"
     },
     {
-        "symbol": "FGNX",
-        "name": "FG NEXUS INC.",
-        "koreanName": "펀더멘털 글로벌"
-    },
-    {
-        "symbol": "FGNXP",
-        "name": "FG NEXUS INC. 8.00% CUM PRE STK SERIES A",
-        "koreanName": "펀더멘털 글로벌 우선주 A(8.000% 누적)"
-    },
-    {
         "symbol": "FGSI",
         "name": "FT VEST GROWTH STRENGTH & TARGET INCOME ETF",
         "koreanName": "FT VEST GROWTH STRENGTH & TARGET INCOME"
@@ -8478,6 +8548,11 @@
         "symbol": "FIBK",
         "name": "FIRST INTERSTATE BANCSYSTEM INC",
         "koreanName": "퍼스트 인터스테이트 뱅크시스템"
+    },
+    {
+        "symbol": "FIBT",
+        "name": "FRANKLIN TEMPLETON 529 COLLEGE SVGS US INNOV BIT DRIP INDEX",
+        "koreanName": "FRANKLIN US INNOVATION BITCOIN DRIP"
     },
     {
         "symbol": "FICS",
@@ -8652,7 +8727,7 @@
     {
         "symbol": "FLSC",
         "name": "FRAZIER LIFE SCIENCES ACQUISITION C",
-        "koreanName": "FRAZIER LIFE SCIENCES ACQUISITION C"
+        "koreanName": "프레이저 라이프 사이언시스 애퀴지션 II"
     },
     {
         "symbol": "FLUX",
@@ -8993,11 +9068,6 @@
         "symbol": "FSCS",
         "name": "FIRST TRUST EXCHANGE-TRADED FUND VI FIRST TRUST SMID CAPITAL",
         "koreanName": "FIRST TRUST SMID CAPITAL STRENGTH"
-    },
-    {
-        "symbol": "FSEA",
-        "name": "FIRST SEACOAST BANCORP INC",
-        "koreanName": "퍼스트 시코스트 뱅코프"
     },
     {
         "symbol": "FSGS",
@@ -9420,6 +9490,11 @@
         "koreanName": "GRAYSCALE AVALANCHE STAKING"
     },
     {
+        "symbol": "GBC",
+        "name": "GEORGIA BANKING COMPANY",
+        "koreanName": "조지아 뱅킹 컴퍼니"
+    },
+    {
         "symbol": "GBDC",
         "name": "GOLUB CAPITAL BDC INC",
         "koreanName": "골럽 캐피털 BDC"
@@ -9441,7 +9516,7 @@
     },
     {
         "symbol": "GCBC",
-        "name": "GREENE COUNTY BANCORP INC",
+        "name": "GREENE BANCORP INC",
         "koreanName": "그린 카운티 뱅코프"
     },
     {
@@ -9875,6 +9950,11 @@
         "koreanName": "갤럭시 디지털"
     },
     {
+        "symbol": "GM",
+        "name": "GENERAL MOTORS CO",
+        "koreanName": "GENERAL MOTORS CO"
+    },
+    {
         "symbol": "GMAB",
         "name": "GENMAB AS SPON ADS EACH REP 0.1 ORD SHS",
         "koreanName": "젠맵(ADR)"
@@ -10115,11 +10195,6 @@
         "koreanName": "그리드 AI 테크놀로지스"
     },
     {
-        "symbol": "GREEL",
-        "name": "VULCAN INFRASTRUCTURE AND POWER INC 8.50% SENIOR NOTES 31/10",
-        "koreanName": "벌칸 인프라스트럭처 앤드 파워 선순위채권(2026-10-31 8.500%)"
-    },
-    {
         "symbol": "GRFS",
         "name": "GRIFOLS SA SPON ADR EA REPR 1 ORD EUR0.10",
         "koreanName": "그리폴스(ADR)"
@@ -10350,6 +10425,11 @@
         "koreanName": "베르토 애퀴지션 유닛/워런트"
     },
     {
+        "symbol": "GUER",
+        "name": "GUERRILLA RF INC",
+        "koreanName": "GUERRILLA RF INC"
+    },
+    {
         "symbol": "GURE",
         "name": "GULF RESOURCES INC",
         "koreanName": "걸프 리소시스"
@@ -10575,6 +10655,11 @@
         "koreanName": "HCM 3 애퀴지션 유닛"
     },
     {
+        "symbol": "HCOP",
+        "name": "HARTFORD HYBRID AND CREDIT OPPORTUNITIES ETF",
+        "koreanName": "HARTFORD HYBRID AND CREDIT OPPORTUNITIES ETF"
+    },
+    {
         "symbol": "HCOW",
         "name": "AMPLIFY ETF TRUST AMPLIFY COWS COVERED CALL ETF",
         "koreanName": "AMPLIFY CASH FLOW HIGH INCOME"
@@ -10715,6 +10800,11 @@
         "koreanName": "디파이언스 힘스 앤드 허스 헬스(HIMS) 2X"
     },
     {
+        "symbol": "HINC",
+        "name": "HARTFORD HIGH YIELD ETF",
+        "koreanName": "HARTFORD HIGH YIELD"
+    },
+    {
         "symbol": "HIND",
         "name": "VYOME HOLDINGS INC",
         "koreanName": "바이옴 홀딩스"
@@ -10745,11 +10835,6 @@
         "koreanName": "하이브 디지털 테크놀로지스"
     },
     {
-        "symbol": "HKIT",
-        "name": "HITEK GLOBAL INC",
-        "koreanName": "하이텍 글로벌"
-    },
-    {
         "symbol": "HKPD",
         "name": "CELLYAN BIOTECH CO LTD",
         "koreanName": "셀리안 바이오테크"
@@ -10778,6 +10863,11 @@
         "symbol": "HLP",
         "name": "HONGLI GROUP INC.",
         "koreanName": "훙리 그룹"
+    },
+    {
+        "symbol": "HLT",
+        "name": "HILTON WORLDWIDE HOLDINGS INC",
+        "koreanName": "힐튼 월드와이드 홀딩스"
     },
     {
         "symbol": "HLTH",
@@ -10867,7 +10957,7 @@
     {
         "symbol": "HOOD",
         "name": "ROBINHOOD MARKETS INC",
-        "koreanName": "로빈훗 마케츠"
+        "koreanName": "로빈후드"
     },
     {
         "symbol": "HOOG",
@@ -11115,16 +11205,6 @@
         "koreanName": "레버리지셰어즈 허트 8(HUT) 2X"
     },
     {
-        "symbol": "HVII",
-        "name": "HENNESSY CAPITAL INVESTMNT CORP VII",
-        "koreanName": "헤네시 캐피털 인베스트먼트 7"
-    },
-    {
-        "symbol": "HVIIU",
-        "name": "HENNESSY CAPITAL INVESTMNT CORP VII UNIT 1 CL A ORD SHS &38",
-        "koreanName": "헤네시 캐피털 인베스트먼트 7 유닛"
-    },
-    {
         "symbol": "HVMC",
         "name": "HIGHVIEW MERGER CORP",
         "koreanName": "하이뷰 머저"
@@ -11153,11 +11233,6 @@
         "symbol": "HWGV",
         "name": "HOTCHKIS & WILEY GLOBAL VALUE FUND",
         "koreanName": "HOTCHKIS & WILEY GLOBAL VALUE"
-    },
-    {
-        "symbol": "HWH",
-        "name": "HWH INTERNATIONAL INC",
-        "koreanName": "HWH 인터내셔널"
     },
     {
         "symbol": "HWIV",
@@ -11287,7 +11362,7 @@
     {
         "symbol": "IAM",
         "name": "IAMBIC THERAPEUTICS INC",
-        "koreanName": "IAMBIC THERAPEUTICS INC"
+        "koreanName": "아이앰빅 테라퓨틱스"
     },
     {
         "symbol": "IART",
@@ -11373,11 +11448,6 @@
         "symbol": "IBKR",
         "name": "INTERACTIVE BROKERS GROUP INC",
         "koreanName": "인터랙티브 브로커스 그룹"
-    },
-    {
-        "symbol": "IBOC",
-        "name": "INTERNATIONAL BANCSHARES CORP",
-        "koreanName": "인터내셔널 뱅크셰어스"
     },
     {
         "symbol": "IBOT",
@@ -11695,11 +11765,6 @@
         "koreanName": "ISHARES LITHIUM MINERS AND PRODUCERS"
     },
     {
-        "symbol": "ILLR",
-        "name": "TRILLER GROUP INC",
-        "koreanName": "트릴러 그룹"
-    },
-    {
         "symbol": "ILLU",
         "name": "ILLUMINATION ACQUISITION CORP I",
         "koreanName": "일루미네이션 애퀴지션 I"
@@ -11940,6 +12005,16 @@
         "koreanName": "이니오"
     },
     {
+        "symbol": "INJC",
+        "name": "CANARY STAKED INJ ETF",
+        "koreanName": "CANARY STAKED INJ"
+    },
+    {
+        "symbol": "INK",
+        "name": "AB EQUITY PREMIUM INCOME ETF",
+        "koreanName": "AB EQUITY PREMIUM INCOME"
+    },
+    {
         "symbol": "INKT",
         "name": "MINK THERAPEUTICS INC",
         "koreanName": "밍크 테라퓨틱스"
@@ -12125,16 +12200,6 @@
         "koreanName": "프로페셔널 다이버시티 네트워크"
     },
     {
-        "symbol": "IPEX",
-        "name": "INFLECTION POINT ACQUISITION CORP V",
-        "koreanName": "인플렉션 포인트 애퀴지션 V"
-    },
-    {
-        "symbol": "IPEXU",
-        "name": "INFLECTION POINT ACQUISITION CORP V UNIT 1 ORD SH CL A &",
-        "koreanName": "인플렉션 포인트 애퀴지션 V 유닛"
-    },
-    {
         "symbol": "IPFX",
         "name": "NFLECTION PT ACQUISITION CORP VI",
         "koreanName": "인플렉션 포인트 애퀴지션"
@@ -12240,6 +12305,11 @@
         "koreanName": "ISHARES NASDAQ 100"
     },
     {
+        "symbol": "IQQI",
+        "name": "INCOMEQ NASDAQ-100 PREMIUM INCOME ETF",
+        "koreanName": "INCOMEQ NASDAQ-100 PREMIUM INCOME ETF"
+    },
+    {
         "symbol": "IQQQ",
         "name": "PROSHARES TRUST NASDAQ-100 HIGH INCOME ETF USD",
         "koreanName": "PROSHARES NASDAQ 100 HIGH INCOME"
@@ -12267,7 +12337,7 @@
     {
         "symbol": "IREN",
         "name": "IREN LIMITED",
-        "koreanName": "IREN"
+        "koreanName": "아이렌"
     },
     {
         "symbol": "IRHO",
@@ -12287,7 +12357,7 @@
     {
         "symbol": "IRLA",
         "name": "IRULYA THERAPEUTICS INC",
-        "koreanName": "IRULYA THERAPEUTICS INC"
+        "koreanName": "아이룰리아 테라퓨틱스"
     },
     {
         "symbol": "IRMD",
@@ -12323,6 +12393,11 @@
         "symbol": "ISHP",
         "name": "FIRST TR EXCHANGE TRADED FD VI S NETWORK GLOBAL E COMM ETF",
         "koreanName": "FIRST TRUST S-NETWORK GLOBAL E-COMMERCE"
+    },
+    {
+        "symbol": "ISMH",
+        "name": "XETFS INTERNATIONAL SEMICONDUCTOR ETF",
+        "koreanName": "XETFS INTERNATIONAL SEMICONDUCTOR ETF"
     },
     {
         "symbol": "ISNR",
@@ -12721,7 +12796,7 @@
     },
     {
         "symbol": "JSM",
-        "name": "NAVIENT CORP 6% SNR NTS 15/12/43 USD25",
+        "name": "NAVIENT LLC 6% SNR NTS 15/12/43 USD25",
         "koreanName": "내비언트 선순위채권(2043-12-15 6.000%)"
     },
     {
@@ -12738,11 +12813,6 @@
         "symbol": "JSPR",
         "name": "JASPER THERAPEUTICS INC",
         "koreanName": "재스퍼 테라퓨틱스"
-    },
-    {
-        "symbol": "JSPRW",
-        "name": "JASPER THERAPEUTICS INC C/WTS 24/09/2026 (TO PUR COM)",
-        "koreanName": "재스퍼 테라퓨틱스 콜 워런트(2026-09-24)"
     },
     {
         "symbol": "JTAI",
@@ -13336,7 +13406,7 @@
     },
     {
         "symbol": "LASE",
-        "name": "LASER PHOTONICS CORPORATION",
+        "name": "LASE CORP",
         "koreanName": "레이저 포토닉스"
     },
     {
@@ -13425,6 +13495,11 @@
         "koreanName": "LCNB"
     },
     {
+        "symbol": "LCU",
+        "name": "LION COPPER CORPORATION",
+        "koreanName": "LION COPPER CORPORATION"
+    },
+    {
         "symbol": "LCUT",
         "name": "LIFETIME BRANDS IN",
         "koreanName": "라이프타임 브랜즈"
@@ -13453,6 +13528,11 @@
         "symbol": "LECO",
         "name": "LINCOLN ELECTRIC HLDGS INC",
         "koreanName": "링컨 일렉트릭 홀딩스"
+    },
+    {
+        "symbol": "LEDR",
+        "name": "LEADERS ADVANTAGE ACQUISITION CORP",
+        "koreanName": "리더스 어드밴티지 애퀴지션"
     },
     {
         "symbol": "LEDRU",
@@ -13493,11 +13573,6 @@
         "symbol": "LENZ",
         "name": "LENZ THERAPEUTICS INC",
         "koreanName": "렌즈 테라퓨틱스"
-    },
-    {
-        "symbol": "LESL",
-        "name": "LESLIES INC",
-        "koreanName": "레슬리스"
     },
     {
         "symbol": "LEXI",
@@ -13568,11 +13643,6 @@
         "symbol": "LFWD",
         "name": "LIFEWARD LIMITED",
         "koreanName": "라이프워드"
-    },
-    {
-        "symbol": "LGCF",
-        "name": "THEMES US CASH FLOW CHAMPIONS ETF",
-        "koreanName": "THEMES US CASH FLOW CHAMPIONS"
     },
     {
         "symbol": "LGCL",
@@ -13905,6 +13975,11 @@
         "koreanName": "러브색"
     },
     {
+        "symbol": "LOVI",
+        "name": "LIVE OAK ACQUISITION CORPORATION VI",
+        "koreanName": "LIVE OAK ACQUISITION CORPORATION VI"
+    },
+    {
         "symbol": "LOVIU",
         "name": "LIVE OAK ACQUISITION CORPORATION VI UNITS CONSISTING 1 ORD S",
         "koreanName": "라이브 오크 애퀴지션 VI 유닛 1/2 워런트"
@@ -14066,7 +14141,7 @@
     },
     {
         "symbol": "LTRYW",
-        "name": "SPORTS ENTMT GAMING GBL CORP C/WTS (TO PUR COM) 28/10/2026",
+        "name": "SPORTS ENTMT GAMING GBL CORP C/WTS (TO PUR COM) 29/10/26",
         "koreanName": "로터리닷컴 콜 워런트(2026-10-15)"
     },
     {
@@ -14170,6 +14245,11 @@
         "koreanName": "렉시콘 파머슈티컬스"
     },
     {
+        "symbol": "LYCA",
+        "name": "LYCIA THERAPEUTICS INC",
+        "koreanName": "리시아 테라퓨틱스"
+    },
+    {
         "symbol": "LYEL",
         "name": "LYELL IMMUNOPHARMA INC",
         "koreanName": "라이엘 이뮤노파마"
@@ -14228,11 +14308,6 @@
         "symbol": "MAMA",
         "name": "MAMA S CREATIONS INC",
         "koreanName": "마마스 크리에이션"
-    },
-    {
-        "symbol": "MAMK",
-        "name": "MAXSMAKING INC",
-        "koreanName": "맥스메이킹"
     },
     {
         "symbol": "MAMO",
@@ -14545,6 +14620,11 @@
         "koreanName": "MDX헬스"
     },
     {
+        "symbol": "MEA",
+        "name": "GRANITESHARES AUTOCALLABLE META ETF",
+        "koreanName": "GRANITESHARES AUTOCALLABLE META ETF"
+    },
+    {
         "symbol": "MEDP",
         "name": "MEDPACE HOLDINGS INC",
         "koreanName": "메드페이스 홀딩스"
@@ -14613,6 +14693,11 @@
         "symbol": "META",
         "name": "META PLATFORMS INC",
         "koreanName": "메타 플랫폼스(페이스북)"
+    },
+    {
+        "symbol": "METAM",
+        "name": "META PLATFORMS INC SER A DEPOSITARY SHS REP",
+        "koreanName": "메타 플랫폼스 시리즈 A 예탁"
     },
     {
         "symbol": "METC",
@@ -14737,7 +14822,7 @@
     {
         "symbol": "MGOL",
         "name": "LEVERAGE SHARES MANGOS ETF",
-        "koreanName": "LEVERAGE SHARES MANGOS ETF"
+        "koreanName": "LEVERAGE SHARES MANGOS"
     },
     {
         "symbol": "MGPI",
@@ -14793,11 +14878,6 @@
         "symbol": "MILN",
         "name": "GLOBAL X FDS MILLENNIAL CONSUMER ETF",
         "koreanName": "GLOBAL X MILLENNIALS THEMATIC"
-    },
-    {
-        "symbol": "MIMI",
-        "name": "MINT INCORPORATION LTD",
-        "koreanName": "민트"
     },
     {
         "symbol": "MIND",
@@ -15335,9 +15415,19 @@
         "koreanName": "매나테크"
     },
     {
+        "symbol": "MTGG",
+        "name": "MAYTECH GLOBAL GROWTH ETF",
+        "koreanName": "MAYTECH GLOBAL GROWTH"
+    },
+    {
         "symbol": "MTLS",
         "name": "MATERIALISE NV SPON ADS EA REPSTG 1 ORD",
         "koreanName": "머티리얼라이즈(ADR)"
+    },
+    {
+        "symbol": "MTRI",
+        "name": "MENTARI THERAPEUTICS INC",
+        "koreanName": "MENTARI THERAPEUTICS INC"
     },
     {
         "symbol": "MTRX",
@@ -15660,6 +15750,16 @@
         "koreanName": "뉴암스테르담 파머 콜 워런트(2027-11-22)"
     },
     {
+        "symbol": "NANO",
+        "name": "FORGE NANO HOLDINGS INC",
+        "koreanName": "포지 나노 홀딩스"
+    },
+    {
+        "symbol": "NARA",
+        "name": "NARRAGANSETT BANCORP INC",
+        "koreanName": "내러갠셋 뱅코프"
+    },
+    {
         "symbol": "NATH",
         "name": "NATHANS FAMOUS INC",
         "koreanName": "네이선스 페이머스"
@@ -15681,7 +15781,7 @@
     },
     {
         "symbol": "NAVI",
-        "name": "NAVIENT CORP",
+        "name": "NAVIENT HOLDINGS INC",
         "koreanName": "내비언트"
     },
     {
@@ -16010,16 +16110,6 @@
         "koreanName": "뉴로진"
     },
     {
-        "symbol": "NHIC",
-        "name": "NEWHOLD INVT CORP III",
-        "koreanName": "뉴홀드 인베스트먼트 3"
-    },
-    {
-        "symbol": "NHICU",
-        "name": "NEWHOLD INVT CORP III UNIT 1 CLASS A & 1/2 RED WT",
-        "koreanName": "뉴홀드 인베스트먼트 3 유닛"
-    },
-    {
         "symbol": "NHIV",
         "name": "NEWHOLD INVESTMENT CORP IV",
         "koreanName": "뉴홀드 인베스트먼트 4호"
@@ -16033,11 +16123,6 @@
         "symbol": "NHP",
         "name": "NATIONAL HEALTHCARE PROPERTIES INC",
         "koreanName": "내셔널 헬스케어 프로퍼티스"
-    },
-    {
-        "symbol": "NHPBP",
-        "name": "NATIONAL HEALTHCARE PROPERTIES INC 7.125% CUM RED REP PFD ST",
-        "koreanName": "내셔널 헬스케어 프라퍼티스 우선주 B(7.125% 누적 상환)"
     },
     {
         "symbol": "NHTC",
@@ -16215,6 +16300,11 @@
         "koreanName": "NOMADAR CORP"
     },
     {
+        "symbol": "NORD",
+        "name": "NORDICUS PARTNERS CORP",
+        "koreanName": "노르디쿠스 파트너스"
+    },
+    {
         "symbol": "NOVT",
         "name": "NOVANTA INC",
         "koreanName": "노밴타"
@@ -16330,11 +16420,6 @@
         "koreanName": "냅코 시큐리티 테크놀로지스"
     },
     {
-        "symbol": "NSTS",
-        "name": "NSTS BANCORP INC",
-        "koreanName": "NSTS 뱅코프"
-    },
-    {
         "symbol": "NSYS",
         "name": "NORTECH SYSTEMS INC",
         "koreanName": "노테크 시스템스"
@@ -16353,6 +16438,11 @@
         "symbol": "NTCL",
         "name": "NETCLASS TECHNOLOGY INC",
         "koreanName": "넷클래스 테크놀로지"
+    },
+    {
+        "symbol": "NTCR",
+        "name": "NUVEEN TECHNOLOGY & INFRASTRUCTURE CREDIT ETF",
+        "koreanName": "NUVEEN TECHNOLOGY & INFRASTRUCTURE CREDIT ETF"
     },
     {
         "symbol": "NTCT",
@@ -16545,11 +16635,6 @@
         "koreanName": "노바"
     },
     {
-        "symbol": "NVNI",
-        "name": "NVNI GROUP LTD",
-        "koreanName": "누비니 그룹"
-    },
-    {
         "symbol": "NVNO",
         "name": "ENVVENO MED CORP",
         "koreanName": "엔베노 메디컬"
@@ -16596,7 +16681,7 @@
     },
     {
         "symbol": "NWGL",
-        "name": "CL WORKSHOP GROUP LIMITED SPON ADS EACH REP 8 ORD",
+        "name": "CL WORKSHOP GROUP LTD SPON ADS EACH REP 640 ORD",
         "koreanName": "네이처 우드 그룹(ADR)"
     },
     {
@@ -16632,7 +16717,7 @@
     {
         "symbol": "NXDR",
         "name": "NEXTDOOR HOLDINGS INC",
-        "koreanName": "NEXTDOOR HOLDINGS INC"
+        "koreanName": "넥스트도어 홀딩스"
     },
     {
         "symbol": "NXGL",
@@ -16986,7 +17071,7 @@
     },
     {
         "symbol": "OLMA",
-        "name": "OLEMA PHARMACEUTICALS INC",
+        "name": "OLEMA ONCOLOGY INC",
         "koreanName": "올레마 파머슈티컬"
     },
     {
@@ -17153,6 +17238,11 @@
         "symbol": "OPEN",
         "name": "OPENDOOR TECHNOLOGIES INC",
         "koreanName": "오픈도어 테크놀로지스"
+    },
+    {
+        "symbol": "OPHI",
+        "name": "COLLPLANT BIOTECHNOLOGIES LTD",
+        "koreanName": "COLLPLANT BIOTECHNOLOGIES LTD"
     },
     {
         "symbol": "OPI",
@@ -17582,11 +17672,11 @@
     {
         "symbol": "PANW",
         "name": "PALO ALTO NETWORKS INC",
-        "koreanName": "팰로 앨토 네트웍스"
+        "koreanName": "팔로 알토 네트웍스"
     },
     {
         "symbol": "PARA",
-        "name": "BANZAI INTERNATIONAL INC",
+        "name": "PARABOLIC TECHNOLOGIES INC",
         "koreanName": "반자이 인터내셔널"
     },
     {
@@ -17601,7 +17691,7 @@
     },
     {
         "symbol": "PASW",
-        "name": "PING AN BIOMEDICAL CO LTD",
+        "name": "Ping An Biomedical Co Ltd",
         "koreanName": "핑안 바이오메디컬"
     },
     {
@@ -17628,6 +17718,11 @@
         "symbol": "PAX",
         "name": "PATRIA INVESTMENTS LTD",
         "koreanName": "파트리아 인베스트먼츠"
+    },
+    {
+        "symbol": "PAXG",
+        "name": "PINE TREE ACQUISITION CORP",
+        "koreanName": "파인 트리 애퀴지션"
     },
     {
         "symbol": "PAXGU",
@@ -17760,6 +17855,11 @@
         "koreanName": "PCB 뱅코프"
     },
     {
+        "symbol": "PCHX",
+        "name": "STATE STREET SPDR NASDAQ MYPAYCHECK ETF",
+        "koreanName": "STATE STREET SPDR NASDAQ MYPAYCHECK ETF"
+    },
+    {
         "symbol": "PCLA",
         "name": "PICOCELA INC SPON ADS REP 1 ORD SHS (P/S)",
         "koreanName": "피코세라(ADR)"
@@ -17870,11 +17970,6 @@
         "koreanName": "팰러다인 AI"
     },
     {
-        "symbol": "PDYNW",
-        "name": "PALLADYNE AI CORP C/WTS 24/09/2026 (TO PUR COM)",
-        "koreanName": "팰러다인 AI 콜 워런트(2026-09-24)"
-    },
-    {
         "symbol": "PEBK",
         "name": "PEOPLES BANCORP OF NORTH CAROLINA",
         "koreanName": "피플스 뱅코프 오브 노스 캐롤라이나"
@@ -17932,7 +18027,7 @@
     {
         "symbol": "PEPT",
         "name": "REX PEPTIDE ETF",
-        "koreanName": "REX PEPTIDE ETF"
+        "koreanName": "REX PEPTIDE"
     },
     {
         "symbol": "PERI",
@@ -18140,6 +18235,11 @@
         "koreanName": "INVESCO GLOBAL WATER"
     },
     {
+        "symbol": "PIVT",
+        "name": "VANECK PIVOTAL TRENDS ETF",
+        "koreanName": "VANECK PIVOTAL TRENDS ETF"
+    },
+    {
         "symbol": "PIZ",
         "name": "INVESCO EXCHANGE TRADED FD TR II DORSEY WRIGHT DVELOPD MRKTS",
         "koreanName": "INVESCO DWA DEVELOPED MARKETS MOMENTUM"
@@ -18263,11 +18363,6 @@
         "symbol": "PLTR",
         "name": "PALANTIR TECH INC",
         "koreanName": "팔란티어 테크"
-    },
-    {
-        "symbol": "PLTS",
-        "name": "PLATINUM ANALYTICS CAYMAN LIMITED",
-        "koreanName": "플래티넘 애널리틱스 케이맨"
     },
     {
         "symbol": "PLTU",
@@ -18431,7 +18526,7 @@
     },
     {
         "symbol": "POM",
-        "name": "POMDOCTOR LIMITED SPON ADS EACH REP 3 CL A(R/S)",
+        "name": "POMDOCTOR LIMITED",
         "koreanName": "팜닥터 스폰서드 ADS"
     },
     {
@@ -18765,11 +18860,6 @@
         "koreanName": "파워 솔루션 인터내셔널"
     },
     {
-        "symbol": "PSKY",
-        "name": "PARAMOUNT SKYDANCE CORP",
-        "koreanName": "파라마운트 스카이댄스"
-    },
-    {
         "symbol": "PSL",
         "name": "INVESCO EXCHANGE TRADED FD TR DORSEY WRIGHT CONSUMER STPLS M",
         "koreanName": "INVESCO DWA CONSUMER STAPLES MOMENTUM"
@@ -18922,7 +19012,7 @@
     {
         "symbol": "PURR",
         "name": "HYPERLIQUID STRATEGIES INC",
-        "koreanName": "HYPERLIQUID STRATEGIES INC"
+        "koreanName": "하이퍼리퀴드 스트래티지스"
     },
     {
         "symbol": "PUSA",
@@ -19110,16 +19200,6 @@
         "koreanName": "YIELDMAX NASDAQ 100 0DTE COVERED CALL STRATEGY"
     },
     {
-        "symbol": "QETA",
-        "name": "QUETTA ACQUISITION CORPORATION",
-        "koreanName": "퀘타 애퀴지션"
-    },
-    {
-        "symbol": "QETAU",
-        "name": "QUETTA ACQUISITION CORPORATION UNIT 1 COM &  1/10 RT",
-        "koreanName": "퀘타 애퀴지션 유닛"
-    },
-    {
         "symbol": "QEW",
         "name": "INVESCO QQQ EQUAL WEIGHT ETF",
         "koreanName": "INVESCO QQQ EQUAL WEIGHT"
@@ -19178,11 +19258,6 @@
         "symbol": "QNBC",
         "name": "QNB CORP",
         "koreanName": "QNB(큐엔비)"
-    },
-    {
-        "symbol": "QNCX",
-        "name": "QUINCE THERAPEUTICS INC",
-        "koreanName": "퀸스 테라퓨틱스"
     },
     {
         "symbol": "QNDX",
@@ -19365,11 +19440,6 @@
         "koreanName": "GLOBAL X NASDAQ 100 RISK MANAGED INCOME"
     },
     {
-        "symbol": "QRVO",
-        "name": "QORVO INC",
-        "koreanName": "코보"
-    },
-    {
         "symbol": "QS",
         "name": "QUANTUMSCAPE CORPORATION",
         "koreanName": "퀀텀스케이프"
@@ -19407,7 +19477,7 @@
     {
         "symbol": "QTEX",
         "name": "QTREX QUANTUM LTD",
-        "koreanName": "QTREX QUANTUM LTD"
+        "koreanName": "큐트렉스 퀀텀"
     },
     {
         "symbol": "QTI",
@@ -19453,6 +19523,11 @@
         "symbol": "QUIK",
         "name": "QUICKLOGIC CORP",
         "koreanName": "퀵로직"
+    },
+    {
+        "symbol": "QUIT",
+        "name": "ACHIEVE LIFE SCIENCE INC",
+        "koreanName": "ACHIEVE LIFE SCIENCE INC"
     },
     {
         "symbol": "QUMS",
@@ -19518,6 +19593,11 @@
         "symbol": "RACD",
         "name": "RESEARCH ALLIANCE CORPORATION IV",
         "koreanName": "리서치 얼라이언스 IV"
+    },
+    {
+        "symbol": "RADD",
+        "name": "AB US RESEARCH ADVANCED ETF",
+        "koreanName": "AB US RESEARCH ADVANCED"
     },
     {
         "symbol": "RADX",
@@ -19885,16 +19965,6 @@
         "koreanName": "RF 애퀴지션 III 유닛 (보통주 1 + 권리 1)"
     },
     {
-        "symbol": "RFDI",
-        "name": "FIRST TR EXCHANGE-TRADED FD III RIVERFRONT DYNAMIC DEV INT E",
-        "koreanName": "FIRST TRUST RIVERFRONT DYNAMIC DEVELOPED INTERNATIONAL"
-    },
-    {
-        "symbol": "RFEM",
-        "name": "FIRST TR EXCHANGE-TRADED FD III RIVERFRONT DYNAMIC EMERGING",
-        "koreanName": "FIRST TRUST RIVERFRONT DYNAMIC EMERGING MARKETS"
-    },
-    {
         "symbol": "RFIL",
         "name": "RF INDUSTRIES",
         "koreanName": "RF 인더스트리스"
@@ -20005,11 +20075,6 @@
         "koreanName": "BRC 그룹 홀딩스 우선주 B(7.375% 누적 상환)"
     },
     {
-        "symbol": "RILYN",
-        "name": "BRC GP HLDGS INC 6.5% SR NOTES DUE 30/09/2026 USD25",
-        "koreanName": "B 라일리 파이낸셜 선순위채권(2026-09-30 6.500%)"
-    },
-    {
         "symbol": "RILYP",
         "name": "BRC GP HLDGS INC 6.875% DEP SHS REP 1/1000 CUM PFD SER A",
         "koreanName": "BRC 그룹 홀딩스 우선주 A(6.875% 누적)"
@@ -20043,11 +20108,6 @@
         "symbol": "RIOT",
         "name": "RIOT PLATFORMS INC",
         "koreanName": "라이엇 플랫폼스"
-    },
-    {
-        "symbol": "RITR",
-        "name": "REITAR LOGTECH HLDGS LTD",
-        "koreanName": "레이타르 로그텍 홀딩스"
     },
     {
         "symbol": "RIVN",
@@ -20212,7 +20272,7 @@
     {
         "symbol": "RNTZ",
         "name": "RANTIZO",
-        "koreanName": "RANTIZO"
+        "koreanName": "란티조"
     },
     {
         "symbol": "RNW",
@@ -20377,7 +20437,7 @@
     {
         "symbol": "RTHY",
         "name": "F/M LONG-TERM TREASURY INFLATION-PROTECTED SECURITY (TIPS) E",
-        "koreanName": "F/M LONG-TERM TREASURY INFLATION-PROTECTED SECURITY (TIPS) E"
+        "koreanName": "F/M LONG TERM TREASURY INFLATION PROTECTED SECURITY TIPS"
     },
     {
         "symbol": "RTSN",
@@ -20550,6 +20610,11 @@
         "koreanName": "SAB 바이오테라퓨틱스 콜 워런트(2026-10-22)"
     },
     {
+        "symbol": "SAEN",
+        "name": "GENENTA SCIENCE SPA SPON ADS EACH REP 1 ORD SHS",
+        "koreanName": "제넨타 사이언스(ADR)"
+    },
+    {
         "symbol": "SAFT",
         "name": "SAFETY INSURANCE GROUP INC",
         "koreanName": "세이프티 인슈어런스 그룹"
@@ -20625,6 +20690,11 @@
         "koreanName": "세틀로직"
     },
     {
+        "symbol": "SATS",
+        "name": "STRIVE INC PERP 15  PFD SER A",
+        "koreanName": "스트라이브 15% 누적 영구우선주 A"
+    },
+    {
         "symbol": "SBAC",
         "name": "SBA COMMUNICATIONS CORP",
         "koreanName": "SBA 커뮤니케이션스"
@@ -20681,7 +20751,7 @@
     },
     {
         "symbol": "SCAG",
-        "name": "SCAGE FUTURE SPON ADS EACH REPTS 1 SHS",
+        "name": "SCAGE FUTURE SPON ADS EACH REP 15 ORD",
         "koreanName": "스케이지 퓨처(ADR)"
     },
     {
@@ -20731,7 +20801,7 @@
     },
     {
         "symbol": "SCNI",
-        "name": "SCINAI IMMUNOTHERAPEUTICS LTD SPON ADS EACH REP 40000 SHS(R/",
+        "name": "SCINAI IMMUNOTHERAPEUTICS LTD SPON ADS EACH REP 160000 ORD",
         "koreanName": "사이나이 이뮤노테라퓨틱스(ADS)"
     },
     {
@@ -20753,6 +20823,16 @@
         "symbol": "SCPQU",
         "name": "SOCIAL COMMERCE PARTNERS CORP UNITS(1 ORD A & 1/2 WT)24/",
         "koreanName": "소셜커머스파트너스유닛"
+    },
+    {
+        "symbol": "SCQC",
+        "name": "SPACCIRCLE ACQUISITION CORPORATION",
+        "koreanName": "SPACCIRCLE ACQUISITION CORPORATION"
+    },
+    {
+        "symbol": "SCQCU",
+        "name": "SPACCIRCLE ACQUISITION CORPORATION UNITS 1 CL A 1 WT & 1",
+        "koreanName": "스팩서클 애퀴지션 유닛"
     },
     {
         "symbol": "SCSC",
@@ -20793,6 +20873,11 @@
         "symbol": "SDAWW",
         "name": "SUNCAR TECHNOLOGY GROUP INC C/WTS 17/05/2028 (TO PUR ORD)",
         "koreanName": "선카 테크놀로지 그룹 콜 워런트(2028-05-17)"
+    },
+    {
+        "symbol": "SDC",
+        "name": "KICK SPACE DATA CENTER & INFRASTRUCTURE INDEX ETF",
+        "koreanName": "KICK SPACE DATA CENTER & INFRASTRUCTURE INDEX ETF"
     },
     {
         "symbol": "SDG",
@@ -21265,11 +21350,6 @@
         "koreanName": "스킨헬스 시스템즈"
     },
     {
-        "symbol": "SKK",
-        "name": "SKK HOLDINGS LIMITED",
-        "koreanName": "SKK 홀딩스"
-    },
-    {
         "symbol": "SKOR",
         "name": "FLEXSHARES TRUST CREDIT SCORED US CORP BD INDEX FD",
         "koreanName": "NORTHERN TRUST CREDIT SCORED US CORPORATE BOND"
@@ -21386,7 +21466,7 @@
     },
     {
         "symbol": "SLMT",
-        "name": "BRERA HOLDINGS PLC",
+        "name": "SOLMATE INFRASTRUCTURE PLC",
         "koreanName": "브레라 홀딩스"
     },
     {
@@ -21408,11 +21488,6 @@
         "symbol": "SLNHP",
         "name": "SOLUNA HOLDINGS INC 9% PERP PFD SHS SER A",
         "koreanName": "솔루나 홀딩스 우선주 A(9.000% 누적)"
-    },
-    {
-        "symbol": "SLP",
-        "name": "SIMULATIONS PLUS INC",
-        "koreanName": "시뮬레이션스 플러스"
     },
     {
         "symbol": "SLQD",
@@ -21453,11 +21528,6 @@
         "symbol": "SMBC",
         "name": "SOUTHERN MISSOURI BANCORP",
         "koreanName": "서던 미주리 뱅코프"
-    },
-    {
-        "symbol": "SMCF",
-        "name": "THEMES ETF TRUST US SM CAP CASH FLOW CHAMPIONS ETF",
-        "koreanName": "THEMES US SMALL CAP CASH FLOW CHAMPIONS"
     },
     {
         "symbol": "SMCI",
@@ -21513,6 +21583,11 @@
         "symbol": "SMMT",
         "name": "SUMMIT THERAPEUTICS INC",
         "koreanName": "서밋 테라퓨틱스"
+    },
+    {
+        "symbol": "SMNG",
+        "name": "XETFS SAMSUNG GROUP ETF",
+        "koreanName": "XETFS SAMSUNG GROUP"
     },
     {
         "symbol": "SMOM",
@@ -21658,16 +21733,6 @@
         "symbol": "SNY",
         "name": "SANOFI SPON ADR ECH REP 0.5 ORD SHS",
         "koreanName": "사노피(ADR)"
-    },
-    {
-        "symbol": "SNYR",
-        "name": "SYNERGY CHC CORP",
-        "koreanName": "시너지 CHC"
-    },
-    {
-        "symbol": "SOBR",
-        "name": "SOBR SAFE INC",
-        "koreanName": "소버 세이프"
     },
     {
         "symbol": "SOCA",
@@ -21860,16 +21925,6 @@
         "koreanName": "F/M EMERALD SPECIAL SITUATIONS"
     },
     {
-        "symbol": "SPKL",
-        "name": "SPARK I ACQUISITION CORP",
-        "koreanName": "스파크 애퀴지션"
-    },
-    {
-        "symbol": "SPKLU",
-        "name": "SPARK I ACQUISITION CORP UNIT ORD CL A & 1/2 WT 28/09/20",
-        "koreanName": "스파크 애퀴지션 유닛"
-    },
-    {
         "symbol": "SPOG",
         "name": "LEVERAGE SHARES 2X LONG SPOT DAILY ETF",
         "koreanName": "레버리지셰어즈 스포티파이 테크놀로지(SPOT) 2X"
@@ -22005,6 +22060,11 @@
         "koreanName": "STRATA CRITICAL MED INC"
     },
     {
+        "symbol": "SRTM",
+        "name": "STRATUM HOLDINGS CORPORATION",
+        "koreanName": "스트라텀 홀딩스"
+    },
+    {
         "symbol": "SRTS",
         "name": "SENSUS HEALTHCARE INC",
         "koreanName": "센서스 헬스케어"
@@ -22136,7 +22196,7 @@
     },
     {
         "symbol": "STKH",
-        "name": "STEAKHOLDER FOODS LTD SPON ADS EACH REP 12000 ORD(R/S)",
+        "name": "STEAKHOLDER FOODS LTD SPON ADS EACH REP 60000 ORD",
         "koreanName": "스테이크홀더 푸즈(ADS)"
     },
     {
@@ -22281,7 +22341,7 @@
     },
     {
         "symbol": "SUPN",
-        "name": "SUPERNUS PHARMACEUTICALS INC",
+        "name": "SUPERNUS INC",
         "koreanName": "슈퍼누스 파머슈티컬스"
     },
     {
@@ -22630,11 +22690,6 @@
         "koreanName": "THORNBURG INCOME BUILDER OPPORTUNITIES TRUST"
     },
     {
-        "symbol": "TBPH",
-        "name": "THERAVANCE BIOPHARMA INC",
-        "koreanName": "테라반스 바이오파머"
-    },
-    {
         "symbol": "TC",
         "name": "TOKEN CAT LIMITED SPON ADS EACH REP 4800 CL A (P/S)",
         "koreanName": "토큰 캣(ADR)"
@@ -22643,11 +22698,6 @@
         "symbol": "TCAN",
         "name": "21SHARES CANTON NETWORK ETF",
         "koreanName": "21SHARES CANTON NETWORK"
-    },
-    {
-        "symbol": "TCBIO",
-        "name": "TEXAS CAPITAL BANCSHARES INC DEP SHS REP 1/40TH FXD RT NCUM",
-        "koreanName": "텍사스 캐피털 뱅크셰어스 우선주(5.750% 상환)"
     },
     {
         "symbol": "TCBK",
@@ -22702,7 +22752,7 @@
     {
         "symbol": "TCXB",
         "name": "TCGX ACQUISITION CORPORATION II",
-        "koreanName": "TCGX ACQUISITION CORPORATION II"
+        "koreanName": "TCGX 애퀴지션 II"
     },
     {
         "symbol": "TDAC",
@@ -23040,6 +23090,11 @@
         "koreanName": "쓰리 라이언스 애퀴지션 유닛 1/2 워런트"
     },
     {
+        "symbol": "TLCE",
+        "name": "THRIVENT LARGE CAP STOCK ETF",
+        "koreanName": "THRIVENT LARGE CAP STOCK"
+    },
+    {
         "symbol": "TLF",
         "name": "TANDY LEATHER FACTORY INC",
         "koreanName": "탠디 레더 팩토리"
@@ -23336,7 +23391,7 @@
     },
     {
         "symbol": "TREO",
-        "name": "TACTICAL RES CORP",
+        "name": "TACTICAL RES HLDG CORP",
         "koreanName": "택티컬 리소시스"
     },
     {
@@ -23548,6 +23603,11 @@
         "symbol": "TSHA",
         "name": "TAYSHA GENE THERAPIES INC",
         "koreanName": "타이샤 진 테라피스"
+    },
+    {
+        "symbol": "TSIE",
+        "name": "THRIVENT SECURITIZED INCOME ETF",
+        "koreanName": "THRIVENT SECURITIZED INCOME"
     },
     {
         "symbol": "TSL",
@@ -23913,11 +23973,6 @@
         "symbol": "UCTT",
         "name": "ULTRA CLEAN HLDGS INC",
         "koreanName": "울트라 클린 홀딩스"
-    },
-    {
-        "symbol": "UCYB",
-        "name": "PROSHARES TRUST ULTRA NASDAQ CYBERSECURITY USD",
-        "koreanName": "PROSHARES NASDAQ CYBERSECURITY 2X"
     },
     {
         "symbol": "UECG",
@@ -24865,11 +24920,6 @@
         "koreanName": "브룸"
     },
     {
-        "symbol": "VRME",
-        "name": "VERIFYME INC",
-        "koreanName": "베리파이미"
-    },
-    {
         "symbol": "VRNS",
         "name": "VARONIS SYSTEMS INC",
         "koreanName": "바로니스 시스템스"
@@ -24878,6 +24928,11 @@
         "symbol": "VRRM",
         "name": "VERRA MOBILITY CORP",
         "koreanName": "베라 모빌리티"
+    },
+    {
+        "symbol": "VRSA",
+        "name": "VERSA BANCORP",
+        "koreanName": "VERSA BANCORP"
     },
     {
         "symbol": "VRSK",
@@ -25077,17 +25132,7 @@
     {
         "symbol": "WAFU",
         "name": "WAH FU EDUC & TECH GP LTD",
-        "koreanName": "와 푸 에듀케이션"
-    },
-    {
-        "symbol": "WALD",
-        "name": "WALDENCAST PLC",
-        "koreanName": "월든캐스트 애퀴지션"
-    },
-    {
-        "symbol": "WALDW",
-        "name": "WALDENCAST PLC C/WTS 27/07/2027 (TO PUR ORD)",
-        "koreanName": "월든캐스트 애퀴지션 콜 워런트(2027-07-27)"
+        "koreanName": "와 푸 에듀케이션 & 테크놀로지 그룹"
     },
     {
         "symbol": "WAMA",
@@ -25128,11 +25173,6 @@
         "symbol": "WB",
         "name": "WEIBO CORPORATION ADR EA REPR 1 ORD SHS",
         "koreanName": "웨이보(ADR)"
-    },
-    {
-        "symbol": "WBD",
-        "name": "WARNER BROS DISCOVERY INC",
-        "koreanName": "워너 브로스 디스커버리"
     },
     {
         "symbol": "WBTN",
@@ -25246,7 +25286,7 @@
     },
     {
         "symbol": "WFRD",
-        "name": "WEATHERFORD INTL PLC",
+        "name": "WEATHERFORD INTERNATIONAL CORP.",
         "koreanName": "웨더포드 인터내셔널"
     },
     {
@@ -25323,11 +25363,6 @@
         "symbol": "WIX",
         "name": "WIX.COM LTD",
         "koreanName": "윅스닷컴"
-    },
-    {
-        "symbol": "WKEY",
-        "name": "WISEKEY INTERNATIONAL HLDG LTD SPON ADS EA REP 0.5 ORD (POST",
-        "koreanName": "와이즈키 인터내셔널 홀딩(ADR)"
     },
     {
         "symbol": "WKHS",
@@ -25600,6 +25635,11 @@
         "koreanName": "WW 인터내셔널"
     },
     {
+        "symbol": "WWB",
+        "name": "WINDWARD BIO GROUP AG",
+        "koreanName": "WINDWARD BIO GROUP AG"
+    },
+    {
         "symbol": "WWD",
         "name": "WOODWARD INC",
         "koreanName": "우드워드"
@@ -25745,6 +25785,11 @@
         "koreanName": "엑사젠"
     },
     {
+        "symbol": "XGPU",
+        "name": "RELIANCE GLOBAL GROUP INC",
+        "koreanName": "RELIANCE GLOBAL GROUP INC"
+    },
+    {
         "symbol": "XHG",
         "name": "XCHANGE TEC.INC SPON ADS EACH REP 2400 CL A (P/S)",
         "koreanName": "엑스체인지 텍(ADR)"
@@ -25865,11 +25910,6 @@
         "koreanName": "EVERNORTH HOLDINGS INC"
     },
     {
-        "symbol": "XRPNU",
-        "name": "ARMADA ACQUISITION CORP II UNIT 1 ORD CL A & 1/2 WT (21/",
-        "koreanName": "ARMADA ACQUISITION CORP II UNIT 1 ORD CL A & 1/2 WT (21/"
-    },
-    {
         "symbol": "XRPT",
         "name": "VOLATILITY SHARES TRUST 2X XRP ETF",
         "koreanName": "VOLATILITY SHARES XRP 2X"
@@ -25911,12 +25951,12 @@
     },
     {
         "symbol": "XTER",
-        "name": "KARMAN LINE ACQUISITION CORPORATION",
+        "name": "XTERAX CORPORATION II",
         "koreanName": "카르만 라인 애퀴지션"
     },
     {
         "symbol": "XTERU",
-        "name": "KARMAN LINE ACQUISITION CORPORATION UNIT CONSIST OF 1 CL AOR",
+        "name": "XTERAX CORPORATION II UNIT CONSIST OF 1 CL AORD & 1/2 WT",
         "koreanName": "카르만 라인 애퀴지션 유닛 1/2 워런트"
     },
     {
@@ -26056,7 +26096,7 @@
     },
     {
         "symbol": "YMT",
-        "name": "YIMUTIAN INC. SPON ADS EACH REP 6000 ORD CL A(R/S)",
+        "name": "YIMUTIAN INC. SPON ADS EA REP 60000 ORD",
         "koreanName": "이무톈(ADR)"
     },
     {
@@ -26103,6 +26143,11 @@
         "symbol": "YSAU",
         "name": "Y ALL STREET PHYSICAL GOLD ETF",
         "koreanName": "YALL STREET PHYSICAL GOLD"
+    },
+    {
+        "symbol": "YSKH",
+        "name": "YIELDMAX SKHY OPTION INCOME STRATEGY ETF",
+        "koreanName": "YIELDMAX SKHY OPTION INCOME STRATEGY"
     },
     {
         "symbol": "YSPY",
@@ -26323,5 +26368,10 @@
         "symbol": "ZYME",
         "name": "ZYMEWORKS INC (US)",
         "koreanName": "자임웍스"
+    },
+    {
+        "symbol": "ZYN",
+        "name": "PTL LIMITED",
+        "koreanName": "PTL LIMITED"
     }
 ]

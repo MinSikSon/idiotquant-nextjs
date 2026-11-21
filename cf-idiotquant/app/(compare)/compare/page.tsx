@@ -272,7 +272,7 @@ function ComparePageContent() {
     if (!value || !comparisonReady || sessionLoading || stocks.length >= limits.stocks || loading || dateLoading) return;
     const selectedDates = dates.length ? dates : defaultComparisonDates();
     const upper = resolveStockSearchInput(value, searchData?.allTickers ?? [...usTickers]) ?? value.toUpperCase();
-    const code = ((searchData?.corpCodeJson ?? corpCodes) as Record<string, { stock_code?: string }>)[value]?.stock_code ?? (/^\d{6}$/.test(value) ? value : undefined);
+    const code = ((searchData?.corpCodeJson ?? corpCodes) as Record<string, { stock_code?: string }>)[value]?.stock_code ?? (/^[A-Z0-9]{6}$/i.test(value) ? value.toUpperCase() : undefined);
     const isUs = !code && (usTickers.has(upper) || isUsTicker(upper));
     const ticker = code ?? (isUs ? upper : '');
     if (!ticker) { dispatch(setError('종목명 또는 6자리 종목코드를 확인해 주세요. 미국 종목은 티커를 입력할 수 있습니다.')); return; }

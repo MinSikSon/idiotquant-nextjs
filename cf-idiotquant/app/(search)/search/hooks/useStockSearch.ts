@@ -146,8 +146,8 @@ export function useStockSearch() {
 
             if (us_tickers.includes(upper)) { await searchUs(); return; }
             const localCode = (corpCodeJson as Record<string, { stock_code?: string }>)[stockName]?.stock_code
-                ?? (/^\d{6}$/.test(stockName) ? stockName : undefined);
-            if (localCode && /^\d{6}$/.test(localCode)) { await searchKr(localCode); return; }
+                ?? (/^[A-Z0-9]{6}$/i.test(stockName) ? stockName.toUpperCase() : undefined);
+            if (localCode && /^[A-Z0-9]{6}$/.test(localCode)) { await searchKr(localCode); return; }
 
             // 정적 목록에 없는 종목만 오버라이드를 조회한다. 두 목록은 동시에 받을 수 있다.
             const [usOverrides, krOverrides] = await Promise.all([loadUsOverrides(), loadKrOverrides()]);
@@ -155,7 +155,7 @@ export function useStockSearch() {
             if (usOverrides.has(upper)) await searchUs();
             else {
                 const code = krOverrides.get(stockName);
-                if (code && /^\d{6}$/.test(code)) await searchKr(code);
+                if (code && /^[A-Z0-9]{6}$/.test(code)) await searchKr(code);
                 else await searchUs(); // 유효한 국내 코드가 없으면 미국 티커로 폴백
             }
         } finally {

@@ -761,7 +761,7 @@
     },
     {
         "symbol": "AMTD",
-        "name": "AMTD IDEA GROUP SPON ADS EACH REP 6 ORD CL A",
+        "name": "AMTD IDEA GROUP SPON ADS EACH REP 360 ORD SHS CL A (R/S)",
         "koreanName": "AMTD 아이디어 그룹(ADS)"
     },
     {
@@ -1296,7 +1296,7 @@
     },
     {
         "symbol": "BA/A",
-        "name": "BOEING CO 6% DEP SHS RE 1/20TH PFD MAN CNV SR A",
+        "name": "BOEING CO 6% DP RE 1/20TH PFD MAN CNV SR A USD50",
         "koreanName": "보잉 우선주 A(6.000% 의무전환)"
     },
     {
@@ -1658,6 +1658,11 @@
         "symbol": "BFH/B",
         "name": "BREAD FINANCIAL HOLDINGS INC 8.875 DEP NON CUM PRF SER B",
         "koreanName": "브레드 파이낸셜 홀딩스 8.875% 비누적 영구우선주 B"
+    },
+    {
+        "symbol": "BFH/C",
+        "name": "BREAD FINANCIAL HOLDINGS INC DEP SHS REPSTG 1/40TH PERP PFD",
+        "koreanName": "브레드 파이낸셜 홀딩스 우선주 C"
     },
     {
         "symbol": "BFLY",
@@ -2217,7 +2222,7 @@
     {
         "symbol": "BSRT",
         "name": "BSR REAL ESTATE INVESTMENT TRUST TRUST UNITS (CAD)",
-        "koreanName": "BSR REAL ESTATE INVESTMENT TRUST TRUST UNITS (CAD)"
+        "koreanName": "BSR 리얼 에스테이트 인베스트먼트 트러스트"
     },
     {
         "symbol": "BST",
@@ -2411,7 +2416,7 @@
     },
     {
         "symbol": "C/R",
-        "name": "CITIGROUP INC 6.250 NON CUM SER II PFD WI",
+        "name": "CITIGROUP INC 6.250 NON CUM SER II PFD WI USD25",
         "koreanName": "씨티그룹 6.250% 비누적 시리즈 II 우선주(WI)"
     },
     {
@@ -2575,11 +2580,6 @@
         "koreanName": "콩코드 메디컬 서비시스 홀딩스(ADR)"
     },
     {
-        "symbol": "CCO",
-        "name": "CLEAR CHANNEL OUTDOOR HOLDINGS INC",
-        "koreanName": "클리어 채널 아웃도어 홀딩스"
-    },
-    {
         "symbol": "CCS",
         "name": "CENTURY COMMUNITIES",
         "koreanName": "센추리 커뮤니티스"
@@ -2601,8 +2601,8 @@
     },
     {
         "symbol": "CDLR",
-        "name": "CADELER AS SPON EACH ADR REP 4 ORD SHS",
-        "koreanName": "카들러(ADR)"
+        "name": "CADELER PLC",
+        "koreanName": "카들러"
     },
     {
         "symbol": "CDP",
@@ -2668,16 +2668,6 @@
         "symbol": "CFND",
         "name": "C1 FUND INC",
         "koreanName": "C1 펀드"
-    },
-    {
-        "symbol": "CFR",
-        "name": "CULLEN FROST BANKERS",
-        "koreanName": "컬런 프로스트 뱅커스"
-    },
-    {
-        "symbol": "CFR/B",
-        "name": "CULLEN FROST BANKERS 4.450% DEP SHS REP 1/40TH INT PR PF SR",
-        "koreanName": "컬런 프로스트 뱅커스 우선주(4.450%)"
     },
     {
         "symbol": "CFTR/A",
@@ -2986,7 +2976,7 @@
     },
     {
         "symbol": "CMSC",
-        "name": "CMS ENERGY CORP 5.875% JUNIOR SUBORDINATED NTS DUE 2078",
+        "name": "CMS ENERGY CORP 5.875% JNR SUBRDNTD NTS DUE 2078 USD25",
         "koreanName": "CMS 에너지 후순위채권(2078-10-15 5.875%)"
     },
     {
@@ -3325,11 +3315,6 @@
         "koreanName": "크로스 팀버스 로열티 트러스트"
     },
     {
-        "symbol": "CSAN",
-        "name": "COSAN SA SPON ADS EACH REP 4 ORD SHS",
-        "koreanName": "코장(ADR)"
-    },
-    {
         "symbol": "CSL",
         "name": "CARLISLE COS INC",
         "koreanName": "칼라일"
@@ -3588,26 +3573,6 @@
         "symbol": "DBL",
         "name": "DOUBLELINE OPPORTUNISTIC CR FD",
         "koreanName": "DOUBLELINE OPPORTUNISTIC CREDIT"
-    },
-    {
-        "symbol": "DBRG",
-        "name": "DIGITALBRIDGE GROUP INC",
-        "koreanName": "디지털브리지 그룹"
-    },
-    {
-        "symbol": "DBRG/H",
-        "name": "DIGITALBRIDGE GROUP INC 7.125% CUM RED PERP PREF STK SER H",
-        "koreanName": "디지털브리지 그룹 우선주 H(7.125% 누적 상환)"
-    },
-    {
-        "symbol": "DBRG/I",
-        "name": "DIGITALBRIDGE GROUP INC 7.15% CUM RED PERP PREF STK SER I",
-        "koreanName": "디지털브리지 그룹 우선주 I(7.150% 누적 상환)"
-    },
-    {
-        "symbol": "DBRG/J",
-        "name": "DIGITALBRIDGE GROUP INC 7.125% CUM RED PERP PREF STK SER J",
-        "koreanName": "디지털브리지 그룹 우선주 J(7.125% 누적 상환)"
     },
     {
         "symbol": "DCH",
@@ -4331,8 +4296,8 @@
     },
     {
         "symbol": "EMBJ",
-        "name": "EMBRAER SA SPON ADS EACH REP 4 ORD SHS",
-        "koreanName": "EMBRAER SA SPON ADS EACH REP 4 ORD SHS"
+        "name": "EMBRAER SA SPON ADS EACH REP 1 ORD SHS",
+        "koreanName": "EMBRAER SA SPON ADS EACH REP 1 ORD SHS"
     },
     {
         "symbol": "EMD",
@@ -5332,7 +5297,7 @@
     {
         "symbol": "GAM",
         "name": "GENERAL AMERICAN INVESTORS CO INC",
-        "koreanName": "GENERAL AMERICAN INVESTORS CO. INC."
+        "koreanName": "GENERAL AMERICAN INVESTORS"
     },
     {
         "symbol": "GAM/B",
@@ -5358,11 +5323,6 @@
         "symbol": "GBCI",
         "name": "GLACIER BANCORP",
         "koreanName": "글레이셔 뱅코프"
-    },
-    {
-        "symbol": "GBTG",
-        "name": "GLOBAL BUSINESS TRAVEL GROUP INC",
-        "koreanName": "글로벌 비즈니스 트래블 그룹"
     },
     {
         "symbol": "GBX",
@@ -5465,14 +5425,9 @@
         "koreanName": "지오 그룹"
     },
     {
-        "symbol": "GETY",
-        "name": "GETTY IMAGES HOLDINGS INC",
-        "koreanName": "게티 이미지 홀딩스"
-    },
-    {
         "symbol": "GEV",
         "name": "GE VERNOVA INC",
-        "koreanName": "GE베르노바"
+        "koreanName": "GE 버노바"
     },
     {
         "symbol": "GF",
@@ -5663,11 +5618,6 @@
         "symbol": "GLW",
         "name": "CORNING INC",
         "koreanName": "코닝"
-    },
-    {
-        "symbol": "GM",
-        "name": "GENERAL MOTORS CO",
-        "koreanName": "제너럴 모터스"
     },
     {
         "symbol": "GME",
@@ -5945,11 +5895,6 @@
         "koreanName": "그래닛 컨스트럭션"
     },
     {
-        "symbol": "GWH",
-        "name": "ESS TECH INC",
-        "koreanName": "ESS 테크"
-    },
-    {
         "symbol": "GWRE",
         "name": "GUIDEWIRE SOFTWARE INC",
         "koreanName": "가이드와이어 소프트웨어"
@@ -6220,11 +6165,6 @@
         "koreanName": "헤일리언(ADR)"
     },
     {
-        "symbol": "HLT",
-        "name": "HILTON WORLDWIDE HOLDINGS INC",
-        "koreanName": "힐튼 월드와이드 홀딩스"
-    },
-    {
         "symbol": "HMC",
         "name": "HONDA MOTOR CO ADR-EACH CNV INTO 3 ORD",
         "koreanName": "혼다 모터스(ADR)"
@@ -6445,6 +6385,11 @@
         "koreanName": "하이스터 예일"
     },
     {
+        "symbol": "HYAC",
+        "name": "HAYMAKER ACQUISITION CORPORATION V",
+        "koreanName": "헤이메이커 애퀴지션 4"
+    },
+    {
         "symbol": "HYAC/UN",
         "name": "HAYMAKER ACQUISITION CORPORATION V UNIT 1 CL A & 1/3 WT",
         "koreanName": "헤이메이커 애퀴지션 4 유닛"
@@ -6470,14 +6415,14 @@
         "koreanName": "COUNTERPOINT HIGH YIELD TREND"
     },
     {
+        "symbol": "HZN",
+        "name": "BRIGHT HORIZON ENERGY CORPORATION",
+        "koreanName": "BRIGHT HORIZON ENERGY CORPORATION"
+    },
+    {
         "symbol": "HZO",
         "name": "MARINEMAX INC",
         "koreanName": "마린맥스"
-    },
-    {
-        "symbol": "IAE",
-        "name": "VOYA ASIA PAC HIGH DIV EQTY INCM FD",
-        "koreanName": "VOYA ASIA PACIFIC HIGH DIVIDEND EQUITY INCOME"
     },
     {
         "symbol": "IAG",
@@ -6585,11 +6530,6 @@
         "koreanName": "아이휴먼(ADR)"
     },
     {
-        "symbol": "IHD",
-        "name": "VOYA EMERGING MKTS HIGH DIV EQTY FD",
-        "koreanName": "VOYA EMERGING MARKETS HIGH INCOME DIVIDEND EQUITY"
-    },
-    {
         "symbol": "IHG",
         "name": "INTERCONTINENTAL HOTELS GROUP SPON ADS EACH REPR 1 ORD SHS",
         "koreanName": "인터컨티넨털 호텔스 그룹(ADR)"
@@ -6623,6 +6563,11 @@
         "symbol": "IIPR/A",
         "name": "INNOVATIVE INDUSTRIAL PROPERTES INC 9% CUM RED PFD STOCK SER",
         "koreanName": "이노베이티브 인더스트리얼 프라퍼티스 우선주 A(9.000% 누적 상환)"
+    },
+    {
+        "symbol": "IIPR/B",
+        "name": "INNOVATIVE INDUSTRIAL PROPERTES INC 9.25% SERIES B CUMULATIV",
+        "koreanName": "이노베이티브 인더스트리얼 프로퍼티스 9.25% 누적 상환우선주 B"
     },
     {
         "symbol": "IMAX",
@@ -6941,8 +6886,8 @@
     },
     {
         "symbol": "JKS",
-        "name": "JINKOSOLAR HOLDING CO LTD SPON ADS EACH REPR 4 ORD SHS",
-        "koreanName": "징코솔라 홀딩스(ADR)"
+        "name": "JINKO HOLDINGS LTD SPON ADS EACH REPR 4 ORD SHS",
+        "koreanName": "징코솔라 홀딩스(ADS)"
     },
     {
         "symbol": "JLL",
@@ -7201,7 +7146,7 @@
     },
     {
         "symbol": "KKR/D",
-        "name": "KKR & CO INC 6.25% MAND CONV PREF SHARES SER D",
+        "name": "KKR & CO INC 6.25% MAND CONV PREF SHS SER D USD50",
         "koreanName": "KKR & CO 우선주 D(6.250% 의무전환)"
     },
     {
@@ -7625,6 +7570,11 @@
         "koreanName": "라이브 오크 뱅크셰어스 우선주 A"
     },
     {
+        "symbol": "LOB/B",
+        "name": "LIVE OAK BANCSHARES INC DEP SHS REP 1/40TH INT NONCUM PERP P",
+        "koreanName": "LIVE OAK BANCSHARES INC DEP SHS REP 1/40TH INT NONCUM PERP P"
+    },
+    {
         "symbol": "LOCL",
         "name": "LOCAL BOUNTI CORPORATION",
         "koreanName": "로컬 바운티"
@@ -7670,6 +7620,11 @@
         "koreanName": "LTC 프라퍼티스"
     },
     {
+        "symbol": "LTEQ",
+        "name": "EQUITY PARTNERS ETF",
+        "koreanName": "EQUITY PARTNERS"
+    },
+    {
         "symbol": "LTH",
         "name": "LIFE TIME GROUP HLDGS INC",
         "koreanName": "라이프 타임 그룹 홀딩스"
@@ -7681,8 +7636,8 @@
     },
     {
         "symbol": "LU",
-        "name": "LUFAX HLDG LTD SPON ADS EACH REP 2 ORD SHS CL A (R/S)",
-        "koreanName": "루팍스 홀딩(ADR)"
+        "name": "LUFAX HLDG LTD SPON ADS EACH REP 20 ORD SHS (R/S)",
+        "koreanName": "루팍스 홀딩(ADS)"
     },
     {
         "symbol": "LUCK",
@@ -7778,11 +7733,6 @@
         "symbol": "MAA",
         "name": "MID-AMERICA APARTMENT COMMUNITIES",
         "koreanName": "미드아메리카 어파트먼트 커뮤니티스"
-    },
-    {
-        "symbol": "MAA/I",
-        "name": "MID-AMERICA APARTMENT COMMUNITIES 8.50% CUM RED PFD SER I",
-        "koreanName": "미드아메리카 어파트먼트 커뮤니티스 우선주 I(8.500% 누적 상환)"
     },
     {
         "symbol": "MAC",
@@ -8271,7 +8221,7 @@
     },
     {
         "symbol": "MOD",
-        "name": "MODINE MANUFACTURING CO",
+        "name": "MODEXUS SOLUTIONS INC",
         "koreanName": "모딘 매뉴팩처링"
     },
     {
@@ -8438,6 +8388,16 @@
         "symbol": "MSGE",
         "name": "MADISON SQUARE GARDEN ENTMT CORP NE",
         "koreanName": "매디슨 스퀘어 가든 엔터테인먼트"
+    },
+    {
+        "symbol": "MSGK",
+        "name": "MSG KNICKERBOCKERS CORPORATION",
+        "koreanName": "MSG 니커보커스"
+    },
+    {
+        "symbol": "MSGR",
+        "name": "MSG RANGERS CORP",
+        "koreanName": "MSG 레인저스"
     },
     {
         "symbol": "MSGS",
@@ -8940,11 +8900,6 @@
         "koreanName": "애널리 캐피털 매니지먼트 우선주 G(6.500% 누적 상환)"
     },
     {
-        "symbol": "NLY/I",
-        "name": "ANNALY CAPITAL MANAGEMENT INC 6.750% FXD TO FTG RATE CUM RED",
-        "koreanName": "애널리 캐피털 매니지먼트 우선주 I(6.750% 누적 상환)"
-    },
-    {
         "symbol": "NLY/J",
         "name": "ANNALY CAPITAL MANAGEMENT INC 8.875 CUM PREF SER J",
         "koreanName": "애널리 캐피털 매니지먼트 우선주 J(8.875% 누적 상환)"
@@ -9212,7 +9167,7 @@
     {
         "symbol": "NVO",
         "name": "NOVO NORDISK A/S ADR-EACH CNV INTO 1 CLASS B DKK1",
-        "koreanName": "노보노디스크(ADR)"
+        "koreanName": "노보 노디스크(ADR)"
     },
     {
         "symbol": "NVR",
@@ -9473,6 +9428,11 @@
         "symbol": "OOMA",
         "name": "OOMA INC",
         "koreanName": "우마"
+    },
+    {
+        "symbol": "OPAY",
+        "name": "OPAY LTD SPON ADS EACH REP 10 ORD SHS",
+        "koreanName": "오페이(ADR)"
     },
     {
         "symbol": "OPFI",
@@ -10190,6 +10150,11 @@
         "koreanName": "포틀랜드 제너럴 일렉트릭"
     },
     {
+        "symbol": "PORT",
+        "name": "SOUTHPORT ACQUISITION CORP II",
+        "koreanName": "SOUTHPORT ACQUISITION CORP II"
+    },
+    {
         "symbol": "PORT/UN",
         "name": "SOUTHPORT ACQUISITION CORP II UNITS 1 CL A & 1/2 WT",
         "koreanName": "사우스포트 애퀴지션 II 유닛"
@@ -10260,11 +10225,6 @@
         "koreanName": "프라이오러티 인컴 펀드 우선주 K(7.000% 누적)"
     },
     {
-        "symbol": "PRIF/L",
-        "name": "PRIORITY INCOME FUND INC 6.375% PFD SER L DUE 2029",
-        "koreanName": "프라이오러티 인컴 펀드 우선주 L(6.375%)"
-    },
-    {
         "symbol": "PRIM",
         "name": "PRIMORIS SERVICES CORPORATION",
         "koreanName": "프리모리스 서비시스"
@@ -10281,7 +10241,7 @@
     },
     {
         "symbol": "PRM",
-        "name": "PERIMETER SOLUTIONS INC",
+        "name": "PERIMETER GROUP INC",
         "koreanName": "페리미터 솔루션스"
     },
     {
@@ -11215,11 +11175,6 @@
         "koreanName": "스탠더드에어로"
     },
     {
-        "symbol": "SAT",
-        "name": "SARATOGA INVESTMENT CORP 6% NTS 30/04/27 USD25",
-        "koreanName": "사라토가 인베스트먼트 일반채권(2027-04-30 6.000%)"
-    },
-    {
         "symbol": "SAV",
         "name": "SARATOGA INVESTMENT CORP 7.50% NOTES DUE 06/02/2031",
         "koreanName": "사라토가 인베스트먼트 7.50% 노트 (2031-06-02 만기)"
@@ -11278,16 +11233,6 @@
         "symbol": "SBSW",
         "name": "SIBANYE STILLWATER LTD SPON ADR EACH REP 4 ORD SHS",
         "koreanName": "시바녜 스틸워터(ADR)"
-    },
-    {
-        "symbol": "SBXD",
-        "name": "SILVERBOX CORP IV",
-        "koreanName": "실버박스 4"
-    },
-    {
-        "symbol": "SBXD/UN",
-        "name": "SILVERBOX CORP IV UNIT (1 ORD CL A & 1/3 WT)",
-        "koreanName": "실버박스 4 유닛"
     },
     {
         "symbol": "SBXE",
@@ -11735,11 +11680,6 @@
         "koreanName": "산탄데르 홀딩스 USA 5.25% 비누적 영구우선주 H"
     },
     {
-        "symbol": "SNUS/I",
-        "name": "SANTANDER HOLDINGS USA INC DEP SH RP 1/40TH INT NON CUM PRP",
-        "koreanName": "산탄데르 홀딩스 USA 6.5% 비누적 영구우선주 I"
-    },
-    {
         "symbol": "SNX",
         "name": "TD SYNNEX CORPORATION",
         "koreanName": "TD 시넥스"
@@ -11793,6 +11733,11 @@
         "symbol": "SON",
         "name": "SONOCO PRODUCTS CO",
         "koreanName": "소노코 프라덕츠"
+    },
+    {
+        "symbol": "SONN",
+        "name": "SOUTHERN CO 8.625% CNV 15/12/2029 USD  A",
+        "koreanName": "SOUTHERN CO 8.625% CNV 15/12/2029 USD  A"
     },
     {
         "symbol": "SONY",
@@ -12490,6 +12435,11 @@
         "koreanName": "테넷 헬스케어"
     },
     {
+        "symbol": "THCR",
+        "name": "THOR CONSERVATIVE RISK DYNAMIC ETF",
+        "koreanName": "THOR CONSERVATIVE RISK DYNAMIC"
+    },
+    {
         "symbol": "THG",
         "name": "HANOVER INSURANCE GROUP",
         "koreanName": "하노버 인슈어런스 그룹"
@@ -12875,26 +12825,6 @@
         "koreanName": "TAIWAN"
     },
     {
-        "symbol": "TWO/A",
-        "name": "TWO HARBORS INVESTMENT CORP 8.125% FXD FLTNG RATE CUM RED PF",
-        "koreanName": "투 하버스 인베스트먼트 우선주 A(8.125% 누적 상환)"
-    },
-    {
-        "symbol": "TWO/B",
-        "name": "TWO HARBORS INVESTMENT CORP 7.625% FXD FLOAT RATE CUM RED PF",
-        "koreanName": "투 하버스 인베스트먼트 우선주 B(7.625% 누적 상환)"
-    },
-    {
-        "symbol": "TWO/C",
-        "name": "TWO HARBORS INVESTMENT CORP 7.25% CUM RED FIXED FLTG RATE PR",
-        "koreanName": "투 하버스 인베스트먼트 우선주 C(7.250% 누적 상환)"
-    },
-    {
-        "symbol": "TWOD",
-        "name": "TWO HARBORS INVESTMENT CORP 9.375% SENIOR NOTES DUE 15/08/20",
-        "koreanName": "투 하버스 인베스트먼트 선순위채권(2030-08-15 9.375%)"
-    },
-    {
         "symbol": "TX",
         "name": "TERNIUM SA ADS EACH REPR 10 ORD",
         "koreanName": "테르니움(ADR)"
@@ -12908,6 +12838,11 @@
         "symbol": "TXO",
         "name": "TXO PARTNERS LP",
         "koreanName": "TXO 파트너스"
+    },
+    {
+        "symbol": "TXR",
+        "name": "TOREX RESOURCES INC",
+        "koreanName": "TOREX RESOURCES INC"
     },
     {
         "symbol": "TXT",
@@ -13213,16 +13148,6 @@
         "symbol": "VAC",
         "name": "MARRIOTT VACATIONS WORLDWIDE CORP",
         "koreanName": "메리어트 베이케이션스 월드와이드"
-    },
-    {
-        "symbol": "VACI",
-        "name": "VIKING ACQUISITION CORP I",
-        "koreanName": "바이킹 애퀴지션 I"
-    },
-    {
-        "symbol": "VACI/UN",
-        "name": "VIKING ACQUISITION CORP I UNITS CONS 1 CL A AND 1/3 OF 1 WT",
-        "koreanName": "VIKING ACQUISITION CORP I UNITS CONS 1 CL A AND 1/3 OF 1 WT"
     },
     {
         "symbol": "VAL",
@@ -13533,6 +13458,11 @@
         "symbol": "VVV",
         "name": "VALVOLINE INC",
         "koreanName": "밸보라인"
+    },
+    {
+        "symbol": "VVVV",
+        "name": "VVARDIS HOLDING AG",
+        "koreanName": "VVARDIS HOLDING AG"
     },
     {
         "symbol": "VVX",
