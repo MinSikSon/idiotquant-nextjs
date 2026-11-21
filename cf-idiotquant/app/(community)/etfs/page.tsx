@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { ArrowDown, Heart, Layers, LoaderCircle } from "lucide-react";
+import { ArrowDown, ChevronRight, Heart, Layers, LoaderCircle } from "lucide-react";
 import { PageHeader, PAGE_PRIMARY_ACTION_CLS } from "@/components/pageHeader";
 import { StockLogo } from "@/components/stockLogo";
 import { CommunityEtf, getCommunityEtfs, setCommunityEtfLike } from "@/lib/features/communityEtfs/api";
@@ -94,36 +94,30 @@ export default function CommunityEtfsPage() {
 }
 
 function EtfEpisode({ item, busy, onLike }: { item: CommunityEtf; busy: boolean; onLike: () => void }) {
-    const preview = item.holdings.slice(0, 4);
-    const remaining = item.holdings.length - preview.length;
+    const holdingsPages = Array.from({ length: Math.ceil(item.holdings.length / 6) }, (_, index) => item.holdings.slice(index * 6, (index + 1) * 6));
     return <article aria-label={`${item.name} 가상 ETF`} className="flex min-h-full snap-start flex-col justify-between gap-4 p-4 sm:p-6">
         <div>
             <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-neutral-600 dark:text-neutral-300">
                 <span>{item.creator.name || "투자자"}</span>
                 <span className="rounded border border-neutral-300 px-2 py-1 dark:border-neutral-600">{item.market === "KR" ? "국내" : "미국"} · 균등 비중</span>
             </div>
-            <h2 className="mt-4 break-words text-2xl font-semibold leading-tight">{item.name}</h2>
-            <p className="mt-3 break-words text-base leading-relaxed text-neutral-700 dark:text-neutral-200">{item.idea}</p>
-            <div className="mt-6 border-t border-neutral-200 pt-4 dark:border-surface-dark-border">
-                <div className="mb-3 flex items-baseline justify-between gap-3">
+            <h2 className="mt-3 break-words text-xl font-semibold leading-tight">{item.name}</h2>
+            <p className="mt-2 line-clamp-2 break-words text-sm leading-6 text-neutral-700 dark:text-neutral-200">{item.idea}</p>
+            <div className="mt-4 border-t border-neutral-200 pt-3 dark:border-surface-dark-border">
+                <div className="mb-2 flex items-baseline justify-between gap-3">
                     <h3 className="font-semibold">구성 종목</h3>
                     <span className="text-sm tabular-nums text-neutral-600 dark:text-neutral-300">{item.holdings.length}종목 · 각 {(100 / item.holdings.length).toFixed(1)}%</span>
                 </div>
-                <ul className="divide-y divide-neutral-200 dark:divide-surface-dark-border">
-                    {preview.map(holding => <li key={holding.ticker} className="flex min-h-14 items-center gap-3 py-2">
-                        <StockLogo ticker={holding.ticker} name={holding.name} isUs={item.market === "US"} />
-                        <span className="min-w-0 flex-1 break-words font-medium">{holding.name}<span className="ml-2 text-xs text-neutral-500">{holding.ticker}</span></span>
-                    </li>)}
-                </ul>
-                {remaining > 0 && <details className="group border-t border-neutral-200 dark:border-surface-dark-border">
-                    <summary className="flex min-h-11 cursor-pointer items-center text-sm font-medium text-brand-ink">나머지 {remaining}종목 보기</summary>
-                    <ul className="divide-y divide-neutral-200 dark:divide-surface-dark-border">
-                        {item.holdings.slice(4).map(holding => <li key={holding.ticker} className="flex min-h-12 items-center gap-3 py-2">
+                <div aria-label="ETF 구성 종목" className="flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand" role="group" tabIndex={0}>
+                    {holdingsPages.map((page, pageIndex) => <ul key={pageIndex} aria-label={`종목 ${pageIndex * 6 + 1}번부터 ${pageIndex * 6 + page.length}번`} className="grid min-w-full shrink-0 snap-start grid-cols-2 gap-x-3">
+                        {page.map(holding => <li key={holding.ticker} className="flex min-h-12 min-w-0 items-center gap-2 border-b border-neutral-200 py-1.5 dark:border-surface-dark-border">
                             <StockLogo ticker={holding.ticker} name={holding.name} isUs={item.market === "US"} />
-                            <span className="min-w-0 flex-1 break-words">{holding.name}<span className="ml-2 text-xs text-neutral-500">{holding.ticker}</span></span>
+                            <span className="min-w-0 flex-1 leading-tight" title={`${holding.name} (${holding.ticker})`}><span className="block truncate text-sm">{holding.name}</span><span className="block truncate text-xs text-neutral-500">{holding.ticker}</span></span>
                         </li>)}
                     </ul>
-                </details>}
+                    )}
+                </div>
+                {holdingsPages.length > 1 && <p className="flex min-h-10 items-center justify-between text-sm text-neutral-600 dark:text-neutral-300"><span>옆으로 밀어 나머지 종목 보기</span><ChevronRight size={17} aria-hidden="true" className="text-brand-ink" /></p>}
             </div>
         </div>
         <div className="flex items-center justify-between border-t border-neutral-200 pt-3 dark:border-surface-dark-border">
