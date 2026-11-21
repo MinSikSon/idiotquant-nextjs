@@ -52,9 +52,7 @@ function screen(query = '', loggedIn = false, savedFilters = {}) {
     './filters': filters,
     './worldcup': worldcup,
     './components/LiquidityBadge': { LiquidityBadge: 'LiquidityBadge', w52Position: () => null },
-    '@/components/result-share': { __esModule: true, default: 'ResultShare' },
     '@/components/research/FactorWorkbench': { __esModule: true, default: 'FactorWorkbench' },
-    '@/lib/share/builders': { screenerSnapshot: (...args: unknown[]) => args },
     './components/GroupedResults': { GroupedResults: 'GroupedResults', buildGroups: (rows: unknown[], mode: string) => mode === 'none' ? null : [{ key: 'group', items: rows }], defaultOpenGroups: () => new Set() },
   };
   const source = readFileSync(new URL('../app/(screener)/screener/page.tsx', import.meta.url), 'utf8');
@@ -85,7 +83,7 @@ function screen(query = '', loggedIn = false, savedFilters = {}) {
   return { render, pushes, requests, effects, nodes: () => nodes, find: (type: string) => nodes.find(node => node.type === type) };
 }
 
-test('비로그인도 전체 종목을 필터·정렬한 상위 10개를 보고 복사·공유한다', () => {
+test('비로그인도 전체 종목을 필터·정렬한 상위 10개를 보고 현재 조건을 공유한다', () => {
   const page = screen('maxpbr=1&sort=ncav_ratio&order=asc&view=card');
   page.effects.slice(0, 4).forEach(effect => effect());
   assert.equal(page.requests.length, 1);
@@ -94,8 +92,13 @@ test('비로그인도 전체 종목을 필터·정렬한 상위 10개를 보고 
   assert.equal(cards.length, 10);
   assert.equal(cards[0].props.item.ticker, '000044');
   assert.equal(cards[9].props.item.ticker, '000035');
-  assert.equal(page.find('CopyStockButtons').props.rows.length, 10);
-  assert.equal(page.find('ResultShare').props.getSnapshot()[0].length, 10);
+  const shareUrl = new URL(page.find('PageHeader').props.share.path, 'https://idiotquant.com');
+  for (const [key, value] of Object.entries({ maxpbr: '1', order: 'asc', from: 'share' })) {
+    assert.equal(shareUrl.searchParams.get(key), value);
+  }
+  assert.equal(shareUrl.searchParams.get('sort'), null, '기본 정렬은 짧은 주소에서 생략한다');
+  const reopened = screen(shareUrl.search.slice(1), false, { country: 'US', view: 'table', maxpbr: 0 });
+  assert.equal(reopened.nodes().filter(node => node.type === 'StockGridCard')[0].props.item.ticker, '000044');
   assert.equal(page.find('FactorWorkbench'), undefined);
   const filterButton = page.nodes().find(node => node.type === 'button' && node.props.children?.some?.((child: any) => child === '필터'));
   filterButton.props.onClick();
@@ -111,13 +114,14 @@ test('묶어 보기와 저장된 관심 필터로 비로그인 제한을 벗어�
   const page = screen('group=sector&filter=liked');
   assert.equal(page.find('PageHeader').props.title, '종목 발굴');
   assert.equal(page.find('GroupedResults').props.groups[0].items.length, 10);
-  assert.equal(page.find('CopyStockButtons').props.rows.length, 10);
+  const shareUrl = new URL(page.find('PageHeader').props.share.path, 'https://idiotquant.com');
+  assert.equal(shareUrl.searchParams.get('filter'), null);
+  assert.equal(shareUrl.searchParams.get('group'), 'sector');
 });
 
-test('로그인 사용자는 전체 복사·묶기·팩터 실험실을 유지한다', () => {
+test('로그인 사용자는 전체 목록의 묶기와 팩터 실험실을 유지한다', () => {
   const page = screen('group=sector', true);
   assert.equal(page.find('GroupedResults').props.groups[0].items.length, 45);
-  assert.equal(page.find('CopyStockButtons').props.rows.length, 45);
   assert.equal(page.find('FactorWorkbench').props.items.length, 45);
 });
 
@@ -143,7 +147,12 @@ test('짧은 월드컵 링크로 들어오면 선택 결과와 필터를 복원�
   assert.deepEqual(Array.from(page.find('FilterWorldcup').props.initialAnswers), ['a', 'a', 'b', 'unknown']);
   assert.equal(page.find('FilterWorldcup').props.country, 'KR');
   assert.equal(page.find('FilterWorldcup').props.previewCount(worldcup.worldcupFilters(['a', 'a', 'b', 'unknown'], 'KR')), 45);
-  const snapshot = page.find('ResultShare').props.getSnapshot();
-  assert.equal(snapshot[1], '/screener?w=kaabu');
+  assert.equal(page.find('PageHeader').props.share.path, '/screener?w=kaabu');
+  page.find('FilterWorldcup').props.onSharePathChange('/screener?w=kbbbb');
+  page.render();
+  assert.equal(page.find('PageHeader').props.share.path, '/screener?w=kbbbb');
+  const applied = screen('w=kaabu&from=share');
+  assert.equal(applied.nodes().find(node => node.props?.['aria-label'] === '필터 설정 방식').props.children[1].props['aria-pressed'], true);
+  assert.equal(applied.find('PageHeader').props.share.path, '/screener?w=kaabu&from=share');
   assert.equal(page.nodes().find(node => node.props?.['aria-label'] === '필터 설정 방식').props.children[0].props['aria-pressed'], true);
 });

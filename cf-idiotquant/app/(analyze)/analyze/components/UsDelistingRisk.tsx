@@ -2,9 +2,10 @@
 
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
+import { LockedAnalysisValue } from "@/components/locked-analysis-value";
 import styles from "../analyze.module.css";
 import {
-  AlertTriangle, CheckCircle2, XCircle, ShieldAlert, Minus, Eye, ChevronDown,
+  AlertTriangle, CheckCircle2, XCircle, Minus, ChevronDown,
 } from "lucide-react";
 
 type Status = "위험" | "주의" | "양호" | "—";
@@ -112,11 +113,12 @@ function OpBar({ val, max }: { val: number; max: number }) {
 }
 
 interface Props {
+  showHistory: boolean;
   finnhubData: any;
   usDetail: any;
 }
 
-export function UsDelistingRisk({ finnhubData, usDetail }: Props) {
+export function UsDelistingRisk({ finnhubData, usDetail, showHistory }: Props) {
   const result = useMemo(() => {
     const allReports: any[] = finnhubData?.annualData ?? finnhubData?.data ?? [];
     const annuals = allReports
@@ -291,11 +293,7 @@ export function UsDelistingRisk({ finnhubData, usDetail }: Props) {
     <div data-share-risk data-share-overall={overallGrade} className="w-full bg-transparent sm:bg-white dark:sm:bg-surface-dark-card rounded-none border-0 sm:rounded-xl sm:border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
       {/* 헤더 */}
       <div className={cn(styles.riskHeader, "flex items-center justify-between px-0 sm:px-5 py-4 border-b border-neutral-100 dark:border-border-subtle-dark")}>
-        <div className="flex items-center gap-2">
-          <ShieldAlert size={16} className="text-neutral-500 dark:text-neutral-400" />
-          <span className="text-[15px] font-bold text-neutral-800 dark:text-neutral-100">미국 상장유지 위험도</span>
-          <span className="hidden sm:inline text-[13px] text-neutral-600 dark:text-neutral-300 font-mono">NYSE / NASDAQ</span>
-        </div>
+        <h3 className="text-sm font-semibold">미국 상장유지 점검 결과</h3>
         <span className={cn("px-2.5 py-0.5 rounded-lg text-[15px] font-semibold border", cfg.badge)}>
           {overallGrade}
         </span>
@@ -334,24 +332,26 @@ export function UsDelistingRisk({ finnhubData, usDetail }: Props) {
               연간 공시 기준 영업이익 추이
             </p>
             <div className="space-y-4 sm:space-y-3">
-              {opYears.map(y => (
+              {opYears.map((y, i) => (
                 <div key={y.year} className={cn(styles.riskYear, "grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 sm:grid-cols-[3rem_minmax(0,1fr)_auto]")}>
                   <span className="whitespace-nowrap text-[15px] font-mono tabular-nums text-neutral-600 dark:text-neutral-300">{y.year}</span>
                   <span className={cn(
                     "text-right text-[15px] font-bold font-mono tabular-nums whitespace-nowrap sm:order-3",
-                    y.op >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400",
+                    (showHistory || i === 0) && (y.op >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400"),
                   )}>
-                    {fmtUSD(y.op)}
+                    {!showHistory && i > 0 ? <LockedAnalysisValue /> : fmtUSD(y.op)}
                   </span>
                   <div className="col-span-2 min-w-0 sm:order-2 sm:col-span-1">
-                    <OpBar val={y.op} max={maxAbsOp} />
+                    {showHistory || i === 0
+                      ? <OpBar val={y.op} max={showHistory ? maxAbsOp : Math.abs(y.op)} />
+                      : <div aria-hidden="true" className="h-2.5 w-1/2 rounded-full bg-neutral-400 blur-[3px] dark:bg-neutral-500" />}
                   </div>
                 </div>
               ))}
             </div>
             {consLossCount > 0 && (
               <p className="text-[15px] font-semibold text-amber-600 dark:text-amber-400 mt-2">
-                현재 {consLossCount}년 연속 영업손실
+                현재 {showHistory ? consLossCount : <LockedAnalysisValue />}년 연속 영업손실
               </p>
             )}
           </div>
@@ -361,11 +361,10 @@ export function UsDelistingRisk({ finnhubData, usDetail }: Props) {
         {isAvoidancePattern && (
           <div className="p-3 rounded-xl bg-orange-50 dark:bg-orange-950/20 border border-orange-200/60 dark:border-orange-800/40">
             <div className="flex items-center gap-2 mb-1.5">
-              <Eye size={13} className="text-orange-600 dark:text-orange-400" />
-              <span className="text-[13px] font-bold text-orange-700 dark:text-orange-400">흑자전환 의심 패턴 감지</span>
+              <span className="text-[13px] font-bold text-orange-700 dark:text-orange-400">연속 영업손실 후 흑자 전환</span>
             </div>
             <p className="text-[15px] text-orange-600 dark:text-orange-400 mb-2">
-              직전 {opYears.length - 1}개 연도 영업손실 후 흑자전환 — 재무 왜곡 여부 확인 권장
+              직전 {showHistory ? opYears.length - 1 : <LockedAnalysisValue />}개 연도에 영업손실을 기록한 뒤 최근 연도에 흑자로 전환했습니다.
             </p>
             {flags.map(f => (
               <div key={f.label} className="flex items-start gap-1.5 mt-1">
@@ -376,7 +375,7 @@ export function UsDelistingRisk({ finnhubData, usDetail }: Props) {
               </div>
             ))}
             {flags.length === 0 && (
-              <p className="text-[13px] text-orange-600 dark:text-orange-400">패턴 감지, 특정 의심 신호 없음</p>
+              <p className="text-[13px] text-orange-600 dark:text-orange-400">조회한 재무 항목에서 추가 신호를 찾지 못했습니다.</p>
             )}
           </div>
         )}

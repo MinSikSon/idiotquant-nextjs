@@ -497,7 +497,7 @@ export default function LedgerPage() {
                     className={PAGE_ACTION_CLS}
                 >
                     <Users size={14} />
-                    공유
+                    가계부 초대·관리
                 </button>
             }
         />

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { ArrowUpRight, FileUp, Loader2 } from 'lucide-react';
 import { PageHeader, PAGE_ACTION_CLS, PAGE_WIDTH } from '@/components/pageHeader';
-import ResultShare from '@/components/result-share';
+import { liveScreenTarget } from '@/lib/share/screen';
 import SharedResultView from '@/components/share/result-views';
 import { ShareServiceBanner, ShareServiceMenu } from '@/components/share/service-navigation';
 import { shareServiceTarget } from '@/lib/share/navigation';
@@ -32,7 +32,15 @@ function SharedResult() {
       try {
         if (id || encoded) {
           const result = id ? await loadSnapshot(id) : await decodeSnapshot(encoded!);
-          if (request.current === current) setSnapshot(result);
+          if (request.current !== current) return;
+          if (id && searchParams.get('view') === 'live') {
+            const target = liveScreenTarget(result);
+            if (target) {
+              window.location.replace(target);
+              return;
+            }
+          }
+          setSnapshot(result);
         }
       } catch (reason) {
         if (request.current === current) setError(reason instanceof Error ? reason.message : '공유 결과를 열지 못했습니다.');
@@ -68,7 +76,8 @@ function SharedResult() {
     <div className="hidden border-b border-neutral-200 bg-white dark:border-border-subtle-dark dark:bg-surface-dark-card md:block"><div className={`${PAGE_WIDTH.data} flex min-h-12 items-center justify-between gap-3 py-2`}><Link href="/" prefetch={false} className="text-sm font-semibold tracking-tight">idiotquant</Link><Link href="/" prefetch={false} className="inline-flex min-h-9 items-center gap-1.5 text-xs font-medium text-brand-ink">서비스 홈으로<ArrowUpRight size={14} aria-hidden="true" /></Link></div></div>
     <PageHeader title={pageTitle}
       meta={snapshot ? <><span className="rounded border border-neutral-200 px-1.5 py-0.5 text-neutral-600 dark:border-neutral-700 dark:text-neutral-300">공유된 결과</span><span>{new Date(snapshot.createdAt).toLocaleString('ko-KR')}</span>{snapshot.summary.map((item, index) => <span key={index}>· {item.label} {item.value}</span>)}</> : undefined}
-      actions={snapshot ? <><ResultShare getSnapshot={() => snapshot} /><Link href={source!.href} prefetch={false} className={PAGE_ACTION_CLS}>{source!.label}<ArrowUpRight size={15} aria-hidden="true" /></Link></> : undefined} />
+      share={snapshot && !searchParams.get('id') ? { getSnapshot: () => snapshot } : undefined}
+      actions={snapshot ? <Link href={source!.href} prefetch={false} className={PAGE_ACTION_CLS}>{source!.label}<ArrowUpRight size={15} aria-hidden="true" /></Link> : undefined} />
     <main className={`${PAGE_WIDTH.data} py-6 sm:py-8`}>
       {loading && <p role="status" className="flex items-center gap-2 text-sm text-neutral-500"><Loader2 size={16} className="animate-spin" /> 공유 결과를 여는 중…</p>}
       {error && <p role="alert" className="mb-4 text-sm text-rose-600 dark:text-rose-400">{error}</p>}

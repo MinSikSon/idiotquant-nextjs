@@ -1,6 +1,5 @@
 import { parseSnapshot, serializeSnapshot, type ResultSnapshot } from './snapshot';
 
-export const SERVICE_URL = 'https://idiotquant.com';
 const VALID_ID = /^[a-f0-9]{24}$/;
 
 export async function createSnapshotLink(snapshot: ResultSnapshot, origin: string, signal?: AbortSignal): Promise<string> {
@@ -27,6 +26,23 @@ export async function loadSnapshot(id: string, signal?: AbortSignal): Promise<Re
   return parseSnapshot(await response.text());
 }
 
-export function imageShareData(snapshot: ResultSnapshot, image: File): ShareData {
-  return { title: snapshot.title, url: SERVICE_URL, text: `${snapshot.title}\n직접 종목을 발굴하고 비교해 보세요.`, files: [image] };
+export async function createScreenLink(path: string, origin: string, signal: AbortSignal) {
+  const url = new URL(path, origin);
+  if (url.origin !== origin) throw new Error('서비스 주소만 공유할 수 있습니다.');
+  const kind = url.pathname === '/screener' ? 'screener' : url.pathname === '/calculator' ? 'calculator' : null;
+  if (!kind || url.href.length <= 120 || url.searchParams.get('filter') === 'liked') return url.href;
+
+  const snapshot: ResultSnapshot = {
+    version: 1, kind, sourcePath: url.pathname + url.search,
+    title: kind === 'screener' ? '종목 발굴' : '복리 수익률 계산기',
+    createdAt: new Date().toISOString(), summary: [], tables: [], notes: [],
+  };
+  try {
+    const short = new URL(await createSnapshotLink(snapshot, origin, signal));
+    short.searchParams.set('view', 'live');
+    return short.href;
+  } catch (error) {
+    if (signal.aborted) throw error;
+    return url.href;
+  }
 }

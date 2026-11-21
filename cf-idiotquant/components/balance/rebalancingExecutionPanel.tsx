@@ -62,7 +62,7 @@ export default function RebalancingExecutionPanel({ policy, currency, canExecute
   return <section aria-label="실제 리밸런싱 실행" className="space-y-3 rounded-lg border border-neutral-200 p-3 dark:border-border-subtle-dark">
     <p className="text-sm font-bold">실제 주문 · 실행 기록</p>
     <p className="text-xs text-neutral-500">저장된 전략과 미리보기를 확인한 뒤 실행하세요. 현재가 기준 지정가 주문을 전송하며, 미체결 주문은 다음 조회까지 기다립니다. 매도 체결을 확인한 뒤 매수를 다시 계산합니다.</p>
-    <p className="text-xs text-neutral-500">실행 중 계좌의 다른 주문과 그룹 설정 변경은 차단됩니다. 남은 주문 중단은 이미 접수된 주문을 취소하지 않습니다. 취소가 필요하면 증권사에서 처리한 뒤 상태를 조회하세요.</p>
+    <p className="text-xs text-neutral-500">실행 중 다른 자동 주문, 수동 매수, 그룹 설정 변경이 제한됩니다. 수동 매도는 제출할 수 있습니다. 남은 주문 중단은 이미 접수된 주문을 취소하지 않습니다. 취소가 필요하면 증권사에서 처리한 뒤 상태를 조회하세요.</p>
     <div className="flex flex-wrap gap-2">
       <button type="button" className={`${buttonClass} bg-brand text-white`} disabled={busy || !canExecute || !!isActive(current)} onClick={() => act("execute")}>실제 주문 실행</button>
       {current && <button type="button" className={buttonClass} disabled={busy} onClick={() => act("resume")}>체결 확인·이어가기</button>}

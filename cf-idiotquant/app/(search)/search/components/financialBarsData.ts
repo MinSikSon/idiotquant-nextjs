@@ -147,16 +147,16 @@ function makeStack(
 
 // ── 국내 (KIS) ───────────────────────────────────────────────────────────
 const KR_BS_GROUPS: { labelEn: string; tone: Tone; rows: [string, string, boolean?][] }[] = [
-    { labelEn: "자산 ASSETS", tone: "green", rows: [["유동자산", "cras"], ["고정자산", "fxas"], ["자산총계", "total_aset", true]] },
-    { labelEn: "부채 LIABILITIES", tone: "rose", rows: [["유동부채", "flow_lblt"], ["고정부채", "fix_lblt"], ["부채총계", "total_lblt", true]] },
-    { labelEn: "자본 EQUITY", tone: "emerald", rows: [["자본금", "cpfn"], ["이익잉여금", "prfi_surp"], ["자본총계", "total_cptl", true]] },
+    { labelEn: "자산", tone: "green", rows: [["유동자산", "cras"], ["고정자산", "fxas"], ["자산총계", "total_aset", true]] },
+    { labelEn: "부채", tone: "rose", rows: [["유동부채", "flow_lblt"], ["고정부채", "fix_lblt"], ["부채총계", "total_lblt", true]] },
+    { labelEn: "자본", tone: "emerald", rows: [["자본금", "cpfn"], ["이익잉여금", "prfi_surp"], ["자본총계", "total_cptl", true]] },
 ];
 
 const KR_IS_GROUPS: { labelEn: string; tone: Tone; rows: [string, string, boolean?][] }[] = [
-    { labelEn: "수익 REVENUE", tone: "indigo", rows: [["매출액", "sale_account", true], ["매출원가", "sale_cost"], ["매출총이익", "sale_totl_prfi"]] },
-    { labelEn: "영업 OPERATING", tone: "violet", rows: [["판관비", "sell_mang"], ["영업이익", "bsop_prti", true]] },
-    { labelEn: "영업외손익 NON-OPERATING", tone: "amber", rows: [["영업외수익", "bsop_non_ernn"], ["영업외비용", "bsop_non_expn"], ["경상이익", "op_prfi", true], ["특별이익", "spec_prfi"], ["특별손실", "spec_loss"]] },
-    { labelEn: "순이익 NET INCOME", tone: "teal", rows: [["세전손익(계산)", "pretax_income", true], ["법인세 등(차액)", "tax_difference"], ["당기순이익", "thtr_ntin", true]] },
+    { labelEn: "수익", tone: "indigo", rows: [["매출액", "sale_account", true], ["매출원가", "sale_cost"], ["매출총이익", "sale_totl_prfi"]] },
+    { labelEn: "영업", tone: "violet", rows: [["판관비", "sell_mang"], ["영업이익", "bsop_prti", true]] },
+    { labelEn: "영업외손익", tone: "amber", rows: [["영업외수익", "bsop_non_ernn"], ["영업외비용", "bsop_non_expn"], ["경상이익", "op_prfi", true], ["특별이익", "spec_prfi"], ["특별손실", "spec_loss"]] },
+    { labelEn: "순이익", tone: "teal", rows: [["세전손익(계산)", "pretax_income", true], ["법인세 등(차액)", "tax_difference"], ["당기순이익", "thtr_ntin", true]] },
 ];
 
 const KR_COST_KEYS = new Set(["flow_lblt", "fix_lblt", "total_lblt", "sale_cost", "sell_mang", "bsop_non_expn", "spec_loss"]);
@@ -307,7 +307,7 @@ export function buildUsBars(reports: any[]): { bs: BarModel | null; is: BarModel
         stacks: bsStacks,
         groups: [
             {
-                labelEn: "자산 ASSETS", tone: "green", items: [
+                labelEn: "자산", tone: "green", items: [
                     { label: "현금성 자산", tone: "green", values: series("cash") },
                     { label: "매출·수취채권", tone: "green", values: series("ar") },
                     { label: "재고자산", tone: "green", values: series("inventory") },
@@ -316,7 +316,7 @@ export function buildUsBars(reports: any[]): { bs: BarModel | null; is: BarModel
                 ],
             },
             {
-                labelEn: "부채 및 자본 LIAB & EQUITY", tone: "rose", items: [
+                labelEn: "부채 및 자본", tone: "rose", items: [
                     { label: "부채 총계", tone: "rose", isTotal: true, costLike: true, values: series("liabilities") },
                     { label: "자본 총계", tone: "emerald", isTotal: true, values: series("equity") },
                 ],
@@ -340,7 +340,7 @@ export function buildUsBars(reports: any[]): { bs: BarModel | null; is: BarModel
         stacks: isStacks,
         groups: [
             {
-                labelEn: "수익 · 이익 REVENUE & PROFIT", tone: "indigo", items: [
+                labelEn: "수익 · 이익", tone: "indigo", items: [
                     { label: "매출액", tone: "indigo", isTotal: true, values: series("revenue") },
                     { label: "영업이익", tone: "violet", isTotal: true, values: series("operating") },
                     { label: "세전이익(계속영업)", tone: "teal", isTotal: true, values: series("pretax") },
@@ -349,7 +349,7 @@ export function buildUsBars(reports: any[]): { bs: BarModel | null; is: BarModel
                 ],
             },
             {
-                labelEn: "현금흐름 CASH FLOW", tone: "amber", items: [
+                labelEn: "현금흐름", tone: "amber", items: [
                     { label: "영업활동", tone: "amber", values: series("cfo") },
                     // 유출이 늘어난 게 좋은지 나쁜지는 단정할 수 없다(설비투자일 수도, 자사주 매입일 수도)
                     { label: "투자활동", tone: "amber", neutral: true, values: series("cfi") },

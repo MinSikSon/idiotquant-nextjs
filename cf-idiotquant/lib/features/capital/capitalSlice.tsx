@@ -111,7 +111,18 @@ export interface UsCapitalStockItem {
 }
 
 /** 실제 포인트 증가와 함께 저장되는 자동 충전 관측값 */
-export interface RefillTick { at: number; buy_krw: number; sell_krw: number; }
+export interface RefillTick {
+    at: number;
+    buy_krw: number;
+    sell_krw: number;
+    groups?: {
+        group_id: string | null;
+        name?: string;
+        side: "buy" | "sell";
+        stock_count: number;
+        per_stock_krw: number;
+    }[];
+}
 export interface RefillPlan {
     at: number;
     period_minutes: number;

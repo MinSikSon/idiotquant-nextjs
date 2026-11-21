@@ -17,6 +17,7 @@
  * 뜬다. 키는 원작 그대로 살아 있다.
  */
 
+import { PageShareTools } from "@/components/page-share";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { DataConnection, Peer } from "peerjs";
 import { loadOnlineConfig, onlineErrorMessage } from "@/lib/rogue/online";
@@ -1890,7 +1891,7 @@ export default function Rogue() {
         const onKey = (e: KeyboardEvent) => {
             if (!state) return;
             const target = e.target as HTMLElement | null;
-            if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return;
+            if (target?.closest("input, textarea, select, [data-share-controls], .page-share-menu")) return;
             if (e.altKey && !e.metaKey && !e.ctrlKey && e.code === "KeyP") {
                 if (!frozen && sheet === "none") {
                     e.preventDefault();
@@ -2218,22 +2219,24 @@ export default function Rogue() {
                     {seedLinkNote}
                 </div>
             )}
-            {/* 맨 위 네 줄은 전체 너비를 로그 요약에 쓴다. */}
-            <button
-                type="button"
-                onClick={() => setSheet("log")}
-                aria-label="기록 열기 — 지나온 메시지"
-                data-game-log
-                className="grid h-[5rem] w-full shrink-0 grid-rows-4 overflow-hidden border-b border-[var(--rg-line-faint)] bg-[var(--rg-bg)] py-0.5 text-left font-[family-name:var(--font-plex-mono)] text-[12px] text-[var(--rg-msg)] hover:bg-[var(--rg-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--rg-strong)] sm:text-[13px]"
-            >
-                {recent.length === 0 && <span className="col-span-1 row-span-4 flex items-center justify-between gap-3 px-3 text-[var(--rg-faint)]"><span><span className="text-[var(--rg-gold)]">&gt; </span>던전이 당신의 첫 걸음을 기다립니다.</span><span className="hidden text-[10px] sm:inline">기록 열기 ↗</span></span>}
-                {recent.map((m, i) => (
-                    <span key={`${state.turn}-${i}`} className={`flex min-w-0 items-center gap-1.5 overflow-hidden border-b border-[var(--rg-line-faint)] px-2 last:border-b-0 ${isImportantMessage(m) ? "font-bold text-[var(--rg-strong)]" : ""}`}>
-                        <span aria-hidden className="shrink-0 text-[var(--rg-gold)]">{i === 0 ? ">" : ":"}</span>
-                        <span className="min-w-0 truncate leading-[1.1]"><Msg text={m} heroes={state.heroes} /></span>
-                    </span>
-                ))}
-            </button>
+            <div className="flex shrink-0 items-start">
+                <button
+                    type="button"
+                    onClick={() => setSheet("log")}
+                    aria-label="기록 열기 — 지나온 메시지"
+                    data-game-log
+                    className="grid h-[5rem] min-w-0 flex-1 grid-rows-4 overflow-hidden border-b border-[var(--rg-line-faint)] bg-[var(--rg-bg)] py-0.5 text-left font-[family-name:var(--font-plex-mono)] text-[12px] text-[var(--rg-msg)] hover:bg-[var(--rg-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--rg-strong)] sm:text-[13px]"
+                >
+                    {recent.length === 0 && <span className="col-span-1 row-span-4 flex items-center justify-between gap-3 px-3 text-[var(--rg-faint)]"><span><span className="text-[var(--rg-gold)]">&gt; </span>던전이 당신의 첫 걸음을 기다립니다.</span><span className="hidden text-[10px] sm:inline">기록 열기 ↗</span></span>}
+                    {recent.map((m, i) => (
+                        <span key={`${state.turn}-${i}`} className={`flex min-w-0 items-center gap-1.5 overflow-hidden border-b border-[var(--rg-line-faint)] px-2 last:border-b-0 ${isImportantMessage(m) ? "font-bold text-[var(--rg-strong)]" : ""}`}>
+                            <span aria-hidden className="shrink-0 text-[var(--rg-gold)]">{i === 0 ? ">" : ":"}</span>
+                            <span className="min-w-0 truncate leading-[1.1]"><Msg text={m} heroes={state.heroes} /></span>
+                        </span>
+                    ))}
+                </button>
+                <div className="hidden md:block"><PageShareTools /></div>
+            </div>
             {saveFailed && (
                 <div role="alert" className="shrink-0 border-b border-[var(--rg-trap)] bg-[var(--rg-raised)] px-3 py-2 text-center text-xs font-bold text-[var(--rg-trap)]">
                     저장에 실패했습니다. 새로고침하면 진행 상황을 잃을 수 있습니다. 브라우저 저장 공간을 확인하세요.

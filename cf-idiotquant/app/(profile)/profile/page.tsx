@@ -19,7 +19,6 @@ import {
     reqGetMyLikes, reqToggleLike,
 } from "@/lib/features/stockLikes/stockLikesSlice";
 import { cn } from "@/lib/utils";
-import { CopyStockButtons, type CopyStock } from "@/components/copyStockButtons";
 import { computeValueScore, type ValueTone } from "@/lib/utils/valueScore";
 import { computeSolidity, quadrantOf, type SolidityPoint } from "@/lib/utils/portfolioSolidity";
 import SolidityPlane from "@/components/profile/solidityPlane";
@@ -87,17 +86,14 @@ export default function ProfilePage() {
     const likedList = useAppSelector(selectLikedList);
     const likesState = useAppSelector(selectLikesState);
     const [watchlistMarket, setWatchlistMarket] = useState<WatchlistMarket>("all");
+    const [nickname, setNickname] = useState("");
+    const [nicknameInput, setNicknameInput] = useState("");
+    const [nicknameMessage, setNicknameMessage] = useState("");
+    const [nicknameCanChange, setNicknameCanChange] = useState(true);
+    const [nicknameUnlimited, setNicknameUnlimited] = useState(false);
+    const [nicknameNextChangeAt, setNicknameNextChangeAt] = useState<number | null>(null);
+    const [savingNickname, setSavingNickname] = useState(false);
     const filteredLikedList = likedList.filter(item => matchesWatchlistMarket(item, watchlistMarket));
-
-    // 관심 종목 복사용 행 (ROE는 EPS/BPS로 계산)
-    const likedCopyRows: CopyStock[] = filteredLikedList.map(item => ({
-        name: item.stock_name ?? item.ticker,
-        ticker: item.ticker,
-        ncav: item.ncav_ratio,
-        pbr: item.pbr,
-        per: item.per,
-        roe: Number(item.bps) > 0 ? (Number(item.eps) / Number(item.bps)) * 100 : null,
-    }));
 
     // 포트폴리오 탄탄함 — 저평가 점수를 거래상태·업종 쏠림으로 깎은 값 (computeSolidity 주석 참고)
     const scored = likedList.map(item => computeValueScore(item));
@@ -156,6 +152,54 @@ export default function ProfilePage() {
     }, []);
 
     useEffect(() => {
+        if (status !== "authenticated") return;
+        fetch("/api/user/nickname")
+            .then(r => r.ok ? r.json() : Promise.reject())
+            .then(d => {
+                setNickname(d.nickname ?? "");
+                setNicknameInput(d.nickname ?? "");
+                setNicknameCanChange(d.canChange !== false);
+                setNicknameUnlimited(d.unlimited === true);
+                setNicknameNextChangeAt(d.nextChangeAt ?? null);
+            })
+            .catch(() => {});
+    }, [status]);
+
+    const saveNickname = async () => {
+        const value = nicknameInput.trim();
+        if (value.length < 2 || value.length > 20) {
+            setNicknameMessage("닉네임은 2~20자로 입력해 주세요.");
+            return;
+        }
+        setSavingNickname(true);
+        setNicknameMessage("");
+        try {
+            const response = await fetch("/api/user/nickname", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ nickname: value }),
+            });
+            const data = await response.json();
+            if (response.status === 429) {
+                setNicknameCanChange(false);
+                setNicknameUnlimited(false);
+                setNicknameNextChangeAt(data.nextChangeAt ?? null);
+            }
+            if (!response.ok) throw new Error(data.error ?? "닉네임을 저장하지 못했습니다.");
+            setNickname(data.nickname);
+            setNicknameInput(data.nickname);
+            setNicknameCanChange(data.canChange !== false);
+            setNicknameUnlimited(data.unlimited === true);
+            setNicknameNextChangeAt(data.nextChangeAt ?? null);
+            setNicknameMessage("저장했습니다.");
+        } catch (error) {
+            setNicknameMessage(error instanceof Error ? error.message : "닉네임을 저장하지 못했습니다.");
+        } finally {
+            setSavingNickname(false);
+        }
+    };
+
+    useEffect(() => {
         if (status === "unauthenticated") {
             router.replace("/login");
         }
@@ -174,7 +218,10 @@ export default function ProfilePage() {
 
     if (!session) return null;
 
-    const initial = session.user?.name?.[0]?.toUpperCase() ?? "U";
+    const initial = (nickname || session.user?.name)?.[0]?.toUpperCase() ?? "U";
+    const nextNicknameChangeLabel = nicknameNextChangeAt == null
+        ? null
+        : new Intl.DateTimeFormat("ko-KR", { dateStyle: "long", timeZone: "Asia/Seoul" }).format(new Date(nicknameNextChangeAt * 1000));
 
     return (
         <div className="landing-style-page min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas">
@@ -249,8 +296,13 @@ export default function ProfilePage() {
                         </div>
                         <div className="min-w-0">
                             <p className="text-sm font-bold text-neutral-900 dark:text-neutral-50 truncate">
-                                {session.user?.name}
+                                {nickname || session.user?.name}
                             </p>
+                            {nickname && session.user?.name && (
+                                <p className="mt-0.5 truncate text-xs text-neutral-500 dark:text-neutral-400">
+                                    원래 이름: {session.user.name}
+                                </p>
+                            )}
                             {session.user?.email && (
                                 <p className="text-xs text-neutral-400 dark:text-neutral-500 truncate mt-0.5">
                                     {session.user.email}
@@ -262,6 +314,34 @@ export default function ProfilePage() {
                                 </span>
                             )}
                         </div>
+                    </div>
+                    <div className="border-t border-neutral-100 dark:border-border-subtle-dark px-5 py-4">
+                        <label htmlFor="account-nickname" className="mb-2 block text-xs font-semibold text-neutral-600 dark:text-neutral-300">닉네임</label>
+                        <div className="flex items-center gap-2">
+                            <input
+                                id="account-nickname"
+                                value={nicknameInput}
+                                onChange={event => { setNicknameInput(event.target.value); setNicknameMessage(""); }}
+                                maxLength={20}
+                                minLength={2}
+                                autoComplete="nickname"
+                                className="min-h-11 min-w-0 flex-1 rounded-lg border border-neutral-300 bg-white px-3 text-base text-neutral-900 outline-none focus:border-brand dark:border-border-subtle-dark dark:bg-surface-dark-muted dark:text-neutral-50"
+                                placeholder="2~20자"
+                            />
+                            <button
+                                type="button"
+                                onClick={saveNickname}
+                                disabled={savingNickname || !nicknameCanChange || nicknameInput.trim() === nickname}
+                                className="min-h-11 rounded-lg bg-brand px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                            >{savingNickname ? "저장 중" : "저장"}</button>
+                        </div>
+                        <p role="status" className="mt-2 min-h-5 text-xs text-neutral-500 dark:text-neutral-400">
+                            {nicknameMessage || (nicknameUnlimited
+                                ? "관리자 계정은 변경 횟수 제한이 없습니다."
+                                : nicknameCanChange
+                                    ? "닉네임은 한 달에 한 번 변경할 수 있습니다."
+                                    : `다음 변경 가능: ${nextNicknameChangeLabel ?? "한 달 후"}`)}
+                        </p>
                     </div>
                 </div>
 
@@ -420,12 +500,6 @@ export default function ProfilePage() {
                             </div>
                             <div className="flex items-center justify-between gap-2 pt-1">
                                 <span role="status" className="text-[10px] text-neutral-400 font-medium">전체 {likedList.length}개 중 {filteredLikedList.length}개</span>
-                                {filteredLikedList.length > 0 && (
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-[10px] text-neutral-400 font-medium">목록 복사</span>
-                                        <CopyStockButtons rows={likedCopyRows} label="관심 종목" />
-                                    </div>
-                                )}
                             </div>
                         </div>
                     )}

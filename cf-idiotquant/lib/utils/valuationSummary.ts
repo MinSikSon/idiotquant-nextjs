@@ -6,7 +6,7 @@ export function valuationSummary(models: { type: string; result: ValuationResult
         const row = result.rows.find(r =>
             /1\.0|100|기준|적정/i.test(r.multiplier.replace(/\s+/g, ""))
         ) ?? result.rows[0];
-        const targetPrice = row && Number.isFinite(row.targetPrice) && row.targetPrice > 0
+        const targetPrice = row && Number.isFinite(row.targetPrice) && (type === "NCAV" || row.targetPrice > 0)
             ? row.targetPrice : null;
         const returnPct = targetPrice !== null && Number.isFinite(row.returnPct)
             ? row.returnPct : null;
@@ -45,14 +45,17 @@ export function scanValuationSummary(item: {
     });
 }
 
-/** 현재 시세와 적정가를 0부터 시작하는 같은 선형 가격 축에서 비교한다. */
+/** 현재 시세와 모델 평가액을 같은 선형 축에서 비교한다. */
 export function valuationComparisonAxis(currentPrice: number, targets: (number | null)[]) {
-    const positive = (value: number | null): value is number => value !== null && Number.isFinite(value) && value > 0;
-    const prices = [currentPrice, ...targets].filter(positive);
-    const maximum = (prices.length ? Math.max(...prices) : 1) * 1.12;
+    const finite = (value: number | null): value is number => value !== null && Number.isFinite(value);
+    const hasCurrentPrice = Number.isFinite(currentPrice) && currentPrice > 0;
+    const prices = targets.filter(finite);
+    const minimum = Math.min(0, ...prices) * 1.12;
+    const maximum = (Math.max(hasCurrentPrice ? currentPrice : 0, ...prices) || 1) * 1.12;
     return {
-        position: (price: number) => positive(price) ? Math.min(100, price / maximum * 100) : 0,
-        difference: (target: number | null) => positive(currentPrice) && positive(target)
+        position: (price: number) => Number.isFinite(price)
+            ? Math.max(0, Math.min(100, (price - minimum) / (maximum - minimum) * 100)) : 0,
+        difference: (target: number | null) => hasCurrentPrice && finite(target)
             ? (target / currentPrice - 1) * 100 : null,
     };
 }

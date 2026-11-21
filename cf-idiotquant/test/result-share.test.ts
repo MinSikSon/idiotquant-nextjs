@@ -209,26 +209,37 @@ test('저장 실패·잘못된 응답·만료된 링크를 성공한 공유로 �
   } finally { globalThis.fetch = original; }
 });
 
-test('이미지 기본 공유 데이터에 서비스 접속 URL을 포함한다', async () => {
-  const { imageShareData, SERVICE_URL } = await import('../lib/share/client.ts');
-  const image = new File(['png'], 'result.png', { type: 'image/png' });
-  const payload = imageShareData(result, image);
-  assert.equal(payload.url, SERVICE_URL);
-  assert.equal(payload.url, 'https://idiotquant.com');
-  assert.equal(payload.files?.[0], image);
-  assert.ok(payload.text?.includes('발굴하고 비교'));
-});
-
-test('저장·복사하는 이미지 자체에도 서비스 URL과 접속 안내가 들어간다', async () => {
-  const { snapshotImage } = await import('../lib/share/image.ts');
-  const original = globalThis.document;
-  const drawn: string[] = [];
-  const canvas = { width: 0, height: 0, getContext: () => ({ measureText: (text: string) => ({ width: text.length * 10 }), fillText: (text: string) => drawn.push(text), fillRect() {} }), toBlob: (callback: BlobCallback) => callback(new Blob(['png'], { type: 'image/png' })) };
-  Object.defineProperty(globalThis, 'document', { configurable: true, value: { createElement: () => canvas } });
+test('긴 화면 주소는 조건만 저장하고 짧은 주소로 원래 화면을 연다', async () => {
+  const { createScreenLink, loadSnapshot } = await import('../lib/share/client.ts');
+  const { liveScreenTarget } = await import('../lib/share/screen.ts');
+  const origin = 'https://idiotquant.com';
+  const path = '/screener?from=share&country=US&sectors=' + 'technology%2C'.repeat(10);
+  const id = 'ab'.repeat(12);
+  const signal = new AbortController().signal;
+  const original = globalThis.fetch;
+  let payload = '';
+  let posts = 0;
+  globalThis.fetch = async (input, init) => {
+    if (input === '/api/proxy/result-shares' && init?.method === 'POST') {
+      posts++;
+      payload = String(init.body);
+      return Response.json({ id });
+    }
+    if (input === `/api/proxy/result-shares/${id}`) return new Response(payload);
+    throw new Error('Unexpected request');
+  };
   try {
-    const image = await snapshotImage(result);
-    assert.equal(image.type, 'image/png');
-    assert.ok(drawn.some(text => text.includes('https://idiotquant.com') && text.includes('직접 발굴')));
-    assert.ok(canvas.height > 380 + result.tables[0].rows.length * 80);
-  } finally { Object.defineProperty(globalThis, 'document', { configurable: true, value: original }); }
+    assert.equal(await createScreenLink('/analyze?ticker=AAPL', origin, signal), origin + '/analyze?ticker=AAPL');
+    assert.equal(await createScreenLink(path + '&filter=liked', origin, signal), origin + path + '&filter=liked');
+    assert.equal(posts, 0, '짧은 주소와 개인 관심종목 주소는 저장할 필요가 없다');
+    assert.equal(await createScreenLink(path, origin, signal), `${origin}/share?id=${id}&view=live`);
+    const saved = await loadSnapshot(id, signal);
+    assert.deepEqual(saved.tables, []);
+    assert.equal(liveScreenTarget(saved), path);
+    assert.equal(liveScreenTarget({ ...saved, sourcePath: '/calculator' }), undefined);
+    assert.equal(liveScreenTarget({ ...saved, sourcePath: '//other.example/screener' }), undefined);
+    assert.equal(liveScreenTarget({ ...saved, sourcePath: path + '&filter=liked' }), undefined);
+    globalThis.fetch = async () => new Response(null, { status: 503 });
+    assert.equal(await createScreenLink(path, origin, signal), origin + path);
+  } finally { globalThis.fetch = original; }
 });

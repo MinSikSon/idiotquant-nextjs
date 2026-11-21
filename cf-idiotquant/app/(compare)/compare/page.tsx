@@ -8,7 +8,6 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { CONTROL_INPUT_CLS, CONTROL_ICON_BUTTON_CLS } from '@/lib/ui-controls';
 import { PageHeader, PAGE_WIDTH, PAGE_ACTION_CLS, PAGE_PRIMARY_ACTION_CLS } from '@/components/pageHeader';
-import ResultShare from '@/components/result-share';
 import { compareSnapshot } from '@/lib/share/builders';
 import { useSession } from 'next-auth/react';
 import { ArrowRight, ChevronDown, Loader2, Plus, Trash2, X } from 'lucide-react';
@@ -353,7 +352,7 @@ function ComparePageContent() {
       mobileTitleInNavigation
       meta={storageFailed ? "이 브라우저에 저장하지 못했습니다. 이 화면을 벗어나기 전까지는 비교를 계속할 수 있습니다." : "비교 종목과 날짜는 이 브라우저에 저장합니다."}
       mobileCompact
-      actions={<ResultShare getSnapshot={() => compareSnapshot(stocks, dates)} disabled={loading || dateLoading || !stocks.length} />}
+      share={!loading && !dateLoading && stocks.length ? { getSnapshot: () => compareSnapshot(stocks, dates) } : undefined}
     />
     <main className={`${PAGE_WIDTH.data} service-content`}>
       <section aria-label="비교 종목 추가">

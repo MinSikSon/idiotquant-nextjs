@@ -5,7 +5,7 @@ import { worldcupCode, worldcupFilters, worldcupRounds, type WorldcupAnswer, typ
 
 import styles from './worldcup.module.css';
 
-export function FilterWorldcup({ initialAnswers = [], country, hasTradingAmount, loading, previewCount, onApply, onManual }: {
+export function FilterWorldcup({ initialAnswers = [], country, hasTradingAmount, loading, previewCount, onApply, onManual, onSharePathChange }: {
     initialAnswers?: WorldcupAnswer[];
     country: 'KR' | 'US';
     hasTradingAmount: boolean;
@@ -13,11 +13,10 @@ export function FilterWorldcup({ initialAnswers = [], country, hasTradingAmount,
     previewCount: (filters: WorldcupFilters) => number;
     onApply: (filters: WorldcupFilters, answers: WorldcupAnswer[]) => void;
     onManual: () => void;
+    onSharePathChange: (path?: string) => void;
 }) {
     const [answers, setAnswers] = useState<WorldcupAnswer[]>(initialAnswers);
     const [step, setStep] = useState(initialAnswers.length === 4 ? 4 : 0);
-    const [shareUrl, setShareUrl] = useState('');
-    const [copyState, setCopyState] = useState<'idle' | 'copied' | 'error'>('idle');
     const heading = useRef<HTMLHeadingElement>(null);
     const previousStep = useRef(step);
     const rounds = worldcupRounds(country);
@@ -26,27 +25,20 @@ export function FilterWorldcup({ initialAnswers = [], country, hasTradingAmount,
     // 데이터가 사라졌다면 이전의 거래대금 선택을 몰래 적용하지 않는다.
     const effectiveAnswers = answers.map((answer, index) => index === 3 && !hasTradingAmount ? 'unknown' as const : answer);
     const proposed = worldcupFilters(effectiveAnswers, country);
+    const shareCode = done ? worldcupCode(country, effectiveAnswers) : null;
+    useEffect(() => {
+        onSharePathChange(shareCode ? `/screener?w=${shareCode}` : undefined);
+        return () => onSharePathChange(undefined);
+    }, [onSharePathChange, shareCode]);
     const unknownCount = rounds.filter((_, index) => !['a', 'b'].includes(effectiveAnswers[index])).length;
     useEffect(() => {
         if (previousStep.current === step) return;
         previousStep.current = step;
         heading.current?.focus({ preventScroll: true });
     }, [step]);
-    const next = (index: number) => {
-        setShareUrl(''); setCopyState('idle');
-        setStep(index);
-    };
-    const copyLink = async () => {
-        const code = worldcupCode(country, effectiveAnswers);
-        if (!code) return;
-        const url = new URL(`/screener?w=${code}`, window.location.origin).href;
-        setShareUrl(url);
-        try { await navigator.clipboard.writeText(url); setCopyState('copied'); }
-        catch { setCopyState('error'); }
-    };
     const choose = (answer: WorldcupAnswer) => {
         setAnswers(previous => { const result = [...previous]; result[step] = answer; return result; });
-        next(step + 1);
+        setStep(step + 1);
     };
 
     return <section aria-label="내 투자 기준 월드컵" className={styles.worldcup}>
@@ -56,7 +48,7 @@ export function FilterWorldcup({ initialAnswers = [], country, hasTradingAmount,
         </div>
         <nav aria-label="월드컵 진행 단계" className={styles.steps}>
             {rounds.map((item, index) => <button key={item.label} type="button" disabled={index > answers.length}
-                aria-current={!done && index === step ? 'step' : undefined} onClick={() => next(index)}
+                aria-current={!done && index === step ? 'step' : undefined} onClick={() => setStep(index)}
                 className={styles.step} data-complete={index < answers.length}>
                 <span className="sr-only">{item.label} · {index < answers.length ? '선택 완료 · 다시 고르기' : `${index + 1}단계`}</span>
             </button>)}
@@ -81,7 +73,7 @@ export function FilterWorldcup({ initialAnswers = [], country, hasTradingAmount,
             </div>
             {step === 3 && !hasTradingAmount && <p className="mt-3 text-sm text-neutral-500 dark:text-neutral-400" role="status">{loading ? '거래대금 자료를 확인하고 있습니다.' : '거래대금 자료가 없어 하한 조건을 선택할 수 없습니다.'}</p>}
             <div className={styles.controls}>
-                <button type="button" className={styles.back} disabled={step === 0} onClick={() => next(step - 1)}><span aria-hidden="true">↶</span><span className="sr-only">← 이전 비교</span></button>
+                <button type="button" className={styles.back} disabled={step === 0} onClick={() => setStep(step - 1)}><span aria-hidden="true">↶</span><span className="sr-only">← 이전 비교</span></button>
                 <button type="button" className={styles.skip} onClick={() => choose('unknown')}>건너뛰기</button>
             </div>
             <details key={step} className="mt-3 border-t border-neutral-200 dark:border-surface-dark-border">
@@ -96,7 +88,7 @@ export function FilterWorldcup({ initialAnswers = [], country, hasTradingAmount,
                     return <div key={item.label} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 py-3">
                         <dt className="text-xs text-neutral-500 dark:text-neutral-400">{item.label}</dt>
                         <dd className="col-start-1 mt-1 text-sm font-semibold">{answer === 'a' || answer === 'b' ? item[answer].value : answer === 'neither' ? '미적용' : '미정 · 미적용'}</dd>
-                        <dd className="col-start-2 row-start-1 row-end-3"><button type="button" className="min-h-11 shrink-0 px-2 text-xs font-medium text-brand-ink focus-visible:outline-brand-ink" aria-label={`${item.label} 다시 고르기`} onClick={() => next(index)}>변경</button></dd>
+                        <dd className="col-start-2 row-start-1 row-end-3"><button type="button" className="min-h-11 shrink-0 px-2 text-xs font-medium text-brand-ink focus-visible:outline-brand-ink" aria-label={`${item.label} 다시 고르기`} onClick={() => setStep(index)}>변경</button></dd>
                     </div>;
                 })}
             </dl>
@@ -107,17 +99,8 @@ export function FilterWorldcup({ initialAnswers = [], country, hasTradingAmount,
             </div>
             {proposed.minTrAmt > 0 && country === 'KR' && <p className="mb-3 text-xs text-neutral-500 dark:text-neutral-400">거래대금 자료가 없는 국내 종목은 하한을 적용해도 목록에 남을 수 있습니다.</p>}
             <button type="button" disabled={loading} onClick={() => onApply(proposed, effectiveAnswers)} className="min-h-12 w-full rounded bg-brand-ink px-4 py-3 text-sm font-semibold text-white hover:bg-brand-ink-hover dark:text-neutral-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink disabled:opacity-40">필터 적용</button>
-            <div className="mt-3 rounded-lg border border-neutral-200 p-3 dark:border-surface-dark-border">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="text-sm font-medium">선택한 조건 공유</p>
-                    <button type="button" disabled={loading} onClick={() => void copyLink()} className="min-h-11 rounded border border-brand-ink disabled:opacity-40 px-3 text-sm font-semibold text-brand-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink">{copyState === 'copied' ? '복사 완료 ✓' : '링크 복사'}</button>
-                </div>
-                <p className="mt-1 text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">시장과 네 가지 답변을 공유합니다. 다른 직접 필터는 포함하지 않으며, 종목 수는 최신 데이터에 따라 달라집니다.</p>
-                {shareUrl && <input aria-label="월드컵 공유 링크" readOnly value={shareUrl} onFocus={event => event.target.select()} className="mt-3 min-h-11 w-full min-w-0 rounded border border-neutral-300 bg-transparent px-3 text-base dark:border-neutral-600" />}
-                {copyState !== 'idle' && <p role="status" aria-live="polite" className="mt-1 text-sm text-brand-ink">{copyState === 'copied' ? '링크를 복사했습니다.' : copyState === 'error' ? '자동 복사가 되지 않았습니다. 위 링크를 직접 복사해 주세요.' : ''}</p>}
-            </div>
             <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-                <button type="button" className="min-h-11 text-xs text-neutral-500 focus-visible:outline-brand-ink dark:text-neutral-400" onClick={() => { setAnswers([]); next(0); }}>처음부터 다시 고르기</button>
+                <button type="button" className="min-h-11 text-xs text-neutral-500 focus-visible:outline-brand-ink dark:text-neutral-400" onClick={() => { setAnswers([]); setStep(0); }}>처음부터 다시 고르기</button>
                 <button type="button" className="min-h-11 text-xs text-neutral-500 focus-visible:outline-brand-ink dark:text-neutral-400" onClick={onManual}>직접 필터 설정</button>
             </div>
             <p className="mt-3 text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">적용한 조건은 필터에서 수정할 수 있습니다.</p>
