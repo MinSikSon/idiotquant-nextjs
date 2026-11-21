@@ -559,7 +559,8 @@ function ScreenerContent() {
         (searchParams.get('mode') ?? saved.mode) === 'AND' ? 'AND' : 'OR'
     );
     const [showGuide, setShowGuide] = useState(false);
-    const [compareMode, setCompareMode] = useState(false);
+    const [etfCreationMode, setEtfCreationMode] = useState(() => rawSearchParams.get('createEtf') === '1');
+    const [compareMode, setCompareMode] = useState(() => rawSearchParams.get('createEtf') === '1');
     const [comparisonSelection, setComparisonSelection] = useState<{ country: string; tickers: string[] }>({ country: "KR", tickers: [] });
     // 분포·산점도는 유용하지만 매번 목록보다 먼저 읽을 정보는 아니다. 기본은 결과에
     // 집중하고, 비교가 필요할 때만 같은 자리에서 펼친다.
@@ -734,8 +735,9 @@ function ScreenerContent() {
         if (groupMode !== 'none') params.set('group', groupMode);
         if (viewMode !== DEFAULT_VIEW) params.set('view', viewMode);
         if (fromSharedScreen) params.set('from', 'share');
+        if (etfCreationMode) params.set('createEtf', '1');
         return params.toString();
-    }, [worldcupAnswers, country, activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludePreferred, excludeAdr, excludeChinaSmall, excludeLowLiquidity, excludeCashBurn, excludeHalted, excludeManaged, excludeDelisting, sectors, markets, maxW52Pos, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav, minIncomeTax, maxIncomeTax, showLikedOnly, groupMode, viewMode, fromSharedScreen]);
+    }, [worldcupAnswers, country, activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludePreferred, excludeAdr, excludeChinaSmall, excludeLowLiquidity, excludeCashBurn, excludeHalted, excludeManaged, excludeDelisting, sectors, markets, maxW52Pos, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav, minIncomeTax, maxIncomeTax, showLikedOnly, groupMode, viewMode, fromSharedScreen, etfCreationMode]);
 
     // 필터 상태 → URL 동기화 + localStorage 저장 (페이지 이동 후 재진입 시에도 전체 필터 유지)
     useEffect(() => {
@@ -1232,14 +1234,14 @@ function ScreenerContent() {
     }, []);
 
     const comparisonControls = <>
-                            <button type="button" onClick={() => {
+                            {!etfCreationMode && <button type="button" onClick={() => {
                                 if (!compareMode) setCompareMode(true);
                                 else if (compareTickers.length) router.push(comparisonHref(country, compareTickers, scanDate || new Date().toLocaleDateString('sv-SE'), crypto.randomUUID()));
                             }} disabled={compareMode && !compareTickers.length}
                                 className="min-h-11 rounded-lg border border-brand/30 px-3 text-xs font-semibold text-brand-ink disabled:opacity-50">
                                 {compareMode ? `선택한 ${compareTickers.length}개 비교` : '비교할 종목 선택'}
-                            </button>
-                            {compareMode && <button type="button" onClick={() => { setCompareMode(false); setComparisonSelection({ country, tickers: [] }); }} className="min-h-11 px-2 text-xs">선택 취소</button>}
+                            </button>}
+                            {compareMode && <button type="button" onClick={() => { setCompareMode(false); setEtfCreationMode(false); setComparisonSelection({ country, tickers: [] }); }} className="min-h-11 px-2 text-xs">선택 취소</button>}
                             {compareMode && <button type="button" onClick={createEtfFromSelection} disabled={selectedEtfHoldings.length < 2} className="min-h-11 rounded-lg bg-brand px-3 text-xs font-semibold text-white disabled:opacity-50">ETF 만들기</button>}
     </>;
 
@@ -1249,7 +1251,7 @@ function ScreenerContent() {
 
             {/* ── 페이지 헤더 (공통 규칙) ── */}
             <PageHeader
-                title={showLikedOnly ? "내 관심 종목" : "종목 발굴"}
+                title={etfCreationMode ? "ETF 종목 고르기" : showLikedOnly ? "내 관심 종목" : "종목 발굴"}
                 mobileTitleInNavigation={!showLikedOnly}
                 mobileCompact
                 mobileTitleOnScroll
@@ -1328,6 +1330,8 @@ function ScreenerContent() {
                     </div>
                 }
             />
+
+            {etfCreationMode && <div className="service-container py-2"><p role="status" className="text-sm font-medium text-brand-ink">ETF에 담을 종목을 고르세요. 2개 이상 선택하면 만들 수 있고, 같은 비중으로 담깁니다.</p></div>}
 
             {!showLikedOnly && ncavDailyList.country === country && (ncavDailyList.refreshing || (ncavDailyList.receivedAt !== null && ncavDailyList.error)) && (
                 <div className="service-container">
@@ -2100,8 +2104,8 @@ function ScreenerContent() {
                                 {showInsights ? '해석 접기' : '결과 해석'}
                             </button>
                         </div>
-                        {compareMode && <div aria-label="비교 선택 현황" className="mb-3 rounded-xl border border-brand/30 p-3 text-sm">
-                            <p role="status">목록에서 비교할 종목을 선택하세요. {compareTickers.length}/{compareLimit}개</p>
+                        {compareMode && <div aria-label={etfCreationMode ? "ETF 종목 선택 현황" : "비교 선택 현황"} className="mb-3 rounded-xl border border-brand/30 p-3 text-sm">
+                            <p role="status">{etfCreationMode ? "ETF에 담을 종목을 선택하세요." : "목록에서 비교할 종목을 선택하세요."} {compareTickers.length}/{compareLimit}개</p>
                             <div className="mt-2 flex flex-wrap gap-2">{compareTickers.map(ticker => <button key={ticker} type="button" onClick={() => toggleComparison(ticker)} className="min-h-11 rounded-lg bg-brand/10 px-3 text-brand-ink" aria-label={`${ticker} 비교 선택 해제`}>
                                 {filteredList.find((item: any) => item.ticker === ticker)?.name ?? ticker} ×
                             </button>)}</div>
