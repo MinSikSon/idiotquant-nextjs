@@ -1025,9 +1025,20 @@ function ScreenerContent() {
     const returnPath = `/screener${queryString ? `?${queryString}` : ''}`;
     const compareLimit = isLoggedIn ? 20 : 4;
     const compareTickers = comparisonSelection.country === country ? comparisonSelection.tickers.slice(0, compareLimit) : [];
+    const etfSourceList = (showLikedOnly ? normalizedLikedList : ncavDailyList.country === country ? ncavDailyList.list : []) as Record<string, any>[];
+    const selectedEtfHoldings = compareTickers.flatMap(ticker => {
+        const item = etfSourceList.find(value => value.ticker === ticker);
+        return item ? [{ ticker: String(item.ticker), name: String(item.name || item.ticker) }] : [];
+    });
     const toggleComparison = (ticker: string) => setComparisonSelection(current => ({ country,
         tickers: toggleComparisonSelection(current.country === country ? current.tickers : [], ticker, compareLimit),
     }));
+    const createEtfFromSelection = () => {
+        if (selectedEtfHoldings.length < 2) return;
+        try { sessionStorage.setItem("idiotquant:community-etf-draft:v1", JSON.stringify({ market: country, holdings: selectedEtfHoldings })); }
+        catch { /* 임시 선택을 저장할 수 없으면 만들기 화면에서 다시 안내한다. */ }
+        router.push(isLoggedIn ? "/etfs/new" : `/login?callbackUrl=${encodeURIComponent("/etfs/new")}`);
+    };
     const comparisonFor = (item: any): ComparisonChoice | undefined => compareMode ? {
         selected: compareTickers.includes(item.ticker), disabled: !compareTickers.includes(item.ticker) && compareTickers.length >= compareLimit,
         toggle: () => toggleComparison(item.ticker),
@@ -1236,6 +1247,7 @@ function ScreenerContent() {
                                 {compareMode ? `선택한 ${compareTickers.length}개 비교` : '비교할 종목 선택'}
                             </button>
                             {compareMode && <button type="button" onClick={() => { setCompareMode(false); setComparisonSelection({ country, tickers: [] }); }} className="min-h-11 px-2 text-xs">선택 취소</button>}
+                            {compareMode && <button type="button" onClick={createEtfFromSelection} disabled={selectedEtfHoldings.length < 2} className="min-h-11 rounded-lg bg-brand px-3 text-xs font-semibold text-white disabled:opacity-50">ETF 만들기</button>}
     </>;
 
     return (
