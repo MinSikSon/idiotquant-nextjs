@@ -12,8 +12,9 @@ type D1DatabaseLike = {
 async function getUserAndDb(req: Request) {
     const session = await auth();
     const userId = (session?.user as { id?: string } | undefined)?.id;
-    const db = (req as Request & { context?: { env?: { DB?: D1DatabaseLike; db?: D1DatabaseLike } } })
-        .context?.env?.DB ?? (req as Request & { context?: { env?: { db?: D1DatabaseLike } } }).context?.env?.db;
+    const requestEnv = (req as Request & { context?: { env?: { DB?: D1DatabaseLike; db?: D1DatabaseLike } } }).context?.env;
+    const processEnv = (process as typeof process & { env: { DB?: D1DatabaseLike; db?: D1DatabaseLike } }).env;
+    const db = requestEnv?.DB ?? requestEnv?.db ?? processEnv.DB ?? processEnv.db;
     return { userId, db };
 }
 
