@@ -68,7 +68,7 @@ export default function CommunityEtfsPage() {
     }
 
     return <>
-        <PageHeader title="가상 ETF 피드" width="content" primaryAction={<Link href="/screener" className={PAGE_PRIMARY_ACTION_CLS}>ETF 만들기</Link>} />
+        <PageHeader title="가상 ETF 피드" width="content" primaryAction={<Link href="/screener?createEtf=1" className={PAGE_PRIMARY_ACTION_CLS}>ETF 만들기</Link>} />
         <main className="mx-auto max-w-xl px-4 pb-[calc(var(--bottombar-h)+1.5rem)] pt-4 text-neutral-900 dark:text-neutral-100 sm:pt-6">
             <div className="mb-4 flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-300">
                 <Layers size={17} aria-hidden="true" className="text-brand-ink" />
@@ -76,7 +76,7 @@ export default function CommunityEtfsPage() {
             </div>
             {loading ? <p role="status" className="flex min-h-64 items-center justify-center gap-2 text-sm text-neutral-500"><LoaderCircle size={18} className="animate-spin" />피드를 불러오는 중…</p>
                 : error && items.length === 0 ? <div className="py-14 text-center"><p role="alert" className="text-sm text-rose-700 dark:text-rose-300">{error}</p><button type="button" onClick={() => void load()} className="mt-3 min-h-11 px-3 text-sm font-semibold text-brand-ink">다시 불러오기</button></div>
-                : items.length === 0 ? <section className="border-y border-neutral-200 py-16 text-center dark:border-surface-dark-border"><h1 className="text-lg font-semibold">아직 공개된 ETF가 없어요</h1><p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300">스크리너에서 종목을 골라 첫 ETF를 만들어 보세요.</p><Link href="/screener" className={`${PAGE_PRIMARY_ACTION_CLS} mt-5`}>종목 고르기</Link></section>
+                : items.length === 0 ? <section className="border-y border-neutral-200 py-16 text-center dark:border-surface-dark-border"><h1 className="text-lg font-semibold">아직 공개된 ETF가 없어요</h1><p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300">종목을 골라 나만의 가상 ETF를 만들어 보세요.</p><Link href="/screener?createEtf=1" className={`${PAGE_PRIMARY_ACTION_CLS} mt-5`}>종목 고르기</Link></section>
                 : <>
                     {error && <p role="alert" className="mb-3 text-sm text-rose-700 dark:text-rose-300">{error}</p>}
                     <div className="h-[min(72svh,46rem)] min-h-[31rem] snap-y snap-mandatory overflow-y-auto overscroll-contain rounded-lg border border-neutral-200 bg-white dark:border-surface-dark-border dark:bg-surface-dark-card">
