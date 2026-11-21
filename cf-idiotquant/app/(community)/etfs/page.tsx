@@ -79,7 +79,7 @@ export default function CommunityEtfsPage() {
                 : items.length === 0 ? <section className="border-y border-neutral-200 py-16 text-center dark:border-surface-dark-border"><h1 className="text-lg font-semibold">아직 공개된 ETF가 없어요</h1><p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300">종목을 골라 나만의 가상 ETF를 만들어 보세요.</p><Link href="/screener?createEtf=1" className={`${PAGE_PRIMARY_ACTION_CLS} mt-5`}>종목 고르기</Link></section>
                 : <>
                     {error && <p role="alert" className="mb-3 text-sm text-rose-700 dark:text-rose-300">{error}</p>}
-                    <div className="h-[calc(100svh-var(--bottombar-h)-6rem)] min-h-[32rem] snap-y snap-mandatory overflow-y-auto overscroll-contain bg-neutral-950 sm:h-[min(78svh,52rem)] sm:rounded-lg sm:border sm:border-neutral-200 dark:sm:border-surface-dark-border">
+                    <div className="h-[calc(100svh-var(--bottombar-h)-6rem)] min-h-[32rem] snap-y snap-mandatory overflow-y-auto overscroll-contain bg-neutral-100 sm:h-[min(78svh,52rem)] sm:rounded-lg sm:border sm:border-neutral-200 dark:bg-neutral-950 dark:sm:border-surface-dark-border">
                         {items.map(item => <EtfEpisode key={item.id} item={item} busy={busyLike === item.id} onLike={() => void toggleLike(item)} />)}
                     </div>
                     {hasMore && <div className="flex justify-center py-3">
@@ -95,42 +95,38 @@ export default function CommunityEtfsPage() {
 
 function EtfEpisode({ item, busy, onLike }: { item: CommunityEtf; busy: boolean; onLike: () => void }) {
     const holdingsPages = Array.from({ length: Math.ceil(item.holdings.length / 6) }, (_, index) => item.holdings.slice(index * 6, (index + 1) * 6));
-    return <article aria-label={`${item.name} 가상 ETF`} className="relative flex min-h-full snap-start flex-col justify-end overflow-hidden bg-neutral-950 text-white">
+    return <article aria-label={`${item.name} 가상 ETF`} className="relative flex min-h-full snap-start flex-col justify-end overflow-hidden bg-neutral-100 text-neutral-900 dark:bg-neutral-950 dark:text-white">
         <div className="relative z-10 flex min-h-full flex-col justify-between px-5 pb-5 pt-4 sm:px-8 sm:py-7">
-            <div className="flex items-center justify-between text-sm text-white/80">
-                <span className="inline-flex items-center gap-2"><Layers size={18} className="text-[#73D1BB]" aria-hidden="true" />가상 ETF</span>
-                <span className="rounded-full bg-white/10 px-3 py-1.5 text-xs backdrop-blur">{item.market === "KR" ? "국내" : "미국"} · 균등 비중</span>
-            </div>
             <div className="relative flex flex-1 items-center py-5 pr-14 sm:pr-20">
-                <div className="w-full rounded-xl border border-white/15 bg-black/25 p-4 backdrop-blur-sm sm:p-6">
-                    <div className="mb-3 flex items-center gap-2 text-xs text-white/65"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#126557] font-bold text-white">{(item.creator.name || "투").slice(0, 1)}</span>@{item.creator.name || "투자자"}</div>
+                <div className="w-full rounded-lg border border-neutral-200 bg-white p-4 dark:border-white/15 dark:bg-black/25 sm:p-6">
+                    <div className="mb-3 flex items-center gap-2 text-xs text-neutral-600 dark:text-white/65"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#126557] font-bold text-white">{(item.creator.name || "투").slice(0, 1)}</span>@{item.creator.name || "투자자"}<span className="ml-auto rounded-full bg-neutral-100 px-2.5 py-1 text-xs text-neutral-600 dark:bg-white/10 dark:text-white/75">{item.market === "KR" ? "국내" : "미국"} · 균등 비중</span></div>
                     <h2 className="break-words text-2xl font-bold leading-tight tracking-tight sm:text-3xl">{item.name}</h2>
-                    <p className="mt-2 line-clamp-3 break-words text-sm leading-6 text-white/75 sm:text-base">{item.idea}</p>
-                    <div className="mt-5 border-t border-white/20 pt-4">
+                    <p className="mt-2 line-clamp-3 break-words text-sm leading-6 text-neutral-700 dark:text-white/75 sm:text-base">{item.idea}</p>
+                    <div className="mt-5 border-t border-neutral-200 pt-4 dark:border-white/20">
                         <div className="mb-2 flex items-baseline justify-between gap-3">
                             <h3 className="font-semibold">구성 종목</h3>
-                            <span className="text-sm tabular-nums text-white/70">{item.holdings.length}종목 · 각 {(100 / item.holdings.length).toFixed(1)}%</span>
+                            <span className="text-sm tabular-nums text-neutral-600 dark:text-white/70">{item.holdings.length}종목 · 각 {(100 / item.holdings.length).toFixed(1)}%</span>
                         </div>
                         <div aria-label="ETF 구성 종목" className="flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand" role="group" tabIndex={0}>
                     {holdingsPages.map((page, pageIndex) => <ul key={pageIndex} aria-label={`종목 ${pageIndex * 6 + 1}번부터 ${pageIndex * 6 + page.length}번`} className="grid min-w-full shrink-0 snap-start grid-cols-2 gap-x-3">
-                        {page.map(holding => <li key={holding.ticker} className="flex min-h-12 min-w-0 items-center gap-2 border-b border-white/15 py-1.5">
+                        {page.map(holding => <li key={holding.ticker} className="flex min-h-12 min-w-0 items-center gap-2 border-b border-neutral-200 py-1.5 dark:border-white/15">
                             <StockLogo ticker={holding.ticker} name={holding.name} isUs={item.market === "US"} />
-                            <span className="min-w-0 flex-1 leading-tight" title={`${holding.name} (${holding.ticker})`}><span className="block truncate text-sm">{holding.name}</span><span className="block truncate text-xs text-white/55">{holding.ticker}</span></span>
+                            <span className="min-w-0 flex-1 leading-tight" title={`${holding.name} (${holding.ticker})`}><span className="block truncate text-sm">{holding.name}</span><span className="block truncate text-xs text-neutral-500 dark:text-white/55">{holding.ticker}</span></span>
                         </li>)}
                     </ul>
                     )}
                 </div>
-                {holdingsPages.length > 1 && <p className="flex min-h-10 items-center justify-between text-sm text-white/65"><span>옆으로 밀어 나머지 종목 보기</span><ChevronRight size={17} aria-hidden="true" className="text-[#73D1BB]" /></p>}
+                {holdingsPages.length > 1 && <p className="flex min-h-10 items-center justify-between text-sm text-neutral-600 dark:text-white/65"><span>옆으로 밀어 나머지 종목 보기</span><ChevronRight size={17} aria-hidden="true" className="text-brand-ink dark:text-[#73D1BB]" /></p>}
             </div>
                 </div>
             </div>
             <div className="flex items-end justify-between gap-4 pr-14 sm:pr-20">
-                <p className="text-xs text-white/50">수익률 시뮬레이션은 제공하지 않습니다.</p>
-                <span className="text-xs text-white/60">{item.holdings.length}개 종목 포트폴리오</span>
+                <p className="text-xs text-neutral-500 dark:text-white/50">수익률 시뮬레이션은 제공하지 않습니다.</p>
+                <span className="text-xs text-neutral-600 dark:text-white/60">{item.holdings.length}개 종목 포트폴리오</span>
             </div>
         </div>
         <div className="absolute bottom-24 right-2 z-20 flex flex-col items-center sm:bottom-10 sm:right-4">
-            <button type="button" disabled={busy} onClick={onLike} aria-pressed={item.likedByMe} aria-label={`${item.name} 좋아요 ${item.likeCount}개`} className="flex min-h-14 min-w-12 flex-col items-center justify-center gap-1 rounded-full text-white transition-transform hover:scale-105 disabled:opacity-50">
+            <button type="button" disabled={busy} onClick={onLike} aria-pressed={item.likedByMe} aria-label={`${item.name} 좋아요 ${item.likeCount}개`} className="flex min-h-14 min-w-12 flex-col items-center justify-center gap-1 rounded-full text-neutral-700 transition-transform hover:scale-105 disabled:opacity-50 dark:text-white">
                 <Heart size={27} aria-hidden="true" fill={item.likedByMe ? "currentColor" : "none"} />
                 <span className="text-xs font-semibold tabular-nums">{item.likeCount}</span>
             </button>
