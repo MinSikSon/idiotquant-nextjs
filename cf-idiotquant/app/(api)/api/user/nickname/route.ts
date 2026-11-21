@@ -4,10 +4,20 @@ import { NextResponse } from "next/server";
 export const runtime = "edge";
 type D1DatabaseLike = {
     prepare: (query: string) => {
-        run: () => Promise<unknown>;
-        bind: (...values: unknown[]) => { first: <T>() => Promise<T | null>; run: () => Promise<unknown> };
+        run: () => Promise<{ meta?: { changes?: number } }>;
+        bind: (...values: unknown[]) => { first: <T>() => Promise<T | null>; run: () => Promise<{ meta?: { changes?: number } }> };
     };
 };
+
+function nextChangeAt(updatedAt: number) {
+    const date = new Date(updatedAt * 1000);
+    const day = date.getUTCDate();
+    date.setUTCDate(1);
+    date.setUTCMonth(date.getUTCMonth() + 1);
+    const lastDay = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0)).getUTCDate();
+    date.setUTCDate(Math.min(day, lastDay));
+    return Math.floor(date.getTime() / 1000);
+}
 
 async function getUserAndDb(req: Request) {
     const session = await auth();
@@ -31,8 +41,13 @@ export async function GET(req: Request) {
     if (!userId) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
     if (!db) return NextResponse.json({ error: "저장소에 연결할 수 없습니다." }, { status: 503 });
     await ensureTable(db);
-    const row = await db.prepare("SELECT nickname FROM user_nicknames WHERE user_id = ?").bind(userId).first<{ nickname: string }>();
-    return NextResponse.json({ nickname: row?.nickname ?? "" }, { headers: { "Cache-Control": "no-store" } });
+    const row = await db.prepare("SELECT nickname, updated_at FROM user_nicknames WHERE user_id = ?").bind(userId).first<{ nickname: string; updated_at: number }>();
+    const availableAt = row ? nextChangeAt(row.updated_at) : null;
+    return NextResponse.json({
+        nickname: row?.nickname ?? "",
+        canChange: availableAt == null || Date.now() / 1000 >= availableAt,
+        nextChangeAt: availableAt,
+    }, { headers: { "Cache-Control": "no-store" } });
 }
 
 export async function PATCH(req: Request) {
@@ -45,8 +60,35 @@ export async function PATCH(req: Request) {
         return NextResponse.json({ error: "닉네임은 2~20자로 입력해 주세요." }, { status: 400 });
     }
     await ensureTable(db);
-    await db.prepare(`INSERT INTO user_nicknames (user_id, nickname, updated_at) VALUES (?, ?, ?)
-        ON CONFLICT(user_id) DO UPDATE SET nickname = excluded.nickname, updated_at = excluded.updated_at`)
-        .bind(userId, nickname, Math.floor(Date.now() / 1000)).run();
-    return NextResponse.json({ nickname });
+    const existing = await db.prepare("SELECT nickname, updated_at FROM user_nicknames WHERE user_id = ?").bind(userId).first<{ nickname: string; updated_at: number }>();
+    const now = Math.floor(Date.now() / 1000);
+    const availableAt = existing ? nextChangeAt(existing.updated_at) : null;
+    if (existing?.nickname === nickname) {
+        return NextResponse.json({ nickname, canChange: availableAt == null || now >= availableAt, nextChangeAt: availableAt });
+    }
+    if (availableAt != null && now < availableAt) {
+        return NextResponse.json({
+            error: "닉네임은 한 달에 한 번만 변경할 수 있습니다.",
+            canChange: false,
+            nextChangeAt: availableAt,
+        }, { status: 429 });
+    }
+
+    const result = await db.prepare(`INSERT INTO user_nicknames (user_id, nickname, updated_at) VALUES (?, ?, ?)
+        ON CONFLICT(user_id) DO UPDATE SET nickname = excluded.nickname, updated_at = excluded.updated_at
+        WHERE user_nicknames.updated_at = ? AND ? >= ?`)
+        .bind(userId, nickname, now, existing?.updated_at ?? null, now, availableAt).run();
+    if (result.meta?.changes !== 1) {
+        const current = await db.prepare("SELECT nickname, updated_at FROM user_nicknames WHERE user_id = ?").bind(userId).first<{ nickname: string; updated_at: number }>();
+        const currentAvailableAt = current ? nextChangeAt(current.updated_at) : null;
+        if (current?.nickname === nickname) {
+            return NextResponse.json({ nickname, canChange: false, nextChangeAt: currentAvailableAt });
+        }
+        return NextResponse.json({
+            error: "닉네임은 한 달에 한 번만 변경할 수 있습니다.",
+            canChange: false,
+            nextChangeAt: currentAvailableAt,
+        }, { status: 429 });
+    }
+    return NextResponse.json({ nickname, canChange: false, nextChangeAt: nextChangeAt(now) });
 }
