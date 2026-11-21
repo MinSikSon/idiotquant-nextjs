@@ -12,7 +12,7 @@
     {
         "symbol": "AAAB",
         "name": "CORGI FTSE AAA-A INTERMEDIATE CORPORATE BOND ETF",
-        "koreanName": "CORGI FTSE AAA-A INTERMEDIATE CORPORATE BOND ETF"
+        "koreanName": "CORGI FTSE AAA-A INTERMEDIATE CORPORATE BOND"
     },
     {
         "symbol": "AAAC",
@@ -160,9 +160,24 @@
         "koreanName": "INNOVATOR INDEX AUTOCALLABLE INCOME STRATEGY"
     },
     {
+        "symbol": "ACIN",
+        "name": "HARTFORD ALPHA CAPTURE INTERNATIONAL EQUITY ETF",
+        "koreanName": "HARTFORD ALPHA CAPTURE INTERNATIONAL EQUITY"
+    },
+    {
         "symbol": "ACIO",
         "name": "ETF SERIES SOLUTIONS APTUS COLLARED INVESTMENT OPPORTUNITY",
         "koreanName": "APTUS COLLARED INVESTMENT OPPORTUNITY"
+    },
+    {
+        "symbol": "ACIV",
+        "name": "HARTFORD ALPHA CAPTURE INTERNATIONAL VALUE ETF",
+        "koreanName": "HARTFORD ALPHA CAPTURE INTERNATIONAL VALUE"
+    },
+    {
+        "symbol": "ACJL",
+        "name": "BUFFERED BULLDOG ETF",
+        "koreanName": "CJ LAWRENCE BUFFERED BULLDOG"
     },
     {
         "symbol": "ACKY",
@@ -182,7 +197,7 @@
     {
         "symbol": "ACMG",
         "name": "AMERICAN CENTURY MID CAP GROWTH INSIGHTS ETF",
-        "koreanName": "AMERICAN CENTURY MID CAP GROWTH INSIGHTS ETF"
+        "koreanName": "AMERICAN CENTURY MID CAP GROWTH INSIGHTS"
     },
     {
         "symbol": "ACMM",
@@ -310,11 +325,6 @@
         "koreanName": "레버리지셰어즈 에흐르 테스트 시스템스(AEHR) 2X"
     },
     {
-        "symbol": "AELV",
-        "name": "HARBOR ALPHAEDGE LARGE CAP VALUE ETF",
-        "koreanName": "HARBOR ALPHAEDGE LARGE CAP VALUE"
-    },
-    {
         "symbol": "AEMC",
         "name": "HARBOR ALPHAEDGE MID CAP CORE ETF",
         "koreanName": "HARBOR ALPHAEDGE MID CAP CORE"
@@ -353,11 +363,6 @@
         "symbol": "AESR",
         "name": "HORIZON FDS ANFIELD U S EQUITY SECTOR ROTATION ETF",
         "koreanName": "ANFIELD US EQUITY SECTOR ROTATION"
-    },
-    {
-        "symbol": "AETH",
-        "name": "BITWISE TRENDWISE ETHER AND TREASURIES ROTATION STRATEGY ETF",
-        "koreanName": "BITWISE ETHEREUM STRATEGY"
     },
     {
         "symbol": "AFGR",
@@ -407,7 +412,7 @@
     {
         "symbol": "AGGB",
         "name": "CORGI FTSE U.S. AGGREGATE BOND ETF",
-        "koreanName": "CORGI FTSE U.S. AGGREGATE BOND ETF"
+        "koreanName": "CORGI FTSE US AGGREGATE BOND"
     },
     {
         "symbol": "AGGH",
@@ -490,14 +495,29 @@
         "koreanName": "DIREXION AI AND BIG DATA DAILY -2X"
     },
     {
+        "symbol": "AIBE",
+        "name": "FINQ CORE U.S. LARGE CAP AI-MANAGED EQUITY ETF",
+        "koreanName": "FINQ CORE US LARGE CAP AI MANAGED EQUITY"
+    },
+    {
         "symbol": "AIBF",
         "name": "ISHARES FUTURE AI BENEFICIARIES ETF",
         "koreanName": "ISHARES FUTURE AI BENEFICIARIES"
     },
     {
+        "symbol": "AIBN",
+        "name": "DEFIANCE AI INFRASTRUCTURE BOND ETF",
+        "koreanName": "DEFIANCE AI INFRASTRUCTURE BOND"
+    },
+    {
         "symbol": "AIBU",
         "name": "DIREXION DAILY AI AND BIG DATA BULL 2X ETF",
         "koreanName": "DIREXION AI AND BIG DATA DAILY 2X"
+    },
+    {
+        "symbol": "AIED",
+        "name": "EXCHANGE LISTED FUNDS TRUST DEFIANCE LLM CATALYST MOMENTUM E",
+        "koreanName": "DEFIANCE LLM CATALYST MOMENTUM"
     },
     {
         "symbol": "AIEQ",
@@ -710,11 +730,6 @@
         "koreanName": "INFRACAP MLP"
     },
     {
-        "symbol": "AMZE",
-        "name": "AMAZE HOLDINGS INC",
-        "koreanName": "어메이즈 홀딩스"
-    },
-    {
         "symbol": "AMZG",
         "name": "LEVERAGE SHARES 2X LONG AMZN DAILY ETF",
         "koreanName": "레버리지셰어즈 아마존(AMZN) 2X"
@@ -740,14 +755,9 @@
         "koreanName": "YIELDMAX AMZN OPTION INCOME STRATEGY"
     },
     {
-        "symbol": "ANEW",
-        "name": "PROSHARES TRUST MSCI TRANSFORMATIONAL CHANGES ETF",
-        "koreanName": "PROSHARES MSCI TRANSFORMATIONAL CHANGES"
-    },
-    {
         "symbol": "ANG",
         "name": "CORGI FTSE FALLEN ANGELS BOND ETF",
-        "koreanName": "CORGI FTSE FALLEN ANGELS BOND ETF"
+        "koreanName": "CORGI FTSE FALLEN ANGELS BOND"
     },
     {
         "symbol": "ANTW",
@@ -788,6 +798,11 @@
         "symbol": "APDB",
         "name": "APTUS APRIL DEEP BUFFER ETF",
         "koreanName": "APTUS DEEP BUFFER - APR"
+    },
+    {
+        "symbol": "APFS",
+        "name": "ARTISAN FOCUS FUND ETF",
+        "koreanName": "ARTISAN FOCUS FUND ETF"
     },
     {
         "symbol": "APHG",
@@ -833,6 +848,11 @@
         "symbol": "APMU",
         "name": "TRUST FOR PROFESSIONAL MANAGERS ACTIVEPASSIVE INTERMEDIATE M",
         "koreanName": "ACTIVEPASSIVE INTERMEDIATE MUNICIPAL BOND"
+    },
+    {
+        "symbol": "APNX",
+        "name": "ARTISAN SELECT EQUITY FUND ETF",
+        "koreanName": "ARTISAN SELECT EQUITY FUND ETF"
     },
     {
         "symbol": "APOC",
@@ -1397,7 +1417,7 @@
     {
         "symbol": "AVUC",
         "name": "AVANTIS U.S. CORE EQUITY ETF",
-        "koreanName": "AVANTIS U.S. CORE EQUITY ETF"
+        "koreanName": "AVANTIS US CORE EQUITY"
     },
     {
         "symbol": "AVUS",
@@ -1592,7 +1612,7 @@
     {
         "symbol": "BBBB",
         "name": "CORGI FTSE BBB RATED CORPORATE BOND ETF",
-        "koreanName": "CORGI FTSE BBB RATED CORPORATE BOND ETF"
+        "koreanName": "CORGI FTSE BBB RATED CORPORATE BOND"
     },
     {
         "symbol": "BBBI",
@@ -1678,6 +1698,11 @@
         "symbol": "BBLU",
         "name": "EA SERIES TRUST BRIDGEWAY BLUE CHIP ETF",
         "koreanName": "EA BRIDGEWAY BLUE CHIP"
+    },
+    {
+        "symbol": "BBLX",
+        "name": "BONDBLOXX CORE PLUS ETF",
+        "koreanName": "BONDBLOXX CORE PLUS"
     },
     {
         "symbol": "BBMC",
@@ -1968,6 +1993,11 @@
         "symbol": "BGLD",
         "name": "FIRST TRUST EXCHANGE TRADED FUND VEST GOLD STRATEGY QUATERLY",
         "koreanName": "FT VEST GOLD STRATEGY QUARTERLY BUFFER"
+    },
+    {
+        "symbol": "BGRD",
+        "name": "BNY MELLON POWER ECOSYSTEM ETF",
+        "koreanName": "BNY MELLON POWER ECOSYSTEM"
     },
     {
         "symbol": "BHB",
@@ -2610,11 +2640,6 @@
         "koreanName": "ISHARES TOTAL USD FIXED INCOME MARKET"
     },
     {
-        "symbol": "BTR",
-        "name": "NORTHERN LIGHTS FUND TRUST II BEACON TACTICAL RISK ETF",
-        "koreanName": "BEACON TACTICAL RISK"
-    },
-    {
         "symbol": "BTRN",
         "name": "GLOBAL X FDS BITCOIN TREND STRATEGY ETF",
         "koreanName": "GLOBAL X BITCOIN TREND STRATEGY"
@@ -2765,9 +2790,9 @@
         "koreanName": "BREAKWAVE TANKER SHIPPING"
     },
     {
-        "symbol": "BWOW",
-        "name": "BITWISE DOGECOIN ETF",
-        "koreanName": "BITWISE DOGECOIN"
+        "symbol": "BWLB",
+        "name": "BRANDYWINE LARGE CAP ETF",
+        "koreanName": "BRANDYWINE LARGE CAP"
     },
     {
         "symbol": "BWQG",
@@ -2928,6 +2953,11 @@
         "symbol": "CAUG",
         "name": "CORGI U.S. EQUITIES 15% STRUCTURED BUFFER ETF - AUGUST",
         "koreanName": "CORGI US EQUITIES 15% STRUCTURED BUFFER - AUG"
+    },
+    {
+        "symbol": "CAYN",
+        "name": "CALAMOS LEAST-OF AUTOCALLABLE INCOME ETF",
+        "koreanName": "CALAMOS LEAST OF AUTOCALLABLE INCOME"
     },
     {
         "symbol": "CBIL",
@@ -3110,6 +3140,11 @@
         "koreanName": "SIMPLIFY HIGH YIELD PLUS CREDIT HEDGE"
     },
     {
+        "symbol": "CECO",
+        "name": "CECO ENVIRONMENTAL CORP",
+        "koreanName": "CECO ENVIRONMENTAL CORP"
+    },
+    {
         "symbol": "CEF",
         "name": "SPROTT ASSET MANAGEMENT LP PHYSICAL GOLD AND SILVER TRUST (U",
         "koreanName": "SPROTT PHYSICAL GOLD AND SILVER TRUST"
@@ -3163,6 +3198,21 @@
         "symbol": "CFIT",
         "name": "CAMBRIA FIXED INCOME TREND ETF",
         "koreanName": "CAMBRIA FIXED INCOME TREND"
+    },
+    {
+        "symbol": "CFR",
+        "name": "CULLEN FROST BANKERS",
+        "koreanName": "컬런 프로스트 뱅커스"
+    },
+    {
+        "symbol": "CFR/B",
+        "name": "CULLEN FROST BANKERS 4.450% DEP SHS REP 1/40TH INT PR PF SR",
+        "koreanName": "컬런 프로스트 뱅커스 우선주(4.450%)"
+    },
+    {
+        "symbol": "CGBI",
+        "name": "CAPITAL GROUP MULTI-ASSET INCOME BUILDER ETF",
+        "koreanName": "CAPITAL GROUP MULTI-ASSET INCOME BUILDER ETF"
     },
     {
         "symbol": "CGBL",
@@ -3243,6 +3293,11 @@
         "symbol": "CGIE",
         "name": "CAPITAL GROUP INTL EQUITY ETF SHS ETF USD",
         "koreanName": "CAPITAL GROUP INTERNATIONAL EQUITY"
+    },
+    {
+        "symbol": "CGMI",
+        "name": "CAPITAL GROUP MULTI-ASSET INCOME ETF",
+        "koreanName": "CAPITAL GROUP MULTI-ASSET INCOME ETF"
     },
     {
         "symbol": "CGMM",
@@ -3445,11 +3500,6 @@
         "koreanName": "GLOBAL X 1-3M T-BILL"
     },
     {
-        "symbol": "CLIX",
-        "name": "PROSHARES TRUST LONG ONLINE SHORT STORES ETF",
-        "koreanName": "PROSHARES LONG ONLINE/SHORT STORES"
-    },
-    {
         "symbol": "CLM",
         "name": "CORNERSTONE STRATEGIC INVESTMENT FUND INC",
         "koreanName": "CORNERSTONE STRATEGIC VALUE"
@@ -3531,7 +3581,7 @@
     },
     {
         "symbol": "CMDT",
-        "name": "PIMCO ETF TRUST COMMODITY STRATEGY ACTIVE ETF",
+        "name": "PIMCO COMMODITY AND BOND STRATEGY ACTIVE EXCHANGE-TRADED FUN",
         "koreanName": "PIMCO COMMODITY STRATEGY ACTIVE"
     },
     {
@@ -3566,7 +3616,7 @@
     },
     {
         "symbol": "CNRG",
-        "name": "STATE STREET SPDR S&P KENSHO CLEAN POWER ETF",
+        "name": "STATE STREET SPDR S&P KENSHO GRID INNOVATION ETF",
         "koreanName": "SS SPDR S&P KENSHO CLEAN POWER"
     },
     {
@@ -3696,7 +3746,7 @@
     },
     {
         "symbol": "CORP",
-        "name": "PIMCO ETF TRUST INVESTMENT GRADE CORP BOND ETF",
+        "name": "PIMCO ETF TRUST INVT GRADE CORPORATE BD",
         "koreanName": "PIMCO INVESTMENT GRADE CORPORATE BOND"
     },
     {
@@ -4070,11 +4120,6 @@
         "koreanName": "CASTELLAN TARGETED EQUITY"
     },
     {
-        "symbol": "CTEX",
-        "name": "PROSHARES TRUST S&P KENSHO CLEANTECH ETF",
-        "koreanName": "PROSHARES S&P KENSHO CLEANTECH"
-    },
-    {
         "symbol": "CTGO",
         "name": "CONTANGO SILVER & GOLD INC",
         "koreanName": "콘탱고 실버 앤 골드"
@@ -4265,11 +4310,6 @@
         "koreanName": "GRIZZLE GROWTH"
     },
     {
-        "symbol": "DAT",
-        "name": "PROSHARES TRUST BIG DATA REFINERS ETF",
-        "koreanName": "PROSHARES BIG DATA REFINERS"
-    },
-    {
         "symbol": "DAUG",
         "name": "FIRST TR EXCHANGE TRADED FD VIII VEST U S EQUITY DEEP BUFFER",
         "koreanName": "FT VEST US EQUITY DEEP BUFFER - AUG"
@@ -4358,6 +4398,11 @@
         "symbol": "DCAP",
         "name": "T-STRIVE DIGITAL CREDIT PREFERRED INCOME ETF",
         "koreanName": "T-STRIVE DIGITAL CREDIT PREFERRED INCOME"
+    },
+    {
+        "symbol": "DCM",
+        "name": "DEFI CAPITAL MARKETS INC",
+        "koreanName": "DEFI CAPITAL MARKETS INC"
     },
     {
         "symbol": "DCMT",
@@ -4760,6 +4805,11 @@
         "koreanName": "DIMENSIONAL INTERNATIONAL SMALL CAP"
     },
     {
+        "symbol": "DFIT",
+        "name": "DAVIDSON INTERMEDIATE TAXABLE ETF",
+        "koreanName": "DAVIDSON INTERMEDIATE TAXABLE"
+    },
+    {
         "symbol": "DFIV",
         "name": "DIMENSIONAL ETF TRUST INTERNATIONAL VALUE ETF",
         "koreanName": "DIMENSIONAL INTERNATIONAL VALUE"
@@ -5083,6 +5133,11 @@
         "symbol": "DLAG",
         "name": "FT VEST U.S. EQUITY DUAL DIRECTIONAL BUFFER ETF - AUGUST",
         "koreanName": "FT VEST US EQUITY DUAL DIRECTIONAL BUFFER - AUG"
+    },
+    {
+        "symbol": "DLAY",
+        "name": "TUTTLE CAPITAL AI BOTTLENECK ETF",
+        "koreanName": "TUTTLE CAPITAL AI BOTTLENECK"
     },
     {
         "symbol": "DLFE",
@@ -5545,11 +5600,6 @@
         "koreanName": "INNOVATOR MSCI EMERGING MARKETS POWER BUFFER - APR"
     },
     {
-        "symbol": "EASG",
-        "name": "XTRACKERS MSCI EAFE SELECTION EQUITY ETF",
-        "koreanName": "XTRACKERS MSCI EAFE SELECTION EQUITY"
-    },
-    {
         "symbol": "EBIT",
         "name": "HARBOR SMALL CAP EARNERS ETF",
         "koreanName": "HARBOR ALPHAEDGE SMALL CAP EARNERS"
@@ -5761,7 +5811,7 @@
     },
     {
         "symbol": "EFIV",
-        "name": "STATE STREET SPDR S&P 500 ESG ETF",
+        "name": "STATE STREET SPDR S&P 500 SCORED AND SCREENED ETF",
         "koreanName": "SS SPDR S&P 500 ESG"
     },
     {
@@ -5875,6 +5925,11 @@
         "koreanName": "엔벨라"
     },
     {
+        "symbol": "ELCF",
+        "name": "MUTUAL FUND SERIES TRUST EVENTIDE LARGE CAP FOCUS ETF",
+        "koreanName": "EVENTIDE LARGE CAP FOCUS"
+    },
+    {
         "symbol": "ELCV",
         "name": "EVENTIDE HIGH DIVIDEND ETF",
         "koreanName": "EVENTIDE HIGH DIVIDEND"
@@ -5930,6 +5985,11 @@
         "koreanName": "XTRACKERS MSCI EMERGING MARKETS CLIMATE SELECTION"
     },
     {
+        "symbol": "EMDI",
+        "name": "PRINCIPAL FINISTERRE EMERGING MARKETS DIVERSIFIED INCOME ETF",
+        "koreanName": "PRINCIPAL FINISTERRE EMERGING MARKETS DIVERSIFIED INCOME"
+    },
+    {
         "symbol": "EMDM",
         "name": "FIRST TRUST EXCH TRADED FUND 2 BLOOMBERG EMERGING MARKET DEM",
         "koreanName": "FIRST TRUST BLOOMBERG EMERGING MARKET DEMOCRACIES"
@@ -5968,6 +6028,11 @@
         "symbol": "EMHY",
         "name": "ISHARES INC J P MORGAN EM HIGH YIELD BOND ETF",
         "koreanName": "ISHARES EMERGING MARKETS HIGH YIELD BOND"
+    },
+    {
+        "symbol": "EMIL",
+        "name": "VANECK EM FOCUS INFLATION BOND ETF",
+        "koreanName": "VANECK EM FOCUS INFLATION BOND"
     },
     {
         "symbol": "EMJL",
@@ -6011,7 +6076,7 @@
     },
     {
         "symbol": "EMNT",
-        "name": "PIMCO ETF TRUST PIMCO ENHANCED SHRT MATURITY ACTIVE ESG",
+        "name": "PIMCO ENHANCED SHORT MATURITY ACTIVE ESG AND BOND EXCHANGE-T",
         "koreanName": "PIMCO ENHANCED SHORT MATURITY ACTIVE ESG"
     },
     {
@@ -6313,6 +6378,11 @@
         "symbol": "ETCO",
         "name": "GRAYSCALE ETHEREUM HIGH INCOME ETF",
         "koreanName": "GRAYSCALE ETHEREUM COVERED CALL"
+    },
+    {
+        "symbol": "ETDG",
+        "name": "MUTUAL FUND SERIES TRUST EVENTIDE DIVIDEND GROWTH ETF",
+        "koreanName": "EVENTIDE DIVIDEND GROWTH"
     },
     {
         "symbol": "ETFT",
@@ -7180,6 +7250,11 @@
         "koreanName": "FIDELITY MSCI INDUSTRIALS"
     },
     {
+        "symbol": "FIFT",
+        "name": "HCM SELECT 50 ETF",
+        "koreanName": "HCM SELECT 50"
+    },
+    {
         "symbol": "FIGB",
         "name": "FIDELITY MERRIMACK STREET TRUST FIDELITY INVT GRADE BD ETF",
         "koreanName": "FIDELITY INVESTMENT GRADE BOND"
@@ -7560,6 +7635,11 @@
         "koreanName": "FT VEST US EQUITY BUFFER - MAY"
     },
     {
+        "symbol": "FMBM",
+        "name": "F&M BANK CORP",
+        "koreanName": "F&M BANK CORP"
+    },
+    {
         "symbol": "FMCE",
         "name": "FM COMPOUNDERS EQUITY ETF",
         "koreanName": "FM COMPOUNDERS EQUITY"
@@ -7578,6 +7658,11 @@
         "symbol": "FMF",
         "name": "FIRST TR EXCHANGE-TRADED FD V MANAGED FUTURES STRATEGY FUND",
         "koreanName": "FIRST TRUST MANAGED FUTURES STRATEGY"
+    },
+    {
+        "symbol": "FMIG",
+        "name": "FMI GLOBAL EQUITY ETF",
+        "koreanName": "FMI GLOBAL EQUITY"
     },
     {
         "symbol": "FMKT",
@@ -7962,7 +8047,7 @@
     {
         "symbol": "FTN",
         "name": "CORGI FTSE 5-10 YEAR IG CORPORATE BOND ETF",
-        "koreanName": "CORGI FTSE 5-10 YEAR IG CORPORATE BOND ETF"
+        "koreanName": "CORGI FTSE 5-10Y IG CORPORATE BOND"
     },
     {
         "symbol": "FTNJ",
@@ -8167,7 +8252,7 @@
     {
         "symbol": "GANZ",
         "name": "TUTTLE CAPITAL THEMATIC ETF",
-        "koreanName": "TUTTLE CAPITAL THEMATIC ETF"
+        "koreanName": "TUTTLE CAPITAL THEMATIC"
     },
     {
         "symbol": "GAPR",
@@ -8237,7 +8322,7 @@
     {
         "symbol": "GCB",
         "name": "CORGI FTSE INTERMEDIATE GOVERNMENT/CREDIT BOND ETF",
-        "koreanName": "CORGI FTSE INTERMEDIATE GOVERNMENT/CREDIT BOND ETF"
+        "koreanName": "CORGI FTSE INTERMEDIATE GOVERNMENT/CREDIT BOND"
     },
     {
         "symbol": "GCC",
@@ -8417,7 +8502,7 @@
     {
         "symbol": "GGN",
         "name": "GAMCO GLOBAL GOLD NAT RES & INCOME COM",
-        "koreanName": "GAMCO GLOBAL GOLD  NATURAL RESOURCES & INCOME TRUST"
+        "koreanName": "GAMCO GLOBAL GOLD NATURAL RESOURCES & INCOME TRUST"
     },
     {
         "symbol": "GGN/B",
@@ -8565,6 +8650,11 @@
         "koreanName": "PROSHARES GOLD -2X"
     },
     {
+        "symbol": "GLLD",
+        "name": "BANK OF MONTREAL MICROSECTORS GOLD 3X LEVERAGED",
+        "koreanName": "MICROSECTORS GOLD 3X ETN"
+    },
+    {
         "symbol": "GLNK",
         "name": "GRAYSCALE CHAINLINK TRUST ETF",
         "koreanName": "GRAYSCALE CHAINLINK"
@@ -8658,6 +8748,16 @@
         "symbol": "GMF",
         "name": "STATE STREET SPDR S&P EMERGING ASIA PACIFIC ETF",
         "koreanName": "SS SPDR S&P EMERGING ASIA PACIFIC"
+    },
+    {
+        "symbol": "GMIE",
+        "name": "GMO INTERNATIONAL EQUITY FUND ETF",
+        "koreanName": "GMO INTERNATIONAL EQUITY"
+    },
+    {
+        "symbol": "GMIX",
+        "name": "ISHARES MACRO ALPHABETA ACTIVE ETF",
+        "koreanName": "ISHARES MACRO ALPHABETA ACTIVE ETF"
     },
     {
         "symbol": "GMMA",
@@ -8830,6 +8930,11 @@
         "koreanName": "VANECK ALTERNATIVE ASSET MANAGER"
     },
     {
+        "symbol": "GQGG",
+        "name": "GQG GLOBAL EQUITY ETF",
+        "koreanName": "GQG GLOBAL EQUITY ETF"
+    },
+    {
         "symbol": "GQGU",
         "name": "GQG US EQUITY ETF",
         "koreanName": "GQG US EQUITY"
@@ -8908,6 +9013,11 @@
         "symbol": "GSC",
         "name": "GOLDMAN SACHS SMALL CAP EQUITY ETF",
         "koreanName": "GOLDMAN SACHS SMALL CAP CORE EQUITY"
+    },
+    {
+        "symbol": "GSCZ",
+        "name": "GOLDMAN SACHS SECURITIZED INCOME ETF",
+        "koreanName": "GOLDMAN SACHS SECURITIZED INCOME ETF"
     },
     {
         "symbol": "GSEE",
@@ -9043,6 +9153,11 @@
         "symbol": "GUMI",
         "name": "GOLDMAN SACHS ULTRA SHORT MUNICIPAL INCOME ETF",
         "koreanName": "GOLDMAN SACHS ULTRA SHORT MUNICIPAL INCOME"
+    },
+    {
+        "symbol": "GUNN",
+        "name": "GUNNISON COPPER CORP. SPON ADS EACH REP 30 COM",
+        "koreanName": "거니슨 코퍼(ADR)"
     },
     {
         "symbol": "GUNR",
@@ -9250,11 +9365,6 @@
         "koreanName": "HARTFORD CORE BOND"
     },
     {
-        "symbol": "HCWC",
-        "name": "HEALTHY CHOICE WELLNESS CORP",
-        "koreanName": "헬시 초이스 웰니스"
-    },
-    {
         "symbol": "HDEF",
         "name": "DBX ETF TRUST XTRACKERS MSCI EAFE HIGH DIV YLD RQ ETF",
         "koreanName": "XTRACKERS MSCI EAFE HIGH DIVIDEND YIELD EQUITY"
@@ -9387,7 +9497,7 @@
     {
         "symbol": "HH",
         "name": "CORGI FTSE HIGH YIELD CORPORATE BOND ETF",
-        "koreanName": "CORGI FTSE HIGH YIELD CORPORATE BOND ETF"
+        "koreanName": "CORGI FTSE HIGH YIELD CORPORATE BOND"
     },
     {
         "symbol": "HIAI",
@@ -9467,7 +9577,7 @@
     {
         "symbol": "HOID",
         "name": "TUTTLE - RAREVIEW HUMANOID ROBOTICS ETF",
-        "koreanName": "TUTTLE - RAREVIEW HUMANOID ROBOTICS ETF"
+        "koreanName": "TUTTLE RAREVIEW HUMANOID ROBOTICS"
     },
     {
         "symbol": "HOLA",
@@ -9615,6 +9725,11 @@
         "koreanName": "MAST HEDGEINDEX MANAGED FUTURES STRATEGY"
     },
     {
+        "symbol": "HYB",
+        "name": "LAZARD US HIGH YIELD ETF",
+        "koreanName": "LAZARD US HIGH YIELD"
+    },
+    {
         "symbol": "HYBB",
         "name": "ISHARES TRUST BB RTD CORP BD ETF",
         "koreanName": "ISHARES BB RATED CORPORATE BOND"
@@ -9648,6 +9763,11 @@
         "symbol": "HYFI",
         "name": "AB ACTIVE ETFS INC HIGH YIELD ETF",
         "koreanName": "AB HIGH YIELD"
+    },
+    {
+        "symbol": "HYFY",
+        "name": "LAZARD HYBRID FINANCIAL INCOME ETF",
+        "koreanName": "LAZARD HYBRID FINANCIAL INCOME"
     },
     {
         "symbol": "HYG",
@@ -9716,7 +9836,7 @@
     },
     {
         "symbol": "HYS",
-        "name": "PIMCO ETF TRUST 0-5 YR HIGH YLD CORP BD IDX ETF",
+        "name": "PIMCO ETF TRUST 0-5 YR HIGH YIELD CORPORATE BD",
         "koreanName": "PIMCO 0-5Y HIGH YIELD CORPORATE BOND"
     },
     {
@@ -9905,11 +10025,6 @@
         "koreanName": "ISHARES IBONDS 2033 TERM HIGH YIELD AND INCOME"
     },
     {
-        "symbol": "IBIC",
-        "name": "ISHARES TRUST IBONDS OCT 2026 TERM TIPS ETF",
-        "koreanName": "ISHARES IBONDS OCT 2026 TERM TIPS"
-    },
-    {
         "symbol": "IBID",
         "name": "ISHARES TRUST IBONDS OCT 2027 TERM TIPS ETF",
         "koreanName": "ISHARES IBONDS OCT 2027 TERM TIPS"
@@ -9963,6 +10078,11 @@
         "symbol": "IBLC",
         "name": "ISHARES TRUST BLOCKCHAIN AND TECH ETF",
         "koreanName": "ISHARES BLOCKCHAIN AND TECH"
+    },
+    {
+        "symbol": "IBLY",
+        "name": "FT VEST EQUITY TARGET INCOME PLUS 0-3 MONTH TREASURY ETF",
+        "koreanName": "FT VEST EQUITY TARGET INCOME PLUS 0-3M TREASURY"
     },
     {
         "symbol": "IBMO",
@@ -10025,6 +10145,11 @@
         "koreanName": "임팩트 바이오메디컬"
     },
     {
+        "symbol": "IBOC",
+        "name": "INTERNATIONAL BANCSHARES CORP",
+        "koreanName": "INTERNATIONAL BANCSHARES CORP"
+    },
+    {
         "symbol": "IBRN",
         "name": "ISHARES TRUST NEUROSCIENCE AND HEALTHCARE ETF",
         "koreanName": "ISHARES NEUROSCIENCE AND HEALTHCARE"
@@ -10058,6 +10183,11 @@
         "symbol": "ICLO",
         "name": "INVESCO ACTIVELY MANAGED ETF TRUST AAA CLO FLTG RATE NT ETF",
         "koreanName": "INVESCO AAA CLO FLOATING RATE NOTE"
+    },
+    {
+        "symbol": "ICOM",
+        "name": "TEMA COMMODITY INCOME ETF",
+        "koreanName": "TEMA COMMODITY INCOME"
     },
     {
         "symbol": "ICOW",
@@ -10272,7 +10402,7 @@
     {
         "symbol": "IGB",
         "name": "CORGI FTSE U.S. IG CORPORATE BOND ETF",
-        "koreanName": "CORGI FTSE U.S. IG CORPORATE BOND ETF"
+        "koreanName": "CORGI FTSE US IG CORPORATE BOND"
     },
     {
         "symbol": "IGBH",
@@ -10418,11 +10548,6 @@
         "symbol": "IJUN",
         "name": "INNOVATOR INTERNATIONAL DEVELOPED POWER BUFFER ETF - JUNE",
         "koreanName": "INNOVATOR INTERNATIONAL DEVELOPED POWER BUFFER - JUN"
-    },
-    {
-        "symbol": "ILCB",
-        "name": "ISHARES TRUST MORNINGSTAR US EQUITY ETF",
-        "koreanName": "ISHARES MORNINGSTAR US EQUITY"
     },
     {
         "symbol": "ILCG",
@@ -10730,6 +10855,26 @@
         "koreanName": "NORTHERN TRUST INTERNATIONAL QUALITY DIVIDEND DYNAMIC"
     },
     {
+        "symbol": "IQEE",
+        "name": "INVESCO EMERGING MARKETS ENHANCED ETF",
+        "koreanName": "INVESCO EMERGING MARKETS ENHANCED"
+    },
+    {
+        "symbol": "IQEI",
+        "name": "INVESCO INTERNATIONAL DEVELOPED ENHANCED ETF",
+        "koreanName": "INVESCO INTERNATIONAL DEVELOPED ENHANCED"
+    },
+    {
+        "symbol": "IQEL",
+        "name": "INVESCO U.S. LARGE CAP ENHANCED ETF",
+        "koreanName": "INVESCO US LARGE CAP ENHANCED"
+    },
+    {
+        "symbol": "IQES",
+        "name": "INVESCO U.S. SMALL CAP ENHANCED ETF",
+        "koreanName": "INVESCO US SMALL CAP ENHANCED"
+    },
+    {
         "symbol": "IQHI",
         "name": "NYLIM MACKAY HIGH INCOME ETF",
         "koreanName": "IQ MACKAY ESG HIGH INCOME"
@@ -10808,11 +10953,6 @@
         "symbol": "ISBG",
         "name": "INCOMESTKD 1X BITCOIN & 1X GOLD PREMIUM ETF",
         "koreanName": "INCOMESTKD BITCOIN & 1X GOLD PREMIUM 1X"
-    },
-    {
-        "symbol": "ISCB",
-        "name": "ISHARES TRUST MORNINGSTAR SMALL-CAP ETF",
-        "koreanName": "ISHARES MORNINGSTAR SMALL CAP"
     },
     {
         "symbol": "ISCF",
@@ -11265,6 +11405,11 @@
         "koreanName": "INNOVATOR EQUITY DEFINED PROTECTION - 6M JAN/JUL"
     },
     {
+        "symbol": "JALL",
+        "name": "JPMORGAN ALL COUNTRY RESEARCH ENHANCED EQUITY ETF",
+        "koreanName": "JPMORGAN ALL COUNTRY RESEARCH ENHANCED EQUITY ETF"
+    },
+    {
         "symbol": "JANB",
         "name": "APTUS JANUARY BUFFER ETF",
         "koreanName": "APTUS JANUARY BUFFER"
@@ -11621,7 +11766,7 @@
     },
     {
         "symbol": "JOET",
-        "name": "VIRTUS ETF TRUST II VIRTUS TERRANOVA US QUALITY MOMENTUM ETF",
+        "name": "VIRTUS NYSE TERRANOVA U.S. QUALITY MOMENTUM ETF",
         "koreanName": "VIRTUS TERRANOVA US QUALITY MOMENTUM"
     },
     {
@@ -11938,6 +12083,11 @@
         "symbol": "KBFR",
         "name": "INNOVATOR U.S. SMALL CAP MANAGED 10 BUFFER ETF",
         "koreanName": "INNOVATOR US SMALL CAP MANAGED 10 BUFFER"
+    },
+    {
+        "symbol": "KBTY",
+        "name": "GUINNESS ATKINSON K-BEAUTY ETF",
+        "koreanName": "GUINNESS ATKINSON K-BEAUTY"
     },
     {
         "symbol": "KBUF",
@@ -12577,12 +12727,7 @@
     {
         "symbol": "LIGB",
         "name": "CORGI FTSE 10+ YEAR IG CORPORATE BOND ETF",
-        "koreanName": "CORGI FTSE 10+ YEAR IG CORPORATE BOND ETF"
-    },
-    {
-        "symbol": "LIMI",
-        "name": "THEMES LITHIUM & BATTERY METAL MINERS ETF",
-        "koreanName": "THEMES LITHIUM & BATTERY METAL MINERS"
+        "koreanName": "CORGI FTSE 10+Y IG CORPORATE BOND"
     },
     {
         "symbol": "LIT",
@@ -12701,7 +12846,7 @@
     },
     {
         "symbol": "LONZ",
-        "name": "PIMCO ETF TRUST SENIOR LOAN ACTIVE EXCHANGE TRADED FUND",
+        "name": "PIMCO SENIOR LOAN AND SHORT-TERM ACTIVE ETF",
         "koreanName": "PIMCO SENIOR LOAN ACTIVE"
     },
     {
@@ -12877,7 +13022,7 @@
     {
         "symbol": "LTB",
         "name": "CORGI FTSE 20+ YEAR U.S. TREASURY BOND ETF",
-        "koreanName": "CORGI FTSE 20+ YEAR U.S. TREASURY BOND ETF"
+        "koreanName": "CORGI FTSE 20+Y US TREASURY BOND"
     },
     {
         "symbol": "LTL",
@@ -12935,6 +13080,16 @@
         "koreanName": "CAMBRIA LARGE CAP SHAREHOLDER YIELD"
     },
     {
+        "symbol": "LYR",
+        "name": "LYRICAL U.S. VALUE EQUITY ETF",
+        "koreanName": "LYRICAL US VALUE EQUITY"
+    },
+    {
+        "symbol": "LYRI",
+        "name": "LYRICAL INTERNATIONAL VALUE EQUITY ETF",
+        "koreanName": "LYRICAL INTERNATIONAL VALUE EQUITY"
+    },
+    {
         "symbol": "LYTE",
         "name": "ROUNDHILL PHOTONICS & OPTICS ETF",
         "koreanName": "ROUNDHILL PHOTONICS & OPTICS"
@@ -12960,6 +13115,11 @@
         "koreanName": "MADISON AGGREGATE BOND"
     },
     {
+        "symbol": "MAGP",
+        "name": "ROUNDHILL MAGNIFICENT SEVEN PLUS ETF",
+        "koreanName": "ROUNDHILL MAGNIFICENT SEVEN PLUS"
+    },
+    {
         "symbol": "MAGS",
         "name": "ROUNDHILL MAGNIFICENT SEVEN ETF",
         "koreanName": "ROUNDHILL MAGNIFICENT SEVEN"
@@ -12978,11 +13138,6 @@
         "symbol": "MAIA",
         "name": "MAIA BIOTECHNOLOGY INC",
         "koreanName": "마이어 바이오테크놀로지"
-    },
-    {
-        "symbol": "MAKX",
-        "name": "PROSHARES TRUST S&P KENSHO SMART FACTORIES ETF",
-        "koreanName": "PROSHARES S&P KENSHO SMART FACTORIES"
     },
     {
         "symbol": "MAMB",
@@ -13180,6 +13335,11 @@
         "koreanName": "MONARCH DIVIDEND PLUS"
     },
     {
+        "symbol": "MDRN",
+        "name": "MODERN MNG TECH CORP",
+        "koreanName": "MODERN MNG TECH CORP"
+    },
+    {
         "symbol": "MDY",
         "name": "STATE STREET SPDR S&P MIDCAP 400 ETF",
         "koreanName": "SS SPDR S&P MIDCAP 400 TRUST"
@@ -13273,6 +13433,11 @@
         "symbol": "MFEM",
         "name": "PIMCO EQUITY SERIES RAFI DYNMC MULT FACTR EMRNG MKTS EQT ETF",
         "koreanName": "PIMCO RAFI DYNAMIC MULTI FACTOR EMERGING MARKETS EQUITY"
+    },
+    {
+        "symbol": "MFIX",
+        "name": "NOMURA STRATEGIC INCOME ETF",
+        "koreanName": "NOMURA STRATEGIC INCOME"
     },
     {
         "symbol": "MFSD",
@@ -13373,11 +13538,6 @@
         "symbol": "MIC",
         "name": "CORGI MU 2X DAILY ETF",
         "koreanName": "코기 마이크론 테크놀로지(MU) 2X"
-    },
-    {
-        "symbol": "MID",
-        "name": "AMERICAN CENTURY ETF TRUST MID CAP GROWTH IMPACT ETF",
-        "koreanName": "AMERICAN CENTURY MID CAP GROWTH IMPACT"
     },
     {
         "symbol": "MIDE",
@@ -13557,7 +13717,7 @@
     {
         "symbol": "MMF",
         "name": "CORGI MONEY MARKET ETF",
-        "koreanName": "CORGI MONEY MARKET ETF"
+        "koreanName": "CORGI MONEY MARKET"
     },
     {
         "symbol": "MMHI",
@@ -13623,11 +13783,6 @@
         "symbol": "MNGZ",
         "name": "YORKVILLE AMERICA 2X LONG MANGOS PLUS DAILY TARGET ETF",
         "koreanName": "YORKVILLE AMERICA MANGOS PLUS DAILY 2X"
-    },
-    {
-        "symbol": "MNRS",
-        "name": "GRAYSCALE BITCOIN MINERS ETF",
-        "koreanName": "GRAYSCALE BITCOIN MINERS"
     },
     {
         "symbol": "MNSX",
@@ -14000,11 +14155,6 @@
         "koreanName": "VANGUARD NEW YORK TAX-EXEMPT BOND"
     },
     {
-        "symbol": "MUSI",
-        "name": "AMERICAN CENTURY ETF TRUST MULTISECTOR INCOME ETF",
-        "koreanName": "AMERICAN CENTURY MULTISECTOR INCOME"
-    },
-    {
         "symbol": "MUSQ",
         "name": "MUSQ GLOBAL MUSIC INDUSTRY INDEX ETF",
         "koreanName": "MUSQ GLOBAL MUSIC INDUSTRY"
@@ -14096,7 +14246,7 @@
     },
     {
         "symbol": "MZZ",
-        "name": "PROSHARES TRUST ULTRASHORT MIDCAP 400 NEW APRIL 2021(R/S",
+        "name": "PROSHARES TRUST ULTRASHORT MIDCAP400 (POST REV SPLIT)",
         "koreanName": "PROSHARES MID CAP 400 -2X"
     },
     {
@@ -14281,7 +14431,7 @@
     },
     {
         "symbol": "NEN",
-        "name": "NEW ENGLAND RLTY ASSOC LTD PART",
+        "name": "NEW ENGLAND REALTY ASSOCIATES LP",
         "koreanName": "뉴 잉글랜드 리얼티 어소시에이트"
     },
     {
@@ -14408,6 +14558,11 @@
         "symbol": "NJNK",
         "name": "COLUMBIA U.S. HIGH YIELD ETF",
         "koreanName": "COLUMBIA US HIGH YIELD"
+    },
+    {
+        "symbol": "NJPN",
+        "name": "NOMURA JAPAN EQUITY ETF",
+        "koreanName": "NOMURA JAPAN EQUITY"
     },
     {
         "symbol": "NJUL",
@@ -14771,7 +14926,7 @@
     },
     {
         "symbol": "NVII",
-        "name": "REX NVDA GROWTH & INCOME ETF",
+        "name": "REX NVDA ENHANCED GROWTH & INCOME ETF",
         "koreanName": "REX NVDA GROWTH & INCOME"
     },
     {
@@ -14927,7 +15082,7 @@
     {
         "symbol": "OBK",
         "name": "ORIGIN BANCORP INC",
-        "koreanName": "ORIGIN BANCORP INC"
+        "koreanName": "오리진 뱅코프"
     },
     {
         "symbol": "OBND",
@@ -15098,11 +15253,6 @@
         "symbol": "OMFS",
         "name": "INVESCO EXCHANGE TRADED SELF IDX FT RUSSELL 2000 DYNAMC MLTI",
         "koreanName": "INVESCO RUSSELL 2000 DYNAMIC MULTIFACTOR"
-    },
-    {
-        "symbol": "OND",
-        "name": "PROSHARES TRUST ON-DEMAND ETF",
-        "koreanName": "PROSHARES ON DEMAND"
     },
     {
         "symbol": "ONDC",
@@ -15293,6 +15443,11 @@
         "symbol": "OVM",
         "name": "OVERLAY SHARES MUNICIPAL BOND ETF",
         "koreanName": "OVERLAY SHARES MUNICIPAL BOND"
+    },
+    {
+        "symbol": "OVQ",
+        "name": "OVERLAY SHARES NASDAQ 100 INCOME ETF",
+        "koreanName": "OVERLAY SHARES NASDAQ 100 INCOME"
     },
     {
         "symbol": "OVS",
@@ -15770,6 +15925,11 @@
         "koreanName": "PUTNAM FOCUSED LARGE CAP GROWTH"
     },
     {
+        "symbol": "PGRW",
+        "name": "PRINCIPAL GROWTH ETF",
+        "koreanName": "PRINCIPAL GROWTH"
+    },
+    {
         "symbol": "PGX",
         "name": "INVESCO EXCHANGE TRADED FD TR II PFD ETF",
         "koreanName": "INVESCO PREFERRED"
@@ -16073,6 +16233,11 @@
         "symbol": "POEL",
         "name": "DEFIANCE DAILY TARGET 2X LONG POET ETF",
         "koreanName": "디파이언스 포엣 테크놀로지스(POET) 2X"
+    },
+    {
+        "symbol": "POMG",
+        "name": "PRIMECAP ODYSSEY DISCOVERY ETF",
+        "koreanName": "PRIMECAP ODYSSEY DISCOVERY"
     },
     {
         "symbol": "PONX",
@@ -16388,6 +16553,11 @@
         "symbol": "PTIN",
         "name": "PACER FDS TR TRENDPILOT INTERNATIONAL ETF",
         "koreanName": "PACER TRENDPILOT INTERNATIONAL"
+    },
+    {
+        "symbol": "PTIV",
+        "name": "PINEAPPLE FINANCIAL INC",
+        "koreanName": "파인애플 파이낸셜"
     },
     {
         "symbol": "PTL",
@@ -16855,6 +17025,11 @@
         "koreanName": "FT VEST NASDAQ 100 QUARTERLY 15 BUFFER"
     },
     {
+        "symbol": "QQDH",
+        "name": "TUTTLE CAPITAL INNOVATION 100 INCOME & HEDGE ETF",
+        "koreanName": "TUTTLE CAPITAL INNOVATION 100 INCOME & HEDGE"
+    },
+    {
         "symbol": "QQH",
         "name": "NORTHERN LIGHTS FUND TRUST III HCM DEFENDER 100 INDEX ETF",
         "koreanName": "HCM DEFENDER 100"
@@ -17085,6 +17260,11 @@
         "koreanName": "YIELDMAX RBLX OPTION INCOME STRATEGY"
     },
     {
+        "symbol": "RBTX",
+        "name": "ISHARES FUTURE ROBOTICS AND RELATED TECHNOLOGIES ACTIVE ETF",
+        "koreanName": "ISHARES FUTURE ROBOTICS AND RELATED TECHNOLOGIES ACTIVE"
+    },
+    {
         "symbol": "RBUF",
         "name": "INNOVATOR U.S. SMALL CAP 10 BUFFER ETF - QUARTERLY",
         "koreanName": "INNOVATOR US SMALL CAP 10 BUFFER - QUARTERLY"
@@ -17160,9 +17340,19 @@
         "koreanName": "레어 어스 아메리카스"
     },
     {
+        "symbol": "RECD",
+        "name": "COLUMBIA RECS LADDERED DEEP BUFFER ETF",
+        "koreanName": "COLUMBIA RECS LADDERED DEEP BUFFER"
+    },
+    {
         "symbol": "RECI",
         "name": "COLUMBIA RESEARCH ENHANCED CORE PREMIUM INCOME ETF",
         "koreanName": "COLUMBIA RESEARCH ENHANCED CORE PREMIUM INCOME"
+    },
+    {
+        "symbol": "RECM",
+        "name": "COLUMBIA RECS LADDERED MODERATE BUFFER ETF",
+        "koreanName": "COLUMBIA RECS LADDERED MODERATE BUFFER"
     },
     {
         "symbol": "RECS",
@@ -17246,7 +17436,7 @@
     },
     {
         "symbol": "REW",
-        "name": "PROSHARES TRUST ULTRASHORT TECHNOLOGY (P/S)",
+        "name": "PROSHARES TRUST ULTRASHORT TECHNOLOGY NEW OCT 2026 (R/S)",
         "koreanName": "PROSHARES TECHNOLOGY -2X"
     },
     {
@@ -17766,7 +17956,7 @@
     },
     {
         "symbol": "RWM",
-        "name": "PROSHARES TRUST SHORT RUSSELL2000 (POST REV SPLIT)",
+        "name": "PROSHARES TRUST SHORT RUSSELL2000 NEW 2026 (R/S)",
         "koreanName": "PROSHARES RUSSELL 2000 -1X"
     },
     {
@@ -18085,6 +18275,11 @@
         "koreanName": "SCHWAB US AGGREGATE BOND"
     },
     {
+        "symbol": "SCIN",
+        "name": "SCHWAB INTERNATIONAL BOND ETF",
+        "koreanName": "SCHWAB INTERNATIONAL BOND"
+    },
+    {
         "symbol": "SCIO",
         "name": "FIRST TR EXCHANGE TRADED FD IV STRUCTURED CREDIT INCOME OPPO",
         "koreanName": "FIRST TRUST STRUCTURED CREDIT INCOME OPPORTUNITIES"
@@ -18355,6 +18550,11 @@
         "koreanName": "TRUESHARES STRUCTURED OUTCOME - SEP"
     },
     {
+        "symbol": "SEQ",
+        "name": "SEQUOIA ETF",
+        "koreanName": "SEQUOIA"
+    },
+    {
         "symbol": "SER",
         "name": "SERINA THERAPEUTICS INC",
         "koreanName": "세리나 테라퓨틱스"
@@ -18465,6 +18665,11 @@
         "koreanName": "ADRHEDGED SHELL PLC"
     },
     {
+        "symbol": "SHLA",
+        "name": "GLOBAL X ASIA DEFENSE TECH ETF",
+        "koreanName": "GLOBAL X ASIA DEFENSE TECH ETF"
+    },
+    {
         "symbol": "SHLD",
         "name": "GLOBAL X FDS DEFENSE TECH ETF",
         "koreanName": "GLOBAL X DEFENSE TECH"
@@ -18555,6 +18760,11 @@
         "koreanName": "그루포 시멕(ADR)"
     },
     {
+        "symbol": "SIMI",
+        "name": "AMERICAN BEACON SIM HIGH INCOME ETF",
+        "koreanName": "AMERICAN BEACON SIM HIGH INCOME ETF"
+    },
+    {
         "symbol": "SIMS",
         "name": "STATE STREET SPDR S&P KENSHO INTELLIGENT STRUCTURES ETF",
         "koreanName": "SS SPDR S&P KENSHO INTELLIGENT STRUCTURES"
@@ -18583,6 +18793,11 @@
         "symbol": "SIVR",
         "name": "ABRDN SILVER ETF TR ABRDN PHYSICAL SILVER SHARES ETF",
         "koreanName": "ABERDEEN STANDARD PHYSICAL SILVER SHARES"
+    },
+    {
+        "symbol": "SIX",
+        "name": "GLOBAL X MAGNIFICENT SIX ETF",
+        "koreanName": "GLOBAL X MAGNIFICENT SIX"
     },
     {
         "symbol": "SIXA",
@@ -18810,6 +19025,11 @@
         "koreanName": "YIELDMAX SMCI OPTION INCOME STRATEGY"
     },
     {
+        "symbol": "SMDC",
+        "name": "NOMURA SMALL AND MID CAP ETF",
+        "koreanName": "NOMURA SMALL AND MID CAP"
+    },
+    {
         "symbol": "SMDD",
         "name": "PROSHARES ULTRAPRO SHORT MIDCAP400",
         "koreanName": "PROSHARES MID CAP 400 -3X"
@@ -18922,7 +19142,7 @@
     {
         "symbol": "SMRZ",
         "name": "GLOBAL X SMALL MODULAR REACTOR ETF",
-        "koreanName": "GLOBAL X SMALL MODULAR REACTOR ETF"
+        "koreanName": "GLOBAL X SMALL MODULAR REACTOR"
     },
     {
         "symbol": "SMTG",
@@ -19036,8 +19256,8 @@
     },
     {
         "symbol": "SOAR",
-        "name": "VOLATO GROUP INC",
-        "koreanName": "볼라토 그룹"
+        "name": "SOAR AI INC",
+        "koreanName": "소어AI"
     },
     {
         "symbol": "SOEZ",
@@ -19086,7 +19306,7 @@
     },
     {
         "symbol": "SPAB",
-        "name": "STATE STREET SPDR PORTFOLIO AGGREGATE BOND ETF",
+        "name": "STATE STREET SPDR PORTFOLIO AGGREGATE BOND INDEX ETF",
         "koreanName": "SS SPDR PORTFOLIO AGGREGATE BOND"
     },
     {
@@ -19101,7 +19321,7 @@
     },
     {
         "symbol": "SPBO",
-        "name": "STATE STREET SPDR PORTFOLIO CORPORATE BOND ETF",
+        "name": "STATE STREET SPDR PORTFOLIO CORPORATE BOND INDEX ETF",
         "koreanName": "SS SPDR PORTFOLIO CORPORATE BOND"
     },
     {
@@ -19231,7 +19451,7 @@
     },
     {
         "symbol": "SPHY",
-        "name": "STATE STREET SPDR PORTFOLIO HIGH YIELD BOND ETF",
+        "name": "STATE STREET SPDR PORTFOLIO HIGH YIELD BOND INDEX ETF",
         "koreanName": "SS SPDR PORTFOLIO HIGH YIELD BOND"
     },
     {
@@ -19246,12 +19466,12 @@
     },
     {
         "symbol": "SPIP",
-        "name": "STATE STREET SPDR PORTFOLIO TIPS ETF",
+        "name": "STATE STREET SPDR PORTFOLIO TIPS INDEX ETF",
         "koreanName": "SS SPDR PORTFOLIO TIPS"
     },
     {
         "symbol": "SPLB",
-        "name": "STATE STREET SPDR PORTFOLIO LONG TERM CORPORATE BOND ETF",
+        "name": "STATE STREET SPDR PORTFOLIO LONG TERM CORPORATE BOND INDEX E",
         "koreanName": "SS SPDR PORTFOLIO LONG TERM CORPORATE BOND"
     },
     {
@@ -19266,7 +19486,7 @@
     },
     {
         "symbol": "SPMB",
-        "name": "STATE STREET SPDR PORTFOLIO MORTGAGE BACKED BOND ETF",
+        "name": "STATE STREET SPDR PORTFOLIO MORTGAGE BACKED BOND INDEX ETF",
         "koreanName": "SS SPDR PORTFOLIO MORTGAGE BACKED BOND"
     },
     {
@@ -19291,7 +19511,7 @@
     },
     {
         "symbol": "SPSB",
-        "name": "STATE STREET SPDR PORTFOLIO SHORT TERM CORPORATE BOND ETF",
+        "name": "STATE STREET SPDR PORTFOLIO SHORT TERM CORPORATE BOND INDEX",
         "koreanName": "SS SPDR PORTFOLIO SHORT TERM CORPORATE BOND"
     },
     {
@@ -19306,7 +19526,7 @@
     },
     {
         "symbol": "SPTB",
-        "name": "STATE STREET SPDR PORTFOLIO TREASURY ETF",
+        "name": "STATE STREET SPDR PORTFOLIO TREASURY INDEX ETF",
         "koreanName": "SS SPDR PORTFOLIO TREASURY"
     },
     {
@@ -19316,12 +19536,12 @@
     },
     {
         "symbol": "SPTI",
-        "name": "STATE STREET SPDR PORTFOLIO INTERMEDIATE TERM TREASURY ETF",
+        "name": "STATE STREET SPDR PORTFOLIO INTERMEDIATE TERM TREASURY INDEX",
         "koreanName": "SS SPDR PORTFOLIO INTERMEDIATE TERM TREASURY"
     },
     {
         "symbol": "SPTL",
-        "name": "STATE STREET SPDR PORTFOLIO LONG TERM TREASURY ETF",
+        "name": "STATE STREET SPDR PORTFOLIO LONG TERM TREASURY INDEX ETF",
         "koreanName": "SS SPDR PORTFOLIO LONG TERM TREASURY"
     },
     {
@@ -19331,12 +19551,12 @@
     },
     {
         "symbol": "SPTS",
-        "name": "STATE STREET SPDR PORTFOLIO SHORT TERM TREASURY ETF",
+        "name": "STATE STREET SPDR PORTFOLIO SHORT TERM TREASURY INDEX ETF",
         "koreanName": "SS SPDR PORTFOLIO SHORT TERM TREASURY"
     },
     {
         "symbol": "SPTU",
-        "name": "STATE STREET SPDR PORTFOLIO ULTRA SHORT T-BILL ETF",
+        "name": "STATE STREET SPDR PORTFOLIO ULTRA SHORT T-BILL INDEX ETF",
         "koreanName": "SS SPDR PORTFOLIO ULTRA SHORT T-BILL"
     },
     {
@@ -19473,6 +19693,11 @@
         "symbol": "SQBA",
         "name": "FT VEST U.S. EQUITY QUARTERLY 15 BUFFER ETF",
         "koreanName": "FT VEST US EQUITY QUARTERLY 15 BUFFER"
+    },
+    {
+        "symbol": "SQBR",
+        "name": "FT VEST U.S. EQUITY QUARTERLY 20 BARRIER ETF",
+        "koreanName": "FT VEST US EQUITY QUARTERLY 20 BARRIER"
     },
     {
         "symbol": "SQLT",
@@ -19705,11 +19930,6 @@
         "koreanName": "수노코코프"
     },
     {
-        "symbol": "SUPL",
-        "name": "PROSHARES TRUST SUPPLY CHAIN LOGISTICS ETF",
-        "koreanName": "PROSHARES SUPPLY CHAIN LOGISTICS"
-    },
-    {
         "symbol": "SURE",
         "name": "ADVISORSHARES TRUST INSIDER ADVANTAGE ETF",
         "koreanName": "ADVISORSHARES INSIDER ADVANTAGE"
@@ -19747,7 +19967,7 @@
     {
         "symbol": "SVTN",
         "name": "CORGI FTSE 7-10 YEAR U.S. TREASURY BOND ETF",
-        "koreanName": "CORGI FTSE 7-10 YEAR U.S. TREASURY BOND ETF"
+        "koreanName": "CORGI FTSE 7-10Y US TREASURY BOND"
     },
     {
         "symbol": "SVXY",
@@ -20125,6 +20345,11 @@
         "koreanName": "SS SPDR NUVEEN ICE MUNICIPAL BOND"
     },
     {
+        "symbol": "TFIX",
+        "name": "T. ROWE PRICE CAPITAL APPRECIATION FIXED INCOME ETF",
+        "koreanName": "T. ROWE PRICE CAPITAL APPRECIATION FIXED INCOME ETF"
+    },
+    {
         "symbol": "TFJL",
         "name": "INNOVATOR ETFS TRUST 20 PLUS YR TREAS BD 5 FLOOR ETF JULY",
         "koreanName": "INNOVATOR 20+Y TREASURY BOND 5 FLOOR - JUL"
@@ -20210,6 +20435,11 @@
         "koreanName": "ISHARES US THEMATIC ROTATION ACTIVE"
     },
     {
+        "symbol": "THRU",
+        "name": "TEMA COMMODITY INFRASTRUCTURE ETF",
+        "koreanName": "TEMA COMMODITY INFRASTRUCTURE"
+    },
+    {
         "symbol": "THTA",
         "name": "TIDAL ETF TRUST SOFI ENHANCED YIELD ETF",
         "koreanName": "SOFI ENHANCED YIELD"
@@ -20258,11 +20488,6 @@
         "symbol": "TINS",
         "name": "TEMPLETON INTERNATIONAL INSIGHTS ETF",
         "koreanName": "TEMPLETON INTERNATIONAL INSIGHTS"
-    },
-    {
-        "symbol": "TINT",
-        "name": "PROSHARES TRUST SMART MATERIALS ETF",
-        "koreanName": "PROSHARES SMART MATERIALS"
     },
     {
         "symbol": "TINY",
@@ -20507,7 +20732,7 @@
     {
         "symbol": "TNTW",
         "name": "CORGI FTSE 10-20 YEAR U.S. TREASURY BOND ETF",
-        "koreanName": "CORGI FTSE 10-20 YEAR U.S. TREASURY BOND ETF"
+        "koreanName": "CORGI FTSE 10-20Y US TREASURY BOND"
     },
     {
         "symbol": "TNUK",
@@ -20725,6 +20950,11 @@
         "koreanName": "MC TRIO EQUITY BUFFERED"
     },
     {
+        "symbol": "TRLL",
+        "name": "DIREXION TRILLIONS ETF",
+        "koreanName": "DIREXION TRILLIONS ETF"
+    },
+    {
         "symbol": "TRND",
         "name": "PACER FDS TR TRENDPILOT FUND OF FUNDS ETF",
         "koreanName": "PACER TRENDPILOT OFS"
@@ -20806,7 +21036,7 @@
     },
     {
         "symbol": "TSII",
-        "name": "REX TSLA GROWTH & INCOME ETF",
+        "name": "REX TSLA ENHANCED GROWTH & INCOME ETF",
         "koreanName": "REX TSLA GROWTH & INCOME"
     },
     {
@@ -20917,7 +21147,7 @@
     {
         "symbol": "TTTT",
         "name": "CORGI FTSE U.S. TIPS BOND ETF",
-        "koreanName": "CORGI FTSE U.S. TIPS BOND ETF"
+        "koreanName": "CORGI FTSE US TIPS BOND"
     },
     {
         "symbol": "TTXD",
@@ -20968,6 +21198,16 @@
         "symbol": "TXBC",
         "name": "21SHARES FTSE CRYPTO 10 EX-BTC INDEX ETF",
         "koreanName": "21SHARES FTSE CRYPTO 10 EX-BTC"
+    },
+    {
+        "symbol": "TXCP",
+        "name": "TEXAS CAPITAL BANCSHARES INC",
+        "koreanName": "TEXAS CAPITAL BANCSHARES INC"
+    },
+    {
+        "symbol": "TXCP/B",
+        "name": "TEXAS CAPITAL BANCSHARES INC DEP SHS REP 1/40TH FXD RT NCUM",
+        "koreanName": "TEXAS CAPITAL BANCSHARES INC DEP SHS REP 1/40TH FXD RT NCUM"
     },
     {
         "symbol": "TXNU",
@@ -21047,7 +21287,7 @@
     {
         "symbol": "UB",
         "name": "CORGI FTSE U.S. TREASURY BOND ETF",
-        "koreanName": "CORGI FTSE U.S. TREASURY BOND ETF"
+        "koreanName": "CORGI FTSE US TREASURY BOND"
     },
     {
         "symbol": "UBEW",
@@ -21071,7 +21311,7 @@
     },
     {
         "symbol": "UBT",
-        "name": "PROSHARES TRUST PROSHARES ULTRA 20+YR TREASURY",
+        "name": "PROSHARES TRUST PROSHARES ULTRA 20+ YR TREAS NEW (R/S)",
         "koreanName": "PROSHARES 20+Y TREASURY 2X"
     },
     {
@@ -21800,19 +22040,24 @@
         "koreanName": "VIRTUS EMERGING MARKETS DIVIDEND"
     },
     {
+        "symbol": "VEMB",
+        "name": "VANGUARD EMERGING MARKETS BOND ACTIVE ETF",
+        "koreanName": "VANGUARD EMERGING MARKETS BOND ACTIVE"
+    },
+    {
         "symbol": "VEMY",
         "name": "VIRTUS ETF TRUST II STONE HARBOR EMERGING MARKETS HIGH YIELD",
         "koreanName": "VIRTUS STONE HARBOR EMERGING MARKETS HIGH YIELD BOND"
     },
     {
+        "symbol": "VEN",
+        "name": "TEUCRIUM VENEZUELA FUTURE OPPORTUNITIES ETF",
+        "koreanName": "TEUCRIUM VENEZUELA FUTURE OPPORTUNITIES ETF"
+    },
+    {
         "symbol": "VENU",
         "name": "VENU HOLDING CORPORATION",
         "koreanName": "베뉴 홀딩"
-    },
-    {
-        "symbol": "VERS",
-        "name": "PROSHARES TRUST METAVERSE ETF",
-        "koreanName": "PROSHARES METAVERSE"
     },
     {
         "symbol": "VETZ",
@@ -21946,7 +22191,7 @@
     },
     {
         "symbol": "VIXM",
-        "name": "PROSHARES TRUST II VIX MID-TERM FUTURES (POST REV SPLIT)",
+        "name": "PROSHARES TRUST II VIX MID TERM FUTURES ETF NEW",
         "koreanName": "PROSHARES VIX MID TERM FUTURES"
     },
     {
@@ -22145,11 +22390,6 @@
         "koreanName": "VANGUARD TOTAL WORLD STOCK"
     },
     {
-        "symbol": "VTAK",
-        "name": "CATHETER PRECISION INC",
-        "koreanName": "캐시터 프리시전"
-    },
-    {
         "symbol": "VTEB",
         "name": "VANGUARD MUNICIPAL BOND FUNDS TAX-EXEMPT BOND INDEX FUND ETF",
         "koreanName": "VANGUARD TAX EXEMPT BOND"
@@ -22195,6 +22435,11 @@
         "koreanName": "VANGUARD VALUE"
     },
     {
+        "symbol": "VTVX",
+        "name": "XFUNDS VALUE INCOME ETF",
+        "koreanName": "XFUNDS VALUE INCOME"
+    },
+    {
         "symbol": "VUG",
         "name": "VANGUARD INDEX FUNDS MORNINGSTAR GROWTH ETF",
         "koreanName": "VANGUARD GROWTH"
@@ -22233,6 +22478,11 @@
         "symbol": "VV",
         "name": "VANGUARD INDEX FUNDS MORNINGSTAR LARGE-CAP ETF",
         "koreanName": "VANGUARD LARGE CAP"
+    },
+    {
+        "symbol": "VVPL",
+        "name": "VULCAN VALUE PARTNERS ETF",
+        "koreanName": "VULCAN VALUE PARTNERS ETF"
     },
     {
         "symbol": "VWO",
@@ -22292,27 +22542,32 @@
     {
         "symbol": "WBEM",
         "name": "WILLIAM BLAIR EMERGING MARKETS EQUITY ETF",
-        "koreanName": "WILLIAM BLAIR EMERGING MARKETS EQUITY ETF"
+        "koreanName": "WILLIAM BLAIR EMERGING MARKETS EQUITY"
     },
     {
         "symbol": "WBIE",
         "name": "WILLIAM BLAIR INTERNATIONAL EQUITY ETF",
-        "koreanName": "WILLIAM BLAIR INTERNATIONAL EQUITY ETF"
+        "koreanName": "WILLIAM BLAIR INTERNATIONAL EQUITY"
     },
     {
         "symbol": "WBIF",
-        "name": "ABSOLUTE SHS TR WBI BULLBEAR VALUE 3000 ETF",
+        "name": "WBI FUNDAMENTAL FACTORS HEDGED ETF",
         "koreanName": "WBI BULLBEAR VALUE 3000"
     },
     {
         "symbol": "WBIG",
-        "name": "ABSOLUTE SHS TR WBI BULLBEAR YIELD 3000 ETF",
+        "name": "WBI INCOME GENERATORS HEDGED ETF",
         "koreanName": "WBI BULLBEAR YIELD 3000"
     },
     {
         "symbol": "WBIL",
-        "name": "ABSOLUTE SHS TR WBI BULLBEAR QUALITY 3000 ETF",
+        "name": "WBI TREND LEADERS HEDGED ETF",
         "koreanName": "WBI BULLBEAR QUALITY 3000"
+    },
+    {
+        "symbol": "WBMO",
+        "name": "VANECK WEALTH BUILDER ETF",
+        "koreanName": "VANECK WEALTH BUILDER"
     },
     {
         "symbol": "WCAP",
@@ -22440,6 +22695,11 @@
         "koreanName": "NICHOLAS DEFENSE AND RARE EARTH INCOME"
     },
     {
+        "symbol": "WINC",
+        "name": "WILLIAM BLAIR EMERGING INCOME ETF",
+        "koreanName": "WILLIAM BLAIR EMERGING INCOME"
+    },
+    {
         "symbol": "WIP",
         "name": "STATE STREET SPDR FTSE INTERNATIONAL GOVERNMENT INFLATION-PR",
         "koreanName": "SS SPDR FTSE INTERNATIONAL GOVERNMENT INFLATION PROTECTED BOND"
@@ -22461,7 +22721,7 @@
     },
     {
         "symbol": "WMTI",
-        "name": "REX WMT GROWTH & INCOME ETF",
+        "name": "REX WMT ENHANCED GROWTH & INCOME ETF",
         "koreanName": "REX WMT GROWTH & INCOME"
     },
     {
@@ -22680,11 +22940,6 @@
         "koreanName": "INNOVATOR US EQUITY ACCELERATED 9 BUFFER - JUL"
     },
     {
-        "symbol": "XBNB",
-        "name": "TEUCRIUM XETFS 2X LONG DAILY BNB ETF",
-        "koreanName": "TEUCRIUM XETFS BNB DAILY 2X"
-    },
-    {
         "symbol": "XBOC",
         "name": "INNOVATOR ETFS TRUST US EQTY ACCELERATED 9 BUFFER OCTOBER ET",
         "koreanName": "INNOVATOR US EQUITY ACCELERATED 9 BUFFER - OCT"
@@ -22743,6 +22998,11 @@
         "symbol": "XDIV",
         "name": "ROUNDHILL S&P 500 ACCUMULATING ETF",
         "koreanName": "ROUNDHILL S&P 500 NO DIVIDEND TARGET"
+    },
+    {
+        "symbol": "XDLR",
+        "name": "LAZARD NON-DOLLAR ACTIVE INCOME ETF",
+        "koreanName": "LAZARD NON-DOLLAR ACTIVE INCOME"
     },
     {
         "symbol": "XDQQ",
@@ -22937,7 +23197,7 @@
     {
         "symbol": "XLEM",
         "name": "STATE STREET S&P 500 ENERGY MARKET SECTOR SPDR ETF",
-        "koreanName": "STATE STREET S&P 500 ENERGY MARKET SECTOR SPDR ETF"
+        "koreanName": "SS S&P 500 ENERGY MARKET SECTOR SPDR"
     },
     {
         "symbol": "XLEX",
@@ -22992,7 +23252,7 @@
     {
         "symbol": "XLKM",
         "name": "STATE STREET S&P 500 TECHNOLOGY MARKET SECTOR SPDR ETF",
-        "koreanName": "STATE STREET S&P 500 TECHNOLOGY MARKET SECTOR SPDR ETF"
+        "koreanName": "SS S&P 500 TECHNOLOGY MARKET SECTOR SPDR"
     },
     {
         "symbol": "XLKX",
@@ -23012,7 +23272,7 @@
     {
         "symbol": "XLPM",
         "name": "STATE STREET S&P 500 CONSUMER STAPLES MARKET SECTOR SPDR",
-        "koreanName": "STATE STREET S&P 500 CONSUMER STAPLES MARKET SECTOR SPDR"
+        "koreanName": "SS S&P 500 CONSUMER STAPLES MARKET SECTOR SPDR"
     },
     {
         "symbol": "XLPU",
@@ -23087,7 +23347,7 @@
     {
         "symbol": "XLYM",
         "name": "STATE STREET S&P 500 CONSUMER DISCRETIONARY MARKET SECTO",
-        "koreanName": "STATE STREET S&P 500 CONSUMER DISCRETIONARY MARKET SECTO"
+        "koreanName": "SS S&P 500 CONSUMER DISCRETIONARY MARKET SECTOR SPDR"
     },
     {
         "symbol": "XLYX",
@@ -23520,6 +23780,11 @@
         "koreanName": "DIREXION FTSE CHINA DAILY -3X"
     },
     {
+        "symbol": "YASX",
+        "name": "YORKVILLE AMERICA SPACE INDEX ETF",
+        "koreanName": "YORKVILLE AMERICA SPACE INDEX ETF"
+    },
+    {
         "symbol": "YBIT",
         "name": "YIELDMAX BITCOIN OPTION INCOME STRATEGY ETF",
         "koreanName": "YIELDMAX BITCOIN OPTION INCOME STRATEGY"
@@ -23595,6 +23860,11 @@
         "koreanName": "PRINCIPAL ACTIVE INCOME"
     },
     {
+        "symbol": "YLDS",
+        "name": "HARBOR ARENA STRUCTURED INCOME ETF",
+        "koreanName": "HARBOR ARENA STRUCTURED INCOME ETF"
+    },
+    {
         "symbol": "YLDW",
         "name": "WESTWOOD ENHANCED INCOME OPPORTUNITY ETF",
         "koreanName": "WESTWOOD ENHANCED INCOME OPPORTUNITY"
@@ -23618,6 +23888,11 @@
         "symbol": "YMAX",
         "name": "TIDAL TRUST II YIELDMAX UNIVERSE FUND OF OPTION INC ETF",
         "koreanName": "YIELDMAX UNIVERSE FUND OF OPTION INCOME"
+    },
+    {
+        "symbol": "YO",
+        "name": "AMPLIFY S&P 500 BUFFERED AUTOCALLABLE YIELD OPPORTUNITY",
+        "koreanName": "AMPLIFY S&P 500 BUFFERED AUTOCALLABLE YIELD OPPORTUNITY"
     },
     {
         "symbol": "YOLO",
@@ -23705,6 +23980,11 @@
         "koreanName": "GRAYSCALE ZCASH TRUST"
     },
     {
+        "symbol": "ZDAY",
+        "name": "BITWISE AI CYBER DEFENSE ETF",
+        "koreanName": "BITWISE AI CYBER DEFENSE ETF"
+    },
+    {
         "symbol": "ZDEK",
         "name": "INNOVATOR EQUITY DEFINED PROTECTION ETF - 1 YR DECEMBER",
         "koreanName": "INNOVATOR EQUITY DEFINED PROTECTION - 1Y DEC"
@@ -23780,6 +24060,11 @@
         "koreanName": "INNOVATOR EQUITY DEFINED PROTECTION - 1Y NOV"
     },
     {
+        "symbol": "ZOAR",
+        "name": "ZOAR LTD",
+        "koreanName": "ZOAR LTD"
+    },
+    {
         "symbol": "ZOCT",
         "name": "INNOVATOR EQUITY DEFINED PROTECTION ETF - 1 YR OCTOBER",
         "koreanName": "INNOVATOR EQUITY DEFINED PROTECTION - 1Y OCT"
@@ -23798,11 +24083,6 @@
         "symbol": "ZSB",
         "name": "USCF ETF TRUST SUSTAINABLE BATTERY METALS STRATEGY FUND",
         "koreanName": "USCF SUSTAINABLE BATTERY METALS STRATEGY"
-    },
-    {
-        "symbol": "ZSC",
-        "name": "USCF ETF TRUST USCF SUSTAINABLE COMMODITY STRATEGY FUND",
-        "koreanName": "USCF SUSTAINABLE COMMODITY STRATEGY"
     },
     {
         "symbol": "ZSEP",

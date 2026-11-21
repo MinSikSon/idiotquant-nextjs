@@ -13,5 +13,5 @@ export function resolveStockSearchInput(value: string, knownNames: readonly stri
     // Accept common class/preferred aliases only when the broker symbol exists.
     const brokerSymbol = upper.replace(/[.^]/, '/');
     if (brokerSymbol !== upper && knownNames.includes(brokerSymbol)) return brokerSymbol;
-    return isUsTicker(upper) || /^\d{6}$/.test(trimmed) ? upper : null;
+    return isUsTicker(upper) || /^[A-Z0-9]{6}$/.test(upper) ? upper : null;
 }
