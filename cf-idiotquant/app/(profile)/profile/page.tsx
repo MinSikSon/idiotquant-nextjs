@@ -90,6 +90,7 @@ export default function ProfilePage() {
     const [nicknameInput, setNicknameInput] = useState("");
     const [nicknameMessage, setNicknameMessage] = useState("");
     const [nicknameCanChange, setNicknameCanChange] = useState(true);
+    const [nicknameUnlimited, setNicknameUnlimited] = useState(false);
     const [nicknameNextChangeAt, setNicknameNextChangeAt] = useState<number | null>(null);
     const [savingNickname, setSavingNickname] = useState(false);
     const filteredLikedList = likedList.filter(item => matchesWatchlistMarket(item, watchlistMarket));
@@ -158,6 +159,7 @@ export default function ProfilePage() {
                 setNickname(d.nickname ?? "");
                 setNicknameInput(d.nickname ?? "");
                 setNicknameCanChange(d.canChange !== false);
+                setNicknameUnlimited(d.unlimited === true);
                 setNicknameNextChangeAt(d.nextChangeAt ?? null);
             })
             .catch(() => {});
@@ -180,12 +182,14 @@ export default function ProfilePage() {
             const data = await response.json();
             if (response.status === 429) {
                 setNicknameCanChange(false);
+                setNicknameUnlimited(false);
                 setNicknameNextChangeAt(data.nextChangeAt ?? null);
             }
             if (!response.ok) throw new Error(data.error ?? "닉네임을 저장하지 못했습니다.");
             setNickname(data.nickname);
             setNicknameInput(data.nickname);
             setNicknameCanChange(data.canChange !== false);
+            setNicknameUnlimited(data.unlimited === true);
             setNicknameNextChangeAt(data.nextChangeAt ?? null);
             setNicknameMessage("저장했습니다.");
         } catch (error) {
@@ -294,6 +298,11 @@ export default function ProfilePage() {
                             <p className="text-sm font-bold text-neutral-900 dark:text-neutral-50 truncate">
                                 {nickname || session.user?.name}
                             </p>
+                            {nickname && session.user?.name && (
+                                <p className="mt-0.5 truncate text-xs text-neutral-500 dark:text-neutral-400">
+                                    원래 이름: {session.user.name}
+                                </p>
+                            )}
                             {session.user?.email && (
                                 <p className="text-xs text-neutral-400 dark:text-neutral-500 truncate mt-0.5">
                                     {session.user.email}
@@ -327,9 +336,11 @@ export default function ProfilePage() {
                             >{savingNickname ? "저장 중" : "저장"}</button>
                         </div>
                         <p role="status" className="mt-2 min-h-5 text-xs text-neutral-500 dark:text-neutral-400">
-                            {nicknameMessage || (nicknameCanChange
-                                ? "닉네임은 한 달에 한 번 변경할 수 있습니다."
-                                : `다음 변경 가능: ${nextNicknameChangeLabel ?? "한 달 후"}`)}
+                            {nicknameMessage || (nicknameUnlimited
+                                ? "관리자 계정은 변경 횟수 제한이 없습니다."
+                                : nicknameCanChange
+                                    ? "닉네임은 한 달에 한 번 변경할 수 있습니다."
+                                    : `다음 변경 가능: ${nextNicknameChangeLabel ?? "한 달 후"}`)}
                         </p>
                     </div>
                 </div>
