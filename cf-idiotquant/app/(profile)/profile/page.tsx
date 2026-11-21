@@ -89,6 +89,8 @@ export default function ProfilePage() {
     const [nickname, setNickname] = useState("");
     const [nicknameInput, setNicknameInput] = useState("");
     const [nicknameMessage, setNicknameMessage] = useState("");
+    const [nicknameCanChange, setNicknameCanChange] = useState(true);
+    const [nicknameNextChangeAt, setNicknameNextChangeAt] = useState<number | null>(null);
     const [savingNickname, setSavingNickname] = useState(false);
     const filteredLikedList = likedList.filter(item => matchesWatchlistMarket(item, watchlistMarket));
 
@@ -152,7 +154,12 @@ export default function ProfilePage() {
         if (status !== "authenticated") return;
         fetch("/api/user/nickname")
             .then(r => r.ok ? r.json() : Promise.reject())
-            .then(d => { setNickname(d.nickname ?? ""); setNicknameInput(d.nickname ?? ""); })
+            .then(d => {
+                setNickname(d.nickname ?? "");
+                setNicknameInput(d.nickname ?? "");
+                setNicknameCanChange(d.canChange !== false);
+                setNicknameNextChangeAt(d.nextChangeAt ?? null);
+            })
             .catch(() => {});
     }, [status]);
 
@@ -171,9 +178,15 @@ export default function ProfilePage() {
                 body: JSON.stringify({ nickname: value }),
             });
             const data = await response.json();
+            if (response.status === 429) {
+                setNicknameCanChange(false);
+                setNicknameNextChangeAt(data.nextChangeAt ?? null);
+            }
             if (!response.ok) throw new Error(data.error ?? "닉네임을 저장하지 못했습니다.");
             setNickname(data.nickname);
             setNicknameInput(data.nickname);
+            setNicknameCanChange(data.canChange !== false);
+            setNicknameNextChangeAt(data.nextChangeAt ?? null);
             setNicknameMessage("저장했습니다.");
         } catch (error) {
             setNicknameMessage(error instanceof Error ? error.message : "닉네임을 저장하지 못했습니다.");
@@ -202,6 +215,9 @@ export default function ProfilePage() {
     if (!session) return null;
 
     const initial = (nickname || session.user?.name)?.[0]?.toUpperCase() ?? "U";
+    const nextNicknameChangeLabel = nicknameNextChangeAt == null
+        ? null
+        : new Intl.DateTimeFormat("ko-KR", { dateStyle: "long", timeZone: "Asia/Seoul" }).format(new Date(nicknameNextChangeAt * 1000));
 
     return (
         <div className="landing-style-page min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas">
@@ -306,11 +322,15 @@ export default function ProfilePage() {
                             <button
                                 type="button"
                                 onClick={saveNickname}
-                                disabled={savingNickname || nicknameInput.trim() === nickname}
+                                disabled={savingNickname || !nicknameCanChange || nicknameInput.trim() === nickname}
                                 className="min-h-11 rounded-lg bg-brand px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
                             >{savingNickname ? "저장 중" : "저장"}</button>
                         </div>
-                        <p role="status" className="mt-2 min-h-5 text-xs text-neutral-500 dark:text-neutral-400">{nicknameMessage || "프로필에 표시할 이름입니다."}</p>
+                        <p role="status" className="mt-2 min-h-5 text-xs text-neutral-500 dark:text-neutral-400">
+                            {nicknameMessage || (nicknameCanChange
+                                ? "닉네임은 한 달에 한 번 변경할 수 있습니다."
+                                : `다음 변경 가능: ${nextNicknameChangeLabel ?? "한 달 후"}`)}
+                        </p>
                     </div>
                 </div>
 
