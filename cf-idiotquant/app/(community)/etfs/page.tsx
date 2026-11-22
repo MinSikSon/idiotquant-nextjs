@@ -6,9 +6,10 @@ import { useSession } from "next-auth/react";
 import { ArrowDown, ChevronRight, Heart, Layers, LoaderCircle } from "lucide-react";
 import { PageHeader, PAGE_PRIMARY_ACTION_CLS } from "@/components/pageHeader";
 import { StockLogo } from "@/components/stockLogo";
-import { CommunityEtf, getCommunityEtfs, setCommunityEtfLike } from "@/lib/features/communityEtfs/api";
+import { CommunityEtf, CommunityEtfDraft, getCommunityEtfs, setCommunityEtfLike } from "@/lib/features/communityEtfs/api";
 
 const PAGE_SIZE = 20;
+const DRAFT_KEY = "idiotquant:community-etf-draft:v1";
 
 export default function CommunityEtfsPage() {
     const { status } = useSession();
@@ -19,6 +20,7 @@ export default function CommunityEtfsPage() {
     const [hasMore, setHasMore] = useState(true);
     const [error, setError] = useState("");
     const [busyLike, setBusyLike] = useState<string | null>(null);
+    const [draft, setDraft] = useState<CommunityEtfDraft | null>(null);
 
     const load = useCallback(async (nextOffset = 0) => {
         if (nextOffset === 0) setLoading(true);
@@ -34,6 +36,15 @@ export default function CommunityEtfsPage() {
         }
         setLoading(false);
         setLoadingMore(false);
+    }, []);
+
+    useEffect(() => {
+        try {
+            const parsed = JSON.parse(sessionStorage.getItem(DRAFT_KEY) ?? "null");
+            if ((parsed?.market === "KR" || parsed?.market === "US") && Array.isArray(parsed?.holdings)) {
+                setDraft(parsed);
+            }
+        } catch { /* 초안이 없으면 공개된 ETF 목록만 보여준다. */ }
     }, []);
 
     useEffect(() => {
@@ -74,6 +85,24 @@ export default function CommunityEtfsPage() {
                 <Layers size={17} aria-hidden="true" className="text-brand-ink" />
                 <p>다른 투자자의 기준과 종목 구성을 둘러보세요.</p>
             </div>
+            {draft && draft.holdings.length > 0 && <section aria-labelledby="etf-draft-title" className="mb-5 border-y border-neutral-200 py-4 dark:border-surface-dark-border">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <h2 id="etf-draft-title" className="font-semibold">내 ETF 초안</h2>
+                        <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-300">{draft.market === "KR" ? "국내" : "미국"} · {draft.holdings.length}종목</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Link href="/analyze" className="inline-flex min-h-11 items-center px-3 text-sm font-semibold text-brand-ink">종목 추가</Link>
+                        {draft.holdings.length >= 2 && <Link href="/etfs/new" className={PAGE_PRIMARY_ACTION_CLS}>ETF 만들기</Link>}
+                    </div>
+                </div>
+                <ul className="mt-2 divide-y divide-neutral-200 dark:divide-surface-dark-border">
+                    {draft.holdings.map(holding => <li key={holding.ticker} className="flex min-h-14 items-center gap-3 py-2">
+                        <StockLogo ticker={holding.ticker} name={holding.name} isUs={draft.market === "US"} />
+                        <span className="min-w-0 flex-1 break-words font-medium">{holding.name}<span className="ml-2 text-xs text-neutral-500">{holding.ticker}</span></span>
+                    </li>)}
+                </ul>
+            </section>}
             {loading ? <p role="status" className="flex min-h-64 items-center justify-center gap-2 text-sm text-neutral-500"><LoaderCircle size={18} className="animate-spin" />피드를 불러오는 중…</p>
                 : error && items.length === 0 ? <div className="py-14 text-center"><p role="alert" className="text-sm text-rose-700 dark:text-rose-300">{error}</p><button type="button" onClick={() => void load()} className="mt-3 min-h-11 px-3 text-sm font-semibold text-brand-ink">다시 불러오기</button></div>
                 : items.length === 0 ? <section className="border-y border-neutral-200 py-16 text-center dark:border-surface-dark-border"><h1 className="text-lg font-semibold">아직 공개된 ETF가 없어요</h1><p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300">종목을 골라 나만의 ETF를 만들어 보세요.</p><Link href="/screener?createEtf=1" className={`${PAGE_PRIMARY_ACTION_CLS} mt-5`}>종목 고르기</Link></section>
