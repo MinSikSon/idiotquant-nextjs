@@ -103,11 +103,11 @@ export default function CommunityEtfsPage() {
         <PageHeader
             title="나만의 ETF"
             width="content"
-            description={`기대 수익률은 각 종목의 ${etfExpectedReturnBasis} 평가액을 현재가와 비교한 추정치입니다. 생성 이후 변화율은 생성일 또는 직전 거래일 종가를 기준으로 계산하며, 배당·환율·거래비용은 반영하지 않습니다.`}
+            description={`기대 수익률은 각 종목의 ${etfExpectedReturnBasis} 평가액을 현재가와 비교한 추정치입니다. 실제 수익률은 생성일 기준 종가 대비 현재가의 변화이며, 배당·환율·거래비용은 반영하지 않습니다.`}
             primaryAction={<Link href="/screener?createEtf=1" className={PAGE_PRIMARY_ACTION_CLS}>ETF 만들기</Link>}
         />
-        <div className={`${PAGE_WIDTH.content} pb-4 pt-2 text-neutral-900 dark:text-neutral-100 sm:pt-4`}>
-            {draft && draft.holdings.length > 0 && <section aria-labelledby="etf-draft-title" className="mb-5 border-y border-neutral-200 py-4 dark:border-surface-dark-border">
+        <section aria-label="공개 ETF 피드" tabIndex={0} className={`${PAGE_WIDTH.content} h-[calc(100dvh-var(--navigation-h)-2.75rem-var(--bottombar-h))] min-h-48 snap-y snap-mandatory overflow-y-auto overscroll-y-contain scroll-pt-2 py-2 text-neutral-900 dark:text-neutral-100 md:h-[calc(100dvh-var(--navigation-h))] ${CONTROL_FOCUS_CLS}`}>
+            {draft && draft.holdings.length > 0 && <section aria-labelledby="etf-draft-title" className="mx-auto mb-3 max-w-3xl snap-start border-y border-neutral-200 py-4 dark:border-surface-dark-border">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                         <h2 id="etf-draft-title" className="font-semibold">내 ETF 초안</h2>
@@ -127,18 +127,18 @@ export default function CommunityEtfsPage() {
                 : error && items.length === 0 ? <div className="py-14 text-center"><p role="alert" className="text-sm text-rose-700 dark:text-rose-300">{error}</p><button type="button" onClick={() => void load()} className="mt-3 min-h-11 px-3 text-sm font-semibold text-brand-ink">다시 불러오기</button></div>
                 : items.length === 0 ? <section className="border-y border-neutral-200 py-16 text-center dark:border-surface-dark-border"><h1 className="text-lg font-semibold">아직 공개된 ETF가 없어요</h1><p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300">종목을 골라 나만의 ETF를 만들어 보세요.</p><Link href="/screener?createEtf=1" className={`${PAGE_PRIMARY_ACTION_CLS} mt-5`}>종목 고르기</Link></section>
                 : <>
-                    {error && <p role="alert" className="mb-3 text-sm text-rose-700 dark:text-rose-300">{error}</p>}
-                    <div className="mx-auto grid max-w-3xl gap-3">
-                        {items.map(item => <EtfEpisode key={item.id} item={item} busy={busyLike === item.id} onLike={() => void toggleLike(item)} onCopy={() => void copyHoldings(item)} />)}
-                    </div>
-                    {hasMore && <div className="flex justify-center py-3">
-                        <button type="button" disabled={loadingMore} onClick={() => void load(offset)} className="inline-flex min-h-11 items-center gap-2 px-4 text-sm font-semibold text-brand-ink disabled:opacity-50">
-                            {loadingMore ? <LoaderCircle size={16} className="animate-spin" /> : <ArrowDown size={16} aria-hidden="true" />}
-                            {loadingMore ? "불러오는 중…" : "다음 ETF"}
-                        </button>
-                    </div>}
+                    {items.map((item, index) => <div key={item.id} className={`mx-auto max-w-3xl snap-start snap-always pb-3 ${index === items.length - 1 ? "min-h-full" : ""}`}>
+                        {error && index === 0 && <p role="alert" className="mb-2 text-sm text-rose-700 dark:text-rose-300">{error}</p>}
+                        <EtfEpisode item={item} busy={busyLike === item.id} onLike={() => void toggleLike(item)} onCopy={() => void copyHoldings(item)} />
+                        {hasMore && index === items.length - 1 && <div className="flex justify-center pt-2">
+                            <button type="button" disabled={loadingMore} onClick={() => void load(offset)} className={`inline-flex min-h-11 items-center gap-2 px-4 text-sm font-semibold text-brand-ink disabled:opacity-50 ${CONTROL_FOCUS_CLS}`}>
+                                {loadingMore ? <LoaderCircle size={16} className="animate-spin" /> : <ArrowDown size={16} aria-hidden="true" />}
+                                {loadingMore ? "불러오는 중…" : "ETF 더 불러오기"}
+                            </button>
+                        </div>}
+                    </div>)}
                 </>}
-        </div>
+        </section>
     </>;
 }
 
@@ -228,27 +228,30 @@ function PriceComparison({ holdings, prices, market, onRetry }: {
     const showPercent = (percent: number | null) => percent === null ? "자료 없음" : percentFormat.format(percent / 100);
     const showPrice = (price: number | null | undefined) => price == null ? "자료 없음" : priceFormats[market].format(price);
 
+    const actualTone = sinceCreation.percent === null || sinceCreation.percent === 0 ? ""
+        : sinceCreation.percent > 0 ? "text-rose-700 dark:text-rose-400" : "text-blue-700 dark:text-blue-400";
+
     return <details className="group mt-2 border-t border-neutral-200 dark:border-surface-dark-border">
-        <summary className={`flex min-h-11 cursor-pointer list-none items-center gap-2 rounded py-2 [&::-webkit-details-marker]:hidden ${CONTROL_FOCUS_CLS}`}>
-            <span className="grid min-w-0 flex-1 grid-cols-2 gap-x-2">
-                {[{ label: "기대 수익률", result: expected, basis: `${etfExpectedReturnBasis} 가정` },
-                    { label: "생성 이후 변화율", result: sinceCreation, basis: "생성일 기준 종가" }].map(({ label, result, basis }) => <span key={label}>
-                    <span className="block text-xs text-neutral-600 dark:text-neutral-300">{label}</span>
-                    <span className="block font-semibold tabular-nums">{prices ? showPercent(result.percent) : "조회 중…"}</span>
-                    <span className="block text-xs text-neutral-600 dark:text-neutral-300">
-                        {basis}{result.count > 0 && result.count < holdings.length && ` · ${result.count}/${holdings.length}종목`}
-                    </span>
-                </span>)}
+        <summary className={`relative block min-h-11 cursor-pointer list-none rounded py-2.5 [&::-webkit-details-marker]:hidden ${CONTROL_FOCUS_CLS}`}>
+            <span className="grid grid-cols-2 gap-x-2">
+                <span>
+                    <span className="block text-sm font-medium text-neutral-600 dark:text-neutral-300">기대 수익률</span>
+                    <span className={`block break-words font-bold leading-tight tracking-tight tabular-nums ${expected.percent === null ? "text-sm" : "text-xl min-[360px]:text-2xl"}`}>{prices ? showPercent(expected.percent) : "조회 중…"}</span>
+                    {expected.count > 0 && expected.count < holdings.length && <span className="text-xs text-neutral-600 dark:text-neutral-300">{expected.count}/{holdings.length}종목</span>}
+                </span>
+                <span className="border-l border-neutral-200 pl-2 pr-5 dark:border-surface-dark-border">
+                    <span className="block text-sm font-medium text-neutral-600 dark:text-neutral-300">실제 수익률<span className="sr-only"> (생성 후)</span></span>
+                    <span className={`block break-words font-bold leading-tight tracking-tight tabular-nums ${sinceCreation.percent === null ? "text-sm" : "text-xl min-[360px]:text-2xl"} ${actualTone}`}>{prices ? showPercent(sinceCreation.percent) : "조회 중…"}</span>
+                    {sinceCreation.count > 0 && sinceCreation.count < holdings.length && <span className="text-xs text-neutral-600 dark:text-neutral-300">{sinceCreation.count}/{holdings.length}종목</span>}
+                </span>
             </span>
-            <span className="flex shrink-0 items-center gap-0.5 text-xs font-semibold text-brand-ink">
-                <span className="sr-only min-[360px]:not-sr-only">주가 비교</span>
-                <ChevronDown size={16} aria-hidden="true" className="group-open:rotate-180" />
-            </span>
+            <span className="sr-only">종목별 주가 비교</span>
+            <ChevronDown size={18} aria-hidden="true" className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-brand-ink group-open:rotate-180" />
         </summary>
         {!prices ? <p role="status" className="pb-2 text-sm">종목별 주가를 불러오는 중…</p>
             : <>
                 <p className="border-t border-neutral-200 pt-2 text-xs text-neutral-600 dark:border-surface-dark-border dark:text-neutral-300">
-                    가격 자료가 있는 종목의 동일 비중 평균입니다. 기대 수익률은 EPS × 10을 현재가와 비교한 추정치입니다.
+                    두 수익률은 자료가 있는 종목의 동일 비중 평균입니다. 기대 수익률은 PER 10배 추정치이고, 실제 수익률은 생성일 기준 종가 대비 현재가의 변화입니다.
                 </p>
                 {prices.some(price => price.current === null || price.baseline === null) && <button type="button" onClick={onRetry} className={`mt-1 min-h-11 rounded text-sm font-semibold text-brand-ink ${CONTROL_FOCUS_CLS}`}>누락된 주가 다시 조회</button>}
                 <ul aria-label="종목별 주가 비교" className="divide-y divide-neutral-200 pb-2 dark:divide-surface-dark-border">
@@ -261,7 +264,7 @@ function PriceComparison({ holdings, prices, market, onRetry }: {
                                 <div><dt className="text-xs text-neutral-600 dark:text-neutral-300">기준 종가 {baselineDate}</dt><dd>{showPrice(price?.baseline?.price)}</dd></div>
                                 <div><dt className="text-xs text-neutral-600 dark:text-neutral-300">현재가</dt><dd>{showPrice(price?.current)}</dd></div>
                                 <div><dt className="text-xs text-neutral-600 dark:text-neutral-300">{etfExpectedReturnBasis} 평가액</dt><dd>{showPrice(price?.target)}</dd></div>
-                                <div><dt className="text-xs text-neutral-600 dark:text-neutral-300">생성 이후 변화율</dt><dd>{showPercent(etfReturnPercent(price?.baseline?.price ?? null, price?.current ?? null))}</dd></div>
+                                <div><dt className="text-xs text-neutral-600 dark:text-neutral-300">실제 주가 수익률</dt><dd>{showPercent(etfReturnPercent(price?.baseline?.price ?? null, price?.current ?? null))}</dd></div>
                             </dl>
                         </li>;
                     })}
