@@ -32,7 +32,7 @@ export default function CommunityEtfDraftPage() {
     }
 
     return <>
-        <PageHeader title="ETF 구성 종목" width="content" primaryAction={<Link href="/analyze" className={PAGE_PRIMARY_ACTION_CLS}><Plus size={16} aria-hidden="true" />종목 추가</Link>} />
+        <PageHeader title="내 ETF 초안" width="content" primaryAction={<Link href="/analyze" className={PAGE_PRIMARY_ACTION_CLS}><Plus size={16} aria-hidden="true" />종목 추가</Link>} />
         <main className="mx-auto max-w-2xl px-4 pb-[calc(var(--bottombar-h)+2rem)] pt-5 text-neutral-900 dark:text-neutral-100 sm:pt-8">
             <Link href="/etfs" className="mb-5 inline-flex min-h-11 items-center gap-2 text-sm text-brand-ink"><ArrowLeft size={16} aria-hidden="true" />나만의 ETF로 돌아가기</Link>
             {!ready ? <p role="status" className="flex min-h-40 items-center justify-center gap-2 text-sm text-neutral-500"><LoaderCircle size={18} className="animate-spin" />초안을 불러오는 중…</p>
