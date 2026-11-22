@@ -1,25 +1,16 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import { Suspense, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { LoadingState } from "@/components/balance/shared";
-
-// /balance-kr 은 통합 페이지(/balance?country=kr)로 리다이렉트한다. (?key= 보존)
-function RedirectToBalance() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  useEffect(() => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("country", "kr");
-    router.replace(`/balance?${params.toString()}`);
-  }, [router, searchParams]);
-  return <LoadingState message="이동 중..." />;
-}
-
-export default function Page() {
-  return (
-    <Suspense fallback={<LoadingState message="이동 중..." />}>
-      <RedirectToBalance />
-    </Suspense>
-  );
+// 기존 주소의 계좌 선택 쿼리를 보존하고 국가만 해당 화면으로 고정한다.
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(await searchParams)) {
+    if (Array.isArray(value)) value.forEach(item => params.append(key, item));
+    else if (value !== undefined) params.set(key, value);
+  }
+  params.set("country", "kr");
+  redirect(`/balance?${params.toString()}`);
 }
