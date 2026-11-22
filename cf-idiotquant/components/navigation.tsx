@@ -413,7 +413,7 @@ export function NavbarWithSimpleLinks() {
       style={fixedPageIdentity ? { transform: `translateY(-${identityOffset}px)`, visibility: identityScrolled ? "hidden" : undefined } : undefined}
       aria-hidden={fixedPageIdentity && identityScrolled || undefined}
     >
-      <Link href="/" aria-label="idiotquant 홈" className="inline-flex min-h-11 shrink-0 items-center self-start text-xl font-bold tracking-tight text-neutral-900 dark:text-white">
+      <Link href="/" aria-label="idiotquant 홈" className="inline-flex min-h-11 shrink-0 items-center text-xl font-bold tracking-tight text-neutral-900 dark:text-white">
         <span>idiot<span className="text-brand-ink">quant</span></span>
       </Link>
       <div ref={mobile ? pageHeader?.setTitleTarget : undefined} className={cn("min-w-0 flex-1", !pageHeader?.active && "hidden")} />
