@@ -46,7 +46,7 @@ const selectionFields = [
 ] as const;
 
 const inputClass = "min-h-11 w-full rounded-lg border border-neutral-200 bg-white px-3 text-base dark:border-border-subtle-dark dark:bg-surface-dark-canvas";
-const buttonClass = "min-h-11 rounded-lg border border-neutral-200 px-3 py-2 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-40 dark:border-border-subtle-dark";
+const buttonClass = "service-button min-h-11 border border-neutral-200 px-3 py-2 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-40 dark:border-border-subtle-dark";
 
 const selectionHelp: Record<string, string> = {
   max_pbr: "PBR은 주가 ÷ 주당순자산입니다. 설정값을 초과하는 종목을 제외하며, 같은 값은 허용합니다. 예: 1이면 PBR 1 이하만 통과합니다.",

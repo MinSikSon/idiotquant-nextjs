@@ -517,7 +517,7 @@ export default function LedgerPage() {
                         </p>
                         <Link
                             href="/login?callbackUrl=/ledger"
-                            className="inline-block mt-4 px-5 py-2.5 rounded-xl bg-brand hover:bg-brand-hover text-white text-xs font-black transition-colors"
+                            className="inline-block service-button mt-4 px-5 py-2.5 bg-brand hover:bg-brand-hover text-white text-xs font-black"
                         >
                             다시 로그인
                         </Link>
@@ -998,7 +998,7 @@ export default function LedgerPage() {
                                             setCopied(true);
                                             setToast("링크를 복사했습니다");
                                         }}
-                                        className="min-h-[48px] rounded-xl bg-brand hover:bg-brand-hover text-white text-sm font-black flex items-center justify-center gap-1.5 transition-colors"
+                                        className="service-button min-h-[48px] bg-brand hover:bg-brand-hover text-white text-sm font-black flex items-center justify-center gap-1.5"
                                     >
                                         {copied ? <Check size={16} strokeWidth={2.6} /> : <Link2 size={16} strokeWidth={2.4} />}
                                         {copied ? "복사했습니다" : "링크 복사"}
@@ -1012,7 +1012,7 @@ export default function LedgerPage() {
                                     type="button"
                                     onClick={() => dispatch(reqCreateLedgerInvite())}
                                     disabled={mutating}
-                                    className="min-h-[48px] rounded-xl bg-brand hover:bg-brand-hover text-white text-sm font-black flex items-center justify-center gap-1.5 disabled:opacity-50 transition-colors"
+                                    className="service-button min-h-[48px] bg-brand hover:bg-brand-hover text-white text-sm font-black flex items-center justify-center gap-1.5 disabled:opacity-50"
                                 >
                                     <Link2 size={16} strokeWidth={2.4} />
                                     {mutating ? "만드는 중…" : "초대 링크 만들기"}
@@ -1224,7 +1224,7 @@ export default function LedgerPage() {
                                     />
                                     <button type="button" onClick={handleSaveCategory}
                                         disabled={mutating || !newCatLabel.trim()}
-                                        className="min-h-[44px] px-4 rounded-xl bg-brand hover:bg-brand-hover text-white text-xs font-black disabled:opacity-50 transition-colors">
+                                        className="service-button min-h-[44px] px-4 bg-brand hover:bg-brand-hover text-white text-xs font-black disabled:opacity-50">
                                         {catEditId !== null ? "저장" : "추가"}
                                     </button>
                                     <button type="button" onClick={closeCatForm}

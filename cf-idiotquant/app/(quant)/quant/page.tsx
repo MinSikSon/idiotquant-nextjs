@@ -137,7 +137,7 @@ export default function QuantPage() {
 
           <Link
             href="/screener?mincap=500"
-            className="mt-5 inline-flex items-center gap-2 rounded-xl bg-brand hover:bg-brand-hover px-5 py-3 text-[14px] font-bold text-white transition-colors"
+            className="mt-5 inline-flex items-center service-button gap-2 bg-brand hover:bg-brand-hover px-5 py-3 text-[14px] font-bold text-white"
           >
             종목 발굴에서 기준 적용하기
             <ArrowRight size={15} />

@@ -32,7 +32,7 @@ export function ShareServiceBanner({ snapshot }: { snapshot: ResultSnapshot }) {
         <Link
           href={target.href}
           prefetch={false}
-          className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-lg bg-brand px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-hover"
+          className="inline-flex min-h-12 shrink-0 items-center justify-center service-button gap-2 bg-brand px-5 py-3 text-sm font-semibold text-white hover:bg-brand-hover"
         >
           {target.label}
           <ArrowRight size={16} aria-hidden="true" />

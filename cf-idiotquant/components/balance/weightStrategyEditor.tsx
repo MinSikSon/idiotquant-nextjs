@@ -16,7 +16,7 @@ interface Props {
   onBusyChange?: (busy: boolean) => void;
 }
 const inputClass = "min-h-11 w-full rounded-lg border border-neutral-200 bg-white px-3 text-base dark:border-border-subtle-dark dark:bg-surface-dark-canvas";
-const buttonClass = "min-h-11 rounded-lg border border-neutral-200 px-3 py-2 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-40 dark:border-border-subtle-dark";
+const buttonClass = "service-button min-h-11 border border-neutral-200 px-3 py-2 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-40 dark:border-border-subtle-dark";
 const reasons: Record<string, string> = { planned: "예상 주문", within_tolerance: "허용 오차 이내", buy_only: "매수 전용 · 매도 제외", below_one_share: "1주 미만", insufficient_cash: "배정 현금 부족", not_sellable: "매도가능수량 없음", below_minimum: "최소 주문금액 미달" };
 
 export default function WeightStrategyEditor({ policy, stocks, currency, stale, onApply, onPreview, onAction, onClose, onBusyChange }: Props) {

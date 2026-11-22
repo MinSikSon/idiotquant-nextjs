@@ -221,7 +221,7 @@ function SidebarUser({ session, status }: { session: any; status: string }) {
     <div className="px-3 pb-4">
       <Link
         href="/login"
-        className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-brand hover:bg-brand-hover text-white text-xs font-bold transition-colors shadow-sm"
+        className="flex items-center justify-center gap-2 service-button w-full py-2.5 bg-brand hover:bg-brand-hover text-white text-xs font-bold"
       >
         <LogIn size={14} />
         로그인
@@ -252,7 +252,7 @@ function MiniSession({ session, status }: { session: any; status: string }) {
     <Link
       href="/login"
       aria-label="로그인"
-      className="px-3 py-1.5 rounded-xl bg-brand hover:bg-brand-hover text-white text-xs font-semibold transition-colors"
+      className="service-button px-3 py-1.5 bg-brand hover:bg-brand-hover text-white text-xs font-semibold"
     >
       <LogIn size={16} className="navigation-login-icon hidden" aria-hidden="true" />
       <span className="navigation-login-label">로그인</span>
