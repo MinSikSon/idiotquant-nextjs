@@ -47,7 +47,7 @@ export default function NewCommunityEtfPage() {
     }
 
     return <>
-        <PageHeader title="가상 ETF 만들기" width="content" />
+        <PageHeader title="나만의 ETF 만들기" width="content" />
         <main className="mx-auto max-w-2xl space-y-5 px-4 pb-[calc(var(--bottombar-h)+2rem)] pt-5 text-neutral-900 dark:text-neutral-100 sm:pt-8">
             <Link href="/screener" className="inline-flex min-h-11 items-center gap-2 text-sm text-brand-ink"><ArrowLeft size={16} aria-hidden="true" />종목 발굴로 돌아가기</Link>
             {!draft ? <section className="border-y border-neutral-200 py-10 dark:border-surface-dark-border"><h1 className="text-lg font-semibold">선택한 종목이 없어요</h1><p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300">스크리너에서 종목을 2개 이상 선택한 뒤 ETF 만들기를 눌러 주세요.</p><Link href="/screener" className={`${PAGE_PRIMARY_ACTION_CLS} mt-4`}>종목 고르기</Link></section>
