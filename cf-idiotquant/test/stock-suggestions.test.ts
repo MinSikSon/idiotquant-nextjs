@@ -51,3 +51,11 @@ test("미국 종목의 영문·한글 회사명과 초성으로 검색해도 선
     assert.deepEqual(findStockSuggestions(index, "알파벳"), ["GOOG", "GOOGL"]);
     assert.deepEqual(findStockSuggestions(index, "삼성전자"), ["삼성전자"]);
 });
+
+test("미국 종목은 표시명과 다른 한글 검색 별칭도 티커로 찾는다", () => {
+    const index = buildStockSearchIndex(["ANT"], [
+        { symbol: "ANT", name: "ANTHROPIC PBC", koreanName: "앤트로픽", searchAliases: ["엔트로픽"] },
+    ]);
+    assert.deepEqual(findStockSuggestions(index, "앤트로픽"), ["ANT"]);
+    assert.deepEqual(findStockSuggestions(index, "엔트로픽"), ["ANT"]);
+});
