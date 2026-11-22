@@ -96,9 +96,9 @@ export default function CommunityEtfsPage() {
 function EtfEpisode({ item, busy, onLike }: { item: CommunityEtf; busy: boolean; onLike: () => void }) {
     const holdingsPages = Array.from({ length: Math.ceil(item.holdings.length / 6) }, (_, index) => item.holdings.slice(index * 6, (index + 1) * 6));
     return <article aria-label={`${item.name} 가상 ETF`} className="relative flex min-h-full snap-start flex-col justify-end overflow-hidden bg-neutral-100 text-neutral-900 dark:bg-neutral-950 dark:text-white">
-        <div className="relative z-10 flex min-h-full flex-col justify-between px-5 pb-5 pt-4 sm:px-8 sm:py-7">
-            <div className="relative flex flex-1 items-center py-5 pr-14 sm:pr-20">
-                <div className="w-full rounded-lg border border-neutral-200 bg-white p-4 dark:border-white/15 dark:bg-black/25 sm:p-6">
+        <div className="relative z-10 flex min-h-full flex-col justify-between px-2 pb-5 pt-4 sm:px-8 sm:py-7">
+            <div className="relative flex flex-1 items-center py-5">
+                <div className="w-full rounded-lg border border-neutral-200 bg-white p-4 pr-14 dark:border-white/15 dark:bg-black/25 sm:p-6 sm:pr-20">
                     <div className="mb-3 flex items-center gap-2 text-xs text-neutral-600 dark:text-white/65"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#126557] font-bold text-white">{(item.creator.name || "투").slice(0, 1)}</span>@{item.creator.name || "투자자"}<span className="ml-auto rounded-full bg-neutral-100 px-2.5 py-1 text-xs text-neutral-600 dark:bg-white/10 dark:text-white/75">{item.market === "KR" ? "국내" : "미국"} · 균등 비중</span></div>
                     <h2 className="break-words text-2xl font-bold leading-tight tracking-tight sm:text-3xl">{item.name}</h2>
                     <p className="mt-2 line-clamp-3 break-words text-sm leading-6 text-neutral-700 dark:text-white/75 sm:text-base">{item.idea}</p>
@@ -120,7 +120,7 @@ function EtfEpisode({ item, busy, onLike }: { item: CommunityEtf; busy: boolean;
             </div>
                 </div>
             </div>
-            <div className="flex items-end justify-between gap-4 pr-14 sm:pr-20">
+            <div className="flex items-end justify-between gap-4 px-2">
                 <p className="text-xs text-neutral-500 dark:text-white/50">수익률 시뮬레이션은 제공하지 않습니다.</p>
                 <span className="text-xs text-neutral-600 dark:text-white/60">{item.holdings.length}개 종목 포트폴리오</span>
             </div>
