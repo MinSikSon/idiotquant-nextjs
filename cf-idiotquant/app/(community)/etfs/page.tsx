@@ -1,18 +1,29 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { ArrowDown, ChevronDown, ChevronRight, Heart, LoaderCircle } from "lucide-react";
+import { ArrowDown, ChevronDown, ChevronRight, Copy, Heart, LoaderCircle } from "lucide-react";
 import { PageHeader, PAGE_PRIMARY_ACTION_CLS, PAGE_WIDTH } from "@/components/pageHeader";
 import { StockLogo } from "@/components/stockLogo";
+import { ToastContainer, useToast } from "@/components/ui/toast";
+import { CONTROL_FOCUS_CLS } from "@/lib/ui-controls";
 import { CommunityEtf, CommunityEtfDraft, CommunityEtfHolding, getCommunityEtfs, setCommunityEtfLike } from "@/lib/features/communityEtfs/api";
+import {
+    averageEtfReturn, etfCreationDate, etfExpectedReturnBasis, etfHoldingsText, etfReturnPercent, loadEtfHoldingPrices, type EtfHoldingPrices,
+} from "@/lib/features/communityEtfs/marketData";
 
 const PAGE_SIZE = 20;
+const percentFormat = new Intl.NumberFormat("ko-KR", { style: "percent", maximumFractionDigits: 1, signDisplay: "exceptZero" });
+const priceFormats = {
+    KR: new Intl.NumberFormat("ko-KR", { style: "currency", currency: "KRW" }),
+    US: new Intl.NumberFormat("ko-KR", { style: "currency", currency: "USD", maximumFractionDigits: 4 }),
+};
 const DRAFT_KEY = "idiotquant:community-etf-draft:v1";
 
 export default function CommunityEtfsPage() {
     const { status } = useSession();
+    const { toasts, addToast, removeToast } = useToast();
     const [items, setItems] = useState<CommunityEtf[]>([]);
     const [offset, setOffset] = useState(0);
     const [loading, setLoading] = useState(true);
@@ -78,11 +89,21 @@ export default function CommunityEtfsPage() {
         setBusyLike(null);
     }
 
+    async function copyHoldings(item: CommunityEtf) {
+        try {
+            await navigator.clipboard.writeText(etfHoldingsText(item.holdings));
+            addToast("success", `${item.holdings.length}종목을 복사했습니다.`);
+        } catch {
+            addToast("error", "종목을 복사하지 못했습니다. 브라우저의 클립보드 권한을 확인해 주세요.");
+        }
+    }
+
     return <>
+        <ToastContainer toasts={toasts} onRemove={removeToast} />
         <PageHeader
             title="나만의 ETF"
             width="content"
-            description="수익률 시뮬레이션은 제공하지 않습니다."
+            description={`기대 수익률은 각 종목의 ${etfExpectedReturnBasis} 평가액을 현재가와 비교한 추정치입니다. 생성 이후 변화율은 생성일 또는 직전 거래일 종가를 기준으로 계산하며, 배당·환율·거래비용은 반영하지 않습니다.`}
             primaryAction={<Link href="/screener?createEtf=1" className={PAGE_PRIMARY_ACTION_CLS}>ETF 만들기</Link>}
         />
         <div className={`${PAGE_WIDTH.content} pb-4 pt-2 text-neutral-900 dark:text-neutral-100 sm:pt-4`}>
@@ -108,7 +129,7 @@ export default function CommunityEtfsPage() {
                 : <>
                     {error && <p role="alert" className="mb-3 text-sm text-rose-700 dark:text-rose-300">{error}</p>}
                     <div className="mx-auto grid max-w-3xl gap-3">
-                        {items.map(item => <EtfEpisode key={item.id} item={item} busy={busyLike === item.id} onLike={() => void toggleLike(item)} />)}
+                        {items.map(item => <EtfEpisode key={item.id} item={item} busy={busyLike === item.id} onLike={() => void toggleLike(item)} onCopy={() => void copyHoldings(item)} />)}
                     </div>
                     {hasMore && <div className="flex justify-center py-3">
                         <button type="button" disabled={loadingMore} onClick={() => void load(offset)} className="inline-flex min-h-11 items-center gap-2 px-4 text-sm font-semibold text-brand-ink disabled:opacity-50">
@@ -121,12 +142,38 @@ export default function CommunityEtfsPage() {
     </>;
 }
 
-function EtfEpisode({ item, busy, onLike }: { item: CommunityEtf; busy: boolean; onLike: () => void }) {
-    const preview = item.holdings.slice(0, 8);
-    const remaining = item.holdings.slice(preview.length);
-    const isUs = item.market === "US";
+function EtfEpisode({ item, busy, onLike, onCopy }: { item: CommunityEtf; busy: boolean; onLike: () => void; onCopy: () => void }) {
+    const { holdings, createdAt, market } = item;
+    const preview = holdings.slice(0, 8);
+    const remaining = holdings.slice(preview.length);
+    const isUs = market === "US";
+    const createdDate = etfCreationDate(createdAt);
+    const articleRef = useRef<HTMLElement>(null);
+    const [prices, setPrices] = useState<EtfHoldingPrices[]>();
+    const [visible, setVisible] = useState(false);
+    const [attempt, setAttempt] = useState(0);
 
-    return <article aria-label={`${item.name} 가상 ETF`} className="rounded-lg border border-neutral-200 bg-white px-3 pb-1 pt-1 dark:border-surface-dark-border dark:bg-surface-dark-card sm:px-4">
+    useEffect(() => {
+        if (!articleRef.current) return;
+        const observer = new IntersectionObserver(entries => {
+            if (!entries.some(entry => entry.isIntersecting)) return;
+            setVisible(true);
+            observer.disconnect();
+        });
+        observer.observe(articleRef.current);
+        return () => observer.disconnect();
+    }, []);
+
+    useEffect(() => {
+        if (!visible) return;
+        let active = true;
+        void loadEtfHoldingPrices({ holdings, market, createdAt }, () => active).then(result => {
+            if (active) setPrices(result);
+        });
+        return () => { active = false; };
+    }, [attempt, createdAt, holdings, market, visible]);
+
+    return <article ref={articleRef} aria-label={`${item.name} 가상 ETF`} className="rounded-lg border border-neutral-200 bg-white px-3 pb-1 pt-1 dark:border-surface-dark-border dark:bg-surface-dark-card sm:px-4">
         <div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-300">
             <span aria-hidden="true" className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-brand font-bold text-white dark:text-neutral-900">{(item.creator.name || "투").slice(0, 1)}</span>
             <span className="min-w-0 flex-1 break-words">@{item.creator.name || "투자자"}</span>
@@ -136,14 +183,26 @@ function EtfEpisode({ item, busy, onLike }: { item: CommunityEtf; busy: boolean;
                 <span>{item.likeCount}</span>
             </button>
         </div>
-        <h2 className="break-words text-lg font-bold leading-tight tracking-tight sm:text-xl">{item.name}</h2>
+        <div className="flex flex-wrap items-baseline justify-between gap-x-2">
+            <h2 className="min-w-0 break-words text-lg font-bold leading-tight tracking-tight sm:text-xl">{item.name}</h2>
+            <time dateTime={createdDate} aria-label={`생성일 ${createdDate}`} className="shrink-0 text-xs tabular-nums text-neutral-600 dark:text-neutral-300">{createdDate.replaceAll("-", ".")} 생성</time>
+        </div>
         <p className="mt-1 break-words text-sm leading-5 text-neutral-700 dark:text-neutral-300 sm:text-base">{item.idea}</p>
-        <div className="mt-3 border-t border-neutral-200 pt-2 dark:border-surface-dark-border">
-            <div className="flex flex-wrap items-baseline justify-between gap-x-2">
-                <h3 className="font-semibold">구성 종목</h3>
-                <span className="text-sm tabular-nums text-neutral-600 dark:text-neutral-300">
-                    {item.holdings.length}종목{item.holdings.length > 0 && ` · 각 ${(100 / item.holdings.length).toFixed(1)}%`}
-                </span>
+        <PriceComparison holdings={holdings} prices={prices} market={market} onRetry={() => {
+            setPrices(undefined);
+            setAttempt(value => value + 1);
+        }} />
+        <div className="border-t border-neutral-200 dark:border-surface-dark-border">
+            <div className="flex flex-wrap items-center justify-between gap-x-2">
+                <div className="flex flex-wrap items-baseline gap-x-2">
+                    <h3 className="font-semibold">구성 종목</h3>
+                    <span className="text-xs tabular-nums text-neutral-600 dark:text-neutral-300">
+                        {holdings.length}종목{holdings.length > 0 && ` · 각 ${(100 / holdings.length).toFixed(1)}%`}
+                    </span>
+                </div>
+                <button type="button" onClick={onCopy} aria-label={`${item.name} 종목 리스트 복사`} className={`inline-flex min-h-11 min-w-11 items-center gap-1.5 rounded text-sm font-semibold text-brand-ink ${CONTROL_FOCUS_CLS}`}>
+                    <Copy size={16} aria-hidden="true" /> 종목 복사
+                </button>
             </div>
             <HoldingsList holdings={preview} isUs={isUs} />
             {remaining.length > 0 && <details className="group">
@@ -156,6 +215,59 @@ function EtfEpisode({ item, busy, onLike }: { item: CommunityEtf; busy: boolean;
             </details>}
         </div>
     </article>;
+}
+
+function PriceComparison({ holdings, prices, market, onRetry }: {
+    holdings: CommunityEtfHolding[];
+    prices: EtfHoldingPrices[] | undefined;
+    market: CommunityEtf["market"];
+    onRetry: () => void;
+}) {
+    const expected = averageEtfReturn(prices?.map(price => etfReturnPercent(price.current, price.target)) ?? []);
+    const sinceCreation = averageEtfReturn(prices?.map(price => etfReturnPercent(price.baseline?.price ?? null, price.current)) ?? []);
+    const showPercent = (percent: number | null) => percent === null ? "자료 없음" : percentFormat.format(percent / 100);
+    const showPrice = (price: number | null | undefined) => price == null ? "자료 없음" : priceFormats[market].format(price);
+
+    return <details className="group mt-2 border-t border-neutral-200 dark:border-surface-dark-border">
+        <summary className={`flex min-h-11 cursor-pointer list-none items-center gap-2 rounded py-2 [&::-webkit-details-marker]:hidden ${CONTROL_FOCUS_CLS}`}>
+            <span className="grid min-w-0 flex-1 grid-cols-2 gap-x-2">
+                {[{ label: "기대 수익률", result: expected, basis: `${etfExpectedReturnBasis} 가정` },
+                    { label: "생성 이후 변화율", result: sinceCreation, basis: "생성일 기준 종가" }].map(({ label, result, basis }) => <span key={label}>
+                    <span className="block text-xs text-neutral-600 dark:text-neutral-300">{label}</span>
+                    <span className="block font-semibold tabular-nums">{prices ? showPercent(result.percent) : "조회 중…"}</span>
+                    <span className="block text-xs text-neutral-600 dark:text-neutral-300">
+                        {basis}{result.count > 0 && result.count < holdings.length && ` · ${result.count}/${holdings.length}종목`}
+                    </span>
+                </span>)}
+            </span>
+            <span className="flex shrink-0 items-center gap-0.5 text-xs font-semibold text-brand-ink">
+                <span className="sr-only min-[360px]:not-sr-only">주가 비교</span>
+                <ChevronDown size={16} aria-hidden="true" className="group-open:rotate-180" />
+            </span>
+        </summary>
+        {!prices ? <p role="status" className="pb-2 text-sm">종목별 주가를 불러오는 중…</p>
+            : <>
+                <p className="border-t border-neutral-200 pt-2 text-xs text-neutral-600 dark:border-surface-dark-border dark:text-neutral-300">
+                    가격 자료가 있는 종목의 동일 비중 평균입니다. 기대 수익률은 EPS × 10을 현재가와 비교한 추정치입니다.
+                </p>
+                {prices.some(price => price.current === null || price.baseline === null) && <button type="button" onClick={onRetry} className={`mt-1 min-h-11 rounded text-sm font-semibold text-brand-ink ${CONTROL_FOCUS_CLS}`}>누락된 주가 다시 조회</button>}
+                <ul aria-label="종목별 주가 비교" className="divide-y divide-neutral-200 pb-2 dark:divide-surface-dark-border">
+                    {holdings.map((holding, index) => {
+                        const price = prices[index];
+                        const baselineDate = price?.baseline?.priceDate.replace(/^(....)(..)(..)$/, "$1.$2.$3");
+                        return <li key={holding.ticker} className="py-2">
+                            <p className="break-words text-sm font-semibold">{holding.name} <span className="font-normal text-neutral-600 dark:text-neutral-300">{holding.ticker}</span></p>
+                            <dl className="mt-1 grid grid-cols-2 gap-x-3 gap-y-1 text-sm tabular-nums sm:grid-cols-4">
+                                <div><dt className="text-xs text-neutral-600 dark:text-neutral-300">기준 종가 {baselineDate}</dt><dd>{showPrice(price?.baseline?.price)}</dd></div>
+                                <div><dt className="text-xs text-neutral-600 dark:text-neutral-300">현재가</dt><dd>{showPrice(price?.current)}</dd></div>
+                                <div><dt className="text-xs text-neutral-600 dark:text-neutral-300">{etfExpectedReturnBasis} 평가액</dt><dd>{showPrice(price?.target)}</dd></div>
+                                <div><dt className="text-xs text-neutral-600 dark:text-neutral-300">생성 이후 변화율</dt><dd>{showPercent(etfReturnPercent(price?.baseline?.price ?? null, price?.current ?? null))}</dd></div>
+                            </dl>
+                        </li>;
+                    })}
+                </ul>
+            </>}
+    </details>;
 }
 
 function HoldingsList({ holdings, isUs }: { holdings: CommunityEtfHolding[]; isUs: boolean }) {

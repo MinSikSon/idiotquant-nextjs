@@ -65,7 +65,7 @@ export default function NewCommunityEtfPage() {
                     <button type="button" disabled={saving || draft.holdings.length < 2 || !name.trim() || !idea.trim()} onClick={() => void publish()} className={`${PAGE_PRIMARY_ACTION_CLS} w-full`}>
                         {saving && <LoaderCircle size={17} className="animate-spin" />}{status === "authenticated" ? "ETF 공개하기" : "로그인하고 공개하기"}
                     </button>
-                    <p className="text-xs leading-5 text-neutral-500">공개한 ETF는 피드에서 누구나 볼 수 있습니다. 수익률이나 투자 성과를 나타내는 정보는 아닙니다.</p>
+                    <p className="text-xs leading-5 text-neutral-500">공개한 ETF는 피드에서 누구나 볼 수 있습니다. 피드의 기대 수익률은 구성 종목의 평가액을 바탕으로 계산한 추정치입니다.</p>
                 </>}
         </main>
     </>;

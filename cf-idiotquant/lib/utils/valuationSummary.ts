@@ -18,6 +18,14 @@ export function valuationSummary(models: { type: string; result: ValuationResult
     });
 }
 
+export const PER_VALUATION_MULTIPLE = 10;
+
+export function perTargetPrice(eps: number | null) {
+    if (eps === null || !Number.isFinite(eps) || eps <= 0) return null;
+    const target = eps * PER_VALUATION_MULTIPLE;
+    return Number.isFinite(target) ? target : null;
+}
+
 /** 스캔 기준 평가액. 주식 수가 없는 관심목록은 동일 스캔의 NCAV 비율×가격을 사용한다. */
 export function scanValuationSummary(item: {
     last_price: number | null; eps: number | null; bps: number | null;
@@ -34,7 +42,7 @@ export function scanValuationSummary(item: {
     const precision = item.is_us ? 100 : 1;
     const models = [
         { label: 'NCAV', basis: '1배', target: ncav },
-        { label: 'PER', basis: '10배', target: profitable && positive(item.eps) ? item.eps * 10 : null },
+        { label: 'PER', basis: `${PER_VALUATION_MULTIPLE}배`, target: profitable ? perTargetPrice(item.eps) : null },
         { label: 'PBR', basis: '1배', target: positive(item.bps) ? item.bps : null },
     ];
     return models.map(({ label, basis, target }) => {
