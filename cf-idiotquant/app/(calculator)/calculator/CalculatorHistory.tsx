@@ -108,7 +108,7 @@ export default function CalculatorHistory({ detail, snapshot, onLoad }: Props) {
                 </p>
                 <Link
                     href="/login?callbackUrl=/calculator"
-                    className="inline-block mt-3 px-4 py-2 rounded-xl bg-brand hover:bg-brand-hover text-white text-[12px] font-bold transition-all duration-300 ease-out hover:-translate-y-0.5 active:translate-y-0"
+                    className="inline-block mt-3 service-button px-4 py-2 bg-brand hover:bg-brand-hover text-white text-[12px] font-bold"
                 >
                     로그인
                 </Link>
@@ -133,7 +133,7 @@ export default function CalculatorHistory({ detail, snapshot, onLoad }: Props) {
                     type="button"
                     onClick={handleSave}
                     disabled={saving}
-                    className="px-4 py-2 rounded-xl bg-brand hover:bg-brand-hover text-white text-[12px] font-bold shrink-0 disabled:opacity-50 transition-all duration-300 ease-out hover:-translate-y-0.5 active:translate-y-0"
+                    className="service-button px-4 py-2 bg-brand hover:bg-brand-hover text-white text-[12px] font-bold shrink-0 disabled:opacity-50"
                 >
                     {saving ? "저장 중…" : "저장"}
                 </button>

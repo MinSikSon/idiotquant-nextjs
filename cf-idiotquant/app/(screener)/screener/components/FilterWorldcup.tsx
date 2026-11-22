@@ -98,7 +98,7 @@ export function FilterWorldcup({ initialAnswers = [], country, hasTradingAmount,
                 <p className="mt-1 text-2xl font-bold tracking-tight text-brand-ink">{loading ? '데이터 확인 중…' : `${previewCount(proposed)}종목`}</p>
             </div>
             {proposed.minTrAmt > 0 && country === 'KR' && <p className="mb-3 text-xs text-neutral-500 dark:text-neutral-400">거래대금 자료가 없는 국내 종목은 하한을 적용해도 목록에 남을 수 있습니다.</p>}
-            <button type="button" disabled={loading} onClick={() => onApply(proposed, effectiveAnswers)} className="min-h-12 w-full rounded bg-brand-ink px-4 py-3 text-sm font-semibold text-white hover:bg-brand-ink-hover dark:text-neutral-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink disabled:opacity-40">필터 적용</button>
+            <button type="button" disabled={loading} onClick={() => onApply(proposed, effectiveAnswers)} className="service-button min-h-12 w-full bg-brand-ink px-4 py-3 text-sm font-semibold text-white hover:bg-brand-ink-hover dark:text-neutral-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink disabled:opacity-40">필터 적용</button>
             <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
                 <button type="button" className="min-h-11 text-xs text-neutral-500 focus-visible:outline-brand-ink dark:text-neutral-400" onClick={() => { setAnswers([]); setStep(0); }}>처음부터 다시 고르기</button>
                 <button type="button" className="min-h-11 text-xs text-neutral-500 focus-visible:outline-brand-ink dark:text-neutral-400" onClick={onManual}>직접 필터 설정</button>

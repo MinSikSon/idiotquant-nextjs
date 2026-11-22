@@ -12,7 +12,7 @@ import { ArrowRight, ChevronDown } from 'lucide-react';
 import { useStockSearchModal } from '@/components/stock-search-provider';
 
 const HeroArt = dynamic(() => import('./HeroArt'), { ssr: false });
-const choice = 'group flex min-w-0 flex-col items-center justify-between gap-1 rounded-xl px-2 pb-3 pt-1 text-center font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink';
+const choice = 'service-button group flex min-w-0 flex-col items-center justify-between gap-1 px-2 pb-3 pt-1 text-center font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink';
 const choiceArt = 'h-28 w-full object-contain motion-safe:transition-transform motion-safe:group-hover:-translate-y-1 motion-safe:group-active:translate-y-0 motion-safe:group-active:scale-95 sm:h-36';
 
 export default function GuestLanding() {

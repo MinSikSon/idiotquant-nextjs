@@ -33,7 +33,7 @@ export const PAGE_HEADER_CHROME =
 
 // 헤더 우측 액션 버튼 — 세 화면이 같은 모양을 쓰도록 클래스를 한 곳에 둔다
 export const PAGE_ACTION_CLS =
-  "inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 px-3.5 py-2.5 rounded text-sm font-medium transition-colors " +
+  "service-button inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 px-3.5 py-2.5 text-sm font-medium " +
   "border border-neutral-500 dark:border-neutral-500 bg-transparent " +
   "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200/70 dark:hover:bg-surface-dark-hover " +
   "shrink-0 " + CONTROL_FOCUS_CLS + " " + CONTROL_DISABLED_CLS;
@@ -41,7 +41,7 @@ export const PAGE_ACTION_CLS =
 // 입력·추가·저장처럼 작업을 진행하는 동작에 쓴다. 새로고침·공유·닫기는 PAGE_ACTION_CLS.
 // 다크 채움은 흰 글자 4.5:1과 캔버스 대비 3:1을 함께 확보한다.
 export const PAGE_PRIMARY_ACTION_CLS =
-  "inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 rounded px-3.5 py-2.5 text-sm font-semibold transition-colors " +
+  "service-button inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 px-3.5 py-2.5 text-sm font-semibold " +
   "bg-brand text-white hover:bg-brand-hover " +
   CONTROL_FOCUS_CLS + " " + CONTROL_DISABLED_CLS;
 

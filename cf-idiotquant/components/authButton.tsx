@@ -43,7 +43,7 @@ function ProviderAuthButton({ provider, pending, onClick, label }: {
             type="button"
             onClick={onClick}
             disabled={pending !== null}
-            className={`inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${google
+            className={`service-button inline-flex min-h-11 w-full items-center justify-center gap-2 px-3 py-2.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60 ${google
                 ? "border border-neutral-300 bg-white text-[#1f1f1f] hover:bg-neutral-50"
                 : "bg-[#FEE500] text-[#191919] hover:bg-[#F6DC00]"}`}
         >

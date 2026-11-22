@@ -132,7 +132,7 @@ export default function FactorWorkbench({ items, scanDate, country, isAdmin, ava
                         <label className="text-xs text-neutral-500">편도 비용 · 수수료+슬리피지 (bp)<input type="number" min="0" max="500" step="any" value={costBps} onChange={e => setCostBps(Number(e.target.value))} className={`mt-1 ${inputClass}`} /></label>
                     </div>
                     <p className="mt-3 text-xs leading-6 text-neutral-500">이전 스냅샷으로 종목을 선정하고 다음 스냅샷 종가에 동일 비중으로 매매합니다. 1bp는 거래금액의 0.01%입니다. 후보가 없으면 현금으로 보유합니다. 거래 비용은 매수·매도 금액에 각각 적용하며 세금·추가 배당·환율·시장 충격은 별도로 계산하지 않습니다. 저장된 스캔은 수집 범위 내 검증이며 전체 시장 백테스트가 아닙니다.</p>
-                    <button type="button" disabled={busy || !history.length} onClick={run} className="mt-4 rounded bg-brand px-4 py-2 text-sm font-medium text-white disabled:opacity-40">과거 검증 실행</button>
+                    <button type="button" disabled={busy || !history.length} onClick={run} className="service-button mt-4 bg-brand px-4 py-2 text-sm font-medium text-white disabled:opacity-40">과거 검증 실행</button>
                     {error && <p role="alert" className="mt-3 text-sm text-rose-600 dark:text-rose-400">{error}</p>}
                     {result && <div className="mt-5 space-y-4">
                         <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">{[['누적 수익률', result.totalReturn], ['연환산 수익률', result.cagr], ['최대 낙폭', result.mdd], ['누적 거래 비용 / 초기자산', result.totalCosts]].map(([label, value]) => <div key={String(label)}><dt className="text-xs text-neutral-500">{label}</dt><dd className="mt-1 text-base font-semibold tabular-nums">{value == null ? '1년 미만' : `${display(value as number)}%`}</dd></div>)}</dl>

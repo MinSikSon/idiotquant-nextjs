@@ -429,7 +429,7 @@ export function BalancePanel({
                         )}
                         <button
                             type="button" onClick={save} disabled={mutating}
-                            className="flex-1 min-h-[44px] rounded-xl bg-brand text-white text-[13px] font-black disabled:opacity-40"
+                            className="service-button flex-1 min-h-[44px] bg-brand text-white text-[13px] font-black disabled:opacity-40"
                         >
                             {mutating ? "저장 중…" : "저장"}
                         </button>

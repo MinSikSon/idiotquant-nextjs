@@ -279,7 +279,7 @@ export default function ProfilePage() {
                         <div className="px-5 pt-2.5 pb-4">
                             <Link
                                 href="/screener"
-                                className="flex min-h-11 items-center justify-center gap-1.5 w-full px-4 py-2 rounded-[var(--radius-control)] bg-brand hover:bg-brand-hover text-white text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink"
+                                className="flex min-h-11 items-center justify-center gap-1.5 service-button w-full px-4 py-2 bg-brand hover:bg-brand-hover text-white text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink"
                             >
                                 싼 종목 찾아보기
                                 <ChevronRight size={15} aria-hidden="true" />
@@ -332,7 +332,7 @@ export default function ProfilePage() {
                                 type="button"
                                 onClick={saveNickname}
                                 disabled={savingNickname || !nicknameCanChange || nicknameInput.trim() === nickname}
-                                className="min-h-11 rounded-lg bg-brand px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                                className="service-button min-h-11 bg-brand px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
                             >{savingNickname ? "저장 중" : "저장"}</button>
                         </div>
                         <p role="status" className="mt-2 min-h-5 text-xs text-neutral-500 dark:text-neutral-400">

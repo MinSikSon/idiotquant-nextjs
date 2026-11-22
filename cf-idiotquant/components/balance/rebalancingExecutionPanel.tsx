@@ -10,7 +10,7 @@ interface Props {
   onAction: RebalancingActionHandler;
   onBusyChange?: (busy: boolean) => void;
 }
-const buttonClass = "min-h-11 rounded-lg border border-neutral-200 px-3 py-2 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-40 dark:border-border-subtle-dark";
+const buttonClass = "service-button min-h-11 border border-neutral-200 px-3 py-2 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-40 dark:border-border-subtle-dark";
 const labels: Record<string, string> = { running: "진행 중", waiting: "대기 중", needs_review: "확인 필요", completed: "계획 완료", stopped: "중단", failed: "실패", accepted: "주문 접수", submitting: "전송 확인 중", unknown: "응답 확인 필요", partial: "부분체결", filled: "체결", cancelled: "취소", rejected: "거절" };
 const reasons: Record<string,string> = { queued: "실행 준비", outside_session: "정규장 실행 시간 대기", external_open_orders: "계좌의 다른 미체결 주문 대기", order_response_unknown: "증권사 주문번호 확인 필요 · 자동 재전송 차단", execution_check_failed: "잔고·시세·체결·저장 상태 확인 필요", settings_changed: "설정 변경으로 남은 주문 중단", stopped: "남은 주문 중단", plan_completed: "이번 계획 처리 완료", completed_with_skips: "일부 미실행을 포함해 이번 계획 처리 완료", order_settled: "체결 결과 반영", broker_capacity_insufficient: "주문가능금액·수량 부족", broker_capacity_partial: "주문가능금액·수량 범위로 일부만 주문", account_changed: "계좌 변경 확인 필요" };
 const isActive = (run?: RebalancingRun) => run && !["completed", "stopped", "failed"].includes(run.status);

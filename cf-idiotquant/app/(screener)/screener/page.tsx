@@ -1917,7 +1917,7 @@ function ScreenerContent() {
                                 )}
                                 <button
                                     onClick={saveCurrentSet}
-                                    className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl bg-brand hover:bg-brand-hover text-white text-xs font-bold transition-colors"
+                                    className="flex items-center justify-center gap-1.5 service-button w-full py-2.5 bg-brand hover:bg-brand-hover text-white text-xs font-bold"
                                 >
                                     ＋ 내 필터로 저장
                                 </button>
@@ -1925,7 +1925,7 @@ function ScreenerContent() {
                         </div>
                     </div>
                     <div className="sticky bottom-0 border-t border-neutral-200 bg-white px-4 py-3 dark:border-surface-dark-border dark:bg-surface-dark sm:hidden" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
-                        <button onClick={() => setFilterOpen(false)} className="w-full rounded-xl bg-brand py-3 text-sm font-extrabold text-white">
+                        <button onClick={() => setFilterOpen(false)} className="service-button w-full bg-brand py-3 text-sm font-extrabold text-white">
                             {filteredList.length}종목 결과 보기
                         </button>
                     </div>
@@ -2228,7 +2228,7 @@ function ScreenerContent() {
                                 </p>
                                 <button
                                     onClick={requireLogin}
-                                    className="mt-4 px-6 py-2.5 rounded-xl bg-brand hover:bg-brand-hover text-white text-sm font-bold transition-colors"
+                                    className="service-button mt-4 px-6 py-2.5 bg-brand hover:bg-brand-hover text-white text-sm font-bold"
                                 >
                                     로그인하고 전체 보기
                                 </button>

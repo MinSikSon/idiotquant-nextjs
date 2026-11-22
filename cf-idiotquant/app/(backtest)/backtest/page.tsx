@@ -143,7 +143,7 @@ function DrillDown({ name, ticker, stockHistory, loading, onNavigate, entryDate,
                 </div>
                 <button
                     onClick={onNavigate}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-brand hover:bg-brand-hover text-white text-xs font-bold transition-colors"
+                    className="flex items-center gap-1 service-button px-3 py-1.5 bg-brand hover:bg-brand-hover text-white text-xs font-bold"
                 >
                     상세 분석
                     <ChevronRight size={11} />

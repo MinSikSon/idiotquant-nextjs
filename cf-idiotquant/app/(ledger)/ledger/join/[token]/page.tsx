@@ -101,7 +101,7 @@ export default function LedgerJoinPage() {
                 </p>
                 <Link
                     href={`/login?callbackUrl=/ledger/join/${token}`}
-                    className="inline-block mt-4 px-5 py-2.5 rounded-xl bg-brand hover:bg-brand-hover text-white text-xs font-black transition-colors"
+                    className="inline-block service-button mt-4 px-5 py-2.5 bg-brand hover:bg-brand-hover text-white text-xs font-black"
                 >
                     로그인하고 계속하기
                 </Link>
@@ -131,7 +131,7 @@ export default function LedgerJoinPage() {
                 <p className="text-[13px] font-bold text-neutral-700 dark:text-neutral-300">
                     {preview.is_mine ? "내가 만든 초대입니다." : `이미 ${owner}님의 가계부에 들어와 있습니다.`}
                 </p>
-                <Link href="/ledger" className="inline-block mt-4 px-5 py-2.5 rounded-xl bg-brand hover:bg-brand-hover text-white text-xs font-black transition-colors">
+                <Link href="/ledger" className="inline-block service-button mt-4 px-5 py-2.5 bg-brand hover:bg-brand-hover text-white text-xs font-black">
                     가계부 열기
                 </Link>
             </>
@@ -167,7 +167,7 @@ export default function LedgerJoinPage() {
                 type="button"
                 onClick={handleAccept}
                 disabled={joining}
-                className="w-full min-h-[50px] mt-5 rounded-xl bg-brand hover:bg-brand-hover text-white text-sm font-black disabled:opacity-50 transition-colors"
+                className="w-full min-h-[50px] service-button mt-5 bg-brand hover:bg-brand-hover text-white text-sm font-black disabled:opacity-50"
             >
                 {joining ? "들어가는 중…" : "수락하고 함께 쓰기"}
             </button>
