@@ -559,14 +559,14 @@ export function NavbarWithSimpleLinks() {
               {serviceMenu(false)}
             </NavigationPopover>
           </nav>
-          <div ref={!mobile ? pageHeader?.setTitleTarget : undefined} className={cn("hidden min-w-0 flex-1 md:block", !pageHeader?.active && "md:hidden")} />
-          {!pageHeader?.active && <span className="hidden min-w-0 flex-1 truncate text-sm font-semibold md:block">{pathname === "/" ? null : mobilePageTitle}</span>}
+          <div ref={!mobile ? pageHeader?.setTitleTarget : undefined} className={cn("hidden min-w-0 flex-1 md:block lg:flex-[0_1_16rem]", !pageHeader?.active && "md:hidden")} />
+          {!pageHeader?.active && <span className="hidden min-w-0 flex-1 truncate text-sm font-semibold md:block lg:flex-[0_1_16rem] lg:empty:hidden">{pathname === "/" ? null : mobilePageTitle}</span>}
           <div className="min-w-0 flex-1 md:hidden">
             <div ref={pageHeader?.setInfoTarget} data-navigation-info />
             <div ref={pageHeader?.setScrollTitleTarget} data-navigation-scroll-title hidden={!identityScrolled} />
           </div>
-          <div className="flex shrink-0 items-center gap-2 md:gap-1">
-            <div className="navigation-search flex shrink-0 items-center"><StockSearchTrigger showDesktopLabel /></div>
+          <div className="flex shrink-0 items-center gap-2 md:gap-1 lg:min-w-min lg:flex-1">
+            <div className="navigation-search flex shrink-0 items-center lg:min-w-32 lg:flex-1"><StockSearchTrigger showDesktopLabel /></div>
             <div ref={pageHeader?.setActionsTarget} data-navigation-actions className="shrink-0 md:empty:hidden" />
             {!pageHeader?.active && <PageShareTools key={pathname} share={pathname.startsWith("/ledger/join/") ? { path: "/ledger" } : undefined} />}
           </div>

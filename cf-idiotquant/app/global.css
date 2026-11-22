@@ -612,6 +612,20 @@ html:has(#rogue-root) body { background-color: var(--rg-bg); }
 .navigation-main { height: 48px; min-height: 48px; overflow-anchor: none; }
 .navigation-icon { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; flex-shrink: 0; border-radius: 8px; }
 .navigation-icon:hover { background: rgb(115 115 115 / 10%); }
+@media (min-width: 1024px) {
+  .navigation-search > .navigation-icon {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 8px;
+    padding-inline: 12px;
+    border: 1px solid var(--service-line);
+    border-radius: var(--radius-control);
+    background: var(--service-soft);
+    color: var(--service-ink);
+    font-size: 0.875rem;
+  }
+  .navigation-search > .navigation-icon:hover { border-color: var(--service-muted); }
+}
 [data-navigation-actions] { min-width: 0; }
 [data-page-header][data-integrated]:empty { display: none; }
 [data-primary-action] { display: flex; }
