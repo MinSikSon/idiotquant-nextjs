@@ -33,6 +33,7 @@ import {
   Swords,
   GitCompareArrows,
   Layers,
+  FilePenLine,
 } from "lucide-react";
 
 /* ─── NAV CONFIG ──────────────────────────────────────────────────── */
@@ -55,7 +56,8 @@ const MAIN_NAV: NavItem[] = [
 
 // '더 보기'로 숨기는 보조 메뉴
 const MORE_NAV: NavItem[] = [
-  { label: "나만의 ETF", href: "/etfs", icon: Layers },
+  { label: "나만의 ETF", href: "/etfs", icon: Layers, exact: true },
+  { label: "내 ETF 초안", href: "/etfs/draft", icon: FilePenLine },
   { label: "종목 분석", href: "/analyze", icon: Search },
   { label: "종목 비교", href: "/compare", icon: GitCompareArrows },
   { label: "내 관심종목", href: "/screener?filter=liked", icon: Heart, authOnly: true },
@@ -81,11 +83,10 @@ const PORTFOLIO_NAV = [
   { label: "포트폴리오", href: "/balance", icon: Eye },
 ];
 
-const MOBILE_PAGE_TITLES = [
+const MOBILE_PAGE_TITLES: Pick<NavItem, "href" | "label" | "exact">[] = [
   { href: "/admin/ticker-map", label: "종목 매핑" },
   { href: "/ledger/join", label: "가계부 초대" },
   { href: "/games/crafting-prototype", label: "제작 게임" },
-  { href: "/", label: "오늘" },
   ...MAIN_NAV,
   ...MORE_NAV,
   ...PORTFOLIO_NAV,
@@ -277,9 +278,9 @@ export function NavbarWithSimpleLinks() {
   // '더 보기' — 보조 메뉴(계산기·가계부) 접기/펼치기. 해당 경로에 있으면 자동 노출.
   // 필터는 한 번만 만들어 데스크톱·모바일이 같은 목록을 본다 — 따로 걸면 둘이 어긋난다.
   const moreNav = MORE_NAV.filter(i => !i.authOnly || status === "authenticated");
-  const utilityNav = [...moreNav, ...(isMasterUser ? PORTFOLIO_NAV : []),
+  const utilityNav: NavItem[] = [...moreNav, ...(isMasterUser ? PORTFOLIO_NAV : []),
     ...(isMasterUser ? [{ label: "회원 관리", href: "/admin", icon: ShieldCheck }] : [])];
-  const moreActive = moreNav.some(i => active(pathname, i.href)) ||
+  const moreActive = moreNav.some(i => active(pathname, i.href, i.exact)) ||
     (isMasterUser && (active(pathname, "/balance") || active(pathname, "/admin")));
 
   /* 게임 화면에서는 이 바도 **기기의 일부**다. 흰 앱 껍데기로 남아 있으면 기기가 그
@@ -311,7 +312,7 @@ export function NavbarWithSimpleLinks() {
   const identity = useRef<HTMLDivElement>(null);
   const [identityScrolled, setIdentityScrolled] = useState(false);
   const [identityOffset, setIdentityOffset] = useState(0);
-  const mobilePageTitle = MOBILE_PAGE_TITLES.find(item => active(pathname, item.href, item.href === "/"))?.label;
+  const mobilePageTitle = MOBILE_PAGE_TITLES.find(item => active(pathname, item.href, item.exact))?.label;
   const showMore = moreOpen || moreActive;
 
   useEffect(() => {
@@ -381,7 +382,7 @@ export function NavbarWithSimpleLinks() {
         {groups.filter(group => group.items.length).map(group => <section key={group.label} aria-label={group.label} className="py-2 first:pt-0">
           <p className="px-3 pb-1 pt-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400">{group.label}</p>
           {group.items.map(({ icon: Icon, ...item }) => {
-            const isActive = active(pathname, item.href, item.href === "/");
+            const isActive = active(pathname, item.href, item.exact);
             return <Link key={item.href} href={item.href}
               aria-current={isActive ? "page" : undefined}
               className={cn("flex min-h-11 items-center gap-3 rounded px-3 py-2 leading-6 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-ink",
@@ -482,7 +483,7 @@ export function NavbarWithSimpleLinks() {
               href={item.href}
               label={item.label}
               icon={item.icon}
-              isActive={active(pathname, item.href)}
+              isActive={active(pathname, item.href, item.exact)}
             />
           ))}
 

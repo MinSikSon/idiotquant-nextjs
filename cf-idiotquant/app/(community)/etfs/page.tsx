@@ -3,12 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { ArrowDown, ChevronDown, ChevronRight, Copy, Heart, LoaderCircle } from "lucide-react";
+import { ArrowDown, ChevronDown, Copy, Heart, LoaderCircle } from "lucide-react";
 import { PageHeader, PAGE_PRIMARY_ACTION_CLS, PAGE_WIDTH } from "@/components/pageHeader";
 import { StockLogo } from "@/components/stockLogo";
 import { ToastContainer, useToast } from "@/components/ui/toast";
 import { CONTROL_FOCUS_CLS } from "@/lib/ui-controls";
-import { CommunityEtf, CommunityEtfDraft, CommunityEtfHolding, getCommunityEtfs, setCommunityEtfLike } from "@/lib/features/communityEtfs/api";
+import { CommunityEtf, CommunityEtfHolding, getCommunityEtfs, setCommunityEtfLike } from "@/lib/features/communityEtfs/api";
 import {
     averageEtfReturn, etfCreationDate, etfExpectedReturnBasis, etfHoldingsText, etfReturnPercent, loadEtfHoldingPrices, type EtfHoldingPrices,
 } from "@/lib/features/communityEtfs/marketData";
@@ -19,7 +19,6 @@ const priceFormats = {
     KR: new Intl.NumberFormat("ko-KR", { style: "currency", currency: "KRW" }),
     US: new Intl.NumberFormat("ko-KR", { style: "currency", currency: "USD", maximumFractionDigits: 4 }),
 };
-const DRAFT_KEY = "idiotquant:community-etf-draft:v1";
 
 export default function CommunityEtfsPage() {
     const { status } = useSession();
@@ -31,7 +30,6 @@ export default function CommunityEtfsPage() {
     const [hasMore, setHasMore] = useState(true);
     const [error, setError] = useState("");
     const [busyLike, setBusyLike] = useState<string | null>(null);
-    const [draft, setDraft] = useState<CommunityEtfDraft | null>(null);
 
     const load = useCallback(async (nextOffset = 0) => {
         if (nextOffset === 0) setLoading(true);
@@ -47,15 +45,6 @@ export default function CommunityEtfsPage() {
         }
         setLoading(false);
         setLoadingMore(false);
-    }, []);
-
-    useEffect(() => {
-        try {
-            const parsed = JSON.parse(sessionStorage.getItem(DRAFT_KEY) ?? "null");
-            if ((parsed?.market === "KR" || parsed?.market === "US") && Array.isArray(parsed?.holdings)) {
-                setDraft(parsed);
-            }
-        } catch { /* 초안이 없으면 공개된 ETF 목록만 보여준다. */ }
     }, []);
 
     useEffect(() => {
@@ -107,22 +96,6 @@ export default function CommunityEtfsPage() {
             primaryAction={<Link href="/screener?createEtf=1" className={PAGE_PRIMARY_ACTION_CLS}>ETF 만들기</Link>}
         />
         <section aria-label="공개 ETF 피드" tabIndex={0} className={`${PAGE_WIDTH.content} h-[calc(100dvh-var(--navigation-h)-2.75rem-var(--bottombar-h))] min-h-48 snap-y snap-mandatory overflow-y-auto overscroll-y-contain scroll-pt-2 py-2 text-neutral-900 dark:text-neutral-100 md:h-[calc(100dvh-var(--navigation-h))] ${CONTROL_FOCUS_CLS}`}>
-            {draft && draft.holdings.length > 0 && <section aria-labelledby="etf-draft-title" className="mx-auto mb-3 max-w-3xl snap-start border-y border-neutral-200 py-4 dark:border-surface-dark-border">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                        <h2 id="etf-draft-title" className="font-semibold">내 ETF 초안</h2>
-                        <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-300">{draft.market === "KR" ? "국내" : "미국"} · {draft.holdings.length}종목</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Link href="/etfs/draft" className="inline-flex min-h-11 items-center px-3 text-sm font-semibold text-brand-ink">종목 보기</Link>
-                        {draft.holdings.length >= 2 && <Link href="/etfs/new" className={PAGE_PRIMARY_ACTION_CLS}>ETF 만들기</Link>}
-                    </div>
-                </div>
-                <Link href="/etfs/draft" aria-label="ETF 초안 구성 종목 전체 보기" className="mt-2 flex min-h-12 items-center justify-between border-t border-neutral-200 py-2 text-sm text-neutral-700 dark:border-surface-dark-border dark:text-neutral-300">
-                    <span className="truncate">{draft.holdings.slice(0, 2).map(holding => holding.name).join(" · ")}{draft.holdings.length > 2 ? ` 외 ${draft.holdings.length - 2}종목` : ""}</span>
-                    <ChevronRight size={18} aria-hidden="true" className="ml-2 shrink-0 text-brand-ink" />
-                </Link>
-            </section>}
             {loading ? <p role="status" className="flex min-h-64 items-center justify-center gap-2 text-sm text-neutral-500"><LoaderCircle size={18} className="animate-spin" />피드를 불러오는 중…</p>
                 : error && items.length === 0 ? <div className="py-14 text-center"><p role="alert" className="text-sm text-rose-700 dark:text-rose-300">{error}</p><button type="button" onClick={() => void load()} className="mt-3 min-h-11 px-3 text-sm font-semibold text-brand-ink">다시 불러오기</button></div>
                 : items.length === 0 ? <section className="border-y border-neutral-200 py-16 text-center dark:border-surface-dark-border"><h1 className="text-lg font-semibold">아직 공개된 ETF가 없어요</h1><p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300">종목을 골라 나만의 ETF를 만들어 보세요.</p><Link href="/screener?createEtf=1" className={`${PAGE_PRIMARY_ACTION_CLS} mt-5`}>종목 고르기</Link></section>
