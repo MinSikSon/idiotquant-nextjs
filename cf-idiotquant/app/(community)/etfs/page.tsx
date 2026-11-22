@@ -123,24 +123,26 @@ export default function CommunityEtfsPage() {
 }
 
 function EtfEpisode({ item, busy, onLike }: { item: CommunityEtf; busy: boolean; onLike: () => void }) {
-    const holdingsPages = Array.from({ length: Math.ceil(item.holdings.length / 6) }, (_, index) => item.holdings.slice(index * 6, (index + 1) * 6));
+    const holdingsPages = Array.from({ length: Math.ceil(item.holdings.length / 8) }, (_, index) => item.holdings.slice(index * 8, (index + 1) * 8));
     return <article aria-label={`${item.name} 가상 ETF`} className="relative flex min-h-full snap-start flex-col justify-end overflow-hidden bg-neutral-100 text-neutral-900 dark:bg-neutral-950 dark:text-white">
         <div className="relative z-10 flex min-h-full flex-col justify-between px-2 pb-5 pt-4 sm:px-8 sm:py-7">
-            <div className="relative flex flex-1 items-center py-5">
+            <div className="relative flex flex-1 items-start py-2 sm:py-5">
                 <div className="w-full rounded-lg border border-neutral-200 bg-white p-4 pr-14 dark:border-white/15 dark:bg-black/25 sm:p-6 sm:pr-20">
                     <div className="mb-3 flex items-center gap-2 text-xs text-neutral-600 dark:text-white/65"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#126557] font-bold text-white">{(item.creator.name || "투").slice(0, 1)}</span>@{item.creator.name || "투자자"}<span className="ml-auto rounded-full bg-neutral-100 px-2.5 py-1 text-xs text-neutral-600 dark:bg-white/10 dark:text-white/75">{item.market === "KR" ? "국내" : "미국"} · 균등 비중</span></div>
-                    <h2 className="break-words text-2xl font-bold leading-tight tracking-tight sm:text-3xl">{item.name}</h2>
-                    <p className="mt-2 line-clamp-3 break-words text-sm leading-6 text-neutral-700 dark:text-white/75 sm:text-base">{item.idea}</p>
-                    <div className="mt-5 border-t border-neutral-200 pt-4 dark:border-white/20">
+                    <div className="flex items-start gap-3">
+                        <h2 className="min-w-0 shrink-0 break-words text-xl font-bold leading-tight tracking-tight sm:text-3xl">{item.name}</h2>
+                        <p className="min-w-0 flex-1 break-words text-sm leading-5 text-neutral-700 dark:text-white/75 sm:text-base sm:leading-6">{item.idea}</p>
+                    </div>
+                    <div className="mt-4 border-t border-neutral-200 pt-3 dark:border-white/20">
                         <div className="mb-2 flex items-baseline justify-between gap-3">
                             <h3 className="font-semibold">구성 종목</h3>
                             <span className="text-sm tabular-nums text-neutral-600 dark:text-white/70">{item.holdings.length}종목 · 각 {(100 / item.holdings.length).toFixed(1)}%</span>
                         </div>
                         <div aria-label="ETF 구성 종목" className="flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand" role="group" tabIndex={0}>
-                    {holdingsPages.map((page, pageIndex) => <ul key={pageIndex} aria-label={`종목 ${pageIndex * 6 + 1}번부터 ${pageIndex * 6 + page.length}번`} className="grid min-w-full shrink-0 snap-start grid-cols-2 gap-x-3">
-                        {page.map(holding => <li key={holding.ticker} className="flex min-h-12 min-w-0 items-center gap-2 border-b border-neutral-200 py-1.5 dark:border-white/15">
+                    {holdingsPages.map((page, pageIndex) => <ul key={pageIndex} aria-label={`종목 ${pageIndex * 8 + 1}번부터 ${pageIndex * 8 + page.length}번`} className="grid min-w-full shrink-0 snap-start grid-cols-2 gap-x-3">
+                        {page.map(holding => <li key={holding.ticker} className="flex min-h-11 min-w-0 items-center gap-2 border-b border-neutral-200 py-1 dark:border-white/15">
                             <StockLogo ticker={holding.ticker} name={holding.name} isUs={item.market === "US"} />
-                            <span className="min-w-0 flex-1 leading-tight" title={`${holding.name} (${holding.ticker})`}><span className="block truncate text-sm">{holding.name}</span><span className="block truncate text-xs text-neutral-500 dark:text-white/55">{holding.ticker}</span></span>
+                            <span className="min-w-0 flex-1 truncate text-sm" title={`${holding.name} (${holding.ticker})`}>{holding.name}<span className="ml-1.5 text-xs text-neutral-500 dark:text-white/55">{holding.ticker}</span></span>
                         </li>)}
                     </ul>
                     )}
