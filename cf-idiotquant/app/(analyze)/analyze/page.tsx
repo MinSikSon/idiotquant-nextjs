@@ -557,7 +557,7 @@ function AnalyzeContent() {
       sessionStorage.setItem(ETF_DRAFT_KEY, JSON.stringify({ market, holdings: nextHoldings }));
       setEtfDraftCount(nextHoldings.length);
       if (nextHoldings.length >= 2) router.push('/etfs/new');
-      else addToast('success', '나만의 ETF에 담았습니다. 다른 종목도 추가해 주세요.');
+      else addToast('success', 'ETF 초안에 담았습니다. ETF를 만들려면 같은 시장의 종목을 1개 더 추가해 주세요.');
     } catch { addToast('error', 'ETF 초안을 저장하지 못했습니다.'); }
   };
   const marketName = krOrUs === 'US'

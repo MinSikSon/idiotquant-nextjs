@@ -1025,11 +1025,12 @@ function ScreenerContent() {
         const item = etfSourceList.find(value => value.ticker === ticker);
         return item ? [{ ticker: String(item.ticker), name: String(item.name || item.ticker) }] : [];
     });
+    const missingEtfHoldings = 2 - selectedEtfHoldings.length;
     const toggleComparison = (ticker: string) => setComparisonSelection(current => ({ country,
         tickers: toggleComparisonSelection(current.country === country ? current.tickers : [], ticker, compareLimit),
     }));
     const createEtfFromSelection = () => {
-        if (selectedEtfHoldings.length < 2) return;
+        if (missingEtfHoldings > 0) return;
         try { sessionStorage.setItem("idiotquant:community-etf-draft:v1", JSON.stringify({ market: country, holdings: selectedEtfHoldings })); }
         catch { /* 임시 선택을 저장할 수 없으면 만들기 화면에서 다시 안내한다. */ }
         router.push(isLoggedIn ? "/etfs/new" : `/login?callbackUrl=${encodeURIComponent("/etfs/new")}`);
@@ -1242,7 +1243,7 @@ function ScreenerContent() {
                                 {compareMode ? `선택한 ${compareTickers.length}개 비교` : '비교할 종목 선택'}
                             </button>}
                             {compareMode && <button type="button" onClick={() => { setCompareMode(false); setEtfCreationMode(false); setComparisonSelection({ country, tickers: [] }); }} className="min-h-11 px-2 text-xs">선택 취소</button>}
-                            {compareMode && <button type="button" onClick={createEtfFromSelection} disabled={selectedEtfHoldings.length < 2} className="min-h-11 rounded-lg bg-brand px-3 text-xs font-semibold text-white disabled:opacity-50">ETF 만들기</button>}
+                            {compareMode && <button type="button" onClick={createEtfFromSelection} disabled={missingEtfHoldings > 0} aria-describedby={missingEtfHoldings > 0 ? "etf-selection-hint" : undefined} className="min-h-11 rounded-lg bg-brand px-3 text-xs font-semibold text-white disabled:opacity-50">ETF 만들기</button>}
     </>;
 
     return (
@@ -2105,7 +2106,10 @@ function ScreenerContent() {
                             </button>
                         </div>
                         {compareMode && <div aria-label={etfCreationMode ? "ETF 종목 선택 현황" : "비교 선택 현황"} className="mb-3 rounded-xl border border-brand/30 p-3 text-sm">
-                            <p role="status">{etfCreationMode ? "ETF에 담을 종목을 선택하세요." : "목록에서 비교할 종목을 선택하세요."} {compareTickers.length}/{compareLimit}개</p>
+                            <p role="status">{etfCreationMode ? "선택한 종목" : "목록에서 비교할 종목을 선택하세요."} {compareTickers.length}/{compareLimit}개</p>
+                            <p id="etf-selection-hint" role="status" className="text-neutral-600 dark:text-neutral-300">
+                                {missingEtfHoldings > 0 && `ETF를 만들려면 종목을 ${missingEtfHoldings}개${selectedEtfHoldings.length ? " 더" : " 이상"} 선택해 주세요.`}
+                            </p>
                             <div className="mt-2 flex flex-wrap gap-2">{compareTickers.map(ticker => <button key={ticker} type="button" onClick={() => toggleComparison(ticker)} className="min-h-11 rounded-lg bg-brand/10 px-3 text-brand-ink" aria-label={`${ticker} 비교 선택 해제`}>
                                 {filteredList.find((item: any) => item.ticker === ticker)?.name ?? ticker} ×
                             </button>)}</div>

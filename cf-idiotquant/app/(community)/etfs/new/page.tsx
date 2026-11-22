@@ -32,7 +32,7 @@ export default function NewCommunityEtfPage() {
     }, []);
 
     async function publish() {
-        if (!draft || saving) return;
+        if (!draft || draft.holdings.length < 2 || saving) return;
         setError("");
         if (status !== "authenticated") {
             window.location.assign(`/login?callbackUrl=${encodeURIComponent("/etfs/new")}`);
@@ -50,7 +50,12 @@ export default function NewCommunityEtfPage() {
         <PageHeader title="나만의 ETF 만들기" width="content" />
         <main className="mx-auto max-w-2xl space-y-5 px-4 pb-[calc(var(--bottombar-h)+2rem)] pt-5 text-neutral-900 dark:text-neutral-100 sm:pt-8">
             <Link href="/screener" className="inline-flex min-h-11 items-center gap-2 text-sm text-brand-ink"><ArrowLeft size={16} aria-hidden="true" />종목 발굴로 돌아가기</Link>
-            {!draft ? <section className="border-y border-neutral-200 py-10 dark:border-surface-dark-border"><h1 className="text-lg font-semibold">선택한 종목이 없어요</h1><p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300">스크리너에서 종목을 2개 이상 선택한 뒤 ETF 만들기를 눌러 주세요.</p><Link href="/screener" className={`${PAGE_PRIMARY_ACTION_CLS} mt-4`}>종목 고르기</Link></section>
+            {!draft?.holdings.length ? <section className="border-y border-neutral-200 py-10 dark:border-surface-dark-border"><h1 className="text-lg font-semibold">선택한 종목이 없어요</h1><p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300">스크리너에서 종목을 2개 이상 선택한 뒤 ETF 만들기를 눌러 주세요.</p><Link href="/screener?createEtf=1" className={`${PAGE_PRIMARY_ACTION_CLS} mt-4`}>종목 고르기</Link></section>
+                : draft.holdings.length === 1 ? <section className="border-y border-neutral-200 py-10 dark:border-surface-dark-border">
+                    <h1 className="text-lg font-semibold">종목을 1개 더 추가해 주세요</h1>
+                    <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300">ETF를 만들려면 종목이 2개 이상 필요합니다.</p>
+                    <Link href="/etfs/draft" className={`${PAGE_PRIMARY_ACTION_CLS} mt-4`}>내 ETF 초안 보기</Link>
+                </section>
                 : <>
                     <p className="text-sm leading-6 text-neutral-600 dark:text-neutral-300">선택한 종목을 같은 비중으로 담고, 이 ETF의 투자 아이디어를 적어 공개하세요.</p>
                     <section aria-label="선택한 종목" className="border-y border-neutral-200 py-3 dark:border-surface-dark-border">
@@ -62,7 +67,7 @@ export default function NewCommunityEtfPage() {
                     <label className="block text-sm font-medium">ETF 이름<input value={name} onChange={event => setName(event.target.value)} maxLength={40} className="mt-2 min-h-11 w-full rounded border border-neutral-300 bg-white px-3 text-base dark:border-surface-dark-border dark:bg-surface-dark-card" placeholder="예: 배당 성장주 모음" /></label>
                     <label className="block text-sm font-medium">투자 아이디어<textarea value={idea} onChange={event => setIdea(event.target.value)} maxLength={140} rows={3} className="mt-2 w-full rounded border border-neutral-300 bg-white px-3 py-2 text-base leading-relaxed dark:border-surface-dark-border dark:bg-surface-dark-card" placeholder="이 종목들을 함께 고른 이유를 적어 주세요." /><span className="mt-1 block text-right text-xs text-neutral-500">{idea.length}/140</span></label>
                     {error && <p role="alert" className="text-sm text-rose-700 dark:text-rose-300">{error}</p>}
-                    <button type="button" disabled={saving || draft.holdings.length < 2 || !name.trim() || !idea.trim()} onClick={() => void publish()} className={`${PAGE_PRIMARY_ACTION_CLS} w-full`}>
+                    <button type="button" disabled={saving || !name.trim() || !idea.trim()} onClick={() => void publish()} className={`${PAGE_PRIMARY_ACTION_CLS} w-full`}>
                         {saving && <LoaderCircle size={17} className="animate-spin" />}{status === "authenticated" ? "ETF 공개하기" : "로그인하고 공개하기"}
                     </button>
                     <p className="text-xs leading-5 text-neutral-500">공개한 ETF는 피드에서 누구나 볼 수 있습니다. 피드의 기대 수익률은 구성 종목의 평가액을 바탕으로 계산한 추정치입니다.</p>
