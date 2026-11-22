@@ -44,6 +44,8 @@ import { buildKrBars, buildUsBars } from '@/app/(search)/search/components/finan
 import styles from './analyze.module.css';
 import { AnalysisLoginPrompt } from './components/AnalysisLoginPrompt';
 
+const ETF_DRAFT_KEY = 'idiotquant:community-etf-draft:v1';
+
 const ANALYZE_WIDTH = cn(PAGE_WIDTH.data, styles.container);
 
 // =========================================================================
@@ -313,6 +315,7 @@ function AnalyzeContent() {
   const isLoggedIn = !!session;
   const isAdmin = (session?.user as { role?: string } | undefined)?.role === 'admin';
   const { toasts, addToast, removeToast: dismissToast } = useToast();
+  const [etfDraftCount, setEtfDraftCount] = useState(0);
 
   const returnTo = screenerReturnPath(searchParams.get('returnTo')) ?? (searchParams.get('from') === 'screener' ? '/screener' : null);
   const resumeStarted = useRef(false);
@@ -534,6 +537,29 @@ function AnalyzeContent() {
 
   // 헤더와 카드가 함께 쓰는 표시용 값 (같은 식을 두 곳에 적으면 한쪽만 고쳐진다)
   const tickerLabel = krOrUs === 'US' ? name : (stockData?.stockTicker || tickerFromUrl || '');
+  useEffect(() => {
+    try {
+      const draft = JSON.parse(sessionStorage.getItem(ETF_DRAFT_KEY) ?? 'null');
+      if (Array.isArray(draft?.holdings)) setEtfDraftCount(draft.holdings.length);
+    } catch { /* 초안이 없으면 처음 담는 종목으로 시작한다. */ }
+  }, []);
+  const addToEtfDraft = () => {
+    if (!tickerLabel || !displayName) return;
+    try {
+      const market = krOrUs === 'US' ? 'US' : 'KR';
+      const draft = JSON.parse(sessionStorage.getItem(ETF_DRAFT_KEY) ?? 'null');
+      const holdings = draft?.market === market && Array.isArray(draft.holdings) ? draft.holdings : [];
+      if (holdings.some((holding: { ticker?: string }) => holding.ticker === tickerLabel)) {
+        addToast('info', '이미 나만의 ETF에 담긴 종목입니다.');
+        return;
+      }
+      const nextHoldings = [...holdings, { ticker: tickerLabel, name: displayName }];
+      sessionStorage.setItem(ETF_DRAFT_KEY, JSON.stringify({ market, holdings: nextHoldings }));
+      setEtfDraftCount(nextHoldings.length);
+      if (nextHoldings.length >= 2) router.push('/etfs/new');
+      else addToast('success', '나만의 ETF에 담았습니다. 다른 종목도 추가해 주세요.');
+    } catch { addToast('error', 'ETF 초안을 저장하지 못했습니다.'); }
+  };
   const marketName = krOrUs === 'US'
     ? (data?.usSearchInfo?.output?.tr_mket_name || data?.usSearchInfo?.output?.ovrs_excg_name || '')
     : (data?.kiPrice?.output?.rprs_mrkt_kor_name ?? '');
@@ -595,7 +621,7 @@ function AnalyzeContent() {
           <span data-analyze-ticker>{tickerLabel}</span>
           <span className="font-semibold tabular-nums text-neutral-900 dark:text-white">{headerPrice}</span>
         </> : undefined}
-        primaryAction={isPriceLoaded ? <Link href={comparisonHref(krOrUs, [tickerLabel], new Date().toLocaleDateString('sv-SE'))} className="inline-flex min-h-11 items-center px-2 text-xs text-neutral-500 underline-offset-4 hover:text-brand-ink hover:underline dark:text-neutral-400">비교에 추가</Link> : undefined}
+        primaryAction={isPriceLoaded ? <div className="flex items-center gap-1"><button type="button" onClick={addToEtfDraft} className="inline-flex min-h-11 items-center px-2 text-xs text-neutral-500 underline-offset-4 hover:text-brand-ink hover:underline dark:text-neutral-400">나만의 ETF에 담기{etfDraftCount > 0 ? ` (${etfDraftCount})` : ''}</button><Link href={comparisonHref(krOrUs, [tickerLabel], new Date().toLocaleDateString('sv-SE'))} className="inline-flex min-h-11 items-center px-2 text-xs text-neutral-500 underline-offset-4 hover:text-brand-ink hover:underline dark:text-neutral-400">비교에 추가</Link></div> : undefined}
         share={{ path: tickerFromUrl ? `/analyze?${shareParams}` : "/analyze" }}
         actions={isPriceLoaded ? <div className="flex min-w-0 flex-col gap-3">
           <button type="button" onClick={() => void handleToggleLike()} disabled={likeBusy}
