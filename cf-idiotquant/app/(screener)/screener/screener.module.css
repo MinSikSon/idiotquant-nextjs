@@ -11,12 +11,17 @@
   min-width: 0;
   min-height: 44px;
   padding: 8px 4px;
+  border: 0;
   border-bottom: 2px solid transparent;
-  color: rgb(115 115 115);
+  color: rgb(105 105 105);
   font-size: .875rem;
   font-weight: 600;
   line-height: 1.5;
   transition: color .15s, border-color .15s;
+}
+
+:global(.dark) .tab {
+  color: rgb(163 163 163);
 }
 
 .tab[aria-pressed="true"], .tab[data-state="active"] {
@@ -29,12 +34,46 @@
   outline-offset: -2px;
 }
 
+.filterToolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: start;
+  gap: 4px 8px;
+  padding-block: 4px;
+}
+
+.strategyControl[open] {
+  grid-column: 1 / -1;
+}
+
+.strategyControl[open] + button {
+  grid-column: 2;
+}
+
+.strategyControl > summary {
+  gap: 4px;
+  padding: 0 8px;
+}
+
+.resultToolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
 .viewTabs {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  margin-bottom: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) minmax(0, 1.4fr);
 }
 
 .resultPanel { min-width: 0; }
+
+.metricCell {
+  text-align: right;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
 
 .stockCard, .ratioCard {
   min-width: 0;
@@ -66,6 +105,15 @@
 }
 
 @media (min-width: 640px) {
+  .filterToolbar {
+    grid-template-columns: minmax(0, 18rem) auto auto minmax(0, 1fr);
+  }
+
+  .resultToolbar {
+    grid-template-columns: minmax(0, 20rem) auto;
+    justify-content: space-between;
+  }
+
   .stockCard, .ratioCard {
     border: 1px solid rgb(115 115 115 / 20%);
     border-radius: 8px;
