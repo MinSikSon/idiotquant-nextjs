@@ -92,16 +92,14 @@ export default function CommunityEtfsPage() {
                         <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-300">{draft.market === "KR" ? "국내" : "미국"} · {draft.holdings.length}종목</p>
                     </div>
                     <div className="flex items-center gap-2">
-                        <Link href="/analyze" className="inline-flex min-h-11 items-center px-3 text-sm font-semibold text-brand-ink">종목 추가</Link>
+                        <Link href="/etfs/draft" className="inline-flex min-h-11 items-center px-3 text-sm font-semibold text-brand-ink">종목 보기</Link>
                         {draft.holdings.length >= 2 && <Link href="/etfs/new" className={PAGE_PRIMARY_ACTION_CLS}>ETF 만들기</Link>}
                     </div>
                 </div>
-                <ul className="mt-2 divide-y divide-neutral-200 dark:divide-surface-dark-border">
-                    {draft.holdings.map(holding => <li key={holding.ticker} className="flex min-h-14 items-center gap-3 py-2">
-                        <StockLogo ticker={holding.ticker} name={holding.name} isUs={draft.market === "US"} />
-                        <span className="min-w-0 flex-1 break-words font-medium">{holding.name}<span className="ml-2 text-xs text-neutral-500">{holding.ticker}</span></span>
-                    </li>)}
-                </ul>
+                <Link href="/etfs/draft" aria-label="ETF 초안 구성 종목 전체 보기" className="mt-2 flex min-h-12 items-center justify-between border-t border-neutral-200 py-2 text-sm text-neutral-700 dark:border-surface-dark-border dark:text-neutral-300">
+                    <span className="truncate">{draft.holdings.slice(0, 2).map(holding => holding.name).join(" · ")}{draft.holdings.length > 2 ? ` 외 ${draft.holdings.length - 2}종목` : ""}</span>
+                    <ChevronRight size={18} aria-hidden="true" className="ml-2 shrink-0 text-brand-ink" />
+                </Link>
             </section>}
             {loading ? <p role="status" className="flex min-h-64 items-center justify-center gap-2 text-sm text-neutral-500"><LoaderCircle size={18} className="animate-spin" />피드를 불러오는 중…</p>
                 : error && items.length === 0 ? <div className="py-14 text-center"><p role="alert" className="text-sm text-rose-700 dark:text-rose-300">{error}</p><button type="button" onClick={() => void load()} className="mt-3 min-h-11 px-3 text-sm font-semibold text-brand-ink">다시 불러오기</button></div>
