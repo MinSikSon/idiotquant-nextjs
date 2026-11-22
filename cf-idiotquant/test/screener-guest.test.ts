@@ -127,9 +127,14 @@ test('로그인 사용자는 전체 목록의 묶기와 팩터 실험실을 유�
 
 test('비로그인 비교는 4종목까지 선택한다', () => {
   const page = screen();
-  page.nodes().find(node => node.type === 'button' && node.props.children === '비교할 종목 선택').props.onClick();
+  const compareControls = () => page.nodes().find(node => node.props?.['aria-label'] === '선택한 종목 비교');
+  assert.equal(compareControls(), undefined);
+  const first = page.find('StockGridCard').props;
+  first.actions.toggleComparison(first.item.ticker);
   page.render();
-  for (let index = 0; index < 4; index++) {
+  assert.ok(compareControls());
+  assert.equal(page.find('StockGridCard').props.comparison.selected, true);
+  for (let index = 1; index < 4; index++) {
     page.nodes().filter(node => node.type === 'StockGridCard')[index].props.comparison.toggle();
     page.render();
   }

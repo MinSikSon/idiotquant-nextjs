@@ -12,6 +12,7 @@ import { NavigationPopover } from "@/components/navigation-popover";
 import { navigationScroll, type NavigationScrollState } from "@/lib/navigation-scroll";
 import QuickNavigation from "@/components/quick-navigation";
 import { cn } from "@/lib/utils";
+import { CONTROL_FOCUS_CLS } from "@/lib/ui-controls";
 import { useViewAsUser, setViewAsUser } from "@/lib/viewAsUser";
 import {
   Home,
@@ -53,6 +54,13 @@ const MAIN_NAV: NavItem[] = [
   { label: "오늘", href: "/", icon: Home, exact: true },
   { label: "종목 발굴", href: "/screener",    icon: Filter,     emoji: "🥇", badge: "Pro" },
 ];
+
+const DESKTOP_NAV_CONTROL = cn(
+  "inline-flex min-h-11 items-center whitespace-nowrap rounded px-2.5 text-sm font-medium transition-colors lg:px-3",
+  CONTROL_FOCUS_CLS,
+);
+const DESKTOP_NAV_IDLE = "text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800";
+const DESKTOP_NAV_ACTIVE = "bg-brand-light text-brand-ink dark:bg-brand-muted/50";
 
 // '더 보기'로 숨기는 보조 메뉴
 const MORE_NAV: NavItem[] = [
@@ -370,7 +378,7 @@ export function NavbarWithSimpleLinks() {
   }, []);
 
   const serviceMenu = (compact: boolean) => {
-    const research = [...MAIN_NAV, ...moreNav.filter(item =>
+    const research = [...(compact ? MAIN_NAV : []), ...moreNav.filter(item =>
       ["/analyze", "/compare", "/screener?filter=liked"].includes(item.href))];
     const groups = [
       { label: "종목 리서치", items: research },
@@ -378,7 +386,7 @@ export function NavbarWithSimpleLinks() {
       { label: "관리", items: utilityNav.filter(item => !moreNav.includes(item)) },
     ];
     return <div className="navigation-service-menu text-base">
-      <nav aria-label="전체 서비스" className="divide-y divide-neutral-200 dark:divide-neutral-700">
+      <nav aria-label={compact ? "전체 서비스" : "추가 서비스"} className="divide-y divide-neutral-200 dark:divide-neutral-700">
         {groups.filter(group => group.items.length).map(group => <section key={group.label} aria-label={group.label} className="py-2 first:pt-0">
           <p className="px-3 pb-1 pt-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400">{group.label}</p>
           {group.items.map(({ icon: Icon, ...item }) => {
@@ -534,17 +542,22 @@ export function NavbarWithSimpleLinks() {
           <Link href="/" aria-label="idiotquant 홈" className="hidden md:block shrink-0 text-lg font-bold tracking-tight text-neutral-900 dark:text-white">
             idiot<span className="text-brand-ink">quant</span>
           </Link>
-          <nav aria-label="주요 서비스" className="hidden shrink-0 items-center gap-1 md:flex">
-            {MAIN_NAV.map(item => (
-              <Link key={item.href} href={item.href} aria-label={item.label}
-                aria-current={active(pathname, item.href, item.href === "/") ? "page" : undefined}
-                className={cn("inline-flex min-h-11 items-center rounded-lg px-2 text-xs font-medium lg:px-3 lg:text-sm",
-                  active(pathname, item.href, item.href === "/")
-                    ? "bg-brand-light text-brand-ink dark:bg-brand-muted/50"
-                    : "text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800")}>
-                {item.href !== "/" && <span className="hidden lg:inline">종목&nbsp;</span>}{item.label.replace("종목 ", "")}
-              </Link>
-            ))}
+          <nav aria-label="주요 서비스" className="hidden shrink-0 items-center gap-0.5 md:flex">
+            {MAIN_NAV.map(item => {
+              const isActive = active(pathname, item.href, item.exact);
+              return <Link key={item.href} href={item.href} aria-current={isActive ? "page" : undefined}
+                className={cn(DESKTOP_NAV_CONTROL, isActive ? DESKTOP_NAV_ACTIVE : DESKTOP_NAV_IDLE)}>
+                {item.label}
+              </Link>;
+            })}
+            <NavigationPopover label="사용자 및 서비스 메뉴" trigger={
+              <button type="button" className={cn(DESKTOP_NAV_CONTROL, "gap-1.5 aria-expanded:bg-brand-light aria-expanded:text-brand-ink dark:aria-expanded:bg-brand-muted/50",
+                moreActive ? DESKTOP_NAV_ACTIVE : DESKTOP_NAV_IDLE)}>
+                더 보기<ChevronDown size={14} aria-hidden="true" />
+              </button>
+            }>
+              {serviceMenu(false)}
+            </NavigationPopover>
           </nav>
           <div ref={!mobile ? pageHeader?.setTitleTarget : undefined} className={cn("hidden min-w-0 flex-1 md:block", !pageHeader?.active && "md:hidden")} />
           {!pageHeader?.active && <span className="hidden min-w-0 flex-1 truncate text-sm font-semibold md:block">{pathname === "/" ? null : mobilePageTitle}</span>}
@@ -552,13 +565,10 @@ export function NavbarWithSimpleLinks() {
             <div ref={pageHeader?.setInfoTarget} data-navigation-info />
             <div ref={pageHeader?.setScrollTitleTarget} data-navigation-scroll-title hidden={!identityScrolled} />
           </div>
-          <div className="navigation-search flex shrink-0 items-center"><StockSearchTrigger /></div>
-          <div ref={pageHeader?.setActionsTarget} data-navigation-actions className="shrink-0" />
-          {!pageHeader?.active && <PageShareTools key={pathname} share={pathname.startsWith("/ledger/join/") ? { path: "/ledger" } : undefined} />}
-          <div className="hidden shrink-0 md:block">
-            <NavigationPopover label="사용자 및 서비스 메뉴" trigger={<button type="button" aria-label="사용자 및 서비스 메뉴" className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-sm text-neutral-600 dark:text-neutral-300"><MoreHorizontal size={20} aria-hidden="true" />더 보기</button>}>
-              {serviceMenu(false)}
-            </NavigationPopover>
+          <div className="flex shrink-0 items-center gap-2 md:gap-1">
+            <div className="navigation-search flex shrink-0 items-center"><StockSearchTrigger showDesktopLabel /></div>
+            <div ref={pageHeader?.setActionsTarget} data-navigation-actions className="shrink-0 md:empty:hidden" />
+            {!pageHeader?.active && <PageShareTools key={pathname} share={pathname.startsWith("/ledger/join/") ? { path: "/ledger" } : undefined} />}
           </div>
         </div>
         {fixedPageIdentity && (
