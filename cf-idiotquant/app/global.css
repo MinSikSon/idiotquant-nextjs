@@ -660,6 +660,15 @@ html:has(.navigation-header [data-page-tabs]) { --navigation-h: 92px; }
 @media (min-width: 1024px) { .service-container-reading { max-width: 1440px; } }
 
 /* 검색은 페이지와 같은 표면·서체를 쓰고, 모바일에서는 한 화면으로 펼친다. */
+html:has(.stock-search-modal:modal) { overflow: hidden; }
+@media (max-width: 767px) {
+  body:has(.stock-search-modal:modal) {
+    position: fixed;
+    inset-inline: 0;
+    top: var(--stock-search-scroll-offset, 0px);
+    overflow: hidden;
+  }
+}
 .stock-search-modal {
   position: fixed;
   inset: var(--search-viewport-top, 0px) 0 auto;
