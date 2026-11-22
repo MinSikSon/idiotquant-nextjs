@@ -2,12 +2,13 @@
 
 import styles from "../screener.module.css";
 
-import { ChevronRight, Heart } from "lucide-react";
+import { Ellipsis, Heart } from "lucide-react";
 import { ComparisonCheckbox, type ComparisonChoice } from "@/components/comparison-checkbox";
 import { cn } from "@/lib/utils";
 import FinancialFreshnessNotice from "@/components/financial-freshness";
 import { scanFinancialPeriods, scanCollectionDate } from "@/lib/utils/financialFreshness";
 import { LiquidityBadge } from "./LiquidityBadge";
+import { StockResult, type StockResultActions } from "./StockResult";
 import { ratioMetrics, barPct } from "./ratioMetrics";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -52,9 +53,9 @@ const Ratio = ({ label, value, ok, hint }: { label: string; value: number | null
     </div>
 );
 
-export function StockRatioRow({ item, onClick, isLiked, onToggleLike, comparison }: {
+export function StockRatioRow({ item, actions, isLiked, onToggleLike, comparison }: {
     item: Item;
-    onClick: (ticker: string, name: string) => void;
+    actions: StockResultActions;
     isLiked: boolean;
     comparison?: ComparisonChoice;
     onToggleLike: (ticker: string, name: string) => void;
@@ -63,18 +64,12 @@ export function StockRatioRow({ item, onClick, isLiked, onToggleLike, comparison
     const us = item.country === "US";
 
     return (
-        <div
-            onClick={() => onClick(item.ticker, item.name)}
-            onKeyDown={event => {
-                if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
-                    event.preventDefault();
-                    onClick(item.ticker, item.name);
-                }
-            }}
-            role="link"
-            tabIndex={0}
-            aria-label={`${item.name} 분석 보기`}
-            className={cn(styles.ratioCard, "cursor-pointer py-2 sm:p-4 hover:bg-neutral-100/50 dark:hover:bg-surface-dark-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-ink")}
+        <StockResult
+            ticker={item.ticker}
+            name={item.name}
+            actions={actions}
+            comparison={comparison}
+            className={cn(styles.ratioCard, "cursor-pointer py-2 sm:p-4 hover:bg-neutral-100/50 dark:hover:bg-surface-dark-hover")}
         >
             <div className="flex items-center gap-2 mb-2 sm:mb-3">
                 <ComparisonCheckbox choice={comparison} name={item.name} />
@@ -125,7 +120,7 @@ export function StockRatioRow({ item, onClick, isLiked, onToggleLike, comparison
                         ? " — 유동자산으로 부채를 덮지 못합니다."
                         : " — 시가총액에는 못 미칩니다."}
             </p>
-            <span className="mt-2 flex min-h-11 items-center justify-end gap-0.5 text-xs font-semibold text-brand-ink">분석 <ChevronRight size={14} aria-hidden="true" /></span>
-        </div>
+            {comparison?.purpose !== "etf" && <span className="mt-2 flex min-h-11 items-center justify-end gap-0.5 text-xs font-semibold text-brand-ink" aria-hidden="true">종목 메뉴 <Ellipsis size={14} /></span>}
+        </StockResult>
     );
 }

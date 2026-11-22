@@ -2,12 +2,13 @@
 
 import styles from "../screener.module.css";
 
-import { ChevronRight, Heart } from "lucide-react";
+import { Ellipsis, Heart } from "lucide-react";
 import { ComparisonCheckbox, type ComparisonChoice } from "@/components/comparison-checkbox";
 import { cn } from "@/lib/utils";
 import FinancialFreshnessNotice from "@/components/financial-freshness";
 import { scanFinancialPeriods, scanCollectionDate } from "@/lib/utils/financialFreshness";
 import { LiquidityBadge } from "./LiquidityBadge";
+import { StockResult, type StockResultActions } from "./StockResult";
 import { STRATEGY_LABEL, STRATEGY_BADGE, STRATEGY_PRESETS_CLIENT } from "@/lib/constants/strategies";
 import { profitableScanStock, scanRoePercent } from "@/lib/utils/scanFinancials";
 
@@ -53,9 +54,9 @@ const Metric = ({ label, value, ok }: { label: string; value: string; ok?: boole
     </div>
 );
 
-export function StockGridCard({ item, onClick, isLiked, onToggleLike, comparison }: {
+export function StockGridCard({ item, actions, isLiked, onToggleLike, comparison }: {
     item: Item;
-    onClick: (ticker: string, name: string) => void;
+    actions: StockResultActions;
     isLiked: boolean;
     comparison?: ComparisonChoice;
     onToggleLike: (ticker: string, name: string) => void;
@@ -70,18 +71,12 @@ export function StockGridCard({ item, onClick, isLiked, onToggleLike, comparison
     const warn = cautions(item);
 
     return (
-        <div
-            onClick={() => onClick(item.ticker, item.name)}
-            onKeyDown={e => {
-                if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
-                    e.preventDefault();
-                    onClick(item.ticker, item.name);
-                }
-            }}
-            role="link"
-            tabIndex={0}
-            aria-label={`${item.name} 분석 보기`}
-            className={cn(styles.stockCard, "cursor-pointer hover:bg-neutral-100/50 dark:hover:bg-surface-dark-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-ink")}
+        <StockResult
+            ticker={item.ticker}
+            name={item.name}
+            actions={actions}
+            comparison={comparison}
+            className={cn(styles.stockCard, "cursor-pointer hover:bg-neutral-100/50 dark:hover:bg-surface-dark-hover")}
         >
             <div className="py-2 sm:p-4">
                 <div className="flex items-center gap-1.5 mb-1 sm:gap-2 sm:mb-1.5">
@@ -130,9 +125,9 @@ export function StockGridCard({ item, onClick, isLiked, onToggleLike, comparison
                             {why}
                         </span>
                     ) : <span className="flex-1" />}
-                    <span className="shrink-0 flex items-center gap-0.5 text-xs font-bold text-brand-ink">분석 <ChevronRight size={14} /></span>
+                    {comparison?.purpose !== "etf" && <span className="shrink-0 flex items-center gap-0.5 text-xs font-bold text-brand-ink" aria-hidden="true">종목 메뉴 <Ellipsis size={14} /></span>}
                 </div>
             </div>
-        </div>
+        </StockResult>
     );
 }

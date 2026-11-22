@@ -21,11 +21,12 @@ import {
     reqGetMyLikes, reqToggleLike,
 } from "@/lib/features/stockLikes/stockLikesSlice";
 import { cn } from "@/lib/utils";
-import { PageHeader, PAGE_ACTION_CLS } from "@/components/pageHeader";
+import { PageHeader, PAGE_ACTION_CLS, PAGE_PRIMARY_ACTION_CLS } from "@/components/pageHeader";
 import { buildGroups, defaultOpenGroups, GroupedResults, type Group, type GroupMode } from "./components/GroupedResults";
 import { ResultSummary, TermStrip } from "./components/ResultSummary";
 import { StockGridCard } from "./components/StockGridCard";
 import { StockRatioRow } from "./components/StockRatioRow";
+import { StockResult, type StockResultActions } from "./components/StockResult";
 import { FilterWorldcup } from "./components/FilterWorldcup";
 import { expandWorldcupParams, readWorldcupCode, worldcupCode, worldcupFilters, type WorldcupAnswer } from "./worldcup";
 import ScreenerUsageGuide from "./components/ScreenerUsageGuide";
@@ -47,7 +48,7 @@ import FactorWorkbench from "@/components/research/FactorWorkbench";
 import WatchlistChanges from "@/components/watchlistChanges";
 import styles from "./screener.module.css";
 
-import { RefreshCw, ChevronRight, ChevronDown, CalendarDays, Loader2, Search, SlidersHorizontal, Info, X, Heart, Clock, Check, Lock } from "lucide-react";
+import { RefreshCw, Ellipsis, ChevronDown, CalendarDays, Loader2, Search, SlidersHorizontal, Info, X, Heart, Clock, Check, Lock } from "lucide-react";
 import * as Tooltip from "@radix-ui/react-tooltip";
 
 // =========================================================================
@@ -299,9 +300,9 @@ function SortableHeader({ label, sortKey: key, currentKey, order, onToggle, rele
 // =========================================================================
 // TableRow — 목록 뷰 공통 행. 좁은 화면에서는 핵심 지표만 한 줄에 표시한다.
 // =========================================================================
-const TableRow = memo(function TableRow({ item, onClick, isLiked, onToggleLike, highlight, comparison }: {
+const TableRow = memo(function TableRow({ item, actions, isLiked, onToggleLike, highlight, comparison }: {
     item: any;
-    onClick: (ticker: string, name: string) => void;
+    actions: StockResultActions;
     isLiked: boolean;
     onToggleLike: (ticker: string, name: string) => void;
     highlight: HighlightMap | null;
@@ -312,28 +313,22 @@ const TableRow = memo(function TableRow({ item, onClick, isLiked, onToggleLike, 
     const ncav = safeNum(item.ncav_ratio);
 
     return (
-        <div
-            className={cn("group grid min-h-[48px] gap-1 lg:gap-4 items-center px-2 py-0.5 sm:px-4 sm:py-2.5 lg:px-6 lg:py-3 hover:bg-brand-light/40 dark:hover:bg-surface-dark-card/50 cursor-pointer transition-colors border-b border-neutral-100 dark:border-border-subtle-dark last:border-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand-ink", TABLE_COLUMNS)}
-            onClick={() => onClick(item.ticker, item.name)}
-            onKeyDown={event => {
-                if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
-                    event.preventDefault();
-                    onClick(item.ticker, item.name);
-                }
-            }}
-            role="link"
-            tabIndex={0}
-            aria-label={`${item.name} 분석 보기`}
+        <StockResult
+            ticker={item.ticker}
+            name={item.name}
+            actions={actions}
+            comparison={comparison}
+            className={cn("group grid min-h-[48px] gap-0.5 min-[360px]:gap-1 lg:gap-4 items-center px-2 py-0.5 sm:px-4 sm:py-2.5 lg:px-6 lg:py-3 hover:bg-brand-light/40 dark:hover:bg-surface-dark-card/50 cursor-pointer transition-colors border-b border-neutral-100 dark:border-border-subtle-dark last:border-0", TABLE_COLUMNS)}
         >
-            <div className="min-w-0 flex items-center gap-2">
+            <div className="min-w-0 flex items-center gap-1.5">
                 <ComparisonCheckbox choice={comparison} name={item.name} />
-                <div className="min-w-0 flex-1 flex flex-wrap items-center gap-x-1.5 sm:block">
-                    <p className="min-w-0 truncate font-semibold text-sm text-neutral-900 dark:text-white" title={item.name}>{item.name}</p>
-                    <div className="flex min-w-0 items-center gap-1 overflow-hidden whitespace-nowrap sm:mt-0.5 sm:h-5">
-                    {item.ticker !== item.name && <span className="min-w-0 truncate text-xs text-neutral-500 dark:text-neutral-400 font-mono" title={item.ticker}>{item.ticker}</span>}
-                        <span className="shrink-0"><LiquidityBadge item={item} /></span>
-                        <span className="min-w-0 overflow-hidden"><FinancialFreshnessNotice compact periods={scanFinancialPeriods(item)} source={item.financial_source} collectionDate={scanCollectionDate(item)} /></span>
-                    </div>
+                <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-1.5">
+                    <p className="min-w-0 font-semibold text-sm text-neutral-900 dark:text-white [overflow-wrap:anywhere]">{item.name}</p>
+                    {item.ticker !== item.name && <span className="text-xs text-neutral-500 dark:text-neutral-400 font-mono [overflow-wrap:anywhere]">{item.ticker}</span>}
+                    <span className="min-w-0 empty:hidden [&>span]:inline-block [&>span]:whitespace-normal [&>span]:[overflow-wrap:anywhere]">
+                        <LiquidityBadge item={item} />
+                    </span>
+                    <FinancialFreshnessNotice compact periods={scanFinancialPeriods(item)} source={item.financial_source} collectionDate={scanCollectionDate(item)} />
                 </div>
             </div>
 
@@ -350,7 +345,7 @@ const TableRow = memo(function TableRow({ item, onClick, isLiked, onToggleLike, 
                 )}
             </div>
 
-            <div className="text-right whitespace-nowrap">
+            <div className={styles.metricCell}>
                 <span className={cn(
                     "text-sm font-mono font-semibold tabular-nums",
                     ncav >= 1 ? "text-emerald-600 dark:text-emerald-400" :
@@ -361,13 +356,13 @@ const TableRow = memo(function TableRow({ item, onClick, isLiked, onToggleLike, 
                 </span>
             </div>
 
-            <div className="text-right whitespace-nowrap">
+            <div className={styles.metricCell}>
                 <span className={cn("text-sm font-mono text-neutral-700 dark:text-neutral-200 tabular-nums", hlPillCls(highlight, "pbr", item))}>
                     {safeNum(item.pbr) > 0 ? `${safeNum(item.pbr).toFixed(2)}` : "—"}<MetricStatus highlight={highlight} metric="pbr" item={item} />
                 </span>
             </div>
 
-            <div className="text-right whitespace-nowrap">
+            <div className={styles.metricCell}>
                 <span className={cn("text-sm font-mono text-neutral-700 dark:text-neutral-200 tabular-nums", hlPillCls(highlight, "per", item))}>
                     {safeNum(item.per) > 0 ? `${safeNum(item.per).toFixed(1)}` : "—"}<MetricStatus highlight={highlight} metric="per" item={item} />
                 </span>
@@ -398,15 +393,14 @@ const TableRow = memo(function TableRow({ item, onClick, isLiked, onToggleLike, 
                 >
                     <Heart size={14} fill={isLiked ? "currentColor" : "none"} />
                 </button>
-                <button
-                    className="hidden lg:flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-canvas dark:bg-surface-dark-card group-hover:bg-neutral-200 dark:group-hover:bg-surface-dark-hover text-neutral-600 dark:text-neutral-400 text-xs font-bold transition-all whitespace-nowrap"
-                    onClick={(e) => { e.stopPropagation(); onClick(item.ticker, item.name); }}
-                >
-                    분석
-                    <ChevronRight size={12} />
-                </button>
+                {comparison?.purpose !== "etf" && (
+                    <span aria-hidden="true" className="hidden lg:flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-canvas dark:bg-surface-dark-card group-hover:bg-neutral-200 dark:group-hover:bg-surface-dark-hover text-neutral-600 dark:text-neutral-400 text-xs font-bold whitespace-nowrap">
+                        종목 메뉴
+                        <Ellipsis size={14} />
+                    </span>
+                )}
             </div>
-        </div>
+        </StockResult>
     );
 });
 
@@ -560,7 +554,6 @@ function ScreenerContent() {
     );
     const [showGuide, setShowGuide] = useState(false);
     const [etfCreationMode, setEtfCreationMode] = useState(() => rawSearchParams.get('createEtf') === '1');
-    const [compareMode, setCompareMode] = useState(() => rawSearchParams.get('createEtf') === '1');
     const [comparisonSelection, setComparisonSelection] = useState<{ country: string; tickers: string[] }>({ country: "KR", tickers: [] });
     // 분포·산점도는 유용하지만 매번 목록보다 먼저 읽을 정보는 아니다. 기본은 결과에
     // 집중하고, 비교가 필요할 때만 같은 자리에서 펼친다.
@@ -1020,6 +1013,7 @@ function ScreenerContent() {
     if (filterMethod === 'manual' || !shareParams.has('w')) shareParams.set('from', 'share');
     const compareLimit = isLoggedIn ? 20 : 4;
     const compareTickers = comparisonSelection.country === country ? comparisonSelection.tickers.slice(0, compareLimit) : [];
+    const compareMode = etfCreationMode || compareTickers.length > 0;
     const etfSourceList = (showLikedOnly ? normalizedLikedList : ncavDailyList.country === country ? ncavDailyList.list : []) as Record<string, any>[];
     const selectedEtfHoldings = compareTickers.flatMap(ticker => {
         const item = etfSourceList.find(value => value.ticker === ticker);
@@ -1035,9 +1029,11 @@ function ScreenerContent() {
         catch { /* 임시 선택을 저장할 수 없으면 만들기 화면에서 다시 안내한다. */ }
         router.push(isLoggedIn ? "/etfs/new" : `/login?callbackUrl=${encodeURIComponent("/etfs/new")}`);
     };
-    const comparisonFor = (item: any): ComparisonChoice | undefined => compareMode ? {
-        selected: compareTickers.includes(item.ticker), disabled: !compareTickers.includes(item.ticker) && compareTickers.length >= compareLimit,
-        toggle: () => toggleComparison(item.ticker),
+    const comparisonFor = (ticker: string): ComparisonChoice | undefined => compareMode ? {
+        selected: compareTickers.includes(ticker),
+        disabled: !compareTickers.includes(ticker) && compareTickers.length >= compareLimit,
+        toggle: () => toggleComparison(ticker),
+        purpose: etfCreationMode ? "etf" : undefined,
     } : undefined;
 
     useEffect(() => {
@@ -1055,12 +1051,13 @@ function ScreenerContent() {
         } catch { /* 저장소를 사용할 수 없어도 목록은 열린다. */ }
     }, [isLoading, returnPath]);
 
-    const handleStockClick = (ticker: string, name: string) => {
-        if (compareMode) { toggleComparison(ticker); return; }
+    const openStockDetails = (ticker: string, name: string) => {
         try { sessionStorage.setItem('screener:return-position', JSON.stringify({ path: returnPath, y: window.scrollY, count: displayCount })); }
         catch { /* 필터 조건은 복귀 링크에 남긴다. */ }
         router.push(analysisHref(country === 'US' ? ticker : name, returnPath));
     };
+
+    const stockActions: StockResultActions = { openDetails: openStockDetails, toggleComparison };
 
     // 국내 관심종목은 이름 또는 코드로 저장된 기존 자료가 모두 있다.
     const watchTickerFor = (ticker: string, name: string) =>
@@ -1234,17 +1231,11 @@ function ScreenerContent() {
         setDisplayCount(DAILY_PAGE_SIZE);
     }, []);
 
-    const comparisonControls = <>
-                            {!etfCreationMode && <button type="button" onClick={() => {
-                                if (!compareMode) setCompareMode(true);
-                                else if (compareTickers.length) router.push(comparisonHref(country, compareTickers, scanDate || new Date().toLocaleDateString('sv-SE'), crypto.randomUUID()));
-                            }} disabled={compareMode && !compareTickers.length}
-                                className="min-h-11 rounded-lg border border-brand/30 px-3 text-xs font-semibold text-brand-ink disabled:opacity-50">
-                                {compareMode ? `선택한 ${compareTickers.length}개 비교` : '비교할 종목 선택'}
-                            </button>}
-                            {compareMode && <button type="button" onClick={() => { setCompareMode(false); setEtfCreationMode(false); setComparisonSelection({ country, tickers: [] }); }} className="min-h-11 px-2 text-xs">선택 취소</button>}
-                            {compareMode && <button type="button" onClick={createEtfFromSelection} disabled={missingEtfHoldings > 0} aria-describedby={missingEtfHoldings > 0 ? "etf-selection-hint" : undefined} className="min-h-11 rounded-lg bg-brand px-3 text-xs font-semibold text-white disabled:opacity-50">ETF 만들기</button>}
-    </>;
+    const clearStockSelection = () => {
+        setEtfCreationMode(false);
+        setComparisonSelection({ country, tickers: [] });
+    };
+    const createEtfButton = <button type="button" onClick={createEtfFromSelection} disabled={missingEtfHoldings > 0} aria-describedby={missingEtfHoldings > 0 ? "etf-selection-hint" : undefined} className={PAGE_ACTION_CLS}>ETF 만들기</button>;
 
     return (
         <Tooltip.Provider delayDuration={300}>
@@ -2091,7 +2082,10 @@ function ScreenerContent() {
                             <h2 className="text-sm font-extrabold text-neutral-900 dark:text-white">
                                 {showLikedOnly ? '관심 종목' : '발굴 결과'} <span className="font-mono tabular-nums text-brand-ink">{filteredList.length}</span>
                             </h2>
-                            {comparisonControls}
+                            {etfCreationMode && <>
+                                <button type="button" onClick={clearStockSelection} className={PAGE_ACTION_CLS}>선택 취소</button>
+                                {createEtfButton}
+                            </>}
                             <button
                                 onClick={() => setShowInsights(v => !v)}
                                 aria-expanded={showInsights}
@@ -2163,13 +2157,13 @@ function ScreenerContent() {
                                 <div className="bg-white dark:bg-surface-dark-card rounded-lg border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
                                     <GroupedResults {...groupedProps} bodyClassName={GRID_BODY}
                                         renderRow={(item: any) => (
-                                            <StockRatioRow key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(watchTickerFor(item.ticker, item.name))} onToggleLike={handleToggleLike} comparison={comparisonFor(item)} />
+                                            <StockRatioRow key={item.ticker} item={item} actions={stockActions} isLiked={likedTickers.has(watchTickerFor(item.ticker, item.name))} onToggleLike={handleToggleLike} comparison={comparisonFor(item.ticker)} />
                                         )} />
                                 </div>
                             ) : (
                                 <div className={cn("grid grid-cols-1 sm:grid-cols-2 gap-3", styles.stockGrid)}>
                                     {visibleList.map((item: any) => (
-                                        <StockRatioRow key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(watchTickerFor(item.ticker, item.name))} onToggleLike={handleToggleLike} comparison={comparisonFor(item)} />
+                                        <StockRatioRow key={item.ticker} item={item} actions={stockActions} isLiked={likedTickers.has(watchTickerFor(item.ticker, item.name))} onToggleLike={handleToggleLike} comparison={comparisonFor(item.ticker)} />
                                     ))}
                                 </div>
                             )
@@ -2178,13 +2172,13 @@ function ScreenerContent() {
                                 <div className="bg-white dark:bg-surface-dark-card rounded-lg border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
                                     <GroupedResults {...groupedProps} bodyClassName={CARD_GRID_BODY}
                                         renderRow={(item: any) => (
-                                            <StockGridCard key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(watchTickerFor(item.ticker, item.name))} onToggleLike={handleToggleLike} comparison={comparisonFor(item)} />
+                                            <StockGridCard key={item.ticker} item={item} actions={stockActions} isLiked={likedTickers.has(watchTickerFor(item.ticker, item.name))} onToggleLike={handleToggleLike} comparison={comparisonFor(item.ticker)} />
                                         )} />
                                 </div>
                             ) : (
                                 <div className={cn("grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-3", styles.stockGrid)}>
                                     {visibleList.map((item: any) => (
-                                        <StockGridCard key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(watchTickerFor(item.ticker, item.name))} onToggleLike={handleToggleLike} comparison={comparisonFor(item)} />
+                                        <StockGridCard key={item.ticker} item={item} actions={stockActions} isLiked={likedTickers.has(watchTickerFor(item.ticker, item.name))} onToggleLike={handleToggleLike} comparison={comparisonFor(item.ticker)} />
                                     ))}
                                 </div>
                             )
@@ -2202,13 +2196,13 @@ function ScreenerContent() {
                                 {groups ? (
                                     <GroupedResults {...groupedProps} bodyClassName=""
                                         renderRow={(item: any) => (
-                                            <TableRow key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(watchTickerFor(item.ticker, item.name))} onToggleLike={handleToggleLike} highlight={metricHighlight} comparison={comparisonFor(item)} />
+                                            <TableRow key={item.ticker} item={item} actions={stockActions} isLiked={likedTickers.has(watchTickerFor(item.ticker, item.name))} onToggleLike={handleToggleLike} highlight={metricHighlight} comparison={comparisonFor(item.ticker)} />
                                         )}
                                     />
                                 ) : (
                                     <div>
                                         {visibleList.map((item: any) => (
-                                            <TableRow key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(watchTickerFor(item.ticker, item.name))} onToggleLike={handleToggleLike} highlight={metricHighlight} comparison={comparisonFor(item)} />
+                                            <TableRow key={item.ticker} item={item} actions={stockActions} isLiked={likedTickers.has(watchTickerFor(item.ticker, item.name))} onToggleLike={handleToggleLike} highlight={metricHighlight} comparison={comparisonFor(item.ticker)} />
                                         ))}
                                     </div>
                                 )}
@@ -2247,6 +2241,17 @@ function ScreenerContent() {
                         )}
                     </Tabs.Root>
                     </>
+                )}
+                {!etfCreationMode && compareTickers.length > 0 && (
+                    <div aria-label="선택한 종목 비교" role="group" className="sticky bottom-[var(--bottombar-h)] z-30 mt-3 flex flex-wrap items-center justify-end gap-2 rounded-lg border border-neutral-200 bg-white p-2 shadow-md md:bottom-4 dark:border-border-subtle-dark dark:bg-surface-dark-card">
+                        <button type="button" onClick={clearStockSelection} className={PAGE_ACTION_CLS}>선택 취소</button>
+                        {createEtfButton}
+                        <button type="button" className={PAGE_PRIMARY_ACTION_CLS} onClick={() => {
+                            router.push(comparisonHref(country, compareTickers, scanDate || new Date().toLocaleDateString('sv-SE'), crypto.randomUUID()));
+                        }}>
+                            {compareTickers.length}종목 비교하기
+                        </button>
+                    </div>
                 )}
             </div>
             {country === 'KR' && <p className="mt-6 text-xs leading-relaxed text-neutral-500">국내 재무정보 출처: <a href="https://opendart.fss.or.kr/" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">금융감독원 OpenDART</a> · 공시자료를 가공하여 제공합니다.</p>}
