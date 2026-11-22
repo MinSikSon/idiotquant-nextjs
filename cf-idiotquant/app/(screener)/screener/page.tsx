@@ -48,7 +48,7 @@ import FactorWorkbench from "@/components/research/FactorWorkbench";
 import WatchlistChanges from "@/components/watchlistChanges";
 import styles from "./screener.module.css";
 
-import { RefreshCw, Ellipsis, ChevronDown, CalendarDays, Loader2, Search, SlidersHorizontal, Info, X, Heart, Clock, Check, Lock } from "lucide-react";
+import { ArrowDown, ArrowDownUp, ArrowUp, RefreshCw, Ellipsis, ChevronDown, CalendarDays, Loader2, Search, SlidersHorizontal, Info, X, Heart, Clock, Check, Lock } from "lucide-react";
 import * as Tooltip from "@radix-ui/react-tooltip";
 
 // =========================================================================
