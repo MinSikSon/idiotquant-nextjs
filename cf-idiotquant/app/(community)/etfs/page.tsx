@@ -10,7 +10,7 @@ import { ToastContainer, useToast } from "@/components/ui/toast";
 import { CONTROL_FOCUS_CLS } from "@/lib/ui-controls";
 import { CommunityEtf, CommunityEtfHolding, getCommunityEtfs, setCommunityEtfLike } from "@/lib/features/communityEtfs/api";
 import {
-    averageEtfReturn, etfCreationDate, etfExpectedReturnBasis, etfHoldingsText, etfReturnPercent, loadEtfHoldingPrices, type EtfHoldingPrices,
+    averageEtfReturn, averageEtfValuationReturn, etfCreationDate, etfHoldingsText, etfReturnPercent, etfValuationModels, loadEtfHoldingPrices, type EtfHoldingPrices,
 } from "@/lib/features/communityEtfs/marketData";
 
 const PAGE_SIZE = 20;
@@ -92,7 +92,7 @@ export default function CommunityEtfsPage() {
         <PageHeader
             title="나만의 ETF"
             width="content"
-            description={`기대 수익률은 각 종목의 ${etfExpectedReturnBasis} 평가액을 현재가와 비교한 추정치입니다. 실제 수익률은 생성일 기준 종가 대비 현재가의 변화이며, 배당·환율·거래비용은 반영하지 않습니다.`}
+            description="기대 수익률은 분석 페이지와 같은 모델로 산출한 평가액을 현재가와 비교한 추정치입니다. 실제 수익률은 생성일 기준 종가 대비 현재가의 변화이며, 배당·환율·거래비용은 반영하지 않습니다."
             primaryAction={<Link href="/screener?createEtf=1" className={PAGE_PRIMARY_ACTION_CLS}>ETF 만들기</Link>}
         />
         <section aria-label="공개 ETF 피드" tabIndex={0} className={`${PAGE_WIDTH.content} h-[calc(100dvh-var(--navigation-h)-2.75rem-var(--bottombar-h))] min-h-48 snap-y snap-mandatory overflow-y-auto overscroll-y-contain scroll-pt-2 py-2 text-neutral-900 dark:text-neutral-100 md:h-[calc(100dvh-var(--navigation-h))] ${CONTROL_FOCUS_CLS}`}>
@@ -196,7 +196,8 @@ function PriceComparison({ holdings, prices, market, onRetry }: {
     market: CommunityEtf["market"];
     onRetry: () => void;
 }) {
-    const expected = averageEtfReturn(prices?.map(price => etfReturnPercent(price.current, price.target)) ?? []);
+    const [per, ...strategies] = etfValuationModels[market];
+    const expected = averageEtfValuationReturn(prices ?? [], per);
     const sinceCreation = averageEtfReturn(prices?.map(price => etfReturnPercent(price.baseline?.price ?? null, price.current)) ?? []);
     const showPercent = (percent: number | null) => percent === null ? "자료 없음" : percentFormat.format(percent / 100);
     const showPrice = (price: number | null | undefined) => price == null ? "자료 없음" : priceFormats[market].format(price);
@@ -208,7 +209,7 @@ function PriceComparison({ holdings, prices, market, onRetry }: {
         <summary className={`relative block min-h-11 cursor-pointer list-none rounded py-2.5 [&::-webkit-details-marker]:hidden ${CONTROL_FOCUS_CLS}`}>
             <span className="grid grid-cols-2 gap-x-2">
                 <span>
-                    <span className="block text-sm font-medium text-neutral-600 dark:text-neutral-300">기대 수익률</span>
+                    <span className="block text-sm font-medium text-neutral-600 dark:text-neutral-300">기대 수익률 · PER</span>
                     <span className={`block break-words font-bold leading-tight tracking-tight tabular-nums ${expected.percent === null ? "text-sm" : "text-xl min-[360px]:text-2xl"}`}>{prices ? showPercent(expected.percent) : "조회 중…"}</span>
                     {expected.count > 0 && expected.count < holdings.length && <span className="text-xs text-neutral-600 dark:text-neutral-300">{expected.count}/{holdings.length}종목</span>}
                 </span>
@@ -218,15 +219,28 @@ function PriceComparison({ holdings, prices, market, onRetry }: {
                     {sinceCreation.count > 0 && sinceCreation.count < holdings.length && <span className="text-xs text-neutral-600 dark:text-neutral-300">{sinceCreation.count}/{holdings.length}종목</span>}
                 </span>
             </span>
+            <span className="mt-2 grid grid-cols-2 gap-x-2 gap-y-1 border-t border-neutral-200 pt-2 dark:border-surface-dark-border sm:grid-cols-4">
+                <span className="sr-only">전략별 기대 수익률</span>
+                {strategies.map(model => {
+                    const { percent, count } = averageEtfValuationReturn(prices ?? [], model);
+                    const tone = percent !== null && percent > 0 ? "text-emerald-700 dark:text-emerald-300"
+                        : percent !== null && percent < 0 ? "text-red-600 dark:text-red-400" : "";
+                    return <span key={model} className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 text-xs">
+                        <span className="font-medium text-neutral-600 dark:text-neutral-300">{model === "SRIM" ? "S-RIM" : model}</span>
+                        <span className={`break-words font-semibold tabular-nums ${tone}`}>{prices ? showPercent(percent) : "조회 중…"}</span>
+                        {count > 0 && count < holdings.length && <span className="text-neutral-600 dark:text-neutral-300">{count}/{holdings.length}종목</span>}
+                    </span>;
+                })}
+            </span>
             <span className="sr-only">종목별 주가 비교</span>
-            <ChevronDown size={18} aria-hidden="true" className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-brand-ink group-open:rotate-180" />
+            <ChevronDown size={18} aria-hidden="true" className="pointer-events-none absolute right-0 top-5 text-brand-ink group-open:rotate-180" />
         </summary>
         {!prices ? <p role="status" className="pb-2 text-sm">종목별 주가를 불러오는 중…</p>
             : <>
                 <p className="border-t border-neutral-200 pt-2 text-xs text-neutral-600 dark:border-surface-dark-border dark:text-neutral-300">
-                    두 수익률은 자료가 있는 종목의 동일 비중 평균입니다. 기대 수익률은 PER 10배 추정치이고, 실제 수익률은 생성일 기준 종가 대비 현재가의 변화입니다.
+                    각 수익률은 해당 값을 계산할 수 있는 종목의 동일 비중 평균입니다. 전략별 기대 수익률은 분석 페이지의 모델별 요약 평가액을 현재가와 비교한 값입니다.
                 </p>
-                {prices.some(price => price.current === null || price.baseline === null) && <button type="button" onClick={onRetry} className={`mt-1 min-h-11 rounded text-sm font-semibold text-brand-ink ${CONTROL_FOCUS_CLS}`}>누락된 주가 다시 조회</button>}
+                {prices.some(price => price.current === null || price.baseline === null || price.valuationFailed) && <button type="button" onClick={onRetry} className={`mt-1 min-h-11 rounded text-sm font-semibold text-brand-ink ${CONTROL_FOCUS_CLS}`}>누락된 자료 다시 조회</button>}
                 <ul aria-label="종목별 주가 비교" className="divide-y divide-neutral-200 pb-2 dark:divide-surface-dark-border">
                     {holdings.map((holding, index) => {
                         const price = prices[index];
@@ -236,7 +250,7 @@ function PriceComparison({ holdings, prices, market, onRetry }: {
                             <dl className="mt-1 grid grid-cols-2 gap-x-3 gap-y-1 text-sm tabular-nums sm:grid-cols-4">
                                 <div><dt className="text-xs text-neutral-600 dark:text-neutral-300">기준 종가 {baselineDate}</dt><dd>{showPrice(price?.baseline?.price)}</dd></div>
                                 <div><dt className="text-xs text-neutral-600 dark:text-neutral-300">현재가</dt><dd>{showPrice(price?.current)}</dd></div>
-                                <div><dt className="text-xs text-neutral-600 dark:text-neutral-300">{etfExpectedReturnBasis} 평가액</dt><dd>{showPrice(price?.target)}</dd></div>
+                                <div><dt className="text-xs text-neutral-600 dark:text-neutral-300">{per} 평가액</dt><dd>{showPrice(price?.targets[per])}</dd></div>
                                 <div><dt className="text-xs text-neutral-600 dark:text-neutral-300">실제 주가 수익률</dt><dd>{showPercent(etfReturnPercent(price?.baseline?.price ?? null, price?.current ?? null))}</dd></div>
                             </dl>
                         </li>;
