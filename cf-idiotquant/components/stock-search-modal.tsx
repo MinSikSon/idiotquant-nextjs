@@ -51,12 +51,10 @@ export function StockSearchModal({ open, label, purpose = "analyze", disabledMes
     setQuery("");
     const returnTarget = trigger.current;
     const scrollY = window.scrollY;
-    const body = document.body;
-    const previous = { position: body.style.position, top: body.style.top, width: body.style.width, overflow: body.style.overflow };
-    body.style.position = "fixed";
-    body.style.top = `-${scrollY}px`;
-    body.style.width = "100%";
-    body.style.overflow = "hidden";
+    const root = document.documentElement;
+    const previousGutter = root.style.scrollbarGutter;
+    if (window.innerWidth > root.clientWidth) root.style.scrollbarGutter = "stable";
+    root.style.setProperty("--stock-search-scroll-offset", `${-scrollY}px`);
     element.showModal();
     element.querySelector<HTMLInputElement>("[data-page-input]")?.focus({ preventScroll: true });
     const viewport = window.visualViewport;
@@ -70,7 +68,8 @@ export function StockSearchModal({ open, label, purpose = "analyze", disabledMes
     window.addEventListener("resize", resize);
     return () => {
       element.close();
-      Object.assign(body.style, previous);
+      root.style.scrollbarGutter = previousGutter;
+      root.style.removeProperty("--stock-search-scroll-offset");
       window.scrollTo({ top: scrollY, behavior: "instant" });
       returnTarget?.focus({ preventScroll: true });
       viewport?.removeEventListener("resize", resize);
