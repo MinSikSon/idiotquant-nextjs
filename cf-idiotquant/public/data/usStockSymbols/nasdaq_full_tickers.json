@@ -1597,7 +1597,8 @@
     {
         "symbol": "ANT",
         "name": "ANTHROPIC PBC",
-        "koreanName": "앤트로픽"
+        "koreanName": "앤트로픽",
+        "searchAliases": ["엔트로픽"]
     },
     {
         "symbol": "ANTA",

@@ -36,6 +36,7 @@ export type StockSearchName = {
     symbol: string;
     name: string;
     koreanName?: string;
+    searchAliases?: string[];
 };
 
 type SearchTerm = {
@@ -57,7 +58,7 @@ export function buildStockSearchIndex(names: readonly string[], stocks: readonly
     for (const stock of stocks) {
         const entry: SearchEntry = entries.get(stock.symbol) ?? { text: stock.symbol, ...searchTerm(stock.symbol), aliases: [] };
         const companyName = stock.name.replace(/\s+(?:INC|CORP|CORPORATION|LTD|LIMITED|PLC)\.?$/i, '');
-        for (const name of new Set([stock.name, stock.koreanName, companyName])) {
+        for (const name of new Set([stock.name, stock.koreanName, companyName, ...(stock.searchAliases ?? [])])) {
             if (name) entry.aliases.push(searchTerm(name));
         }
         entries.set(stock.symbol, entry);
