@@ -47,14 +47,14 @@ import FactorWorkbench from "@/components/research/FactorWorkbench";
 import WatchlistChanges from "@/components/watchlistChanges";
 import styles from "./screener.module.css";
 
-import { RefreshCw, ChevronRight, ChevronDown, CalendarDays, Loader2, Search, SlidersHorizontal, Info, X, Heart, Clock, Check, Lock } from "lucide-react";
+import { ArrowDown, ArrowDownUp, ArrowUp, RefreshCw, ChevronRight, ChevronDown, CalendarDays, Loader2, Search, SlidersHorizontal, Info, X, Heart, Clock, Check, Lock } from "lucide-react";
 import * as Tooltip from "@radix-ui/react-tooltip";
 
 // =========================================================================
 // 상수 & 타입
 // =========================================================================
 const DAILY_PAGE_SIZE = 30;
-const TABLE_COLUMNS = "grid-cols-[minmax(0,1fr)_56px_40px_40px_44px] sm:grid-cols-[minmax(0,1fr)_62px_46px_46px_44px] lg:grid-cols-[minmax(160px,2fr)_minmax(110px,1.25fr)_minmax(88px,1fr)_minmax(68px,1fr)_minmax(68px,1fr)_minmax(68px,1fr)_minmax(112px,1fr)]";
+const TABLE_COLUMNS = "grid-cols-[minmax(0,1fr)_3.375rem_3.5rem_3.25rem_44px] min-[360px]:grid-cols-[minmax(0,1fr)_3.75rem_3.5rem_3.25rem_44px] sm:grid-cols-[minmax(0,1fr)_4.25rem_3.25rem_3.25rem_44px] lg:grid-cols-[minmax(160px,2fr)_minmax(110px,1.25fr)_minmax(88px,1fr)_minmax(68px,1fr)_minmax(68px,1fr)_minmax(68px,1fr)_minmax(112px,1fr)]";
 
 // 비로그인에게 보여 주는 줄 수. 검색엔진과 처음 온 사람에게 "무엇이 나오는 화면인지"는
 // 보여 주되, 목록 전체는 계정이 있어야 본다.
@@ -279,19 +279,23 @@ function SortableHeader({ label, sortKey: key, currentKey, order, onToggle, rele
     title?: string;
 }) {
     const active = currentKey === key;
+    const ascending = order === "asc";
+    const SortIcon = active ? (ascending ? ArrowUp : ArrowDown) : ArrowDownUp;
     return (
         <button
+            type="button"
             title={title}
+            aria-label={active ? `${label}, ${ascending ? "오름차순" : "내림차순"} 정렬 중` : `${label} 정렬`}
             onClick={() => onToggle(key)}
             className={cn(
-                "flex min-h-[44px] items-center gap-1 text-sm font-semibold uppercase tracking-wide transition-colors whitespace-nowrap",
-                active ? "text-brand-ink dark:text-brand-ink" : "text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300",
+                "flex min-h-11 w-full items-center gap-0.5 whitespace-nowrap text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-ink",
+                key !== "ticker" && "justify-end",
+                active ? "text-brand-ink" : "text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-200",
                 relevant && !active && "text-emerald-600/90 dark:text-emerald-400/90"
             )}
         >
-            {(active || relevant) && <span className={cn("w-1 h-1 rounded-full shrink-0", active ? "bg-brand" : "bg-emerald-500")} />}
             {label}
-            <span className="text-xs font-mono">{active ? (order === "asc" ? "↑" : "↓") : "↕"}</span>
+            <SortIcon size={11} aria-hidden="true" className="shrink-0" />
         </button>
     );
 }
@@ -313,7 +317,7 @@ const TableRow = memo(function TableRow({ item, onClick, isLiked, onToggleLike, 
 
     return (
         <div
-            className={cn("group grid min-h-[48px] gap-1 lg:gap-4 items-center px-2 py-0.5 sm:px-4 sm:py-2.5 lg:px-6 lg:py-3 hover:bg-brand-light/40 dark:hover:bg-surface-dark-card/50 cursor-pointer transition-colors border-b border-neutral-100 dark:border-border-subtle-dark last:border-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand-ink", TABLE_COLUMNS)}
+            className={cn("group grid min-h-[48px] gap-0.5 min-[360px]:gap-1 lg:gap-4 items-center px-2 py-0.5 sm:px-4 sm:py-2.5 lg:px-6 lg:py-3 hover:bg-brand-light/40 dark:hover:bg-surface-dark-card/50 cursor-pointer transition-colors border-b border-neutral-100 dark:border-border-subtle-dark last:border-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand-ink", TABLE_COLUMNS)}
             onClick={() => onClick(item.ticker, item.name)}
             onKeyDown={event => {
                 if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
@@ -325,15 +329,15 @@ const TableRow = memo(function TableRow({ item, onClick, isLiked, onToggleLike, 
             tabIndex={0}
             aria-label={`${item.name} 분석 보기`}
         >
-            <div className="min-w-0 flex items-center gap-2">
+            <div className="min-w-0 flex items-center gap-1.5">
                 <ComparisonCheckbox choice={comparison} name={item.name} />
-                <div className="min-w-0 flex-1 flex flex-wrap items-center gap-x-1.5 sm:block">
-                    <p className="min-w-0 truncate font-semibold text-sm text-neutral-900 dark:text-white" title={item.name}>{item.name}</p>
-                    <div className="flex min-w-0 items-center gap-1 overflow-hidden whitespace-nowrap sm:mt-0.5 sm:h-5">
-                    {item.ticker !== item.name && <span className="min-w-0 truncate text-xs text-neutral-500 dark:text-neutral-400 font-mono" title={item.ticker}>{item.ticker}</span>}
-                        <span className="shrink-0"><LiquidityBadge item={item} /></span>
-                        <span className="min-w-0 overflow-hidden"><FinancialFreshnessNotice compact periods={scanFinancialPeriods(item)} source={item.financial_source} collectionDate={scanCollectionDate(item)} /></span>
-                    </div>
+                <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-1.5">
+                    <p className="min-w-0 font-semibold text-sm text-neutral-900 dark:text-white [overflow-wrap:anywhere]">{item.name}</p>
+                    {item.ticker !== item.name && <span className="text-xs text-neutral-500 dark:text-neutral-400 font-mono [overflow-wrap:anywhere]">{item.ticker}</span>}
+                    <span className="min-w-0 empty:hidden [&>span]:inline-block [&>span]:whitespace-normal [&>span]:[overflow-wrap:anywhere]">
+                        <LiquidityBadge item={item} />
+                    </span>
+                    <FinancialFreshnessNotice compact periods={scanFinancialPeriods(item)} source={item.financial_source} collectionDate={scanCollectionDate(item)} />
                 </div>
             </div>
 
@@ -350,7 +354,7 @@ const TableRow = memo(function TableRow({ item, onClick, isLiked, onToggleLike, 
                 )}
             </div>
 
-            <div className="text-right whitespace-nowrap">
+            <div className={styles.metricCell}>
                 <span className={cn(
                     "text-sm font-mono font-semibold tabular-nums",
                     ncav >= 1 ? "text-emerald-600 dark:text-emerald-400" :
@@ -361,13 +365,13 @@ const TableRow = memo(function TableRow({ item, onClick, isLiked, onToggleLike, 
                 </span>
             </div>
 
-            <div className="text-right whitespace-nowrap">
+            <div className={styles.metricCell}>
                 <span className={cn("text-sm font-mono text-neutral-700 dark:text-neutral-200 tabular-nums", hlPillCls(highlight, "pbr", item))}>
                     {safeNum(item.pbr) > 0 ? `${safeNum(item.pbr).toFixed(2)}` : "—"}<MetricStatus highlight={highlight} metric="pbr" item={item} />
                 </span>
             </div>
 
-            <div className="text-right whitespace-nowrap">
+            <div className={styles.metricCell}>
                 <span className={cn("text-sm font-mono text-neutral-700 dark:text-neutral-200 tabular-nums", hlPillCls(highlight, "per", item))}>
                     {safeNum(item.per) > 0 ? `${safeNum(item.per).toFixed(1)}` : "—"}<MetricStatus highlight={highlight} metric="per" item={item} />
                 </span>
@@ -1239,7 +1243,7 @@ function ScreenerContent() {
                                 if (!compareMode) setCompareMode(true);
                                 else if (compareTickers.length) router.push(comparisonHref(country, compareTickers, scanDate || new Date().toLocaleDateString('sv-SE'), crypto.randomUUID()));
                             }} disabled={compareMode && !compareTickers.length}
-                                className="min-h-11 rounded-lg border border-brand/30 px-3 text-xs font-semibold text-brand-ink disabled:opacity-50">
+                                className="min-h-11 rounded-lg border border-brand/30 px-2 text-xs font-semibold text-brand-ink disabled:opacity-50">
                                 {compareMode ? `선택한 ${compareTickers.length}개 비교` : '비교할 종목 선택'}
                             </button>}
                             {compareMode && <button type="button" onClick={() => { setCompareMode(false); setEtfCreationMode(false); setComparisonSelection({ country, tickers: [] }); }} className="min-h-11 px-2 text-xs">선택 취소</button>}
@@ -1378,7 +1382,7 @@ function ScreenerContent() {
                 </div>
             </div>}
 
-            <div className="border-b border-neutral-200 bg-white dark:border-surface-dark-border dark:bg-surface-dark-card">
+            <div className="bg-white dark:bg-surface-dark-card">
                 <div className="service-container">
                     <div role="group" aria-label="필터 설정 방식" className={styles.methodTabs}>
                         {([['worldcup', '이상형 월드컵'], ['manual', '직접 필터 설정']] as const).map(([method, label]) => <button
@@ -1410,11 +1414,12 @@ function ScreenerContent() {
             )}>
                 <div className="service-container">
 
-                    {/* 첫째 줄: 전략 격자.
+                    <div className={styles.filterToolbar}>
+                    {/* 전략 격자.
                         칩(가변 폭)을 격자(고정 폭)로 바꾼 이유 — 칩은 이름 길이대로 폭이 달라져서
                         종목 수가 매번 다른 위치에 서고, 전략끼리 개수를 비교할 수가 없었다.
                         격자는 이름 위 / 개수 아래로 열을 맞추므로 훑는 것만으로 비교가 된다. */}
-                    <SecondarySection title={`전략 선택 · ${isAllActive ? "전체" : `${activeStrategyIds.size}개 선택`}`} className="my-3">
+                    <SecondarySection title={`전략 · ${isAllActive ? "전체" : `${activeStrategyIds.size}개 선택`}`} className={styles.strategyControl}>
                     <div className="flex w-full items-center gap-2 py-2 sm:py-2.5">
                         <div className="min-w-0 flex-1 flex items-center gap-2 text-left">
                             <span className="min-w-0 truncate text-xs font-bold text-brand-ink">
@@ -1457,24 +1462,17 @@ function ScreenerContent() {
                     </div>
                     </SecondarySection>
 
-                    {/* 필터·관심 툴바 */}
-                    <div className="flex flex-col gap-2 pb-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2 sm:pb-3">
-                        <div className="grid w-full grid-cols-2 items-center gap-2 sm:w-auto sm:flex">
-                        {/* 필터 — 열림은 다른 툴바 토글과 같은 '단색 채움'으로 표시한다.
-                            서랍과 탭처럼 이어붙이는 연출은 이 레이아웃에서 성립하지 않는다:
-                            버튼이 감싸는 flex 줄 한가운데 있고 아래로 sticky 끝·칩 줄이 끼어서,
-                            테두리를 지우면 이어지는 대신 스타일이 벗겨진 것처럼 보인다. */}
                         <button
                             type="button"
                             aria-expanded={filterOpen}
                             onClick={() => setFilterOpen(o => !o)}
                             className={cn(
-                                "shrink-0 flex min-h-[44px] items-center justify-center gap-1.5 px-2.5 py-2 rounded-lg text-sm font-semibold border transition-colors whitespace-nowrap sm:px-3",
+                                "flex min-h-11 items-center justify-center gap-1 rounded px-2 py-1 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-ink sm:px-3",
                                 filterOpen
-                                    ? "bg-brand border-brand text-white"
+                                    ? "bg-brand text-white"
                                     : activeFilterCount > 0
-                                        ? "bg-brand-light dark:bg-brand-muted/30 border-brand-light-hover dark:border-brand/40 text-brand-ink-hover dark:text-brand-ink"
-                                        : "bg-white dark:bg-surface-dark-card border-neutral-200 dark:border-surface-dark-border text-neutral-600 dark:text-neutral-400 hover:border-neutral-300"
+                                        ? "bg-brand-light dark:bg-brand-muted/30 text-brand-ink"
+                                        : "text-neutral-700 hover:bg-surface-canvas dark:text-neutral-300 dark:hover:bg-surface-dark-hover"
                             )}
                         >
                             <SlidersHorizontal size={12} />
@@ -1487,7 +1485,6 @@ function ScreenerContent() {
                                     {activeFilterCount}
                                 </span>
                             )}
-                            <span className="font-mono text-xs sm:hidden">{filterOpen ? "▲" : "▼"}</span>
                         </button>
 
                         {/* 관심 종목 */}
@@ -1500,24 +1497,19 @@ function ScreenerContent() {
                                 setShowLikedOnly(o => !o); setActiveStrategyIds(new Set()); setDisplayCount(DAILY_PAGE_SIZE);
                             }}
                             className={cn(
-                                "shrink-0 flex min-h-[44px] items-center justify-center gap-1.5 px-2.5 py-2 rounded-lg text-sm font-semibold border transition-colors whitespace-nowrap sm:px-3",
+                                "flex min-h-11 items-center justify-center gap-1 rounded px-2 py-1 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-ink sm:px-3",
                                 showLikedOnly
-                                    ? "bg-rose-500 border-rose-500 text-white"
-                                    : "border-neutral-200 dark:border-surface-dark-border text-neutral-600 dark:text-neutral-400 hover:border-rose-300 dark:hover:border-rose-700 hover:text-rose-500 dark:hover:text-rose-400 bg-white dark:bg-surface-dark-card"
+                                    ? "bg-brand-light text-brand-ink dark:bg-brand-muted/30"
+                                    : "text-neutral-700 hover:bg-surface-canvas dark:text-neutral-300 dark:hover:bg-surface-dark-hover"
                             )}
                         >
                             <Heart size={11} fill={showLikedOnly ? "currentColor" : "none"} />
                             관심
-                            {!isLoggedIn && <Lock size={10} className="opacity-60" />}
-                            <span className={cn(
-                                "text-xs font-black px-1.5 py-0.5 rounded-full",
-                                showLikedOnly ? "bg-white/20" : "bg-surface-canvas dark:bg-surface-dark-elevated text-neutral-500"
-                            )}>
-                                {likedTickers.size}
-                            </span>
+                            {isLoggedIn
+                                ? <span className="text-xs tabular-nums">{likedTickers.size}</span>
+                                : <Lock size={10} aria-label="로그인 필요" />}
                         </button>
 
-                    </div>
                     </div>
 
                     {/* 적용된 조건 칩 — 서랍이 닫혀 있을 때만. 열려 있으면 같은 조건이 서랍 안에
@@ -2087,19 +2079,19 @@ function ScreenerContent() {
                         )}
 
                         {/* 검색 조건과 결과 표현을 분리해, 목록을 훑으면서 보기/묶기를 바꿀 수 있게 한다. */}
-                        <div className="mb-3 flex flex-wrap items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-x-2">
                             <h2 className="text-sm font-extrabold text-neutral-900 dark:text-white">
-                                {showLikedOnly ? '관심 종목' : '발굴 결과'} <span className="font-mono tabular-nums text-brand-ink">{filteredList.length}</span>
+                                {showLikedOnly ? '관심 종목' : '발굴 결과'} <span className="font-mono tabular-nums text-brand-ink">{filteredList.length.toLocaleString('ko-KR')}종목</span>
                             </h2>
                             {comparisonControls}
                             <button
                                 onClick={() => setShowInsights(v => !v)}
                                 aria-expanded={showInsights}
                                 className={cn(
-                                    "ml-auto min-h-11 rounded-lg px-3 py-2 text-sm font-medium border transition-colors whitespace-nowrap",
+                                    "ml-auto min-h-11 rounded px-0.5 py-2 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-ink",
                                     showInsights
                                         ? "bg-brand-light dark:bg-brand-muted/30 border-brand-light-hover dark:border-brand/40 text-brand-ink-hover dark:text-brand-ink"
-                                        : "border-neutral-200 dark:border-surface-dark-border text-neutral-500 dark:text-neutral-400 hover:border-neutral-300"
+                                        : "text-neutral-600 hover:text-brand-ink dark:text-neutral-300"
                                 )}
                             >
                                 {showInsights ? '해석 접기' : '결과 해석'}
@@ -2114,34 +2106,6 @@ function ScreenerContent() {
                                 {filteredList.find((item: any) => item.ticker === ticker)?.name ?? ticker} ×
                             </button>)}</div>
                         </div>}
-                        <SecondarySection title="결과 묶기" className="mb-3">
-                            <div className="flex flex-nowrap items-center gap-2 overflow-x-auto whitespace-nowrap">
-                                <div role="group" aria-label="결과 묶기" className="shrink-0 flex items-center gap-0.5 p-0.5 rounded-lg bg-surface-canvas dark:bg-surface-dark-hover">
-                                    {([
-                                        { id: 'none',     label: '안 묶기' },
-                                        { id: 'sector',   label: '업종', disabled: !hasSectorData },
-                                        { id: 'strategy', label: '전략' },
-                                    ] as { id: GroupMode; label: string; disabled?: boolean }[]).map(o => (
-                                        <button
-                                            key={o.id}
-                                            disabled={o.disabled}
-                                            aria-pressed={groupMode === o.id}
-                                            onClick={() => setGroupMode(o.id)}
-                                            title={o.disabled ? "업종 데이터 연동 예정" : undefined}
-                                            className={cn(
-                                                "px-2.5 py-1.5 rounded-lg text-xs transition-colors whitespace-nowrap",
-                                                o.disabled && "opacity-40 cursor-not-allowed",
-                                                groupMode === o.id
-                                                    ? "bg-white dark:bg-surface-dark font-extrabold text-neutral-900 dark:text-white underline decoration-2 underline-offset-4"
-                                                    : "font-bold text-neutral-500 dark:text-neutral-400"
-                                            )}
-                                        >
-                                            {o.label}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        </SecondarySection>
                         {viewMode === 'table' && metricHighlight && <p className="mb-3 text-xs text-neutral-600 dark:text-neutral-400">✓ 강조 기준 충족 · × 강조 기준 미충족</p>}
 
                         {/* 지표 설명과 산점도는 필요할 때만 펼친다 — 목록을 훑는 흐름을 막지 않는다. */}
@@ -2150,13 +2114,28 @@ function ScreenerContent() {
                             <ResultSummary list={accessibleList} />
                         </>}
 
-                        <Tabs.List aria-label="결과 보기 방식" className={styles.viewTabs}>
-                            {([['table', '목록'], ['card', '카드'], ['ratio', '자산 비율']] as const).map(([id, label]) => (
-                                <Tabs.Trigger key={id} value={id} title={VIEW_MODE_TITLE[id]} className={styles.tab}>
-                                    {label}
-                                </Tabs.Trigger>
-                            ))}
-                        </Tabs.List>
+                        <div className={styles.resultToolbar}>
+                            <Tabs.List aria-label="결과 보기 방식" className={styles.viewTabs}>
+                                {([['table', '목록'], ['card', '카드'], ['ratio', '자산 비율']] as const).map(([id, label]) => (
+                                    <Tabs.Trigger key={id} value={id} title={VIEW_MODE_TITLE[id]} className={styles.tab}>
+                                        {label}
+                                    </Tabs.Trigger>
+                                ))}
+                            </Tabs.List>
+                            <label className="relative flex min-w-0 items-center text-neutral-700 dark:text-neutral-200">
+                                <span className="sr-only">결과 묶기</span>
+                                <select
+                                    value={groupMode}
+                                    onChange={event => setGroupMode(event.target.value as GroupMode)}
+                                    className="min-h-11 min-w-0 w-full appearance-none rounded bg-transparent py-1 pl-2 pr-6 text-base font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-ink"
+                                >
+                                    <option value="none">묶기 안 함</option>
+                                    <option value="sector" disabled={!hasSectorData}>업종별 묶기</option>
+                                    <option value="strategy">전략별 묶기</option>
+                                </select>
+                                <ChevronDown size={14} aria-hidden="true" className="pointer-events-none absolute right-1.5" />
+                            </label>
+                        </div>
                         <Tabs.Content value={viewMode} className={styles.resultPanel}>
                         {viewMode === 'ratio' ? (
                             groups ? (
@@ -2189,8 +2168,9 @@ function ScreenerContent() {
                                 </div>
                             )
                         ) : (
-                        <div className="bg-white dark:bg-surface-dark-card rounded-lg border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
-                                <div className={cn("grid gap-1 lg:gap-4 items-center px-2 sm:px-4 sm:py-2.5 lg:px-6 lg:py-4 bg-surface-canvas dark:bg-surface-dark border-b border-neutral-200 dark:border-border-subtle-dark", TABLE_COLUMNS)}>
+                        <div className="bg-white dark:bg-surface-dark-card rounded-lg border border-neutral-200 dark:border-border-subtle-dark overflow-x-auto">
+                            <div className="min-w-[17rem]">
+                                <div className={cn("grid gap-0.5 min-[360px]:gap-1 lg:gap-4 items-center px-2 sm:px-4 sm:py-2.5 lg:px-6 lg:py-4 bg-surface-canvas dark:bg-surface-dark border-b border-neutral-200 dark:border-border-subtle-dark", TABLE_COLUMNS)}>
                                     <SortableHeader label="종목명" sortKey="ticker" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} />
                                     <div className="hidden lg:block text-xs font-bold text-neutral-400 uppercase tracking-wider">전략</div>
                                     <SortableHeader label="NCAV" sortKey="ncav_ratio" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} relevant={!!metricHighlight && "ncav_ratio" in metricHighlight} />
@@ -2212,6 +2192,7 @@ function ScreenerContent() {
                                         ))}
                                     </div>
                                 )}
+                            </div>
                         </div>
                         )}
 
