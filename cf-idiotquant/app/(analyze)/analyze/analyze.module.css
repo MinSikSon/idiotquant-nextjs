@@ -26,10 +26,6 @@
 .page .header h1 { font-size: 1.625rem; font-weight: 600; line-height: 1.4; letter-spacing: -.025em; color: var(--analysis-ink); }
 .page .header p { color: var(--analysis-muted); font-size: 0.9375rem; line-height: 1.75; }
 .page .emptyHeader > div:first-child { padding-top: 24px; padding-bottom: 4px; }
-.stockName { display: flex; align-items: center; gap: 8px; width: 100%; min-width: 0; text-align: left; }
-.stockName > span { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.stockName[aria-expanded="true"] > span { white-space: normal; overflow-wrap: anywhere; }
-:global([data-page-title]) .stockName { font-size: inherit; line-height: inherit; }
 .quoteTicker { font-variant-numeric: tabular-nums; }
 .quotePrice, .price { color: var(--analysis-ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .quoteAux { color: var(--analysis-muted); }

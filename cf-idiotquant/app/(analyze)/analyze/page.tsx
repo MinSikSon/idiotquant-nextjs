@@ -2,6 +2,7 @@
 
 import { PageSearch } from "@/components/page-search";
 import * as Tabs from '@radix-ui/react-tabs';
+import * as Popover from '@radix-ui/react-popover';
 import TechnicalSummary from '@/components/research/TechnicalSummary';
 import { normalizeBars } from '@/lib/research/technical';
 import {
@@ -286,19 +287,44 @@ function buildVerdict(metrics: VerdictMetrics) {
 // 메인 콘텐츠
 // =========================================================================
 function StockName({ name }: { name: string }) {
-  const [expanded, setExpanded] = useState(false);
+  const container = useRef<HTMLSpanElement>(null);
+  const label = useRef<HTMLSpanElement>(null);
+  const [truncated, setTruncated] = useState(false);
+
+  useEffect(() => {
+    const box = container.current;
+    const text = label.current;
+    if (!box || !text) return;
+    const measure = () => setTruncated(text.scrollWidth > box.clientWidth);
+    const observer = new ResizeObserver(measure);
+    observer.observe(box);
+    document.fonts.addEventListener('loadingdone', measure);
+    return () => {
+      observer.disconnect();
+      document.fonts.removeEventListener('loadingdone', measure);
+    };
+  }, [name]);
+
   return (
-    <button
-      type="button"
-      className={styles.stockName}
-      aria-expanded={expanded}
-      aria-label={`${name} 전체 이름 ${expanded ? '접기' : '보기'}`}
-      title={name}
-      onClick={() => setExpanded(value => !value)}
-    >
-      <span>{name}</span>
-      <ChevronDown size={14} aria-hidden="true" className={cn("shrink-0", expanded && "rotate-180")} />
-    </button>
+    <Popover.Root>
+      <Popover.Anchor asChild>
+        <span ref={container} className="relative block">
+          <span ref={label} className={cn("block truncate", truncated && "mr-5")}>{name}</span>
+          {truncated && (
+            <Popover.Trigger className="absolute inset-0 flex items-center justify-end rounded-sm focus-visible:outline focus-visible:-outline-offset-2"
+              aria-label="전체 종목명 보기">
+              <ChevronDown size={14} aria-hidden="true" />
+            </Popover.Trigger>
+          )}
+        </span>
+      </Popover.Anchor>
+      <Popover.Portal>
+        <Popover.Content align="start" sideOffset={10} collisionPadding={12} aria-label="전체 종목명"
+          className="z-50 max-w-[min(28rem,calc(100vw-24px))] break-words rounded-lg border border-neutral-200 bg-surface-card px-3 py-2 text-sm text-neutral-900 shadow-md dark:border-neutral-700 dark:bg-surface-dark-card dark:text-white">
+          {name}
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
   );
 }
 

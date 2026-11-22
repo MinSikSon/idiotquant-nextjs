@@ -73,11 +73,10 @@ export function StockSearchProvider({ children }: { children: ReactNode }) {
 
 export function StockSearchTrigger({ showDesktopLabel = false }: { showDesktopLabel?: boolean }) {
   const { openSearch, label, open } = useStockSearchModal();
-  const desktopStyle = showDesktopLabel ? "lg:!w-auto lg:gap-1.5 lg:rounded lg:px-2.5 lg:text-sm lg:font-medium" : "";
   return <button type="button" data-page-search-trigger data-page-input-trigger aria-label={label}
     aria-haspopup="dialog" aria-controls="stock-search-modal" aria-expanded={open}
-    onClick={openSearch} className={`navigation-icon ${desktopStyle}`}>
+    onClick={openSearch} className="navigation-icon">
     <Search size={21} className={showDesktopLabel ? "lg:h-[19px] lg:w-[19px]" : undefined} aria-hidden="true" />
-    {showDesktopLabel && <span className="hidden whitespace-nowrap lg:inline">검색</span>}
+    {showDesktopLabel && <span className="hidden whitespace-nowrap lg:inline">종목 검색</span>}
   </button>;
 }
