@@ -38,8 +38,8 @@ export default function CommunityEtfDraftPage() {
             {!ready ? <p role="status" className="flex min-h-40 items-center justify-center gap-2 text-sm text-neutral-500"><LoaderCircle size={18} className="animate-spin" />초안을 불러오는 중…</p>
                 : !draft || draft.holdings.length === 0 ? <section className="border-y border-neutral-200 py-10 dark:border-surface-dark-border">
                     <h1 className="text-lg font-semibold">담긴 종목이 없어요</h1>
-                    <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300">종목을 살펴보고 ETF 초안에 추가해 주세요.</p>
-                    <Link href="/screener" className={`${PAGE_PRIMARY_ACTION_CLS} mt-4`}>종목 발굴하기</Link>
+                    <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300" role="status">ETF를 만들려면 종목을 2개 이상 추가해 주세요.</p>
+                    <Link href="/screener?createEtf=1" className={`${PAGE_PRIMARY_ACTION_CLS} mt-4`}>종목 고르기</Link>
                 </section> : <>
                     <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
                         <h1 className="font-semibold">{draft.market === "KR" ? "국내" : "미국"} 구성 종목</h1>
@@ -53,7 +53,9 @@ export default function CommunityEtfDraftPage() {
                         </li>)}
                     </ul>
                     <p className="mt-3 text-sm text-neutral-600 dark:text-neutral-300">모든 종목은 같은 비중으로 구성됩니다.</p>
-                    {draft.holdings.length >= 2 && <Link href="/etfs/new" className={`${PAGE_PRIMARY_ACTION_CLS} mt-5 w-full`}>ETF 만들기</Link>}
+                    {draft.holdings.length >= 2
+                        ? <Link href="/etfs/new" className={`${PAGE_PRIMARY_ACTION_CLS} mt-5 w-full`}>ETF 만들기</Link>
+                        : <p role="status" className="mt-5 text-sm font-medium text-brand-ink">ETF를 만들려면 종목을 1개 더 추가해 주세요.</p>}
                 </>}
         </main>
     </>;
