@@ -34,7 +34,6 @@ import {
   Swords,
   GitCompareArrows,
   Layers,
-  FilePenLine,
 } from "lucide-react";
 
 /* ─── NAV CONFIG ──────────────────────────────────────────────────── */
@@ -64,8 +63,7 @@ const DESKTOP_NAV_ACTIVE = "bg-brand-light text-brand-ink dark:bg-brand-muted/50
 
 // '더 보기'로 숨기는 보조 메뉴
 const MORE_NAV: NavItem[] = [
-  { label: "나만의 ETF", href: "/etfs", icon: Layers, exact: true },
-  { label: "내 ETF 초안", href: "/etfs/draft", icon: FilePenLine },
+  { label: "가상 ETF", href: "/etfs", icon: Layers },
   { label: "종목 분석", href: "/analyze", icon: Search },
   { label: "종목 비교", href: "/compare", icon: GitCompareArrows },
   { label: "내 관심종목", href: "/screener?filter=liked", icon: Heart, authOnly: true },

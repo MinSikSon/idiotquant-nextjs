@@ -42,11 +42,10 @@ import { resolveStockSearchInput } from '@/lib/utils/stockSearchInput';
 import { StockLogo } from '@/components/stockLogo';
 import { analysisHref, comparisonHref, completeWatchRequest, matchesWatchStock, PENDING_WATCH_KEY, readPendingWatch, screenerReturnPath } from '@/lib/investmentFlow';
 import { useToast, ToastContainer } from '@/components/ui/toast';
+import { addEtfHoldings, readEtfDraft } from '@/lib/features/communityEtfs/draft';
 import { buildKrBars, buildUsBars } from '@/app/(search)/search/components/financialBarsData';
 import styles from './analyze.module.css';
 import { AnalysisLoginPrompt } from './components/AnalysisLoginPrompt';
-
-const ETF_DRAFT_KEY = 'idiotquant:community-etf-draft:v1';
 
 const ANALYZE_WIDTH = cn(PAGE_WIDTH.data, styles.container);
 const ANALYZE_ACTION_CLS = cn(
@@ -348,7 +347,7 @@ function AnalyzeContent() {
   const isLoggedIn = !!session;
   const isAdmin = (session?.user as { role?: string } | undefined)?.role === 'admin';
   const { toasts, addToast, removeToast: dismissToast } = useToast();
-  const [etfDraftCount, setEtfDraftCount] = useState(0);
+  const [etfDraft, setEtfDraft] = useState<ReturnType<typeof readEtfDraft>>(null);
 
   const returnTo = screenerReturnPath(searchParams.get('returnTo')) ?? (searchParams.get('from') === 'screener' ? '/screener' : null);
   const resumeStarted = useRef(false);
@@ -570,28 +569,23 @@ function AnalyzeContent() {
 
   // 헤더와 카드가 함께 쓰는 표시용 값 (같은 식을 두 곳에 적으면 한쪽만 고쳐진다)
   const tickerLabel = krOrUs === 'US' ? name : (stockData?.stockTicker || tickerFromUrl || '');
+  const etfMarket = krOrUs === 'US' ? 'US' : 'KR';
+  const isInEtfDraft = etfDraft?.market === etfMarket && etfDraft.holdings.some(holding => holding.ticker === tickerLabel);
   useEffect(() => {
-    try {
-      const draft = JSON.parse(sessionStorage.getItem(ETF_DRAFT_KEY) ?? 'null');
-      if (Array.isArray(draft?.holdings)) setEtfDraftCount(draft.holdings.length);
-    } catch { /* 초안이 없으면 처음 담는 종목으로 시작한다. */ }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setEtfDraft(readEtfDraft());
   }, []);
   const addToEtfDraft = () => {
     if (!tickerLabel || !displayName) return;
     try {
-      const market = krOrUs === 'US' ? 'US' : 'KR';
-      const draft = JSON.parse(sessionStorage.getItem(ETF_DRAFT_KEY) ?? 'null');
-      const holdings = draft?.market === market && Array.isArray(draft.holdings) ? draft.holdings : [];
-      if (holdings.some((holding: { ticker?: string }) => holding.ticker === tickerLabel)) {
-        addToast('info', '이미 나만의 ETF에 담긴 종목입니다.');
-        return;
-      }
-      const nextHoldings = [...holdings, { ticker: tickerLabel, name: displayName }];
-      sessionStorage.setItem(ETF_DRAFT_KEY, JSON.stringify({ market, holdings: nextHoldings }));
-      setEtfDraftCount(nextHoldings.length);
-      if (nextHoldings.length >= 2) router.push('/etfs/new');
-      else addToast('success', 'ETF 초안에 담았습니다. ETF를 만들려면 같은 시장의 종목을 1개 더 추가해 주세요.');
-    } catch { addToast('error', 'ETF 초안을 저장하지 못했습니다.'); }
+      const next = addEtfHoldings({ market: etfMarket, holdings: [{ ticker: tickerLabel, name: displayName }] });
+      setEtfDraft(next);
+      addToast('success', next.holdings.length === 1
+        ? '초안에 담았어요. 같은 시장의 종목을 1개 더 담아 보세요.'
+        : `초안에 ${next.holdings.length}종목을 담았어요. 초안 보기에서 구성을 확인할 수 있어요.`);
+    } catch (error) {
+      addToast('error', error instanceof Error && !(error instanceof DOMException) ? error.message : '초안을 저장하지 못했어요.');
+    }
   };
   const marketName = krOrUs === 'US'
     ? (data?.usSearchInfo?.output?.tr_mket_name || data?.usSearchInfo?.output?.ovrs_excg_name || '')
@@ -655,9 +649,9 @@ function AnalyzeContent() {
         </> : undefined}
         primaryActionInMobileMenu
         primaryAction={isPriceLoaded ? <div className="flex flex-col md:flex-row md:items-center md:gap-1">
-          <button type="button" onClick={addToEtfDraft} className={ANALYZE_ACTION_CLS}>
-            나만의 ETF에 담기{etfDraftCount > 0 ? ` (${etfDraftCount})` : ''}
-          </button>
+          {isInEtfDraft
+            ? <Link href="/etfs/draft" className={cn(ANALYZE_ACTION_CLS, "font-semibold text-brand-ink dark:text-brand-ink")}>초안 보기</Link>
+            : <button type="button" onClick={addToEtfDraft} className={cn(ANALYZE_ACTION_CLS, "md:text-neutral-600 dark:md:text-neutral-300")}>ETF에 담기</button>}
           <Link href={comparisonHref(krOrUs, [tickerLabel], new Date().toLocaleDateString('sv-SE'))} className={cn(ANALYZE_ACTION_CLS, "md:text-neutral-500 dark:md:text-neutral-400")}>비교에 추가</Link>
         </div> : undefined}
         share={{ path: tickerFromUrl ? `/analyze?${shareParams}` : "/analyze" }}

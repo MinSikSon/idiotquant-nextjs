@@ -3,72 +3,73 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { ArrowLeft, LoaderCircle, Plus, X } from "lucide-react";
-import { PageHeader, PAGE_PRIMARY_ACTION_CLS } from "@/components/pageHeader";
+import { ArrowRight, Plus, X } from "lucide-react";
+import { PageHeader, PAGE_PRIMARY_ACTION_CLS, PAGE_WIDTH } from "@/components/pageHeader";
 import { StockLogo } from "@/components/stockLogo";
-import type { CommunityEtfDraft } from "@/lib/features/communityEtfs/api";
+import { etfPickerHref, readEtfDraft, writeEtfDraft } from "@/lib/features/communityEtfs/draft";
+import { CONTROL_FOCUS_CLS } from "@/lib/ui-controls";
+import { EtfNavigation } from "../EtfNavigation";
 import { MyPublishedEtfs } from "./MyPublishedEtfs";
-
-const DRAFT_KEY = "idiotquant:community-etf-draft:v1";
 
 export default function CommunityEtfDraftPage() {
     const { data: session, status } = useSession();
-    const [draft, setDraft] = useState<CommunityEtfDraft | null>(null);
-    const [ready, setReady] = useState(false);
+    const [draft, setDraft] = useState<ReturnType<typeof readEtfDraft>>();
+    const [error, setError] = useState("");
+    const count = draft?.holdings.length ?? 0;
 
     useEffect(() => {
-        try {
-            const parsed = JSON.parse(sessionStorage.getItem(DRAFT_KEY) ?? "null");
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            if ((parsed?.market === "KR" || parsed?.market === "US") && Array.isArray(parsed?.holdings)) setDraft(parsed);
-        } catch { /* 저장된 초안이 없으면 빈 상태를 보여준다. */ }
-        setReady(true);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setDraft(readEtfDraft());
     }, []);
 
     function removeHolding(ticker: string) {
         if (!draft) return;
         const next = { ...draft, holdings: draft.holdings.filter(holding => holding.ticker !== ticker) };
-        setDraft(next);
         try {
-            if (next.holdings.length) sessionStorage.setItem(DRAFT_KEY, JSON.stringify(next));
-            else sessionStorage.removeItem(DRAFT_KEY);
-        } catch { /* 현재 화면 상태는 계속 사용할 수 있다. */ }
+            writeEtfDraft(next);
+            setDraft(next.holdings.length ? next : null);
+            setError("");
+        } catch {
+            setError("종목을 빼지 못했어요. 잠시 후 다시 시도해 주세요.");
+        }
     }
 
     return <>
-        <PageHeader title="내 ETF 초안" width="content" primaryAction={<Link href="/analyze" className={PAGE_PRIMARY_ACTION_CLS}><Plus size={16} aria-hidden="true" />종목 추가</Link>} />
-        <main className="mx-auto max-w-2xl px-4 pb-[calc(var(--bottombar-h)+2rem)] pt-5 text-neutral-900 dark:text-neutral-100 sm:pt-8">
-            <Link href="/etfs" className="mb-5 inline-flex min-h-11 items-center gap-2 text-sm text-brand-ink"><ArrowLeft size={16} aria-hidden="true" />나만의 ETF로 돌아가기</Link>
-            <section aria-label="ETF 초안">
-                {!ready ? <p role="status" className="flex min-h-40 items-center justify-center gap-2 text-sm text-neutral-500"><LoaderCircle size={18} className="animate-spin" />초안을 불러오는 중…</p>
-                    : !draft || draft.holdings.length === 0 ? <div className="border-t border-neutral-200 py-4 dark:border-surface-dark-border">
-                        <h2 className="text-lg font-semibold">초안에 담긴 종목이 없어요</h2>
-                        <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300" role="status">ETF를 만들려면 종목을 2개 이상 추가해 주세요.</p>
-                        <Link href="/screener?createEtf=1" className={`${PAGE_PRIMARY_ACTION_CLS} mt-4`}>종목 고르기</Link>
-                    </div> : <>
-                        <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-                            <h2 className="font-semibold">{draft.market === "KR" ? "국내" : "미국"} 초안 구성 종목</h2>
-                            <span className="text-sm tabular-nums text-neutral-600 dark:text-neutral-300">{draft.holdings.length}종목 · 각 {(100 / draft.holdings.length).toFixed(1)}%</span>
-                        </div>
-                        <ul className="divide-y divide-neutral-200 border-y border-neutral-200 dark:divide-surface-dark-border dark:border-surface-dark-border">
-                            {draft.holdings.map(holding => <li key={holding.ticker} className="flex min-h-16 items-center gap-3 py-2">
-                                <StockLogo ticker={holding.ticker} name={holding.name} isUs={draft.market === "US"} />
-                                <span className="min-w-0 flex-1 break-words font-medium">{holding.name}<span className="ml-2 text-xs text-neutral-500">{holding.ticker}</span></span>
-                                <button type="button" onClick={() => removeHolding(holding.ticker)} aria-label={`${holding.name} 삭제`} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand dark:hover:bg-surface-dark-hover dark:hover:text-white"><X size={18} aria-hidden="true" /></button>
-                            </li>)}
-                        </ul>
-                        <p className="mt-3 text-sm text-neutral-600 dark:text-neutral-300">모든 종목은 같은 비중으로 구성됩니다.</p>
-                        {draft.holdings.length >= 2
-                            ? <Link href="/etfs/new" className={`${PAGE_PRIMARY_ACTION_CLS} mt-5 w-full`}>ETF 만들기</Link>
-                            : <p role="status" className="mt-5 text-sm font-medium text-brand-ink">ETF를 만들려면 종목을 1개 더 추가해 주세요.</p>}
-                    </>}
-            </section>
-            <section aria-labelledby="published-etfs-title" className="mt-8 border-t border-neutral-200 pt-4 dark:border-surface-dark-border">
-                <h2 id="published-etfs-title" className="text-lg font-semibold">내가 공개한 ETF</h2>
-                {status === "loading" ? <p role="status" className="py-3 text-sm text-neutral-600 dark:text-neutral-300">공개한 ETF를 불러오는 중…</p>
-                    : session?.user?.id ? <MyPublishedEtfs key={session.user.id} />
-                    : <Link href="/login?callbackUrl=%2Fetfs%2Fdraft" className="inline-flex min-h-11 items-center text-sm font-semibold text-brand-ink underline-offset-4 hover:underline">로그인하고 내 ETF 보기</Link>}
-            </section>
+        <PageHeader title="가상 ETF" width="content" tabs={<EtfNavigation active="mine" />}
+            primaryAction={draft !== undefined && <Link href={etfPickerHref(draft?.market)} className={`${PAGE_PRIMARY_ACTION_CLS} dark:text-neutral-950`}>
+                <Plus size={16} aria-hidden="true" />{count ? "종목 추가" : "종목 고르기"}
+            </Link>} />
+        <main className={`${PAGE_WIDTH.content} pt-5 pb-[calc(var(--bottombar-h)+2rem)] md:pt-8`}>
+            <div className="mx-auto grid max-w-3xl gap-8 md:grid-cols-2 md:gap-10">
+                <section aria-labelledby="draft-title">
+                    <h2 id="draft-title" className="text-lg font-semibold">작성 중인 초안</h2>
+                    {draft === undefined ? <p role="status" className="py-3 text-sm text-neutral-600 dark:text-neutral-300">초안을 불러오는 중…</p>
+                        : !draft ? <p className="mt-2 text-sm leading-6 text-neutral-600 dark:text-neutral-300">같은 시장의 종목을 2개 이상 골라 보세요. 선택한 종목은 같은 비중으로 담깁니다.</p>
+                        : <>
+                            <p className="mt-2 text-sm tabular-nums text-neutral-600 dark:text-neutral-300">
+                                {draft.market === "KR" ? "국내" : "미국"} · {count}종목 · 종목당 {(100 / count).toFixed(1)}%
+                            </p>
+                            <ul className="mt-3 divide-y divide-neutral-200 border-y border-neutral-200 dark:divide-surface-dark-border dark:border-surface-dark-border">
+                                {draft.holdings.map(holding => <li key={holding.ticker} className="flex min-h-14 items-center gap-3 py-1">
+                                    <StockLogo ticker={holding.ticker} name={holding.name} isUs={draft.market === "US"} />
+                                    <span className="min-w-0 flex-1 break-words font-medium">{holding.name} <span className="text-xs text-neutral-600 dark:text-neutral-400">{holding.ticker}</span></span>
+                                    <button type="button" onClick={() => removeHolding(holding.ticker)} aria-label={`${holding.name} 초안에서 빼기`} className={`inline-flex min-h-11 min-w-11 items-center justify-center rounded text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-surface-dark-hover ${CONTROL_FOCUS_CLS}`}><X size={18} aria-hidden="true" /></button>
+                                </li>)}
+                            </ul>
+                            {error && <p role="alert" className="mt-2 text-sm text-rose-700 dark:text-rose-300">{error}</p>}
+                            {count >= 2
+                                ? <Link href="/etfs/new" className={`${PAGE_PRIMARY_ACTION_CLS} dark:text-neutral-950 mt-4`}>공개 내용 작성 <ArrowRight size={16} aria-hidden="true" /></Link>
+                                : <p role="status" className="mt-3 text-sm font-medium text-brand-ink">같은 시장의 종목을 1개 더 담아 주세요.</p>}
+                        </>}
+                    {count > 0 && <p className="mt-3 text-xs leading-5 text-neutral-600 dark:text-neutral-400">초안은 현재 브라우저 탭에 임시 저장됩니다.</p>}
+                </section>
+                <section aria-labelledby="published-etfs-title" className="border-t border-neutral-200 pt-4 dark:border-surface-dark-border md:border-l md:border-t-0 md:pl-8 md:pt-0">
+                    <h2 id="published-etfs-title" className="text-lg font-semibold">내가 공개한 가상 ETF</h2>
+                    {status === "loading" ? <p role="status" className="py-3 text-sm text-neutral-600 dark:text-neutral-300">공개한 가상 ETF를 불러오는 중…</p>
+                        : session?.user?.id ? <MyPublishedEtfs key={session.user.id} />
+                        : <Link href="/login?callbackUrl=%2Fetfs%2Fdraft" className={`inline-flex min-h-11 items-center rounded text-sm font-semibold text-brand-ink underline-offset-4 hover:underline ${CONTROL_FOCUS_CLS}`}>로그인하고 공개한 ETF 보기</Link>}
+                </section>
+            </div>
         </main>
     </>;
 }
