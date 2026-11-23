@@ -56,6 +56,7 @@ export function PageHeader({
   actions,
   share,
   primaryAction,
+  primaryActionInMobileMenu = false,
   tabs,
   children,
   width = "data",
@@ -79,6 +80,8 @@ export function PageHeader({
   share?: ScreenShare;
   /** 상단 한 줄에 표시할 핵심 작업 하나. */
   primaryAction?: React.ReactNode;
+  /** 모바일에서는 핵심 작업을 페이지 도구 메뉴에 표시한다. */
+  primaryActionInMobileMenu?: boolean;
   /** 상단바 바로 아래에 고정할 한 줄의 내용 전환 탭. */
   tabs?: React.ReactNode;
   /** 검색·필터처럼 본문과 함께 스크롤할 도구. */
@@ -107,6 +110,7 @@ export function PageHeader({
   const actionsTarget = slots?.actionsTarget;
   const integrated = !!titleTarget && !!actionsTarget;
   const visibleMeta = compactMeta != null ? mobile ? compactMeta : meta ?? compactMeta : undefined;
+  const mobileMenuAction = mobile && primaryActionInMobileMenu ? primaryAction : undefined;
   const setActive = slots?.setActive;
   useEffect(() => {
     setActive?.(integrated);
@@ -126,10 +130,10 @@ export function PageHeader({
     {integrated && createPortal(titleContent, titleTarget!)}
     {integrated && mobile && mobileTitleOnScroll && slots?.scrollTitleTarget && createPortal(titleContent, slots.scrollTitleTarget)}
     {integrated && createPortal(<div data-page-actions className="flex flex-nowrap items-center">
-      {primaryAction && <div data-primary-action>{primaryAction}</div>}
+      {primaryAction && !mobileMenuAction && <div data-primary-action>{primaryAction}</div>}
       <PageShareTools share={share}>
-        {(actions || description || meta) && <div className="mt-2 border-t border-neutral-200 pt-2 dark:border-neutral-700">
-          <div data-page-secondary-actions className="flex flex-col gap-2">{actions}</div>
+        {(mobileMenuAction || actions || description || meta) && <div className="mt-2 border-t border-neutral-200 pt-2 dark:border-neutral-700">
+          <div data-page-secondary-actions className="flex flex-col gap-2">{mobileMenuAction}{actions}</div>
           {(description || meta) && <div className="p-3 text-xs leading-6">{description}{meta && <div>{meta}</div>}</div>}
         </div>}
       </PageShareTools>

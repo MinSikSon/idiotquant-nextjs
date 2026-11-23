@@ -30,6 +30,7 @@ import {
   Heart, ChevronDown,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { CONTROL_FOCUS_CLS } from '@/lib/ui-controls';
 import { PageHeader, PAGE_WIDTH, PAGE_ACTION_CLS } from '@/components/pageHeader';
 import { GradeHelp } from './components/GradeHelp';
 import { FinancialDataEvidence } from '@/components/financial-data-evidence';
@@ -48,6 +49,12 @@ import { AnalysisLoginPrompt } from './components/AnalysisLoginPrompt';
 const ETF_DRAFT_KEY = 'idiotquant:community-etf-draft:v1';
 
 const ANALYZE_WIDTH = cn(PAGE_WIDTH.data, styles.container);
+const ANALYZE_ACTION_CLS = cn(
+  "inline-flex min-h-11 items-center rounded px-3 text-left text-base text-neutral-700 hover:bg-neutral-100",
+  "dark:text-neutral-200 dark:hover:bg-neutral-800 md:px-2 md:text-xs md:underline-offset-4",
+  "md:hover:bg-transparent md:hover:text-brand-ink md:hover:underline dark:md:hover:bg-transparent dark:md:hover:text-brand-ink",
+  CONTROL_FOCUS_CLS
+);
 
 // =========================================================================
 // Dynamic imports
@@ -308,10 +315,10 @@ function StockName({ name }: { name: string }) {
   return (
     <Popover.Root>
       <Popover.Anchor asChild>
-        <span ref={container} className="relative block">
+        <span ref={container} className={cn(styles.stockName, "relative block")}>
           <span ref={label} className={cn("block truncate", truncated && "mr-5")}>{name}</span>
           {truncated && (
-            <Popover.Trigger className="absolute inset-0 flex items-center justify-end rounded-sm focus-visible:outline focus-visible:-outline-offset-2"
+            <Popover.Trigger className="absolute inset-0 flex min-h-11 items-start justify-end rounded-sm pt-1 focus-visible:outline focus-visible:-outline-offset-2 md:min-h-0 md:items-center md:pt-0"
               aria-label="전체 종목명 보기">
               <ChevronDown size={14} aria-hidden="true" />
             </Popover.Trigger>
@@ -634,7 +641,6 @@ function AnalyzeContent() {
         className={cn(styles.header, !tickerFromUrl && styles.emptyHeader)}
         containerClassName={ANALYZE_WIDTH}
         title={isPriceLoaded ? <StockName key={tickerFromUrl} name={displayName || tickerLabel} /> : !tickerFromUrl ? '종목 검색' : '종목 분석'}
-        mobileTitle={isPriceLoaded ? displayName || tickerLabel : !tickerFromUrl ? '종목 검색' : '종목 분석'}
         description={!tickerFromUrl ? '국내 종목명·종목코드 또는 미국 티커를 입력하세요.' : undefined}
         meta={tickerFromUrl ? <>
           <div className="flex min-w-0 items-center gap-1.5" aria-label="현재 종목 시세">
@@ -645,9 +651,15 @@ function AnalyzeContent() {
         </> : undefined}
         compactMeta={isPriceLoaded ? <>
           <span data-analyze-ticker>{tickerLabel}</span>
-          <span className="font-semibold tabular-nums text-neutral-900 dark:text-white">{headerPrice}</span>
+          <span className="shrink-0 font-semibold tabular-nums text-neutral-900 dark:text-white">{headerPrice}</span>
         </> : undefined}
-        primaryAction={isPriceLoaded ? <div className="flex items-center gap-1"><button type="button" onClick={addToEtfDraft} className="inline-flex min-h-11 items-center px-2 text-xs text-neutral-500 underline-offset-4 hover:text-brand-ink hover:underline dark:text-neutral-400">나만의 ETF에 담기{etfDraftCount > 0 ? ` (${etfDraftCount})` : ''}</button><Link href={comparisonHref(krOrUs, [tickerLabel], new Date().toLocaleDateString('sv-SE'))} className="inline-flex min-h-11 items-center px-2 text-xs text-neutral-500 underline-offset-4 hover:text-brand-ink hover:underline dark:text-neutral-400">비교에 추가</Link></div> : undefined}
+        primaryActionInMobileMenu
+        primaryAction={isPriceLoaded ? <div className="flex flex-col md:flex-row md:items-center md:gap-1">
+          <button type="button" onClick={addToEtfDraft} className={ANALYZE_ACTION_CLS}>
+            나만의 ETF에 담기{etfDraftCount > 0 ? ` (${etfDraftCount})` : ''}
+          </button>
+          <Link href={comparisonHref(krOrUs, [tickerLabel], new Date().toLocaleDateString('sv-SE'))} className={cn(ANALYZE_ACTION_CLS, "md:text-neutral-500 dark:md:text-neutral-400")}>비교에 추가</Link>
+        </div> : undefined}
         share={{ path: tickerFromUrl ? `/analyze?${shareParams}` : "/analyze" }}
         actions={isPriceLoaded ? <div className="flex min-w-0 flex-col gap-3">
           <button type="button" onClick={() => void handleToggleLike()} disabled={likeBusy}
