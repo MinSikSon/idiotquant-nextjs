@@ -566,8 +566,9 @@ export function NavbarWithSimpleLinks() {
             <div ref={pageHeader?.setScrollTitleTarget} data-navigation-scroll-title hidden={!identityScrolled} />
           </div>
           <div className="flex shrink-0 items-center gap-2 md:gap-1 lg:min-w-min lg:flex-1">
+            <div ref={pageHeader?.setPrimaryActionTarget} className="shrink-0 empty:hidden md:hidden" />
             <div className="navigation-search flex shrink-0 items-center lg:min-w-32 lg:flex-1"><StockSearchTrigger showDesktopLabel /></div>
-            <div ref={pageHeader?.setActionsTarget} data-navigation-actions className="shrink-0 md:empty:hidden" />
+            <div ref={pageHeader?.setActionsTarget} data-navigation-actions className="shrink-0 empty:hidden" />
             {!pageHeader?.active && <PageShareTools key={pathname} share={pathname.startsWith("/ledger/join/") ? { path: "/ledger" } : undefined} />}
           </div>
         </div>
