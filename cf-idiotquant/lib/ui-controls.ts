@@ -11,5 +11,5 @@ export const CONTROL_INPUT_CLS =
   CONTROL_FOCUS_CLS;
 
 export const CONTROL_ICON_BUTTON_CLS =
-  "inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200/60 dark:hover:bg-surface-dark-muted/60 transition-colors " +
+  "service-button-quiet inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200/60 dark:hover:bg-surface-dark-muted/60 transition-colors " +
   CONTROL_FOCUS_CLS + " " + CONTROL_DISABLED_CLS;
