@@ -23,7 +23,11 @@ function header(initialY = 0, pathname = '/analyze') {
   }).outputText;
   runInNewContext(script, {
     exports: output.exports, module: output, window, process: { env: {} },
-    document: { body: {}, querySelector: () => null, documentElement: { scrollHeight: 3000, classList: { add() {}, remove() {} } } },
+    document: {
+      body: {},
+      querySelector: () => ({ getBoundingClientRect: () => ({ bottom: 48 }) }),
+      documentElement: { scrollHeight: 3000, classList: { add() {}, remove() {} } },
+    },
     localStorage: { getItem: () => 'light' },
     ResizeObserver: class { observe() {} disconnect() {} },
     MutationObserver: class { observe() {} disconnect() {} },
@@ -56,9 +60,14 @@ function header(initialY = 0, pathname = '/analyze') {
     cursor = 0;
     effects = [];
     const tree = nodes(output.exports.default());
+    const header = tree.find(node => 'data-navigation-header' in (node.props ?? {}));
+    const identity = tree.find(node => node.props?.className?.includes('navigation-identity'));
+    if (identity) identity.props.ref.current = { getBoundingClientRect: () => ({ bottom: 92 - window.scrollY }) };
     return {
       identity: tree.find(node => node.props?.className?.includes('navigation-analysis-identity')),
-      header: tree.find(node => 'data-navigation-header' in (node.props ?? {})),
+      header,
+      fixedLogo: nodes(header).find(node => node.props?.['aria-label'] === 'idiotquant 홈'),
+      identityLogoRow: identity?.props.children,
       title: tree.find(node => 'data-navigation-scroll-title' in (node.props ?? {})),
     };
   }
@@ -77,10 +86,12 @@ test('모바일 분석: 로고 행이 스크롤만큼 접히고 종목 정보가
   const collapsed = app.scroll(56);
   assert.equal(collapsed.identity.props.style.height, 0);
   assert.equal(collapsed.title.props.hidden, false);
+  assert.ok(collapsed.fixedLogo.props.className.split(' ').includes('inline-flex'));
   assert.equal(app.scroll(500).identity.props.style.height, 0);
   const restored = app.scroll(0);
   assert.equal(restored.identity.props.style.height, 56);
   assert.equal(restored.title.props.hidden, true);
+  assert.ok(restored.fixedLogo.props.className.split(' ').includes('hidden'));
 });
 
 test('스크롤 위치를 복원해 진입하면 처음부터 종목 정보를 상단에 표시한다', () => {
@@ -112,4 +123,23 @@ test('모바일 발굴: 스크롤을 복원해 돌아와도 고정 요약을 바
   const app = header(300, '/screener');
   assert.equal(app.render().identity.props.style.height, 0);
   assert.equal(app.render().title.props.hidden, false);
+});
+
+test('공통 모바일 헤더: 스크롤로 로고 행이 가려지면 고정 상단에 홈 링크를 표시한다', () => {
+  for (const pathname of ['/', '/compare', '/balance']) {
+    const app = header(0, pathname);
+    assert.ok(app.render().fixedLogo.props.className.split(' ').includes('hidden'));
+    const scrolled = app.scroll(44);
+    assert.ok(scrolled.fixedLogo.props.className.split(' ').includes('inline-flex'));
+    assert.equal(scrolled.identityLogoRow.props['aria-hidden'], true);
+    assert.equal(app.scroll(0).identityLogoRow.props['aria-hidden'], undefined);
+  }
+});
+
+test('모바일 ETF 피드와 게임: 이미 고정 상단에 있는 홈 링크는 스크롤 후에도 표시한다', () => {
+  for (const pathname of ['/etfs', '/games']) {
+    const app = header(0, pathname);
+    assert.ok(app.render().fixedLogo.props.className.split(' ').includes('inline-flex'));
+    assert.ok(app.scroll(100).fixedLogo.props.className.split(' ').includes('inline-flex'));
+  }
 });

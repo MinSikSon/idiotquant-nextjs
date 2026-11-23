@@ -36,8 +36,8 @@ export default function CommunityEtfDraftPage() {
 
     return <>
         <PageHeader title="가상 ETF" width="content" tabs={<EtfNavigation active="mine" />}
-            primaryAction={draft !== undefined && <Link href={etfPickerHref(draft?.market)} className={`${PAGE_PRIMARY_ACTION_CLS} dark:text-neutral-950`}>
-                <Plus size={16} aria-hidden="true" />{count ? "종목 추가" : "종목 고르기"}
+            primaryAction={draft !== undefined && <Link href={etfPickerHref(draft?.market)} className={`${PAGE_PRIMARY_ACTION_CLS} dark:text-neutral-950 max-[479px]:px-0`}>
+                <Plus size={16} aria-hidden="true" /><span className="max-[479px]:sr-only">{count ? "종목 추가" : "종목 고르기"}</span>
             </Link>} />
         <main className={`${PAGE_WIDTH.content} pt-5 pb-[calc(var(--bottombar-h)+2rem)] md:pt-8`}>
             <div className="mx-auto grid max-w-3xl gap-8 md:grid-cols-2 md:gap-10">

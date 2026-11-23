@@ -50,7 +50,7 @@ import FactorWorkbench from "@/components/research/FactorWorkbench";
 import WatchlistChanges from "@/components/watchlistChanges";
 import styles from "./screener.module.css";
 
-import { ArrowDown, ArrowDownUp, ArrowUp, RefreshCw, Ellipsis, ChevronDown, CalendarDays, Loader2, Search, SlidersHorizontal, Info, X, Heart, Clock, Check, Lock } from "lucide-react";
+import { ArrowDown, ArrowDownUp, ArrowUp, RefreshCw, Ellipsis, ChevronDown, CalendarDays, Loader2, Search, SlidersHorizontal, Info, X, Heart, Clock, Check, Lock, Plus } from "lucide-react";
 import * as Tooltip from "@radix-ui/react-tooltip";
 
 // =========================================================================
@@ -1302,7 +1302,10 @@ function ScreenerContent() {
                     )}
                 </>}
                 primaryAction={etfCreationMode
-                    ? <button type="button" disabled={!canAddEtfHoldings} onClick={addSelectionToEtf} className={`${PAGE_PRIMARY_ACTION_CLS} dark:text-neutral-950`}>초안에 담기{compareTickers.length > 0 && ` (${compareTickers.length})`}</button>
+                    ? <button type="button" disabled={!canAddEtfHoldings} onClick={addSelectionToEtf} className={`${PAGE_PRIMARY_ACTION_CLS} dark:text-neutral-950 max-[479px]:px-0`}>
+                        <Plus size={16} aria-hidden="true" className="min-[480px]:hidden" />
+                        <span className="max-[479px]:sr-only">초안에 담기{compareTickers.length > 0 && ` (${compareTickers.length})`}</span>
+                    </button>
                     : <button onClick={handleRefresh} disabled={isLoading || isRefreshing} className={PAGE_ACTION_CLS} title="목록 새로고침" aria-label="목록 새로고침">
                         <RefreshCw size={13} className={isLoading || isRefreshing ? "animate-spin" : ""} />
                         <span className="hidden sm:inline">새로고침</span>

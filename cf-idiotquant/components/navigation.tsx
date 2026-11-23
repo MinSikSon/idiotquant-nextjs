@@ -408,14 +408,16 @@ export function NavbarWithSimpleLinks() {
     </div>;
   };
 
+  const logoClass = "min-h-11 shrink-0 items-center whitespace-nowrap text-xl font-bold tracking-tight text-neutral-900 dark:text-white";
+  const logoText = <span>idiot<span className="text-brand-ink">quant</span></span>;
   const mobileIdentity = (
     <div
-      className={cn("flex min-h-11 items-center gap-3 px-3", fixedPageIdentity && "h-[56px]")}
-      style={fixedPageIdentity ? { transform: `translateY(-${identityOffset}px)`, visibility: identityScrolled ? "hidden" : undefined } : undefined}
-      aria-hidden={fixedPageIdentity && identityScrolled || undefined}
+      className={cn("flex min-h-11 items-center gap-3 px-3", fixedPageIdentity && "h-[56px]", identityScrolled && "invisible")}
+      style={fixedPageIdentity ? { transform: `translateY(-${identityOffset}px)` } : undefined}
+      aria-hidden={identityScrolled || undefined}
     >
-      <Link href="/" aria-label="idiotquant 홈" className="inline-flex min-h-11 shrink-0 items-center text-xl font-bold tracking-tight text-neutral-900 dark:text-white">
-        <span>idiot<span className="text-brand-ink">quant</span></span>
+      <Link href="/" aria-label="idiotquant 홈" className={cn(logoClass, "inline-flex")}>
+        {logoText}
       </Link>
       <div ref={mobile ? pageHeader?.setTitleTarget : undefined} className={cn("min-w-0 flex-1", !pageHeader?.active && "hidden")} />
       {!pageHeader?.active && pathname !== "/" && <span className="truncate text-base font-semibold">{mobilePageTitle}</span>}
@@ -531,8 +533,8 @@ export function NavbarWithSimpleLinks() {
 
       {!inGame && <header data-navigation-header className="navigation-header fixed inset-x-0 top-0 z-40 border-b border-neutral-300/50 bg-surface-canvas/95 backdrop-blur-[12px] dark:border-neutral-700/60 dark:bg-surface-dark-canvas/95 md:sticky">
         <div className="navigation-main flex h-12 items-center gap-2 px-3 md:gap-4 md:px-6">
-          <Link href="/" aria-label="idiotquant 홈" className={cn("shrink-0 text-lg font-bold tracking-tight text-neutral-900 dark:text-white", inEtfFeed ? "inline-flex min-h-11 items-center" : "hidden md:block")}>
-            idiot<span className="text-brand-ink">quant</span>
+          <Link href="/" aria-label="idiotquant 홈" className={cn(logoClass, "md:inline-flex md:text-lg", inEtfFeed || identityScrolled ? "inline-flex" : "hidden")}>
+            {logoText}
           </Link>
           <nav aria-label="주요 서비스" className="hidden shrink-0 items-center gap-1.5 md:flex">
             {MAIN_NAV.map(item => {
@@ -582,14 +584,15 @@ export function NavbarWithSimpleLinks() {
       {inGame && <header data-navigation-header data-mobile-header data-page-active={pageHeader?.active || undefined} className={cn("navigation-mobile-header md:hidden fixed top-0 left-0 right-0 z-40 border-b",
         barStyle ? "" : "bg-surface-canvas/95 backdrop-blur-[12px] dark:bg-surface-dark-canvas/95 border-neutral-300/50 dark:border-neutral-700/60")}
         style={barStyle}>
-        <div className="navigation-main flex min-h-12 items-center justify-between gap-2 px-4">
+        <div className="navigation-main flex min-h-12 items-center justify-between gap-2 px-3">
           <div className="flex min-w-0 flex-1 items-center gap-1.5">
+            <Link href="/" aria-label="idiotquant 홈" className={cn(logoClass, "inline-flex")}>
+              {logoText}
+            </Link>
             <div ref={pageHeader?.setTitleTarget} className={cn("min-w-0 flex-1", !pageHeader?.active && "hidden")} />
-            {!pageHeader?.active && (gameScrolled && mobilePageTitle ? (
+            {!pageHeader?.active && gameScrolled && mobilePageTitle && (
               <span className="truncate text-base font-semibold text-neutral-900 dark:text-white">{mobilePageTitle}</span>
-            ) : (
-              <Link href="/" className="shrink-0 text-lg font-bold tracking-tight text-neutral-900 dark:text-white">idiot<span className="text-brand-ink">quant</span></Link>
-            ))}
+            )}
           </div>
           <div className="navigation-service-actions flex shrink-0 items-center gap-1">
             <StockSearchTrigger />
