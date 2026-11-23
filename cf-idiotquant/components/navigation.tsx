@@ -34,6 +34,7 @@ import {
   Swords,
   GitCompareArrows,
   Layers,
+  Plus,
 } from "lucide-react";
 
 /* ─── NAV CONFIG ──────────────────────────────────────────────────── */
@@ -287,6 +288,7 @@ export function NavbarWithSimpleLinks() {
 
      `/game` Rogue는 DOM이라 앱 테마를 따른다. */
   const inGame = pathname.startsWith("/games");
+  const inEtfFeed = pathname === "/etfs";
   const fixedPageIdentity = pathname === "/analyze" || pathname === "/screener";
   // 게임 안에서는 금융 서비스 이름 대신 게임 묶음의 이름을 쓴다. 공통 헤더지만
   // 경로에 따라 한 단어만 바꾸므로, 게임 바의 색·배치는 그대로 유지된다.
@@ -529,7 +531,7 @@ export function NavbarWithSimpleLinks() {
 
       {!inGame && <header data-navigation-header className="navigation-header fixed inset-x-0 top-0 z-40 border-b border-neutral-300/50 bg-surface-canvas/95 backdrop-blur-[12px] dark:border-neutral-700/60 dark:bg-surface-dark-canvas/95 md:sticky">
         <div className="navigation-main flex h-12 items-center gap-2 px-3 md:gap-4 md:px-6">
-          <Link href="/" aria-label="idiotquant 홈" className="hidden md:block shrink-0 text-lg font-bold tracking-tight text-neutral-900 dark:text-white">
+          <Link href="/" aria-label="idiotquant 홈" className={cn("shrink-0 text-lg font-bold tracking-tight text-neutral-900 dark:text-white", inEtfFeed ? "inline-flex min-h-11 items-center" : "hidden md:block")}>
             idiot<span className="text-brand-ink">quant</span>
           </Link>
           <nav aria-label="주요 서비스" className="hidden shrink-0 items-center gap-1.5 md:flex">
@@ -549,7 +551,7 @@ export function NavbarWithSimpleLinks() {
             </NavigationPopover>
           </nav>
           <div ref={!mobile ? pageHeader?.setTitleTarget : undefined} className={cn("hidden min-w-0 flex-1 md:block lg:flex-[0_1_16rem]", !pageHeader?.active && "md:hidden")} />
-          {!pageHeader?.active && <span className="hidden min-w-0 flex-1 truncate text-sm font-semibold md:block lg:flex-[0_1_16rem] lg:empty:hidden">{pathname === "/" ? null : mobilePageTitle}</span>}
+          {!pageHeader?.active && <span className="hidden min-w-0 flex-1 truncate text-sm font-semibold md:block lg:flex-[0_1_16rem] lg:empty:hidden">{pathname === "/" || inEtfFeed ? null : mobilePageTitle}</span>}
           <div className="min-w-0 flex-1 md:hidden">
             <div ref={pageHeader?.setInfoTarget} data-navigation-info />
             <div ref={pageHeader?.setScrollTitleTarget} data-navigation-scroll-title hidden={!identityScrolled} />
@@ -558,7 +560,10 @@ export function NavbarWithSimpleLinks() {
             <div ref={pageHeader?.setPrimaryActionTarget} className="shrink-0 empty:hidden md:hidden" />
             <div className="navigation-search flex shrink-0 items-center lg:min-w-32 lg:flex-1"><StockSearchTrigger showDesktopLabel /></div>
             <div ref={pageHeader?.setActionsTarget} data-navigation-actions className="shrink-0 empty:hidden" />
-            {!pageHeader?.active && <PageShareTools key={pathname} share={pathname.startsWith("/ledger/join/") ? { path: "/ledger" } : undefined} />}
+            {inEtfFeed && <Link href="/etfs/draft" className={cn("service-button-quiet order-first inline-flex min-h-11 shrink-0 items-center gap-1 rounded px-1.5 text-sm font-semibold text-brand-ink sm:px-2", CONTROL_FOCUS_CLS)}>
+              <Plus size={16} aria-hidden="true" />ETF 만들기
+            </Link>}
+            {!pageHeader?.active && !inEtfFeed && <PageShareTools key={pathname} share={pathname.startsWith("/ledger/join/") ? { path: "/ledger" } : undefined} />}
           </div>
         </div>
         {fixedPageIdentity && (
@@ -569,7 +574,7 @@ export function NavbarWithSimpleLinks() {
         <div ref={pageHeader?.setTabsTarget} data-navigation-tabs />
       </header>}
 
-      {!inGame && !fixedPageIdentity && <div ref={identity} className="navigation-identity bg-surface-canvas dark:bg-surface-dark-canvas md:hidden">
+      {!inGame && !fixedPageIdentity && !inEtfFeed && <div ref={identity} className="navigation-identity bg-surface-canvas dark:bg-surface-dark-canvas md:hidden">
         {mobileIdentity}
       </div>}
 
@@ -598,7 +603,7 @@ export function NavbarWithSimpleLinks() {
       </header>}
 
       {/* ══ MOBILE BOTTOM TAB BAR ════════════════════════════════════ */}
-      <nav ref={bottomNav} aria-label="하단 메뉴" data-bottom-navigation data-hidden={bottomHidden && !moreSheet || undefined}
+      <nav ref={bottomNav} aria-label="하단 메뉴" data-bottom-navigation data-hidden={bottomHidden && !moreSheet && !inEtfFeed || undefined}
         onFocusCapture={() => setBottomHidden(false)}
         className={cn(inGame ? "hidden" : "md:hidden fixed bottom-0 left-0 right-0 z-40 flex items-center gap-1.5 px-3 bg-surface-canvas/95 backdrop-blur-[12px] dark:bg-surface-dark-canvas/95")}>
         <TabItem href="/" label="오늘" icon={Home} isActive={pathname === "/"} />
