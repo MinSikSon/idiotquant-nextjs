@@ -306,6 +306,9 @@ export const capitalSlice = createAppSlice({
             {
                 pending: (state, action) => {
                     state.accountRequests.reqGetKrCapital = action.meta.requestId;
+                    if (state.accountRequests.reqGetKrCapitalKey !== (action.meta.arg ?? "")) {
+                        state.krCapital = { ...initialState.krCapital };
+                    }
                     state.accountRequests.reqGetKrCapitalKey = action.meta.arg ?? "";
                     // console.log(`[reqGetKrCapital] pending`);
                     state.krCapital.state = "pending"
@@ -314,7 +317,7 @@ export const capitalSlice = createAppSlice({
                     if (state.accountRequests.reqGetKrCapital !== action.meta.requestId) return;
                     // console.log(`[reqGetKrCapital] fulfilled`, `, typeof action.payload:`, typeof action.payload, `, action.payload:`, action.payload);
                     const json = action.payload;
-                    state.krCapital = { ...json, state: "fulfilled" };
+                    state.krCapital = { ...initialState.krCapital, ...json, stock_list: json?.stock_list ?? [], state: "fulfilled" };
                 },
                 rejected: (state, action) => {
                     if (state.accountRequests.reqGetKrCapital !== action.meta.requestId) return;
@@ -464,6 +467,9 @@ export const capitalSlice = createAppSlice({
             {
                 pending: (state, action) => {
                     state.accountRequests.reqGetUsCapital = action.meta.requestId;
+                    if (state.accountRequests.reqGetUsCapitalKey !== (action.meta.arg ?? "")) {
+                        state.usCapital = { ...initialState.usCapital };
+                    }
                     state.accountRequests.reqGetUsCapitalKey = action.meta.arg ?? "";
                     // console.log(`[reqGetUsCapital] pending`);
                     state.usCapital.state = "pending"
@@ -472,7 +478,7 @@ export const capitalSlice = createAppSlice({
                     if (state.accountRequests.reqGetUsCapital !== action.meta.requestId) return;
                     // console.log(`[reqGetUsCapital] fulfilled`, `, typeof action.payload:`, typeof action.payload, `, action.payload:`, action.payload);
                     const json = action.payload;
-                    state.usCapital = { ...json, state: "fulfilled" };
+                    state.usCapital = { ...initialState.usCapital, ...json, stock_list: json?.stock_list ?? [], state: "fulfilled" };
                 },
                 rejected: (state, action) => {
                     if (state.accountRequests.reqGetUsCapital !== action.meta.requestId) return;

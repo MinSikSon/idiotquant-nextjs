@@ -625,7 +625,6 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
             <SectionPanel id="section-balance">
               <InquireBalanceResult
                 balanceKey={balanceKey}
-                setBalanceKey={setBalanceKey}
                 kiBalance={kiBalance as any}
                 reqGetInquireBalance={reqGetInquireBalance}
                 kakaoMemberList={kakaoMemberList}
