@@ -144,7 +144,7 @@ export default function QuantRuleEditor({ data, isMaster, onSave, className = ""
       {data?.state === "rejected" && <p role="alert" className="text-xs text-rose-500">조건 조회에 실패했습니다. 페이지를 새로고침해 다시 시도하세요.</p>}
       {data?.saveState === "rejected" && <p role="alert" className="text-xs text-rose-500">조건을 저장하지 못했습니다. 입력 내용을 확인하고 다시 저장하세요.</p>}
 
-      <p className="text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">운용 모드는 각 그룹에서 선택합니다. 아래 조건은 그룹별 설정이 없을 때 사용하는 기본값이며, DCA도 대상 선정 필터와 활성 종목 수 제한은 적용받습니다.</p>
+      <p className="text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">아래 조건은 그룹별 설정이 없을 때 적용되며 DCA에도 적용됩니다. 계좌의 콜워런트 제외는 매수 그룹에만 적용됩니다.</p>
 
       {/* 필드 그리드 */}
       <div className="grid grid-cols-1 gap-1.5 sm:gap-3 sm:grid-cols-2">
