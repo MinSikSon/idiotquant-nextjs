@@ -3,34 +3,60 @@
 @tailwind utilities;
 
 @layer components {
+  /* The lower edge gives feedback without moving the hit area. */
+  :where(button, input:is([type="button"], [type="submit"], [type="reset"]), summary,
+         [role="button"], [role="tab"], .service-button, .service-button-quiet) {
+    --button-rest-depth: 0px;
+    --button-depth: var(--button-rest-depth);
+    --button-edge: rgb(var(--service-muted-rgb) / 38%);
+    --button-face: transparent;
+    --button-pressed: transparent;
+    box-shadow: inset 0 0 0 1px var(--button-face),
+                inset 0 -2px 0 var(--button-pressed),
+                0 var(--button-depth) 0 var(--button-edge);
+    transition: background-color 120ms ease-out, box-shadow 100ms ease-out;
+  }
+
+  :where(button:not([role], [aria-pressed], [aria-expanded], [aria-haspopup], .service-button-quiet,
+                    th *, [data-navigation-header] *, [data-bottom-navigation] *, .navigation-popover *, #game-canvas *),
+         input:is([type="button"], [type="submit"], [type="reset"]), .service-button) {
+    --button-rest-depth: 2px;
+    --button-face: var(--button-edge);
+    border-radius: var(--radius-control);
+  }
+
   .service-button {
-    --button-depth: 2px;
-    border: 1px solid rgb(var(--service-muted-rgb) / 38%);
     border-radius: 6px;
-    box-shadow: 0 var(--button-depth) 1px rgb(0 0 0 / 30%);
-    transition: background-color 120ms ease-out, box-shadow 120ms ease-out, translate 120ms ease-out;
   }
 
   @media (hover: hover) {
-    .service-button:where(:not(:disabled, [aria-disabled="true"]):hover) {
-      --button-depth: 3px;
+    :where(button, input:is([type="button"], [type="submit"], [type="reset"]), summary,
+           [role="button"], [role="tab"], .service-button, .service-button-quiet):where(:hover:not(:disabled, [aria-disabled="true"])) {
+      --button-depth: calc(var(--button-rest-depth) + 1px);
     }
   }
 
-  .service-button:where(:not(:disabled, [aria-disabled="true"]):active) {
+  :where(button, input:is([type="button"], [type="submit"], [type="reset"]), summary,
+         [role="button"], [role="tab"], .service-button, .service-button-quiet):where(:active:not(:disabled, [aria-disabled="true"])) {
     --button-depth: 0px;
-    box-shadow: none;
-    translate: 0 2px;
+    --button-pressed: var(--button-edge);
   }
 
-  .service-button:where(:disabled, [aria-disabled="true"]) {
-    box-shadow: none;
+  :where(button, input:is([type="button"], [type="submit"], [type="reset"]), summary,
+         [role="button"], [role="tab"], .service-button, .service-button-quiet):where(:disabled, [aria-disabled="true"]) {
+    --button-depth: 0px;
+  }
+
+  :where(button, input:is([type="button"], [type="submit"], [type="reset"]), summary,
+         [role="button"], [role="tab"], .service-button, .service-button-quiet):where(:focus-visible) {
+    outline: 2px solid var(--service-accent-ink);
+    outline-offset: 2px;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .service-button {
+    :where(button, input:is([type="button"], [type="submit"], [type="reset"]), summary,
+           [role="button"], [role="tab"], .service-button, .service-button-quiet) {
       transition: none;
-      translate: none;
     }
   }
 }
@@ -614,6 +640,7 @@ html:has(#rogue-root) body { background-color: var(--rg-bg); }
 .navigation-icon:hover { background: rgb(115 115 115 / 10%); }
 @media (min-width: 1024px) {
   .navigation-search > .navigation-icon {
+    --button-rest-depth: 2px;
     width: 100%;
     justify-content: flex-start;
     gap: 8px;

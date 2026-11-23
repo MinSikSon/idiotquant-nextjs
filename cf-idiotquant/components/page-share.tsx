@@ -111,10 +111,10 @@ export function PageShareTools({ share, children }: { share?: ScreenShare; child
   }
 
   return <div data-share-controls className="flex shrink-0 items-center">
-    <button type="button" onClick={() => void open("image")} className={TOOL + " hidden justify-center md:inline-flex"} aria-haspopup="dialog">
+    <button type="button" onClick={() => void open("image")} className={TOOL + " service-button hidden justify-center md:inline-flex"} aria-haspopup="dialog">
       <Camera size={17} aria-hidden="true" /> 캡처
     </button>
-    {!children && <button type="button" onClick={() => void open("link")} className={TOOL + " hidden justify-center md:inline-flex"} aria-label="링크 공유" aria-haspopup="dialog">
+    {!children && <button type="button" onClick={() => void open("link")} className={TOOL + " service-button hidden justify-center md:inline-flex"} aria-label="링크 공유" aria-haspopup="dialog">
       <Link2 size={17} aria-hidden="true" /> 공유
     </button>}
     <NavigationPopover label="페이지 도구" className="page-share-menu" trigger={

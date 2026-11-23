@@ -115,7 +115,7 @@ export default function LedgerJoinPage() {
                 <p className="text-[13px] font-bold text-neutral-700 dark:text-neutral-300">
                     {error ?? "초대를 찾을 수 없습니다."}
                 </p>
-                <Link href="/ledger" className="inline-block mt-4 px-5 py-2.5 rounded-xl border border-neutral-200 dark:border-surface-dark-border text-xs font-black text-neutral-600 dark:text-neutral-400">
+                <Link href="/ledger" className="service-button inline-block mt-4 px-5 py-2.5 border border-neutral-200 dark:border-surface-dark-border text-xs font-black text-neutral-600 dark:text-neutral-400">
                     내 가계부로
                 </Link>
             </>

@@ -13,7 +13,7 @@ import { useStockSearchModal } from '@/components/stock-search-provider';
 
 import { WatchlistPriceLegend, WatchlistStockRow } from '@/components/watchlist-stock-row';
 const panel = 'rounded-lg border border-neutral-200 bg-white p-3 dark:border-surface-dark-border dark:bg-surface-dark-card sm:p-5';
-const action = 'inline-flex min-h-11 items-center justify-center gap-2 rounded border border-neutral-200 px-4 text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand dark:border-neutral-700 disabled:opacity-50';
+const action = 'service-button inline-flex min-h-11 items-center justify-center gap-2 border border-neutral-200 px-4 text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand dark:border-neutral-700 disabled:opacity-50';
 
 export function HomeWatchlist() {
     const [review, setReview] = useState<WatchReview | null>(null);
@@ -49,7 +49,7 @@ export function HomeWatchlist() {
     const filters = [{ key: 'all', label: '전체', count: items.length }, { key: 'valued', label: '평가 가능', count: valued.length }, { key: 'unscanned', label: '스캔 없음', count: unscanned.length }] as const;
 
     return <div className="mx-auto w-full max-w-4xl space-y-4 px-2 py-3 text-base text-neutral-900 dark:text-neutral-100 sm:px-6 sm:py-8">
-        {error && <div role="alert" className={`${panel} text-sm`}><p>{error}</p><button type="button" onClick={() => void load()} disabled={loading} className="mt-2 min-h-11 underline">다시 불러오기</button></div>}
+        {error && <div role="alert" className={`${panel} text-sm`}><p>{error}</p><button type="button" onClick={() => void load()} disabled={loading} className="service-button mt-2 min-h-11 px-3">다시 불러오기</button></div>}
         {!review ? loading && <p role="status" className={panel}>관심종목을 불러오는 중…</p> : <>
             {loading && <p role="status" className="text-xs text-neutral-500">최신 상태를 확인하는 중…</p>}
             {!review.items.length ? <section className={panel} aria-labelledby="empty-watchlist">
@@ -60,13 +60,13 @@ export function HomeWatchlist() {
                 <div className="mt-5"><WatchlistSample /></div>
             </section> : <>
                 <section className={panel} aria-labelledby="watchlist-title">
-                    <div className="flex flex-wrap items-center justify-between gap-x-3"><h1 id="watchlist-title" className="text-lg font-semibold">내 관심종목 <span className="font-normal tabular-nums text-neutral-500">· {items.length}</span></h1><Link href={WATCHLIST_HREF} className="inline-flex min-h-11 items-center gap-1 text-sm font-medium text-brand-ink">전체 관리<ArrowRight size={16} aria-hidden="true" /></Link></div>
+                    <div className="flex flex-wrap items-center justify-between gap-x-3"><h1 id="watchlist-title" className="text-lg font-semibold">내 관심종목 <span className="font-normal tabular-nums text-neutral-500">· {items.length}</span></h1><Link href={WATCHLIST_HREF} className="service-button-quiet inline-flex min-h-11 items-center gap-1 text-sm font-medium text-brand-ink">전체 관리<ArrowRight size={16} aria-hidden="true" /></Link></div>
                     <div className="flex flex-wrap items-center justify-between gap-x-3 border-b border-neutral-200 dark:border-neutral-700">
                         <div role="group" aria-label="관심종목 필터" className="flex flex-wrap gap-x-3">{filters.map(option => <button key={option.key} type="button" aria-pressed={filter === option.key} onClick={() => { setFilter(option.key); setExpanded([]); }} className={`min-h-11 border-b-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand ${filter === option.key ? 'border-brand font-semibold text-brand-ink' : 'border-transparent text-neutral-600 dark:text-neutral-300'}`}>
                             {option.label} <span className="tabular-nums">{option.count}</span>
                         </button>)}</div>
                         <label className="flex items-center gap-2 text-xs text-neutral-600 dark:text-neutral-300"><span className="sr-only">관심종목 분류</span>
-                            <select value={grouping} onChange={event => { setGrouping(event.target.value as 'market' | 'strategy'); setExpanded([]); }} className="min-h-11 rounded bg-transparent text-base text-neutral-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand dark:text-neutral-100">
+                            <select value={grouping} onChange={event => { setGrouping(event.target.value as 'market' | 'strategy'); setExpanded([]); }} className="service-button min-h-11 bg-transparent pl-2 text-base text-neutral-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand dark:text-neutral-100">
                                 <option value="market">시장별</option><option value="strategy">전략별</option>
                             </select>
                         </label>
@@ -121,7 +121,7 @@ function WatchlistItems({ items, grouping, expanded, onToggle }: { items: Watchl
                 </li>;
             })}
         </ul>
-        {stocks.length > 5 && <button type="button" aria-expanded={expanded.includes(key)} onClick={() => onToggle(key)} className="flex min-h-11 w-full items-center justify-center rounded border border-neutral-200 text-sm font-medium text-brand-ink hover:bg-neutral-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand dark:border-neutral-700 dark:hover:bg-neutral-800/50">{expanded.includes(key) ? '접기' : `${stocks.length - 5}종목 더 보기`}</button>}
+        {stocks.length > 5 && <button type="button" aria-expanded={expanded.includes(key)} onClick={() => onToggle(key)} className="service-button flex min-h-11 w-full items-center justify-center border border-neutral-200 text-sm font-medium text-brand-ink hover:bg-neutral-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand dark:border-neutral-700 dark:hover:bg-neutral-800/50">{expanded.includes(key) ? '접기' : `${stocks.length - 5}종목 더 보기`}</button>}
     </section>)}</div>;
 }
 
@@ -141,7 +141,7 @@ export function WatchlistSample() {
     return <section aria-label="관심종목 사용 예시" className="space-y-3 rounded-xl border border-dashed border-brand/40 bg-brand/5 p-3 sm:p-4">
         <h3 className="text-sm font-semibold">전략별 적정주가 예시</h3>
         {!data ? <p role="status" className="py-3 text-sm text-neutral-500">실제 종목 데이터를 불러오는 중…</p> : <>
-            {data.failed > 0 && <div role="alert" className="text-xs leading-5 text-neutral-500"><p>일부 종목 데이터를 불러오지 못했습니다.</p><button type="button" className="min-h-11 underline" onClick={retry}>다시 불러오기</button></div>}
+            {data.failed > 0 && <div role="alert" className="text-xs leading-5 text-neutral-500"><p>일부 종목 데이터를 불러오지 못했습니다.</p><button type="button" className="service-button-quiet min-h-11 underline" onClick={retry}>다시 불러오기</button></div>}
             {data.items.length > 0 ? <>
                 <WatchlistPriceLegend />
                 <ul className="divide-y divide-neutral-200 dark:divide-surface-dark-border">

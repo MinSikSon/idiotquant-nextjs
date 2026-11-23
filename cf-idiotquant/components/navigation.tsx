@@ -55,7 +55,7 @@ const MAIN_NAV: NavItem[] = [
 ];
 
 const DESKTOP_NAV_CONTROL = cn(
-  "inline-flex min-h-11 items-center whitespace-nowrap rounded px-2.5 text-sm font-medium transition-colors lg:px-3",
+  "service-button-quiet inline-flex min-h-11 items-center whitespace-nowrap rounded px-2.5 text-sm font-medium transition-colors lg:px-3",
   CONTROL_FOCUS_CLS,
 );
 const DESKTOP_NAV_IDLE = "text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800";
@@ -166,7 +166,7 @@ function TabItem({
       href={href}
       aria-current={isActive ? "page" : undefined}
       className={cn(
-        "flex h-full min-h-[44px] min-w-0 flex-1 basis-0 flex-col items-center justify-center gap-[3px] py-1 transition-colors",
+        "service-button-quiet flex h-full min-h-[44px] min-w-0 flex-1 basis-0 flex-col items-center justify-center gap-[3px] py-1 transition-colors",
         // 랜딩의 각진 버튼 모양을 모바일 탭에도 사용한다.
         "rounded",
         isActive
