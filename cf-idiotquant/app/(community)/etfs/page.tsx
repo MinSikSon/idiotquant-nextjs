@@ -2,15 +2,20 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
-import { ArrowDown, ChevronDown, ChevronLeft, ChevronRight, ChevronsUpDown, ChevronUp, Copy, Heart, LoaderCircle } from "lucide-react";
+import { ArrowDown, ArrowDownRight, ArrowUpRight, Bot, ChevronDown, ChevronLeft, ChevronRight, ChevronsUpDown, ChevronUp, Copy, Heart, LoaderCircle, Wallet } from "lucide-react";
+import Link from "next/link";
 import { ToastContainer, useToast } from "@/components/ui/toast";
 import { CONTROL_FOCUS_CLS, CONTROL_ICON_BUTTON_CLS } from "@/lib/ui-controls";
+import { balanceTickerKey, type PortfolioTradingStatus } from "@/lib/features/algorithmTrade/portfolioStocks";
+import { representativePortfolioUserId } from "@/lib/features/algorithmTrade/representativePortfolio";
+import { useViewAsUser } from "@/lib/viewAsUser";
 import { CommunityEtf, CommunityEtfHolding, getCommunityEtfs, setCommunityEtfLike } from "@/lib/features/communityEtfs/api";
 import {
     averageEtfReturn, averageEtfValuationReturn, etfCreationDate, etfHoldingsText, etfReturnPercent, etfValuationModels, loadEtfHoldingPrices, type EtfHoldingPrices,
 } from "@/lib/features/communityEtfs/marketData";
 
 import { EtfShareButton } from "./EtfShareButton";
+import { type EtfPortfolio, useEtfPortfolio, useEtfPortfolioKey } from "./useEtfPortfolio";
 
 const PAGE_SIZE = 20;
 const HOLDINGS_PER_SLIDE = 8;
@@ -21,7 +26,7 @@ const priceFormats = {
 };
 
 export default function CommunityEtfsPage() {
-    const { status } = useSession();
+    const { data: session, status } = useSession();
     const { toasts, addToast, removeToast } = useToast();
     const [items, setItems] = useState<CommunityEtf[]>([]);
     const [offset, setOffset] = useState(0);
@@ -32,6 +37,12 @@ export default function CommunityEtfsPage() {
     const [busyLike, setBusyLike] = useState<string | null>(null);
     const feed = useRef<HTMLElement>(null);
     const [activeIndex, setActiveIndex] = useState(0);
+    const [portfolioAttempt, setPortfolioAttempt] = useState(0);
+    const viewAsUser = useViewAsUser();
+    const portfolioUserId = status === "authenticated" && !viewAsUser ? representativePortfolioUserId(session?.user) : undefined;
+    const portfolioKey = useEtfPortfolioKey(items.length > 0 ? portfolioUserId : undefined, portfolioAttempt);
+    const krPortfolio = useEtfPortfolio("KR", portfolioUserId, items.some(item => item.market === "KR") ? portfolioKey : undefined, portfolioAttempt);
+    const usPortfolio = useEtfPortfolio("US", portfolioUserId, items.some(item => item.market === "US") ? portfolioKey : undefined, portfolioAttempt);
 
     function syncActiveCard() {
         const node = feed.current;
@@ -117,7 +128,9 @@ export default function CommunityEtfsPage() {
                 : error && items.length === 0 ? <div className="px-4 py-10 text-center"><p role="alert" className="text-sm text-rose-700 dark:text-rose-300">{error}</p><button type="button" onClick={() => void load()} className="mt-3 min-h-11 px-3 text-sm font-semibold text-brand-ink">다시 불러오기</button></div>
                 : items.length === 0 ? <div className="px-4 py-10"><h2 className="text-lg font-semibold">아직 공개된 가상 ETF가 없어요</h2><p className="mt-2 text-base text-neutral-700 dark:text-neutral-300">종목을 골라 첫 가상 ETF를 만들고, 함께 고른 이유를 공유해 보세요.</p></div>
                 : items.map((item, index) => <div key={item.id} className="min-h-full snap-start snap-always border-b border-neutral-200 dark:border-surface-dark-border">
-                    <EtfEpisode item={item} busy={busyLike === item.id} onLike={() => void toggleLike(item)} onCopy={() => void copyHoldings(item)} />
+                    <EtfEpisode item={item} busy={busyLike === item.id} onLike={() => void toggleLike(item)} onCopy={() => void copyHoldings(item)}
+                        portfolio={item.market === "US" ? usPortfolio : krPortfolio}
+                        portfolioMissing={portfolioKey === null} onRetryPortfolio={() => setPortfolioAttempt(value => value + 1)} />
                     {hasMore && index === items.length - 1 && <div className="flex justify-center px-4 pb-4">
                         <button type="button" disabled={loadingMore} onClick={() => void load(offset)} className={`service-button-quiet inline-flex min-h-11 items-center gap-2 px-4 text-sm font-semibold text-brand-ink disabled:opacity-50 ${CONTROL_FOCUS_CLS}`}>
                             {loadingMore ? <LoaderCircle size={16} className="animate-spin motion-reduce:animate-none" /> : <ArrowDown size={16} aria-hidden="true" />}
@@ -142,7 +155,10 @@ export default function CommunityEtfsPage() {
     </div>;
 }
 
-function EtfEpisode({ item, busy, onLike, onCopy }: { item: CommunityEtf; busy: boolean; onLike: () => void; onCopy: () => void }) {
+function EtfEpisode({ item, busy, onLike, onCopy, portfolio, portfolioMissing, onRetryPortfolio }: {
+    item: CommunityEtf; busy: boolean; onLike: () => void; onCopy: () => void;
+    portfolio?: EtfPortfolio; portfolioMissing: boolean; onRetryPortfolio: () => void;
+}) {
     const { holdings, createdAt, market } = item;
     const isUs = market === "US";
     const createdDate = etfCreationDate(createdAt);
@@ -187,19 +203,23 @@ function EtfEpisode({ item, busy, onLike, onCopy }: { item: CommunityEtf; busy: 
             <time dateTime={createdDate} aria-label={`생성일 ${createdDate}`} className="shrink-0 text-xs tabular-nums text-neutral-600 dark:text-neutral-300">{createdDate.replaceAll("-", ".")} 생성</time>
         </div>
         <p className="mt-2 break-words text-base leading-relaxed text-neutral-800 dark:text-neutral-200 md:text-lg">{item.idea}</p>
-        <PriceComparison item={item} prices={prices} market={market} onCopy={onCopy} onRetry={() => {
+        <PriceComparison item={item} prices={prices} market={market} onCopy={onCopy}
+            portfolio={portfolio} portfolioMissing={portfolioMissing} onRetryPortfolio={onRetryPortfolio} onRetry={() => {
             setPrices(undefined);
             setAttempt(value => value + 1);
         }} />
     </article>;
 }
 
-function PriceComparison({ item, prices, market, onCopy, onRetry }: {
+function PriceComparison({ item, prices, market, onCopy, onRetry, portfolio, portfolioMissing, onRetryPortfolio }: {
     item: CommunityEtf;
     prices: EtfHoldingPrices[] | undefined;
     market: CommunityEtf["market"];
     onCopy: () => void;
     onRetry: () => void;
+    portfolio?: EtfPortfolio;
+    portfolioMissing: boolean;
+    onRetryPortfolio: () => void;
 }) {
     const { holdings } = item;
     const [per, ...strategies] = etfValuationModels[market];
@@ -287,10 +307,21 @@ function PriceComparison({ item, prices, market, onCopy, onRetry }: {
                         </span>
                     </div>
                     <ul className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1.5 sm:grid-cols-3 md:gap-y-3">
-                        {holdings.map(holding => <li key={holding.ticker} title={holding.ticker} className="min-w-0 break-words text-base leading-snug md:text-lg">
-                            {holding.name}<span className="sr-only"> {holding.ticker}</span>
-                        </li>)}
+                        {holdings.map(holding => {
+                            const ticker = balanceTickerKey(holding.ticker, market === "US");
+                            const held = portfolio?.held?.has(ticker);
+                            const trading = portfolio?.trading?.get(ticker);
+                            return <li key={holding.ticker} className="flex min-w-0 items-center justify-between gap-1.5 text-base leading-snug md:text-lg">
+                                <span title={holding.ticker} className="min-w-0 break-words">{holding.name}<span className="sr-only"> {holding.ticker}</span></span>
+                                {(held || trading) && <span className="inline-flex shrink-0 items-center gap-1">
+                                    {held && <span role="img" aria-label="보유 중" title="보유 중" className="text-neutral-600 dark:text-neutral-300"><Wallet size={15} aria-hidden="true" /></span>}
+                                    {trading && <TradingDirectionIcon trading={trading} />}
+                                </span>}
+                            </li>;
+                        })}
                     </ul>
+                    {portfolioMissing && <Link href={`/balance?country=${market.toLowerCase()}`} className={`inline-flex min-h-11 items-center text-sm font-semibold text-brand-ink ${CONTROL_FOCUS_CLS}`}>대표 포트폴리오 지정하기</Link>}
+                    {portfolio?.failed && <button type="button" onClick={onRetryPortfolio} className={`service-button-quiet min-h-11 text-sm font-semibold text-brand-ink ${CONTROL_FOCUS_CLS}`}>포트폴리오 상태 다시 조회</button>}
                 </div>
             </section>
             {detailPages.map((rows, index) => <section key={index} aria-label={`종목 상세 ${index + 1}페이지`} aria-hidden={page !== index + 1} className={slideClass}>
@@ -307,6 +338,15 @@ function PriceComparison({ item, prices, market, onCopy, onRetry }: {
             {hasMissingPrices && <button type="button" onClick={onRetry} className={`service-button-quiet min-h-11 text-sm font-semibold text-brand-ink ${CONTROL_FOCUS_CLS}`}>누락된 자료 다시 조회</button>}
         </div>
     </section>;
+}
+
+function TradingDirectionIcon({ trading }: { trading: PortfolioTradingStatus }) {
+    const sell = trading.side === "sell";
+    const description = `자동${sell ? "매도" : "매수"} 중 · ${trading.groupName}`;
+    const Direction = sell ? ArrowDownRight : ArrowUpRight;
+    return <span role="img" aria-label={description} title={description} className={`inline-flex items-center ${sell ? "text-rose-700 dark:text-rose-400" : "text-brand-ink"}`}>
+        <Bot size={15} aria-hidden="true" /><Direction size={11} aria-hidden="true" />
+    </span>;
 }
 
 function HoldingPriceTable({ rows, market, loading }: {

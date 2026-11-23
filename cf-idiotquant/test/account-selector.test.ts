@@ -3,6 +3,7 @@ import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
+import { defaultPortfolioKey } from '../lib/features/algorithmTrade/representativePortfolio.ts';
 
 type Element = { type: string; props: any; children: any[] };
 function elements(node: any, type: string): Element[] {
@@ -12,6 +13,8 @@ function elements(node: any, type: string): Element[] {
 }
 function setup() {
     let state: any = null;
+    let savedKey: string | null = null;
+    let saveFailed = false;
     const effects: (() => (() => void) | undefined)[] = [];
     const requests: { country: string; resolve: (accounts: any[]) => void }[] = [];
     const output = { exports: {} as any };
@@ -22,8 +25,19 @@ function setup() {
         exports: output.exports, module: output,
         React: { createElement: (type: string, props: any, ...children: any[]) => ({ type, props, children }) },
         require(name: string) {
-            if (name === 'react') return { useState: () => [state, (value: any) => { state = value; }], useEffect: (fn: any) => effects.push(fn) };
+            if (name === 'react') return {
+                useState: (initial: unknown) => initial === false
+                    ? [saveFailed, (value: boolean) => { saveFailed = value; }]
+                    : [state, (value: any) => { state = value; }],
+                useEffect: (fn: any) => effects.push(fn),
+            };
             if (name.endsWith('/tradingAccountAPI')) return { listTradingAccounts: (country: string) => new Promise(resolve => requests.push({ country, resolve })) };
+            if (name.endsWith('/representativePortfolio')) return {
+                defaultPortfolioKey,
+                useRepresentativePortfolio: () => savedKey,
+                saveRepresentativePortfolio: (_userId: string, key: string) => { savedKey = key; return true; },
+            };
+            if (name === '@/lib/utils') return { cn: (...classes: string[]) => classes.join(' ') };
             return {};
         },
     });
@@ -106,4 +120,32 @@ test('마스터가 아니면 목록을 조회하거나 표시하지 않는다', 
     assert.equal(h.render({ isMaster: false }), null);
     h.effects.shift()!();
     assert.equal(h.requests.length, 0);
+});
+
+test('대표 포트폴리오는 손가을이 기본이며 조회 계좌를 바꾼 뒤 별도로 지정한다', async () => {
+    const h = setup();
+    const props = {
+        userId: 'owner', balanceKey: 'default',
+        setBalanceKey: (key: string) => { props.balanceKey = key; },
+        kakaoMemberList: { list: [
+            { key: 'default', value: { nickname: '손가을' } },
+            { key: 'other', value: { nickname: '다른 계좌' } },
+        ] },
+    };
+    h.render(props);
+    h.effects.shift()!();
+    h.requests[0].resolve([{ user_id: 'default' }, { user_id: 'other' }]);
+    await Promise.resolve();
+
+    const representativeButton = () => {
+        const child = h.render(props).children.find((node: any) => typeof node?.type === 'function');
+        return child.type(child.props);
+    };
+    assert.equal(representativeButton().children[0], '대표 포트폴리오');
+    elements(h.render(props), 'select')[0].props.onChange({ target: { value: 'other' } });
+    const action = representativeButton();
+    assert.equal(action.children[0], '대표로 지정');
+    action.props.onClick();
+    assert.equal(representativeButton().children[0], '대표 포트폴리오');
+    assert.equal(representativeButton().props.disabled, true);
 });

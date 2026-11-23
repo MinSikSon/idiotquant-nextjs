@@ -14,6 +14,7 @@ import {
 import TradingAccountManager from "@/components/balance/tradingAccountManager";
 import { useSession } from "next-auth/react";
 import { useBalanceAccount } from "@/components/balance/useBalanceAccount";
+import { representativePortfolioUserId } from "@/lib/features/algorithmTrade/representativePortfolio";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import {
@@ -195,7 +196,8 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
   const usQuantRule = useAppSelector(selectUsQuantRule);
   const likedListAll = useAppSelector(selectLikedList);
   const usLikedList = useMemo(() => (likedListAll ?? []).filter((l: any) => !!l.is_us), [likedListAll]);
-  const isMaster = useMemo(() => session?.user?.name === process.env.NEXT_PUBLIC_MASTER, [session]);
+  const portfolioUserId = representativePortfolioUserId(session?.user);
+  const isMaster = !!portfolioUserId;
 
   // US 좋아요 종목은 stock_data_daily(KR 전용)에 없어 지표가 비어온다.
   // KIS overseas price-detail 로 per/pbr/eps/bps 를 보강한다.
@@ -462,6 +464,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
           setBalanceKey={setBalanceKey}
           kakaoMemberList={kakaoMemberList}
           isMaster={isMaster}
+          userId={portfolioUserId}
         />
       }
       navSections={navSections}

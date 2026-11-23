@@ -4,15 +4,17 @@ import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
 import { createRequire } from "node:module";
 import ts from "typescript";
+import * as portfolioStocks from "../lib/features/algorithmTrade/portfolioStocks.ts";
 
 const require = createRequire(import.meta.url);
-const source = ts.transpileModule(readFileSync(new URL("../components/inquireBalanceResult.tsx", import.meta.url), "utf8") + "\nexports.Table = SortableBalanceTable; exports.tickerKey = balanceTickerKey;", {
+const source = ts.transpileModule(readFileSync(new URL("../components/inquireBalanceResult.tsx", import.meta.url), "utf8") + "\nexports.Table = SortableBalanceTable;", {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true },
 }).outputText;
 const exports: any = {};
 runInNewContext(source, { exports, Intl, require(name: string) {
   if (name === "react") return { useState: (value: unknown) => [value, () => {}], useMemo: (fn: () => unknown) => fn() };
   if (name === "next/navigation") return { useRouter: () => ({}) };
+  if (name === "@/lib/features/algorithmTrade/portfolioStocks") return portfolioStocks;
   if (name.endsWith("validCorpCode.json")) return JSON.parse(readFileSync(new URL(`../public/data/${name.split("/").at(-1)}`, import.meta.url), "utf8"));
   if (name.endsWith(".json")) return [];
   if (name.startsWith("@/")) return {};
@@ -59,7 +61,7 @@ for (const isUs of [false, true]) {
 
 for (const [input, expected] of [["전방", "000950"], [950, "000950"], ["A000950", "000950"], [" 000950 ", "000950"], ["삼정펄프", "009770"], ["디와이파워", "210540"]]) {
   test(`국내 자동매매 ${input}와 잔고 ${expected}를 같은 종목으로 연결`, () => {
-    const key = exports.tickerKey(input, false);
+    const key = portfolioStocks.balanceTickerKey(input, false);
     assert.equal(key, expected);
     const tree = exports.Table({ inventoryData: [{ pdno: expected, prdt_name: String(input) }], isUs: false, countryTradingActive: true, groupByTicker: new Map([[key, { name: "11월-04월", active: true, assigned: true }]]) });
     const summary = nodes(tree).find(n => n.type === "summary");
@@ -94,9 +96,33 @@ for (const [label, isUs, fields, expected] of [
 }
 
 test("미국 티커는 대소문자·공백만 정규화한다", () => {
-  assert.equal(exports.tickerKey(" aapl ", true), "AAPL");
-  assert.equal(exports.tickerKey("BRK.B", true), "BRK.B");
-  assert.equal(exports.tickerKey("950", true), "950");
+  assert.equal(portfolioStocks.balanceTickerKey(" aapl ", true), "AAPL");
+  assert.equal(portfolioStocks.balanceTickerKey("BRK.B", true), "BRK.B");
+  assert.equal(portfolioStocks.balanceTickerKey("950", true), "950");
+});
+
+test("ETF는 보유 수량이 양수인 종목과 활성 매매 종목을 독립적으로 표시한다", () => {
+  const held = portfolioStocks.heldPortfolioTickers([
+    { pdno: "A000950", hldg_qty: "1" },
+    { pdno: "005930", hldg_qty: "0" },
+  ], false);
+  const trading = portfolioStocks.activePortfolioTrading([
+    { key: "buy", symbol: "전방", action: "active", group_id: "buy" },
+    { key: "sell", symbol: "삼정펄프", action: "active", group_id: "sell" },
+    { key: "paused", symbol: "005930", action: "active", group_id: "paused" },
+    { key: "excluded", symbol: "210540", action: "inactive", group_id: "buy" },
+    { key: "likes", symbol: "079960", action: "active", group_id: "__likes__" },
+  ], [
+    { id: "buy", name: "매수 그룹", is_trading_active: true },
+    { id: "sell", name: "매도 그룹", is_trading_active: true, side: "sell" },
+    { id: "paused", name: "정지 그룹", is_trading_active: false },
+    { id: "__likes__", name: "관심종목", is_trading_active: true },
+  ], false);
+  assert.deepEqual([...held], ["000950"]);
+  assert.deepEqual([...trading], [
+    ["000950", { side: "buy", groupName: "매수 그룹" }],
+    ["009770", { side: "sell", groupName: "매도 그룹" }],
+  ]);
 });
 
 test("자동매매 목록도 종목 마스터의 코드에 맞는 이름을 표시한다", () => {

@@ -23,6 +23,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { useRouter } from "next/navigation";
 import { useToast, ToastContainer, EmptyState, EmptyRow } from "@/components/balance/shared";
 import type { StockGroup } from "@/lib/features/capital/capitalSlice";
+import { balanceHoldingQuantity, balanceTickerKey } from "@/lib/features/algorithmTrade/portfolioStocks";
 import {
     reqGetInquirePrice,
     getKoreaInvestmentInquirePrice,
@@ -42,25 +43,13 @@ import validCorpCode from '@/public/data/validCorpCode.json';
 //     ...US_TICKER_MASTER
 // ];
 
-// --- Helpers ---
-// 국내 자동매매의 종목명·숫자 코드와 증권사 잔고의 6자리 코드를 같은 키로 비교한다.
-const KR_NAME_TO_CODE = new Map(Object.entries(validCorpCode).map(([name, data]) => [name, data.stock_code]));
-function balanceTickerKey(value: unknown, isUs: boolean): string {
-    const ticker = String(value ?? "").trim();
-    if (isUs) return ticker.toUpperCase();
-    const code = KR_NAME_TO_CODE.get(ticker) ?? ticker;
-    if (/^A\d{6}$/i.test(code)) return code.slice(1);
-    return /^\d{1,6}$/.test(code) ? code.padStart(6, "0") : code;
-}
-
 const getFieldValue = (item: any, key: string) => {
     const map: any = {
         name: item.prdt_name || item.ovrs_item_name || item.itms_nm,
         price: item.prpr || item.ovrs_now_pric1 || 0,
         // US presentBalance: avg_unpr3 / KR balance: pchs_avg_pric
         avg_price: item.pchs_avg_pric || item.pchs_avg_pric1 || item.avg_unpr3 || 0,
-        // 해외 현재잔고는 당일 체결을 반영한 수량을 사용하고, 값이 없으면 결제 잔고를 표시한다.
-        qty: String(item.hldg_qty ?? "").trim() || String(item.ccld_qty_smtl1 ?? "").trim() || item.cblc_qty13 || 0,
+        qty: balanceHoldingQuantity(item),
         evlu_amt: item.evlu_amt || item.frcr_evlu_amt2 || 0,
         profit_rt: item.evlu_pfls_rt || item.evlu_pfls_rt1 || 0,
         pchs_amt: item.pchs_amt || item.frcr_pchs_amt || 0,

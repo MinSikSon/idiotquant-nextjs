@@ -13,6 +13,7 @@ import {
 import TradingAccountManager from "@/components/balance/tradingAccountManager";
 import { useSession } from "next-auth/react";
 import { useBalanceAccount } from "@/components/balance/useBalanceAccount";
+import { representativePortfolioUserId } from "@/lib/features/algorithmTrade/representativePortfolio";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import {
@@ -210,7 +211,8 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
   const krBudget = useAppSelector(selectKrBudget);
   const likedListAll = useAppSelector(selectLikedList);
   const krLikedList = useMemo(() => (likedListAll ?? []).filter((l: any) => !l.is_us), [likedListAll]);
-  const isMaster = useMemo(() => session?.user?.name === process.env.NEXT_PUBLIC_MASTER, [session]);
+  const portfolioUserId = representativePortfolioUserId(session?.user);
+  const isMaster = !!portfolioUserId;
 
   const tradingStatus = useAppSelector(selectTradingStatus);
 
@@ -475,6 +477,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
           setBalanceKey={setBalanceKey}
           kakaoMemberList={kakaoMemberList}
           isMaster={isMaster}
+          userId={portfolioUserId}
         />
       }
       navSections={navSections}

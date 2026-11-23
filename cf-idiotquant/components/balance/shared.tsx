@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { listTradingAccounts, type TradingAccountSummary } from "@/lib/features/algorithmTrade/tradingAccountAPI";
+import { defaultPortfolioKey, saveRepresentativePortfolio, useRepresentativePortfolio } from "@/lib/features/algorithmTrade/representativePortfolio";
 import {
   Loader2, CheckCircle2, Clock, ArrowUpRight, ArrowDownRight,
   RefreshCw, Activity, InboxIcon, ChevronDown, Key,
@@ -88,12 +89,13 @@ export function SectionHeader({
 }
 
 // 계좌 선택기 (MASTER 전용). 탭 위 최상단에 배치해 종목관리·자동매매를 계좌 단위로 전환한다.
-export function AccountSelector({ country, balanceKey, setBalanceKey, kakaoMemberList, isMaster }: {
+export function AccountSelector({ country, balanceKey, setBalanceKey, kakaoMemberList, isMaster, userId }: {
   country: "KR" | "US";
   balanceKey: string;
   setBalanceKey: (v: string) => void;
   kakaoMemberList?: any;
   isMaster: boolean;
+  userId?: string;
 }) {
   const [accountList, setAccountList] = useState<{ country: string; accounts: TradingAccountSummary[] } | null>(null);
   useEffect(() => {
@@ -114,7 +116,7 @@ export function AccountSelector({ country, balanceKey, setBalanceKey, kakaoMembe
   return (
     <div data-account-selector className="flex items-center gap-2 md:gap-3 bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark px-2.5 py-2 md:px-4 md:py-3 shadow-none">
       <div className="flex shrink-0 items-center gap-1.5 whitespace-nowrap px-2 py-1 md:px-2.5 bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 rounded-lg text-xs font-semibold uppercase">
-        <Key size={12} /> MASTER MODE
+        <Key size={12} aria-hidden="true" /> <span className="hidden min-[360px]:inline">MASTER MODE</span>
       </div>
       <span className="hidden shrink-0 text-xs font-semibold text-neutral-600 dark:text-neutral-400 sm:inline">계좌 선택</span>
       <div className="relative min-w-0 flex-1 sm:w-80 sm:max-w-[50%] sm:flex-none">
@@ -141,7 +143,30 @@ export function AccountSelector({ country, balanceKey, setBalanceKey, kakaoMembe
         </select>
         <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-600 dark:text-neutral-400" />
       </div>
+      {selected && userId && <RepresentativePortfolioButton key={balanceKey} userId={userId} balanceKey={balanceKey} members={members} />}
     </div>
+  );
+}
+
+function RepresentativePortfolioButton({ userId, balanceKey, members }: {
+  userId: string;
+  balanceKey: string;
+  members: unknown[];
+}) {
+  const savedKey = useRepresentativePortfolio(userId);
+  const representative = (savedKey ?? defaultPortfolioKey(members)) === balanceKey;
+  const [saveFailed, setSaveFailed] = useState(false);
+  return (
+    <button
+      type="button"
+      disabled={representative && !saveFailed}
+      title="ETF 구성 종목 상태를 표시할 대표 포트폴리오"
+      onClick={() => setSaveFailed(!saveRepresentativePortfolio(userId, balanceKey))}
+      className={cn("service-button-quiet min-h-11 shrink-0 rounded px-2 text-xs font-semibold", CONTROL_FOCUS_CLS,
+        representative && "text-brand-ink")}
+    >
+      {saveFailed ? "저장 실패 · 재시도" : representative ? "대표 포트폴리오" : "대표로 지정"}
+    </button>
   );
 }
 
