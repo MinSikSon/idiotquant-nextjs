@@ -8,11 +8,14 @@
          [role="button"], [role="tab"], .service-button, .service-button-quiet) {
     --button-rest-depth: 0px;
     --button-depth: var(--button-rest-depth);
+    --button-rest-inset: 0px;
+    --button-inset: var(--button-rest-inset);
     --button-edge: rgb(var(--service-muted-rgb) / 38%);
     --button-face: transparent;
     --button-pressed: transparent;
     box-shadow: inset 0 0 0 1px var(--button-face),
                 inset 0 -2px 0 var(--button-pressed),
+                inset 0 var(--button-inset) var(--button-inset) var(--button-edge),
                 0 var(--button-depth) 0 var(--button-edge);
     transition: background-color 120ms ease-out, box-shadow 100ms ease-out;
   }
@@ -51,6 +54,33 @@
          [role="button"], [role="tab"], .service-button, .service-button-quiet):where(:focus-visible) {
     outline: 2px solid var(--service-accent-ink);
     outline-offset: 2px;
+  }
+
+  .service-nav-tab {
+    color: var(--service-muted);
+  }
+
+  @media (hover: hover) {
+    .service-nav-tab:hover {
+      background: var(--service-soft);
+      color: var(--service-ink);
+    }
+  }
+
+  :is(.service-button, .service-button-quiet):is([aria-pressed="true"], [aria-selected="true"]),
+  .service-nav-tab:is([aria-current="page"], [aria-expanded="true"], [data-current-section]) {
+    --button-depth: 0px;
+    --button-rest-inset: 2px;
+  }
+
+  :is(.service-button, .service-button-quiet):where(:active:not(:disabled, [aria-disabled="true"])) {
+    --button-inset: calc(var(--button-rest-inset) + 2px);
+  }
+
+  .service-nav-tab:is([aria-current="page"], [aria-expanded="true"], [aria-pressed="true"], [data-current-section]) {
+    --button-pressed: var(--service-accent-ink);
+    background: var(--service-accent);
+    color: var(--service-accent-ink);
   }
 
   @media (prefers-reduced-motion: reduce) {

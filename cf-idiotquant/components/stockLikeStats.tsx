@@ -44,10 +44,10 @@ export default function StockLikeStats({ country, ticker, revision = 0 }: {
         <section aria-label="종목 좋아요 통계" className="mb-5 rounded-2xl border border-neutral-200 p-4 dark:border-border-subtle-dark sm:p-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2 className="flex items-center gap-2 text-sm font-semibold"><Heart size={16} aria-hidden="true" />관심 종목 통계</h2>
-                {!country && <div className="flex gap-1" aria-label="통계 시장 선택">
+                {!country && <div role="group" className="flex gap-2" aria-label="통계 시장 선택">
                     {(['KR', 'US'] as const).map(value => <button key={value} type="button" aria-pressed={market === value}
                         onClick={() => setMarket(value)}
-                        className={`min-h-11 rounded-lg px-3 text-sm ${market === value ? 'bg-neutral-100 font-semibold dark:bg-neutral-800' : 'text-neutral-500'}`}>
+                        className="service-button service-nav-tab min-h-11 min-w-11 px-3 text-sm font-semibold">
                         {value === 'KR' ? '국내' : '미국'}
                     </button>)}
                 </div>}
