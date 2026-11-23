@@ -30,8 +30,7 @@ import {
   Heart, ChevronDown,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { CONTROL_FOCUS_CLS } from '@/lib/ui-controls';
-import { PageHeader, PAGE_WIDTH, PAGE_ACTION_CLS } from '@/components/pageHeader';
+import { PageHeader, PAGE_WIDTH, PAGE_ACTION_CLS, PAGE_PRIMARY_ACTION_CLS } from '@/components/pageHeader';
 import { GradeHelp } from './components/GradeHelp';
 import { FinancialDataEvidence } from '@/components/financial-data-evidence';
 import StockLikeStats from '@/components/stockLikeStats';
@@ -48,12 +47,7 @@ import styles from './analyze.module.css';
 import { AnalysisLoginPrompt } from './components/AnalysisLoginPrompt';
 
 const ANALYZE_WIDTH = cn(PAGE_WIDTH.data, styles.container);
-const ANALYZE_ACTION_CLS = cn(
-  "inline-flex min-h-11 items-center rounded px-3 text-left text-base text-neutral-700 hover:bg-neutral-100",
-  "dark:text-neutral-200 dark:hover:bg-neutral-800 md:px-2 md:text-xs md:underline-offset-4",
-  "md:hover:bg-transparent md:hover:text-brand-ink md:hover:underline dark:md:hover:bg-transparent dark:md:hover:text-brand-ink",
-  CONTROL_FOCUS_CLS
-);
+const ANALYZE_ACTION_CLS = "whitespace-nowrap md:px-2.5 md:text-sm";
 
 // =========================================================================
 // Dynamic imports
@@ -647,24 +641,24 @@ function AnalyzeContent() {
           <span data-analyze-ticker>{tickerLabel}</span>
           <span className="shrink-0 font-semibold tabular-nums text-neutral-900 dark:text-white">{headerPrice}</span>
         </> : undefined}
-        primaryActionInMobileMenu
-        primaryAction={isPriceLoaded ? <div className="flex flex-col md:flex-row md:items-center md:gap-1">
+        primaryActionInMenu={!isDesktop}
+        primaryAction={isPriceLoaded ? <div className="flex flex-col gap-2 lg:mr-1 lg:flex-row lg:items-center">
           {isInEtfDraft
-            ? <Link href="/etfs/draft" className={cn(ANALYZE_ACTION_CLS, "font-semibold text-brand-ink dark:text-brand-ink")}>초안 보기</Link>
-            : <button type="button" onClick={addToEtfDraft} className={cn(ANALYZE_ACTION_CLS, "md:text-neutral-600 dark:md:text-neutral-300")}>ETF에 담기</button>}
-          <Link href={comparisonHref(krOrUs, [tickerLabel], new Date().toLocaleDateString('sv-SE'))} className={cn(ANALYZE_ACTION_CLS, "md:text-neutral-500 dark:md:text-neutral-400")}>비교에 추가</Link>
+            ? <Link href="/etfs/draft" className={cn(PAGE_ACTION_CLS, ANALYZE_ACTION_CLS)}>초안 보기</Link>
+            : <button type="button" onClick={addToEtfDraft} className={cn(PAGE_ACTION_CLS, ANALYZE_ACTION_CLS)}>ETF에 담기</button>}
+          <Link href={comparisonHref(krOrUs, [tickerLabel], new Date().toLocaleDateString('sv-SE'))} className={cn(PAGE_PRIMARY_ACTION_CLS, ANALYZE_ACTION_CLS, "dark:text-neutral-950")}>비교에 추가</Link>
         </div> : undefined}
         share={{ path: tickerFromUrl ? `/analyze?${shareParams}` : "/analyze" }}
         actions={isPriceLoaded ? <div className="flex min-w-0 flex-col gap-3">
           <button type="button" onClick={() => void handleToggleLike()} disabled={likeBusy}
             aria-label={isInWatchlist ? '관심 종목에서 빼기' : '관심 종목에 담기'} aria-pressed={isInWatchlist}
-            className="inline-flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm text-neutral-600 hover:bg-neutral-100 disabled:opacity-50 dark:text-neutral-300 dark:hover:bg-neutral-800">
+            className={cn(PAGE_ACTION_CLS, "justify-start aria-pressed:bg-brand-light aria-pressed:text-brand-ink dark:aria-pressed:bg-brand-muted/50")}>
             <Heart size={16} fill={isInWatchlist ? 'currentColor' : 'none'} />{likeBusy ? '저장 중…' : isInWatchlist ? '관심 종목 해제' : '관심 종목 담기'}
           </button>
           {gradeLabel && <GradeHelp key={tickerLabel} grade={gradeLabel} upside={stockData?.ncavRatio ?? 0} />}
         </div> : undefined}
         tabs={isPriceLoaded && !isDesktop ? <Tabs.List aria-label="종목 분석" className={styles.analysisTabs}>
-          {DETAIL_TAB_KEYS.map(tab => <Tabs.Trigger key={tab} value={tab} className={styles.analysisTab}>{DETAIL_TABS[tab]}</Tabs.Trigger>)}
+          {DETAIL_TAB_KEYS.map(tab => <Tabs.Trigger key={tab} value={tab} className={cn("service-button-quiet", styles.analysisTab)}>{DETAIL_TABS[tab]}</Tabs.Trigger>)}
         </Tabs.List> : undefined}
         mobileCompact
         mobileTitleOnScroll={isPriceLoaded}
@@ -681,10 +675,10 @@ function AnalyzeContent() {
                   <Flame size={11} className="text-amber-500" />
                   <span className="text-sm font-bold text-neutral-600 dark:text-neutral-300 uppercase tracking-normal" title="최근 7일 검색 기준 · 최근 검색에 더 높은 가중치">인기</span>
                 </div>
-                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+                <div className={styles.historyList}>
                   {popularStocks.slice(0, 8).map((s: any, i: number) => (
-                    <button key={s.ticker} onClick={() => handleSearch(s.ticker)}
-                      className={cn(styles.historyButton, "shrink-0 flex min-h-11 items-center gap-1 px-2.5 py-1 rounded-[var(--radius-control)] bg-white dark:bg-surface-dark-card text-sm font-semibold text-neutral-700 dark:text-neutral-300 border border-neutral-200/60 dark:border-border-subtle-dark hover:border-brand/70 hover:text-brand-ink dark:hover:text-brand-ink transition-colors whitespace-nowrap")}
+                    <button key={s.ticker} type="button" onClick={() => handleSearch(s.ticker)}
+                      className={cn("service-button", styles.stockShortcut)}
                     >
                       <span className={cn(styles.rank, "w-3.5 h-3.5 flex items-center justify-center rounded-full text-sm shrink-0")}>{i + 1}</span>
                       {s.name}
@@ -696,10 +690,10 @@ function AnalyzeContent() {
             {krMarketHistory.length > 0 && (
               <div className={cn(ANALYZE_WIDTH, "py-2 flex items-center gap-3", !isPriceLoaded && popularStocks.length > 0 && "border-t border-neutral-100 dark:border-border-subtle-dark/40")}>
                 <span className="text-sm font-bold text-neutral-600 dark:text-neutral-300 uppercase tracking-normal shrink-0">최근 검색</span>
-                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+                <div className={styles.historyList}>
                   {krMarketHistory.slice().reverse().slice(0, 8).map((s, i) => (
-                    <button key={i} onClick={() => handleSearch(s)}
-                      className="shrink-0 min-h-11 px-2.5 py-1 text-sm font-semibold text-neutral-600 hover:text-brand-ink dark:text-neutral-300 dark:hover:text-brand-ink hover:bg-white dark:hover:bg-surface-dark-card/40 rounded-[var(--radius-control)] border border-neutral-200/60 dark:border-border-subtle-dark transition-colors whitespace-nowrap"
+                    <button key={i} type="button" onClick={() => handleSearch(s)}
+                      className={cn("service-button", styles.stockShortcut)}
                     >
                       {s}
                     </button>
@@ -827,18 +821,14 @@ function AnalyzeContent() {
                         <p className="text-sm sm:text-[15px] text-neutral-600 dark:text-neutral-300">
                           {krOrUs === 'KR' ? '분기 공시 · 억 원' : '공시 · USD'}
                         </p>
-                        <div className={cn(styles.segmented, "grid grid-cols-2 gap-0.5 sm:ml-auto sm:flex sm:shrink-0 p-0.5 rounded-lg")}>
+                        <div className={cn(styles.segmented, "grid grid-cols-2 gap-2 sm:ml-auto sm:flex sm:shrink-0")}>
                           {([['bars', '그래프'], ['table', '표']] as const).map(([mode, label]) => (
                             <button
                               key={mode}
+                              type="button"
                               onClick={() => setFinanceView(mode)}
                               aria-pressed={financeView === mode}
-                              className={cn(
-                                "min-h-11 px-3 py-2 rounded-lg text-[15px] transition-colors",
-                                financeView === mode
-                                  ? styles.segmentActive
-                                  : "font-bold text-neutral-500 dark:text-neutral-400"
-                              )}
+                              className={cn("service-button", styles.segmentButton)}
                             >
                               {label}
                             </button>

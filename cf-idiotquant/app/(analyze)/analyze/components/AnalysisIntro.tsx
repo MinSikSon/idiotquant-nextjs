@@ -14,7 +14,7 @@ export default function AnalysisIntro() {
       <div className={styles.quickSearches}>
         <span>예시 종목</span>
         {examples.map(([ticker, name]) => (
-          <Link key={ticker} href={`/analyze?ticker=${ticker}`}>{name}</Link>
+          <Link key={ticker} className={`service-button ${styles.stockShortcut}`} href={`/analyze?ticker=${ticker}`}>{name}</Link>
         ))}
       </div>
       <details className={styles.methods}>
