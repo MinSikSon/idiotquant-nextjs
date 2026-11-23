@@ -4,13 +4,15 @@ import { runInNewContext } from 'node:vm';
 import test from 'node:test';
 import ts from 'typescript';
 import * as changes from '../lib/features/stockLikes/changes.ts';
-import { scanValuationSummary } from '../lib/utils/valuationSummary.ts';
+import { scanValuationSummary, valuationComparisonAxis } from '../lib/utils/valuationSummary.ts';
 
 const item = { ticker: '005930', stock_name: '삼성전자', is_us: 0, scan_date: '20261115', strategies: ['ncav'], last_price: 66000, per: 10, pbr: 1, ncav_ratio: 1.2, eps: 1000, bps: 5000, current_assets: 200, total_liabilities: 100, lstn_stcn: 1000000 };
 const baseline = { revision: 1, confirmedAt: 1, items: [{ ...changes.watchSnapshot([item])[0], price: 60000, scanDate: '20261114' }] };
-const source = ts.transpileModule(readFileSync(new URL('../components/home-watchlist.tsx', import.meta.url), 'utf8'), {
+const transpile = (file: string) => ts.transpileModule(readFileSync(new URL(file, import.meta.url), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true },
 }).outputText;
+const source = transpile('../components/home-watchlist.tsx');
+const stockRowSource = transpile('../components/watchlist-stock-row.tsx');
 
 // 홈 컴포넌트를 실행하고 네트워크와 React 상태 경계만 제어한다.
 function harness(initialBaseline = baseline, sampleRoot = false) {
@@ -52,12 +54,18 @@ function harness(initialBaseline = baseline, sampleRoot = false) {
     const output = { exports: {} as { HomeWatchlist: () => any; WatchlistSample: () => any } };
     runInNewContext(source, { exports: output.exports, module: output,
         window: { addEventListener: (name: string, fn: () => void) => listeners.set(name, fn), removeEventListener: (name: string) => listeners.delete(name) },
-        require(name: string) {
+        require: function require(name: string) {
             if (name === 'react') return react;
             if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx, Fragment: 'fragment' };
             if (name === 'next/link') return { __esModule: true, default: 'a' };
             if (name === 'lucide-react') return {};
-            if (name.endsWith('/valuationSummary')) return { scanValuationSummary };
+            if (name.endsWith('/valuationSummary')) return { scanValuationSummary, valuationComparisonAxis };
+            if (name.endsWith('/stockLogo')) return { StockLogo: 'stock-logo' };
+            if (name.endsWith('/watchlist-stock-row')) {
+                const exports = {};
+                runInNewContext(stockRowSource, { exports, require });
+                return exports;
+            }
             if (name.endsWith('/sample')) return { getWatchlistSample: () => sample() };
             if (name.endsWith('/changes')) return changes;
             if (name.endsWith('/investmentFlow')) return { analysisHref: (ticker: string) => `/analyze?ticker=${ticker}`, WATCHLIST_HREF: '/screener?filter=liked' };
@@ -211,9 +219,9 @@ test('로그인 관심목록에도 추가 조회 없이 NCAV 비율·EPS·BPS로
     const liked = { ...item, lstn_stcn: undefined };
     h.getWith(async () => ({ success: true, data: { items: [liked], baseline } }));
     await h.settle();
-    assert.match(h.text(), /NCAV₩79,200/);
-    assert.match(h.text(), /PER₩10,000/);
-    assert.match(h.text(), /PBR₩5,000/);
+    assert.match(h.text(), /NCAV 1배₩79,200/);
+    assert.match(h.text(), /PER 10배₩10,000/);
+    assert.match(h.text(), /PBR 1배₩5,000/);
     assert.match(h.text(), /NCAV 1배 \/ PER 10배 \/ PBR 1배/);
     assert.equal(h.posts.length, 0);
 });
@@ -225,9 +233,9 @@ test('미국 관심종목은 달러 소수점으로 표시하고 모든 모델�
         last_price: 20, ncav_ratio: 0.625, eps: 1.234, bps: 8.76, net_income: 100,
     }], baseline } }));
     await h.settle();
-    assert.match(h.text(), /NCAV\$12.5/);
-    assert.match(h.text(), /PER\$12.34/);
-    assert.match(h.text(), /PBR\$8.76/);
+    assert.match(h.text(), /NCAV 1배\$12.5/);
+    assert.match(h.text(), /PER 10배\$12.34/);
+    assert.match(h.text(), /PBR 1배\$8.76/);
     h.getWith(async () => ({ success: true, data: { items: [{
         ...item, ticker: 'US-TEST', is_us: 1, last_price: 20, ncav_ratio: null,
         eps: 1.234, net_income: -100, bps: null,
