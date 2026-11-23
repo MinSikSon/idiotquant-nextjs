@@ -67,6 +67,32 @@ for (const [input, expected] of [["전방", "000950"], [950, "000950"], ["A00095
   });
 }
 
+for (const [label, isUs, fields, expected] of [
+  ["당일 매수 후 결제 전", true, { cblc_qty13: "0", ccld_qty_smtl1: "7" }, "7"],
+  ["당일 전량 매도 후 결제 전", true, { cblc_qty13: "7", ccld_qty_smtl1: "0" }, "0"],
+  ["체결 기준 수량 누락", true, { cblc_qty13: "7", ccld_qty_smtl1: " " }, "7"],
+  ["소수점 잔고", true, { cblc_qty13: "0.000012", ccld_qty_smtl1: "0.000012" }, "0.000012"],
+  ["국내 잔고", false, { hldg_qty: "7", ord_psbl_qty: "3" }, "7"],
+] as const) {
+  test(`자산 페이지 모바일과 데스크톱의 보유수량: ${label}`, () => {
+    const item = { pdno: isUs ? "AAPL" : "005930", prdt_name: "테스트 종목", ...fields };
+    const orders: unknown[][] = [];
+    const tree = exports.Table({ inventoryData: [item], isUs, onOpenOrder: (...args: unknown[]) => orders.push(args) });
+    const mobilePosition = nodes(tree).find(n => n.type === "details");
+    const mobileLabel = nodes(mobilePosition).find(n => n.type === "div" && text(n.props.children?.[0]) === "보유수량");
+    assert.equal(text(mobileLabel.props.children[1]), expected);
+    const desktopPosition = nodes(tree).find(n => n.type === "tbody");
+    assert.equal(text(nodes(desktopPosition).filter(n => n.type === "td")[2]), expected);
+
+    for (const position of [mobilePosition, desktopPosition]) {
+      const sell = nodes(position).find(n => n.type === "button" && (n.props.title ?? text(n)).trim() === "전량 매도");
+      assert.equal(Boolean(sell), expected !== "0");
+      sell?.props.onClick();
+    }
+    assert.deepEqual(orders, expected === "0" ? [] : [[item, "sell", expected], [item, "sell", expected]]);
+  });
+}
+
 test("미국 티커는 대소문자·공백만 정규화한다", () => {
   assert.equal(exports.tickerKey(" aapl ", true), "AAPL");
   assert.equal(exports.tickerKey("BRK.B", true), "BRK.B");
