@@ -23,6 +23,10 @@ const contextLabels: Record<string, string> = {
     source: '데이터 출처', scan_date: '수집 날짜', account_count: '계좌 수', kind: '작업 종류',
     group_budget_krw: '풀 월 예산(원)', per_tick_krw: '풀 회당 적립(원)', per_stock_krw: '종목당 적립(원)',
     min_per: '최소 PER', max_pbr: '최대 PBR', min_pbr: '최소 PBR', min_eps: '최소 EPS', min_bps: '최소 BPS', portfolio_weight: '최대 비중',
+    broker_code: '증권사 응답 코드',
+    excluded_min_tomv: '최소 시가총액 미충족', excluded_min_bps: '최소 BPS 미충족', excluded_min_eps: '최소 EPS 미충족',
+    excluded_min_pbr: '최소 PBR 미충족', excluded_min_per: '최소 PER 미충족', excluded_max_pbr: '최대 PBR 미충족',
+    excluded_call_warrants: '콜워런트 조건 제외', excluded_keyword: '종목명 키워드 제외', excluded_active_count: '활성 종목 수 한도 초과',
 };
 const time = (value: number | null, full = false) => value ? new Date(value).toLocaleString('ko-KR', {
     timeZone: 'Asia/Seoul', ...(full ? { month: '2-digit', day: '2-digit' } : {}), hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,

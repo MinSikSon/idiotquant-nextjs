@@ -163,6 +163,19 @@ test("정액 적립·매도에도 세부 선정 조건을 저장하며 개별 �
   assert.deepEqual(JSON.parse(JSON.stringify(h.calls[0].quant_rule)), { min_per: 3, exclude_key_word: ["지주", "Holding"] });
 });
 
+test("콜워런트 제외 기본값은 매수와 매도에 맞춰 표시하고 매도에서 제외를 저장한다", async () => {
+  const h = editor({ accountQuantRule: { exclude_call_warrants: true } });
+  const defaultOption = () => h.nodes(h.render()).filter(node => node.type === "option" && node.props.value === "")
+    .map(h.text).find(label => label.includes("기본값"));
+  assert.equal(defaultOption(), "계좌 기본값 (제외)");
+  h.change("방향", "sell");
+  assert.equal(defaultOption(), "매도 기본값 (포함)");
+  h.change("콜워런트 제외", "true");
+  await h.click("변경사항 적용");
+  assert.equal(h.calls[0].side, "sell");
+  assert.equal(h.calls[0].quant_rule.exclude_call_warrants, true);
+});
+
 test("PBR 범위 오류는 저장을 막고 계좌 조건이 편집 중 바뀌면 재열기를 요구한다", () => {
   const h = editor({ accountQuantRule: { min_pbr: 1 } });
   h.change("최대 PBR", "0.5");
