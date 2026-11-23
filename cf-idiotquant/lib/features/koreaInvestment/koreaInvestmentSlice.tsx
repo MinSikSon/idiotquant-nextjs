@@ -749,27 +749,37 @@ export const koreaInvestmentSlice = createAppSlice({
     // 주식 잔고 및 계좌 평가현황 조회
     reqGetInquireBalance: create.asyncThunk(
       async (key: string) => {
-        return await getInquireBalanceApi(key);
+        const result = await getInquireBalanceApi(key);
+        if ((result?.rt_cd != null && String(result.rt_cd) !== "0") ||
+          !Array.isArray(result?.output1) || !Array.isArray(result?.output2)) {
+          throw new Error(result?.msg1 || "잔고를 불러오지 못했습니다.");
+        }
+        return result;
       },
       {
         pending: (state, action) => {
-            state.accountRequests.reqGetInquireBalance = action.meta.requestId;
+          state.accountRequests.reqGetInquireBalance = action.meta.requestId;
+          if (state.accountRequests.reqGetInquireBalanceKey !== action.meta.arg) {
+            state.koreaInvestmentBalance = { ...initialState.koreaInvestmentBalance };
+          } else if (state.koreaInvestmentBalance.state === "rejected") {
+            state.koreaInvestmentBalance.msg1 = "";
+          }
+          state.accountRequests.reqGetInquireBalanceKey = action.meta.arg;
           state.koreaInvestmentBalance.state = "pending";
         },
         fulfilled: (state, action) => {
-            if (state.accountRequests.reqGetInquireBalance !== action.meta.requestId) return;
-          if (action.payload?.output1 !== undefined) {
-            state.koreaInvestmentBalance = {
-              ...state.koreaInvestmentBalance,
-              ...action.payload,
-              state: "fulfilled"
-            };
-            state.state = "inquire-balance";
-          }
+          if (state.accountRequests.reqGetInquireBalance !== action.meta.requestId) return;
+          state.koreaInvestmentBalance = {
+            ...initialState.koreaInvestmentBalance,
+            ...action.payload,
+            state: "fulfilled"
+          };
+          state.state = "inquire-balance";
         },
         rejected: (state, action) => {
-            if (state.accountRequests.reqGetInquireBalance !== action.meta.requestId) return;
+          if (state.accountRequests.reqGetInquireBalance !== action.meta.requestId) return;
           state.koreaInvestmentBalance.state = "rejected";
+          state.koreaInvestmentBalance.msg1 = action.error.message || "잔고를 불러오지 못했습니다.";
         }
       }
     ),

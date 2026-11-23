@@ -643,7 +643,6 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
             <SectionPanel id="section-balance">
               <InquireBalanceResult
                 balanceKey={balanceKey}
-                setBalanceKey={setBalanceKey}
                 kiBalance={kiBalance}
                 reqGetInquireBalance={reqGetOverseasStockTradingInquirePresentBalance}
                 reqGetInquireCcnl={reqGetOverseasStockTradingInquireCcnl}

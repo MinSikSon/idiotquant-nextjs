@@ -20,8 +20,7 @@ import {
     ArrowDownRight,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { useToast, ToastContainer, EmptyState, EmptyRow } from "@/components/balance/shared";
 import type { StockGroup } from "@/lib/features/capital/capitalSlice";
 import {
@@ -95,7 +94,6 @@ type BalanceTradingGroup = {
 
 interface InquireBalanceResultProps {
     balanceKey: any;
-    setBalanceKey: any;
     kiBalance: any;
     reqGetInquireBalance: any;
     reqGetInquireCcnl?: any;
@@ -111,7 +109,6 @@ interface InquireBalanceResultProps {
 }
 
 export default function InquireBalanceResult(props: InquireBalanceResultProps) {
-    const { data: session } = useSession();
     const dispatch = useAppDispatch();
     const { toasts, addToast, removeToast } = useToast();
 
@@ -141,11 +138,6 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
     
     const totalProfitRate = pchs_smtl === 0 ? 0 : (evlu_smtl / pchs_smtl * 100 - 100);
 
-    const router = useRouter();
-    const pathname = usePathname();
-    const searchParams = useSearchParams();
-    const urlKey = searchParams.get("key");
-
     const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
     const [selectedStock, setSelectedStock] = useState<any>(null);
     const [orderInitialMode, setOrderInitialMode] = useState<"buy" | "sell">("buy");
@@ -167,14 +159,6 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
             }));
         }
     }, [isUs]);
-
-    useEffect(() => {
-        if (urlKey) {
-            props.setBalanceKey(urlKey);
-        } else if (session?.user?.id) {
-            router.replace(`${pathname}?key=${session.user.id}`);
-        }
-    }, [urlKey, session?.user?.id]);
 
     useEffect(() => {
         if (props.kiOrderCash?.state === "fulfilled") {
@@ -281,7 +265,8 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
 
             {props.kiBalance.msg1 && (() => {
                 // KIS rt_cd: "0" = 정상. 그 외 값이면 오류/경고로 보고 강조.
-                const isError = props.kiBalance.rt_cd != null && String(props.kiBalance.rt_cd) !== "0";
+                const isError = props.kiBalance.state === "rejected" ||
+                    (props.kiBalance.rt_cd != null && String(props.kiBalance.rt_cd) !== "0");
                 if (!isError) return <div className="flex items-center text-xs text-neutral-500 dark:text-neutral-400">잔고 조회 완료<DetailHelp label="잔고 조회 결과">{props.kiBalance.msg1}</DetailHelp></div>;
                 return (
                     <div role="alert" className="flex items-start gap-2 rounded-2xl border border-red-200 bg-red-50 p-2.5 dark:border-red-900/50 dark:bg-red-950/30 md:gap-3 md:p-4">
