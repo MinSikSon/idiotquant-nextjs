@@ -59,9 +59,8 @@ const getFieldValue = (item: any, key: string) => {
         price: item.prpr || item.ovrs_now_pric1 || 0,
         // US presentBalance: avg_unpr3 / KR balance: pchs_avg_pric
         avg_price: item.pchs_avg_pric || item.pchs_avg_pric1 || item.avg_unpr3 || 0,
-        // KR balance: hldg_qty / US presentBalance: cblc_qty13 (잔고수량)
-        // ccld_qty_smtl1은 체결수량합계(실행된 거래량)로 보유수량이 아님 — 폴백에서 제거
-        qty: item.hldg_qty || item.cblc_qty13 || 0,
+        // 해외 현재잔고는 당일 체결을 반영한 수량을 사용하고, 값이 없으면 결제 잔고를 표시한다.
+        qty: String(item.hldg_qty ?? "").trim() || String(item.ccld_qty_smtl1 ?? "").trim() || item.cblc_qty13 || 0,
         evlu_amt: item.evlu_amt || item.frcr_evlu_amt2 || 0,
         profit_rt: item.evlu_pfls_rt || item.evlu_pfls_rt1 || 0,
         pchs_amt: item.pchs_amt || item.frcr_pchs_amt || 0,
@@ -77,7 +76,7 @@ function formatValue(value: number | string, type: "MONEY" | "QTY") {
         return `₩${Math.floor(num).toLocaleString()}`;
     }
     if (type === "QTY") {
-        return num % 1 === 0 ? num.toLocaleString() : num.toFixed(4);
+        return num.toLocaleString(undefined, { maximumFractionDigits: 20 });
     }
     return num.toLocaleString();
 }
@@ -619,7 +618,7 @@ function OrderModal({ isUs, stock, balanceKey, kiOrderCash, reqPostOrderCash, ex
     const [buyOrSell, setBuyOrSell] = useState<"buy" | "sell">(initialMode);
     const [price, setPrice] = useState(initialPrice > 0 ? String(initialPrice) : "");
     const [qty, setQty] = useState(initialQty);
-    const heldQty = Number(getFieldValue(stock, "qty") || 0);
+    const heldQty = getFieldValue(stock, "qty");
     const [priceError, setPriceError] = useState("");
     const [qtyError, setQtyError] = useState("");
     const [isFetchingPrice, setIsFetchingPrice] = useState(false);
@@ -746,10 +745,10 @@ function OrderModal({ isUs, stock, balanceKey, kiOrderCash, reqPostOrderCash, ex
                     <div className="space-y-1.5">
                         <div className="flex items-center justify-between">
                             <label className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">주문 수량 (QTY)</label>
-                            {buyOrSell === "sell" && heldQty > 0 && (
+                            {buyOrSell === "sell" && Number(heldQty) > 0 && (
                                 <button
                                     type="button"
-                                    onClick={() => { setQty(formatValue(heldQty, "QTY").replace(/,/g, "")); if (qtyError) setQtyError(""); }}
+                                    onClick={() => { setQty(String(heldQty)); if (qtyError) setQtyError(""); }}
                                     className="text-[11px] font-semibold text-neutral-900 dark:text-neutral-100 hover:underline"
                                 >
                                     전량 ({formatValue(heldQty, "QTY")})
