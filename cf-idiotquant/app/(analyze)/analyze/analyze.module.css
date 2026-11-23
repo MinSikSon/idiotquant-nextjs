@@ -80,6 +80,7 @@
   .page .tab { flex: none; min-width: 120px; }
 }
 @media (max-width: 767px) {
+  :global([data-page-title]) h1:has(.stockName) { overflow: visible; }
   .page .header { top: var(--topbar-h, 48px); }
   .page .content { padding-top: 12px; }
   .verdict { margin-bottom: 8px; padding: 0 12px; }
