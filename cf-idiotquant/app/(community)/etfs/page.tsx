@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { ArrowDown, ChevronDown, Copy, Heart, LoaderCircle } from "lucide-react";
-import { PageHeader, PAGE_PRIMARY_ACTION_CLS, PAGE_WIDTH } from "@/components/pageHeader";
+import { ArrowDown, ChevronDown, Copy, Heart, LoaderCircle, Plus } from "lucide-react";
+import { PageHeader, PAGE_PRIMARY_ACTION_CLS } from "@/components/pageHeader";
 import { StockLogo } from "@/components/stockLogo";
 import { ToastContainer, useToast } from "@/components/ui/toast";
 import { CONTROL_FOCUS_CLS } from "@/lib/ui-controls";
@@ -12,6 +12,9 @@ import { CommunityEtf, CommunityEtfHolding, getCommunityEtfs, setCommunityEtfLik
 import {
     averageEtfReturn, averageEtfValuationReturn, etfCreationDate, etfHoldingsText, etfReturnPercent, etfValuationModels, loadEtfHoldingPrices, type EtfHoldingPrices,
 } from "@/lib/features/communityEtfs/marketData";
+
+import { EtfNavigation } from "./EtfNavigation";
+import { EtfShareButton } from "./EtfShareButton";
 
 const PAGE_SIZE = 20;
 const percentFormat = new Intl.NumberFormat("ko-KR", { style: "percent", maximumFractionDigits: 1, signDisplay: "exceptZero" });
@@ -90,17 +93,18 @@ export default function CommunityEtfsPage() {
     return <>
         <ToastContainer toasts={toasts} onRemove={removeToast} />
         <PageHeader
-            title="나만의 ETF"
+            title="가상 ETF"
+            tabs={<EtfNavigation active="feed" />}
             width="content"
             description="기대 수익률은 분석 페이지와 같은 모델로 산출한 평가액을 현재가와 비교한 추정치입니다. 실제 수익률은 생성일 기준 종가 대비 현재가의 변화이며, 배당·환율·거래비용은 반영하지 않습니다."
-            primaryAction={<Link href="/screener?createEtf=1" className={PAGE_PRIMARY_ACTION_CLS}>ETF 만들기</Link>}
+            primaryAction={<Link href="/etfs/draft" className={`${PAGE_PRIMARY_ACTION_CLS} dark:text-neutral-950`}><Plus size={16} aria-hidden="true" />ETF 만들기</Link>}
         />
-        <section aria-label="공개 ETF 피드" tabIndex={0} className={`${PAGE_WIDTH.content} h-[calc(100dvh-var(--navigation-h)-2.75rem-var(--bottombar-h))] min-h-48 snap-y snap-mandatory overflow-y-auto overscroll-y-contain scroll-pt-2 py-2 text-neutral-900 dark:text-neutral-100 md:h-[calc(100dvh-var(--navigation-h))] ${CONTROL_FOCUS_CLS}`}>
+        <section aria-label="공개 가상 ETF 피드" tabIndex={0} className={`h-[calc(100dvh-var(--navigation-h)-2.75rem-var(--bottombar-h))] min-h-48 snap-y snap-mandatory overflow-y-auto overscroll-y-contain text-neutral-900 dark:text-neutral-100 md:h-[calc(100dvh-var(--navigation-h))] ${CONTROL_FOCUS_CLS}`}>
             {loading ? <p role="status" className="flex min-h-64 items-center justify-center gap-2 text-sm text-neutral-500"><LoaderCircle size={18} className="animate-spin" />피드를 불러오는 중…</p>
                 : error && items.length === 0 ? <div className="py-14 text-center"><p role="alert" className="text-sm text-rose-700 dark:text-rose-300">{error}</p><button type="button" onClick={() => void load()} className="mt-3 min-h-11 px-3 text-sm font-semibold text-brand-ink">다시 불러오기</button></div>
-                : items.length === 0 ? <section className="border-y border-neutral-200 py-16 text-center dark:border-surface-dark-border"><h1 className="text-lg font-semibold">아직 공개된 ETF가 없어요</h1><p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300">종목을 골라 나만의 ETF를 만들어 보세요.</p><Link href="/screener?createEtf=1" className={`${PAGE_PRIMARY_ACTION_CLS} mt-5`}>종목 고르기</Link></section>
+                : items.length === 0 ? <section className="border-y border-neutral-200 py-8 dark:border-surface-dark-border"><h2 className="text-lg font-semibold">아직 공개된 가상 ETF가 없어요</h2><p className="mt-2 text-sm leading-6 text-neutral-600 dark:text-neutral-300">종목을 골라 첫 가상 ETF를 만들고, 함께 고른 이유를 공유해 보세요.</p></section>
                 : <>
-                    {items.map((item, index) => <div key={item.id} className={`mx-auto max-w-3xl snap-start snap-always pb-3 ${index === items.length - 1 ? "min-h-full" : ""}`}>
+                    {items.map((item, index) => <div key={item.id} className="h-full snap-start snap-always overflow-y-auto overscroll-y-contain">
                         {error && index === 0 && <p role="alert" className="mb-2 text-sm text-rose-700 dark:text-rose-300">{error}</p>}
                         <EtfEpisode item={item} busy={busyLike === item.id} onLike={() => void toggleLike(item)} onCopy={() => void copyHoldings(item)} />
                         {hasMore && index === items.length - 1 && <div className="flex justify-center pt-2">
@@ -117,8 +121,6 @@ export default function CommunityEtfsPage() {
 
 function EtfEpisode({ item, busy, onLike, onCopy }: { item: CommunityEtf; busy: boolean; onLike: () => void; onCopy: () => void }) {
     const { holdings, createdAt, market } = item;
-    const preview = holdings.slice(0, 8);
-    const remaining = holdings.slice(preview.length);
     const isUs = market === "US";
     const createdDate = etfCreationDate(createdAt);
     const articleRef = useRef<HTMLElement>(null);
@@ -146,7 +148,7 @@ function EtfEpisode({ item, busy, onLike, onCopy }: { item: CommunityEtf; busy: 
         return () => { active = false; };
     }, [attempt, createdAt, holdings, market, visible]);
 
-    return <article ref={articleRef} aria-label={`${item.name} 가상 ETF`} className="rounded-lg border border-neutral-200 bg-white px-3 pb-1 pt-1 dark:border-surface-dark-border dark:bg-surface-dark-card sm:px-4">
+    return <article ref={articleRef} aria-label={`${item.name} 가상 ETF`} className="min-h-full px-4 pb-3 pt-3 sm:px-6">
         <div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-300">
             <span aria-hidden="true" className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-brand font-bold text-white dark:text-neutral-900">{(item.creator.name || "투").slice(0, 1)}</span>
             <span className="min-w-0 flex-1 break-words">@{item.creator.name || "투자자"}</span>
@@ -177,16 +179,10 @@ function EtfEpisode({ item, busy, onLike, onCopy }: { item: CommunityEtf; busy: 
                     <Copy size={16} aria-hidden="true" /> 종목 복사
                 </button>
             </div>
-            <HoldingsList holdings={preview} isUs={isUs} />
-            {remaining.length > 0 && <details className="group">
-                <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded text-sm font-semibold text-brand-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand [&::-webkit-details-marker]:hidden">
-                    <span className="group-open:hidden">나머지 {remaining.length}종목 보기</span>
-                    <span className="hidden group-open:inline">나머지 종목 접기</span>
-                    <ChevronDown size={16} aria-hidden="true" className="shrink-0 group-open:rotate-180" />
-                </summary>
-                <HoldingsList holdings={remaining} isUs={isUs} />
-            </details>}
+            {holdings.length > 6 && <p className="text-xs text-neutral-600 dark:text-neutral-300">좌우로 밀어 나머지 종목 보기</p>}
+            <HoldingsList holdings={holdings} isUs={isUs} />
         </div>
+        <div className="py-2"><EtfShareButton item={item} /></div>
     </article>;
 }
 
@@ -205,7 +201,7 @@ function PriceComparison({ holdings, prices, market, onRetry }: {
     const actualTone = sinceCreation.percent === null || sinceCreation.percent === 0 ? ""
         : sinceCreation.percent > 0 ? "text-rose-700 dark:text-rose-400" : "text-blue-700 dark:text-blue-400";
 
-    return <details className="group mt-2 border-t border-neutral-200 dark:border-surface-dark-border">
+    return <details open className="group mt-2 border-y border-neutral-200 dark:border-surface-dark-border">
         <summary className={`relative block min-h-11 cursor-pointer list-none rounded py-2.5 [&::-webkit-details-marker]:hidden ${CONTROL_FOCUS_CLS}`}>
             <span className="grid grid-cols-2 gap-x-2">
                 <span>
@@ -232,6 +228,11 @@ function PriceComparison({ holdings, prices, market, onRetry }: {
                     </span>;
                 })}
             </span>
+            <ReturnBars values={[
+                { label: "기대 · PER", value: expected.percent },
+                { label: "실제", value: sinceCreation.percent },
+                ...strategies.map(model => ({ label: model === "SRIM" ? "S-RIM" : model, value: averageEtfValuationReturn(prices ?? [], model).percent })),
+            ]} />
             <span className="sr-only">종목별 주가 비교</span>
             <ChevronDown size={18} aria-hidden="true" className="pointer-events-none absolute right-0 top-5 text-brand-ink group-open:rotate-180" />
         </summary>
@@ -260,13 +261,33 @@ function PriceComparison({ holdings, prices, market, onRetry }: {
     </details>;
 }
 
+function ReturnBars({ values }: { values: { label: string; value: number | null }[] }) {
+    const extent = Math.max(100, ...values.map(({ value }) => Math.abs(value ?? 0)));
+    return <div aria-label="전략별 수익률 그래프" className="mt-3 space-y-1.5">
+        {values.map(({ label, value }) => {
+            const positive = (value ?? 0) >= 0;
+            const width = value === null ? 0 : Math.min(48, Math.abs(value) / extent * 48);
+            return <div key={label} className="grid grid-cols-[5.5rem_1fr_4.5rem] items-center gap-2 text-xs tabular-nums">
+                <span className="text-neutral-600 dark:text-neutral-300">{label}</span>
+                <span className="relative h-4 border-b border-neutral-200 dark:border-neutral-700">
+                    <span aria-hidden="true" className="absolute bottom-0 left-1/2 top-0 border-l border-neutral-500 dark:border-neutral-400" />
+                    {value !== null && <span aria-hidden="true" className={`absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full ${positive ? "bg-rose-500" : "bg-blue-500"}`} style={{ left: positive ? "50%" : `${50 - width}%`, width: `${width}%` }} />}
+                </span>
+                <span className={`text-right font-semibold ${value === null ? "text-neutral-500" : positive ? "text-rose-700 dark:text-rose-400" : "text-blue-600 dark:text-blue-400"}`}>{value === null ? "자료 없음" : `${value > 0 ? "+" : ""}${value.toFixed(1)}%`}</span>
+            </div>;
+        })}
+    </div>;
+}
+
 function HoldingsList({ holdings, isUs }: { holdings: CommunityEtfHolding[]; isUs: boolean }) {
-    return <ul className="grid grid-cols-2 gap-x-3 sm:gap-x-5">
-        {holdings.map(holding => <li key={holding.ticker} className="flex min-h-11 min-w-0 items-center gap-1.5 border-b border-neutral-200 py-1.5 dark:border-surface-dark-border sm:gap-2">
-            <StockLogo ticker={holding.ticker} name={holding.name} isUs={isUs} />
-            <span className="min-w-0 break-words text-sm leading-4">
-                {holding.name} <span className="inline-block max-w-full text-xs tabular-nums text-neutral-600 dark:text-neutral-400">{holding.ticker}</span>
-            </span>
-        </li>)}
-    </ul>;
+    const pages: CommunityEtfHolding[][] = [];
+    for (let i = 0; i < holdings.length; i += 6) pages.push(holdings.slice(i, i + 6));
+    return <div aria-label="구성 종목 좌우로 넘기기" tabIndex={0} className="flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain scroll-smooth focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand">
+        {pages.map((page, pageIndex) => <ul key={pageIndex} className="grid w-full shrink-0 snap-start grid-cols-2 gap-x-3 pr-2 sm:gap-x-5">
+            {page.map(holding => <li key={holding.ticker} className="flex min-h-11 min-w-0 items-center gap-1.5 border-b border-neutral-200 py-1.5 dark:border-surface-dark-border sm:gap-2">
+                <StockLogo ticker={holding.ticker} name={holding.name} isUs={isUs} />
+                <span className="min-w-0 break-words text-sm leading-4">{holding.name} <span className="inline-block max-w-full text-xs tabular-nums text-neutral-600 dark:text-neutral-400">{holding.ticker}</span></span>
+            </li>)}
+        </ul>)}
+    </div>;
 }

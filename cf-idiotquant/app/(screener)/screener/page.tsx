@@ -3,8 +3,10 @@
 export const dynamic = 'force-dynamic';
 
 import * as Tabs from "@radix-ui/react-tabs";
+import Link from "next/link";
 
 import { ComparisonCheckbox, type ComparisonChoice } from "@/components/comparison-checkbox";
+import { addEtfHoldings, ETF_HOLDING_LIMIT } from "@/lib/features/communityEtfs/draft";
 import { analysisHref, comparisonHref, matchesWatchStock, PENDING_WATCH_KEY, toggleComparisonSelection } from "@/lib/investmentFlow";
 import { SecondarySection } from "@/components/secondary-section";
 import { useEffect, useMemo, useState, useCallback, Suspense, memo } from "react";
@@ -558,6 +560,7 @@ function ScreenerContent() {
     );
     const [showGuide, setShowGuide] = useState(false);
     const [etfCreationMode, setEtfCreationMode] = useState(() => rawSearchParams.get('createEtf') === '1');
+    const [etfSelectionError, setEtfSelectionError] = useState('');
     const [comparisonSelection, setComparisonSelection] = useState<{ country: string; tickers: string[] }>({ country: "KR", tickers: [] });
     // 분포·산점도는 유용하지만 매번 목록보다 먼저 읽을 정보는 아니다. 기본은 결과에
     // 집중하고, 비교가 필요할 때만 같은 자리에서 펼친다.
@@ -1015,7 +1018,7 @@ function ScreenerContent() {
     const returnPath = `/screener${queryString ? `?${queryString}` : ''}`;
     const shareParams = new URLSearchParams(queryString);
     if (filterMethod === 'manual' || !shareParams.has('w')) shareParams.set('from', 'share');
-    const compareLimit = isLoggedIn ? 20 : 4;
+    const compareLimit = etfCreationMode ? ETF_HOLDING_LIMIT : isLoggedIn ? 20 : 4;
     const compareTickers = comparisonSelection.country === country ? comparisonSelection.tickers.slice(0, compareLimit) : [];
     const compareMode = etfCreationMode || compareTickers.length > 0;
     const etfSourceList = (showLikedOnly ? normalizedLikedList : ncavDailyList.country === country ? ncavDailyList.list : []) as Record<string, any>[];
@@ -1023,15 +1026,22 @@ function ScreenerContent() {
         const item = etfSourceList.find(value => value.ticker === ticker);
         return item ? [{ ticker: String(item.ticker), name: String(item.name || item.ticker) }] : [];
     });
-    const missingEtfHoldings = 2 - selectedEtfHoldings.length;
-    const toggleComparison = (ticker: string) => setComparisonSelection(current => ({ country,
-        tickers: toggleComparisonSelection(current.country === country ? current.tickers : [], ticker, compareLimit),
-    }));
-    const createEtfFromSelection = () => {
-        if (missingEtfHoldings > 0) return;
-        try { sessionStorage.setItem("idiotquant:community-etf-draft:v1", JSON.stringify({ market: country, holdings: selectedEtfHoldings })); }
-        catch { /* 임시 선택을 저장할 수 없으면 만들기 화면에서 다시 안내한다. */ }
-        router.push(isLoggedIn ? "/etfs/new" : `/login?callbackUrl=${encodeURIComponent("/etfs/new")}`);
+    const canAddEtfHoldings = selectedEtfHoldings.length >= (etfCreationMode ? 1 : 2);
+    const toggleComparison = (ticker: string) => {
+        setEtfSelectionError('');
+        setComparisonSelection(current => ({
+            country,
+            tickers: toggleComparisonSelection(current.country === country ? current.tickers : [], ticker, compareLimit),
+        }));
+    };
+    const addSelectionToEtf = () => {
+        if (!canAddEtfHoldings) return;
+        try {
+            addEtfHoldings({ market: country, holdings: selectedEtfHoldings });
+            router.push("/etfs/draft");
+        } catch (error) {
+            setEtfSelectionError(error instanceof Error && !(error instanceof DOMException) ? error.message : "초안을 저장하지 못했어요.");
+        }
     };
     const comparisonFor = (ticker: string): ComparisonChoice | undefined => compareMode ? {
         selected: compareTickers.includes(ticker),
@@ -1237,9 +1247,9 @@ function ScreenerContent() {
 
     const clearStockSelection = () => {
         setEtfCreationMode(false);
+        setEtfSelectionError('');
         setComparisonSelection({ country, tickers: [] });
     };
-    const createEtfButton = <button type="button" onClick={createEtfFromSelection} disabled={missingEtfHoldings > 0} aria-describedby={missingEtfHoldings > 0 ? "etf-selection-hint" : undefined} className={PAGE_ACTION_CLS}>ETF 만들기</button>;
 
     return (
         <Tooltip.Provider delayDuration={300}>
@@ -1278,6 +1288,9 @@ function ScreenerContent() {
                 )}
                 share={{ path: filterMethod === 'worldcup' && worldcupSharePath ? worldcupSharePath : `/screener?${shareParams}` }}
                 actions={<>
+                    {etfCreationMode && <button type="button" onClick={handleRefresh} disabled={isLoading || isRefreshing} className={PAGE_ACTION_CLS}>
+                        <RefreshCw size={13} aria-hidden="true" />목록 새로고침
+                    </button>}
                     <ScreenerUsageGuide />
                     {scanningInProgress && !showLikedOnly && filterMethod === 'manual' && (
                         <div className="flex items-start gap-2 rounded-lg bg-amber-50 p-3 text-xs font-medium leading-5 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400">
@@ -1288,7 +1301,9 @@ function ScreenerContent() {
                         </div>
                     )}
                 </>}
-                primaryAction={<button onClick={handleRefresh} disabled={isLoading || isRefreshing} className={PAGE_ACTION_CLS} title="목록 새로고침" aria-label="목록 새로고침">
+                primaryAction={etfCreationMode
+                    ? <button type="button" disabled={!canAddEtfHoldings} onClick={addSelectionToEtf} className={`${PAGE_PRIMARY_ACTION_CLS} dark:text-neutral-950`}>초안에 담기{compareTickers.length > 0 && ` (${compareTickers.length})`}</button>
+                    : <button onClick={handleRefresh} disabled={isLoading || isRefreshing} className={PAGE_ACTION_CLS} title="목록 새로고침" aria-label="목록 새로고침">
                         <RefreshCw size={13} className={isLoading || isRefreshing ? "animate-spin" : ""} />
                         <span className="hidden sm:inline">새로고침</span>
                     </button>}
@@ -1303,6 +1318,7 @@ function ScreenerContent() {
                             onClick={() => {
                                 if (country === value) return;
                                 setCountry(value);
+                                setEtfSelectionError('');
                                 setWorldcupAnswers([]);
                                 setSelectedDate("latest");
                                 setAvailableDates([]);
@@ -1327,7 +1343,11 @@ function ScreenerContent() {
                 }
             />
 
-            {etfCreationMode && <div className="service-container py-2"><p role="status" className="text-sm font-medium text-brand-ink">ETF에 담을 종목을 고르세요. 2개 이상 선택하면 만들 수 있고, 같은 비중으로 담깁니다.</p></div>}
+            {etfCreationMode && <div className="service-container flex flex-wrap items-center justify-between gap-x-3">
+                <p className="py-2 text-sm text-neutral-600 dark:text-neutral-300">목록에서 같은 시장의 종목을 골라 초안에 담으세요.</p>
+                <Link href="/etfs/draft" className="inline-flex min-h-11 items-center text-sm font-semibold text-brand-ink underline-offset-4 hover:underline">초안 보기</Link>
+                {etfSelectionError && <p role="alert" className="w-full pb-2 text-sm text-rose-700 dark:text-rose-300">{etfSelectionError}</p>}
+            </div>}
 
             {!showLikedOnly && ncavDailyList.country === country && (ncavDailyList.refreshing || (ncavDailyList.receivedAt !== null && ncavDailyList.error)) && (
                 <div className="service-container">
@@ -2074,10 +2094,7 @@ function ScreenerContent() {
                             <h2 className="text-sm font-extrabold text-neutral-900 dark:text-white">
                                 {showLikedOnly ? '관심 종목' : '발굴 결과'} <span className="font-mono tabular-nums text-brand-ink">{filteredList.length.toLocaleString('ko-KR')}종목</span>
                             </h2>
-                            {etfCreationMode && <>
-                                <button type="button" onClick={clearStockSelection} className={PAGE_ACTION_CLS}>선택 취소</button>
-                                {createEtfButton}
-                            </>}
+                            {etfCreationMode && <button type="button" onClick={clearStockSelection} className="min-h-11 rounded px-2 text-sm">선택 취소</button>}
                             <button
                                 onClick={() => setShowInsights(v => !v)}
                                 aria-expanded={showInsights}
@@ -2093,10 +2110,8 @@ function ScreenerContent() {
                         </div>
                         {compareMode && <div aria-label={etfCreationMode ? "ETF 종목 선택 현황" : "비교 선택 현황"} className="mb-3 rounded-xl border border-brand/30 p-3 text-sm">
                             <p role="status">{etfCreationMode ? "선택한 종목" : "목록에서 비교할 종목을 선택하세요."} {compareTickers.length}/{compareLimit}개</p>
-                            <p id="etf-selection-hint" role="status" className="text-neutral-600 dark:text-neutral-300">
-                                {missingEtfHoldings > 0 && `ETF를 만들려면 종목을 ${missingEtfHoldings}개${selectedEtfHoldings.length ? " 더" : " 이상"} 선택해 주세요.`}
-                            </p>
-                            <div className="mt-2 flex flex-wrap gap-2">{compareTickers.map(ticker => <button key={ticker} type="button" onClick={() => toggleComparison(ticker)} className="min-h-11 rounded-lg bg-brand/10 px-3 text-brand-ink" aria-label={`${ticker} 비교 선택 해제`}>
+                            {!etfCreationMode && etfSelectionError && <p role="alert" className="text-rose-700 dark:text-rose-300">{etfSelectionError}</p>}
+                            <div className="mt-2 flex flex-wrap gap-2">{compareTickers.map(ticker => <button key={ticker} type="button" onClick={() => toggleComparison(ticker)} className="min-h-11 rounded-lg bg-brand/10 px-3 text-brand-ink" aria-label={`${ticker} 선택 해제`}>
                                 {filteredList.find((item: any) => item.ticker === ticker)?.name ?? ticker} ×
                             </button>)}</div>
                         </div>}
@@ -2226,7 +2241,7 @@ function ScreenerContent() {
                 {!etfCreationMode && compareTickers.length > 0 && (
                     <div aria-label="선택한 종목 비교" role="group" className="sticky bottom-[var(--bottombar-h)] z-30 mt-3 flex flex-wrap items-center justify-end gap-2 rounded-lg border border-neutral-200 bg-white p-2 shadow-md md:bottom-4 dark:border-border-subtle-dark dark:bg-surface-dark-card">
                         <button type="button" onClick={clearStockSelection} className={PAGE_ACTION_CLS}>선택 취소</button>
-                        {createEtfButton}
+                        {canAddEtfHoldings && <button type="button" onClick={addSelectionToEtf} className={PAGE_ACTION_CLS}>ETF에 담기</button>}
                         <button type="button" className={PAGE_PRIMARY_ACTION_CLS} onClick={() => {
                             router.push(comparisonHref(country, compareTickers, scanDate || new Date().toLocaleDateString('sv-SE'), crypto.randomUUID()));
                         }}>

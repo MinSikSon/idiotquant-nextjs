@@ -57,9 +57,10 @@ export default auth((req: any) => {
         path === "/compare" ||
         path === "/share" ||
         path === "/screener" ||
-        // 공개 ETF 피드와 브라우저에 저장한 초안은 로그인 없이 이용할 수 있다.
+        // 공개 피드, 초안, 공개 양식은 로그인 없이 볼 수 있다. 공개 요청은 API에서 인증한다.
         path === "/etfs" ||
         path === "/etfs/draft" ||
+        path === "/etfs/new" ||
         // 게임은 로그인 없이 굴러간다. 진행은 localStorage 에만 쌓이므로 계정이
         // 필요 없고, 계정을 요구하면 "한 판 해 보고 정한다" 가 막힌다.
         //

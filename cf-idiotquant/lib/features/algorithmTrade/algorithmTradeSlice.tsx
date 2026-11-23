@@ -446,8 +446,9 @@ export const algorithmTradeSlice = createAppSlice({
             {
                 options: {
                     condition: (arg, { getState }) => {
-                        const { algorithmTrade } = getState() as { algorithmTrade: { ncavDailyList: NcavDailyState } };
-                        return shouldFetchScan(algorithmTrade.ncavDailyList, arg);
+                        // 진입 시 지연 등록된 슬라이스는 첫 액션 전까지 스토어에 없을 수 있다.
+                        const { algorithmTrade } = getState() as { algorithmTrade?: AlgorithmTradeType };
+                        return shouldFetchScan(algorithmTrade?.ncavDailyList ?? initialState.ncavDailyList, arg);
                     },
                 },
                 pending: (state, action) => {

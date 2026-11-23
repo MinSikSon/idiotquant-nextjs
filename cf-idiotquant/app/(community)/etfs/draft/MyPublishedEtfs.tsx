@@ -8,6 +8,8 @@ import {
     type CommunityEtf, type CommunityEtfDescription,
 } from "@/lib/features/communityEtfs/api";
 
+import { EtfShareButton } from "../EtfShareButton";
+
 const PAGE_SIZE = 20;
 const actionClass = `min-h-11 rounded px-2 text-sm font-semibold text-brand-ink hover:underline disabled:opacity-50 ${CONTROL_FOCUS_CLS}`;
 const fieldClass = `mt-1 w-full bg-white px-3 py-2 text-base dark:bg-surface-dark-card ${CONTROL_INPUT_CLS}`;
@@ -74,7 +76,7 @@ export function MyPublishedEtfs() {
     }
 
     return <>
-        {!loading && !loadError && items.length === 0 && <p className="py-3 text-sm text-neutral-600 dark:text-neutral-300">아직 공개한 ETF가 없어요.</p>}
+        {!loading && !loadError && items.length === 0 && <p className="py-3 text-sm text-neutral-600 dark:text-neutral-300">아직 공개한 가상 ETF가 없어요.</p>}
         {items.length > 0 && <ul className="divide-y divide-neutral-200 dark:divide-surface-dark-border">
             {items.map(item => <li key={item.id} className="py-2">
                 <div className="flex flex-wrap items-center justify-between gap-x-3">
@@ -88,13 +90,14 @@ export function MyPublishedEtfs() {
                     </div>
                 </div>
                 {action?.id === item.id && action.kind === "edit" ? <form className="space-y-2" onSubmit={event => { event.preventDefault(); void manage(); }}>
-                    <label className="block text-sm">ETF 이름<input required maxLength={40} className={fieldClass} value={action.description.name} disabled={saving} onChange={event => setAction({ ...action, description: { ...action.description, name: event.target.value } })} /></label>
-                    <label className="block text-sm">투자 아이디어<textarea required maxLength={140} rows={3} className={fieldClass} value={action.description.idea} disabled={saving} onChange={event => setAction({ ...action, description: { ...action.description, idea: event.target.value } })} /></label>
+                    <label className="block text-sm">가상 ETF 이름<input required maxLength={40} className={fieldClass} value={action.description.name} disabled={saving} onChange={event => setAction({ ...action, description: { ...action.description, name: event.target.value } })} /></label>
+                    <label className="block text-sm">이 종목들을 고른 이유<textarea required maxLength={140} rows={3} className={fieldClass} value={action.description.idea} disabled={saving} onChange={event => setAction({ ...action, description: { ...action.description, idea: event.target.value } })} /></label>
                     <div className="flex gap-2">
-                        <button type="submit" className={PAGE_PRIMARY_ACTION_CLS} disabled={saving || !action.description.name.trim() || !action.description.idea.trim()}>{saving ? "저장 중…" : "저장"}</button>
+                        <button type="submit" className={`${PAGE_PRIMARY_ACTION_CLS} dark:text-neutral-950`} disabled={saving || !action.description.name.trim() || !action.description.idea.trim()}>{saving ? "저장 중…" : "저장"}</button>
                         <button type="button" className={actionClass} disabled={saving} onClick={() => { setFeedback(undefined); setAction(null); }}>취소</button>
                     </div>
                 </form> : <p className="break-words text-sm text-neutral-700 dark:text-neutral-300">{item.idea}</p>}
+                {action?.id !== item.id && <div className="mt-2"><EtfShareButton item={item} /></div>}
                 {action?.id === item.id && action.kind === "delete" && <div className="mt-2">
                     <p className="text-sm">이 ETF를 공개 피드에서 삭제할까요? 삭제한 ETF는 복구할 수 없습니다.</p>
                     <div className="flex gap-2">
@@ -108,6 +111,6 @@ export function MyPublishedEtfs() {
         {feedback && !feedback.error && <p role="status" className="py-2 text-sm text-brand-ink">{feedback.text}</p>}
         {loadError && <p role="alert" className="py-2 text-sm text-rose-700 dark:text-rose-300">{loadError}</p>}
         {loading ? <p role="status" className="py-3 text-sm text-neutral-600 dark:text-neutral-300">공개한 ETF를 불러오는 중…</p>
-            : (hasMore || loadError) && <button type="button" className={actionClass} disabled={Boolean(action)} onClick={() => void loadMore()}>{loadError ? "다시 불러오기" : "내 ETF 더 보기"}</button>}
+            : (hasMore || loadError) && <button type="button" className={actionClass} disabled={Boolean(action)} onClick={() => void loadMore()}>{loadError ? "다시 불러오기" : "공개한 ETF 더 보기"}</button>}
     </>;
 }
