@@ -1,0 +1,3 @@
+[skills]
+# Keep skill names and paths visible while shortening their startup descriptions.
+max_context_tokens = 1024
