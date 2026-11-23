@@ -218,12 +218,40 @@ function PriceComparison({ item, prices, market, onCopy, onRetry }: {
     const scroller = useRef<HTMLDivElement>(null);
     const [page, setPage] = useState(0);
     const pageCount = detailPages.length + 1;
-    const showPage = (nextPage: number) => {
+
+    useEffect(() => {
         const node = scroller.current;
         if (!node) return;
-        const next = Math.max(0, Math.min(pageCount - 1, nextPage));
-        node.scrollTo({ left: next * node.clientWidth, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+        const settlePage = (event: Event) => {
+            const left = node.getBoundingClientRect().left;
+            const nearest = Array.from(node.children).reduce((best, slide, index) => {
+                const distance = slide.getBoundingClientRect().left - left;
+                return Math.abs(distance) < Math.abs(best.distance) ? { index, distance } : best;
+            }, { index: 0, distance: Infinity });
+
+            if (Math.abs(nearest.distance) > 0.5) {
+                if (event.type !== "scrollend") return;
+                node.scrollTo({ left: node.scrollLeft + nearest.distance, behavior: "instant" });
+            }
+            setPage(nearest.index);
+        };
+        const eventType = "onscrollend" in node ? "scrollend" : "scroll";
+        node.addEventListener(eventType, settlePage);
+        return () => node.removeEventListener(eventType, settlePage);
+    }, []);
+
+    const showPage = (nextPage: number) => {
+        const node = scroller.current;
+        const slide = node?.children.item(nextPage);
+        if (!node || !slide) return;
+        node.scrollTo({
+            left: node.scrollLeft + slide.getBoundingClientRect().left - node.getBoundingClientRect().left,
+            behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth",
+        });
     };
+    const slideClass = "relative w-full min-w-0 shrink-0 snap-start snap-always overflow-clip";
+    // Keep the snap areas in flow while only the selected panel sets the carousel height.
+    const slideContentClass = (index: number) => index === page ? "pb-1" : "absolute inset-x-0 top-0 pb-1";
 
     return <section aria-label="수익률과 종목별 가격 비교" className="mt-3 border-t border-neutral-200 dark:border-surface-dark-border">
         <div className="flex min-h-11 items-center justify-between gap-2">
@@ -235,36 +263,40 @@ function PriceComparison({ item, prices, market, onCopy, onRetry }: {
                 <button type="button" onClick={() => showPage(page + 1)} disabled={page >= pageCount - 1} aria-label="다음 상세 페이지" className={CONTROL_ICON_BUTTON_CLS}><ChevronRight size={18} aria-hidden="true" /></button>
             </div>
         </div>
-        <div ref={scroller} onScroll={event => setPage(Math.round(event.currentTarget.scrollLeft / event.currentTarget.clientWidth))} aria-label="가상 ETF 요약과 상세 페이지" tabIndex={0} className="flex items-start snap-x snap-mandatory overflow-x-auto overflow-y-hidden overscroll-x-contain [scrollbar-width:none] focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand">
-            <section aria-label="가상 ETF 요약" aria-hidden={page !== 0} className={`w-full shrink-0 snap-start ${page !== 0 ? "h-0" : "pb-1"}`}>
-                <div className="grid grid-cols-2 gap-x-3 py-3 md:py-4">
-                    <div><span className="block text-sm font-medium text-neutral-600 dark:text-neutral-300">기대 수익률 · PER</span><span className={`block break-words font-bold leading-tight tabular-nums ${expected.percent === null ? "text-sm" : "text-2xl min-[360px]:text-3xl md:text-4xl"}`}>{prices ? showPercent(expected.percent) : "조회 중…"}</span></div>
-                    <div><span className="block text-sm font-medium text-neutral-600 dark:text-neutral-300">실제 수익률 · 생성 후</span><span className={`block break-words font-bold leading-tight tabular-nums ${sinceCreation.percent === null ? "text-sm" : "text-2xl min-[360px]:text-3xl md:text-4xl"} ${actualTone}`}>{prices ? showPercent(sinceCreation.percent) : "조회 중…"}</span></div>
+        <div ref={scroller} aria-label="가상 ETF 요약과 상세 페이지" tabIndex={0} className="flex min-w-0 snap-x snap-mandatory overflow-x-auto overflow-y-hidden overscroll-x-contain [scrollbar-width:none] focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand">
+            <section aria-label="가상 ETF 요약" aria-hidden={page !== 0} className={slideClass}>
+                <div className={slideContentClass(0)}>
+                    <div className="grid grid-cols-2 gap-x-3 py-3 md:py-4">
+                        <div><span className="block text-sm font-medium text-neutral-600 dark:text-neutral-300">기대 수익률 · PER</span><span className={`block break-words font-bold leading-tight tabular-nums ${expected.percent === null ? "text-sm" : "text-2xl min-[360px]:text-3xl md:text-4xl"}`}>{prices ? showPercent(expected.percent) : "조회 중…"}</span></div>
+                        <div><span className="block text-sm font-medium text-neutral-600 dark:text-neutral-300">실제 수익률 · 생성 후</span><span className={`block break-words font-bold leading-tight tabular-nums ${sinceCreation.percent === null ? "text-sm" : "text-2xl min-[360px]:text-3xl md:text-4xl"} ${actualTone}`}>{prices ? showPercent(sinceCreation.percent) : "조회 중…"}</span></div>
+                    </div>
+                    <dl aria-label="전략별 기대 수익률" className="mb-2 grid grid-cols-4 gap-x-1 text-sm tabular-nums md:mb-3 md:text-base">
+                        {strategies.map(model => {
+                            const { percent } = averageEtfValuationReturn(prices ?? [], model);
+                            return <div key={model} className="min-w-0 break-words">
+                                <dt className="text-xs text-neutral-600 dark:text-neutral-300">{model === "SRIM" ? "S-RIM" : model}</dt>
+                                <dd className="font-semibold">{prices ? showPercent(percent) : "조회 중…"}</dd>
+                            </div>;
+                        })}
+                    </dl>
+                    {expected.count > 0 && expected.count < holdings.length && <p className="mb-2 text-xs text-neutral-600 dark:text-neutral-300">PER 수익률은 {expected.count}/{holdings.length}종목 기준</p>}
+                    <div className="flex flex-wrap items-baseline justify-between gap-x-2 border-t border-neutral-200 pt-2 dark:border-surface-dark-border">
+                        <h3 className="font-semibold">구성 종목</h3>
+                        <span className="text-xs tabular-nums text-neutral-600 dark:text-neutral-300">
+                            {holdings.length}종목{holdings.length > 0 && ` · 각 ${(100 / holdings.length).toFixed(1)}%`}
+                        </span>
+                    </div>
+                    <ul className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1.5 sm:grid-cols-3 md:gap-y-3">
+                        {holdings.map(holding => <li key={holding.ticker} title={holding.ticker} className="min-w-0 break-words text-base leading-snug md:text-lg">
+                            {holding.name}<span className="sr-only"> {holding.ticker}</span>
+                        </li>)}
+                    </ul>
                 </div>
-                <dl aria-label="전략별 기대 수익률" className="mb-2 grid grid-cols-4 gap-x-1 text-sm tabular-nums md:mb-3 md:text-base">
-                    {strategies.map(model => {
-                        const { percent } = averageEtfValuationReturn(prices ?? [], model);
-                        return <div key={model} className="min-w-0 break-words">
-                            <dt className="text-xs text-neutral-600 dark:text-neutral-300">{model === "SRIM" ? "S-RIM" : model}</dt>
-                            <dd className="font-semibold">{prices ? showPercent(percent) : "조회 중…"}</dd>
-                        </div>;
-                    })}
-                </dl>
-                {expected.count > 0 && expected.count < holdings.length && <p className="mb-2 text-xs text-neutral-600 dark:text-neutral-300">PER 수익률은 {expected.count}/{holdings.length}종목 기준</p>}
-                <div className="flex flex-wrap items-baseline justify-between gap-x-2 border-t border-neutral-200 pt-2 dark:border-surface-dark-border">
-                    <h3 className="font-semibold">구성 종목</h3>
-                    <span className="text-xs tabular-nums text-neutral-600 dark:text-neutral-300">
-                        {holdings.length}종목{holdings.length > 0 && ` · 각 ${(100 / holdings.length).toFixed(1)}%`}
-                    </span>
-                </div>
-                <ul className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1.5 sm:grid-cols-3 md:gap-y-3">
-                    {holdings.map(holding => <li key={holding.ticker} title={holding.ticker} className="min-w-0 break-words text-base leading-snug md:text-lg">
-                        {holding.name}<span className="sr-only"> {holding.ticker}</span>
-                    </li>)}
-                </ul>
             </section>
-            {detailPages.map((rows, index) => <section key={index} aria-label={`종목 상세 ${index + 1}페이지`} aria-hidden={page !== index + 1} className={`w-full shrink-0 snap-start ${page !== index + 1 ? "h-0" : "pb-1"}`}>
-                <HoldingPriceTable rows={rows} market={market} loading={!prices} />
+            {detailPages.map((rows, index) => <section key={index} aria-label={`종목 상세 ${index + 1}페이지`} aria-hidden={page !== index + 1} className={slideClass}>
+                <div className={slideContentClass(index + 1)}>
+                    <HoldingPriceTable rows={rows} market={market} loading={!prices} />
+                </div>
             </section>)}
         </div>
         <div className="mt-1 flex flex-wrap items-start gap-x-4">
