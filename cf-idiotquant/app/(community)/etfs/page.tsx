@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { ArrowDown, ChevronLeft, ChevronRight, Copy, Heart, LoaderCircle, Plus } from "lucide-react";
 import { PageHeader, PAGE_PRIMARY_ACTION_CLS } from "@/components/pageHeader";
-import { StockLogo } from "@/components/stockLogo";
 import { ToastContainer, useToast } from "@/components/ui/toast";
 import { CONTROL_FOCUS_CLS } from "@/lib/ui-controls";
 import { CommunityEtf, CommunityEtfHolding, getCommunityEtfs, setCommunityEtfLike } from "@/lib/features/communityEtfs/api";
@@ -17,6 +16,7 @@ import { EtfNavigation } from "./EtfNavigation";
 import { EtfShareButton } from "./EtfShareButton";
 
 const PAGE_SIZE = 20;
+const HOLDINGS_PER_SLIDE = 8;
 const percentFormat = new Intl.NumberFormat("ko-KR", { style: "percent", maximumFractionDigits: 1, signDisplay: "exceptZero" });
 const priceFormats = {
     KR: new Intl.NumberFormat("ko-KR", { style: "currency", currency: "KRW" }),
@@ -163,153 +163,137 @@ function EtfEpisode({ item, busy, onLike, onCopy }: { item: CommunityEtf; busy: 
             <time dateTime={createdDate} aria-label={`생성일 ${createdDate}`} className="shrink-0 text-xs tabular-nums text-neutral-600 dark:text-neutral-300">{createdDate.replaceAll("-", ".")} 생성</time>
         </div>
         <p className="mt-1 break-words text-sm leading-5 text-neutral-700 dark:text-neutral-300 sm:text-base">{item.idea}</p>
-        <PriceComparison holdings={holdings} prices={prices} market={market} onRetry={() => {
+        <PriceComparison item={item} prices={prices} market={market} onCopy={onCopy} onRetry={() => {
             setPrices(undefined);
             setAttempt(value => value + 1);
         }} />
-        <div className="border-t border-neutral-200 dark:border-surface-dark-border">
-            <div className="flex flex-wrap items-center justify-between gap-x-2">
-                <div className="flex flex-wrap items-baseline gap-x-2">
-                    <h3 className="font-semibold">구성 종목</h3>
-                    <span className="text-xs tabular-nums text-neutral-600 dark:text-neutral-300">
-                        {holdings.length}종목{holdings.length > 0 && ` · 각 ${(100 / holdings.length).toFixed(1)}%`}
-                    </span>
-                </div>
-                <button type="button" onClick={onCopy} aria-label={`${item.name} 종목 리스트 복사`} className={`inline-flex min-h-11 min-w-11 items-center gap-1.5 rounded text-sm font-semibold text-brand-ink ${CONTROL_FOCUS_CLS}`}>
-                    <Copy size={16} aria-hidden="true" /> 종목 복사
-                </button>
-            </div>
-            {holdings.length > 6 && <p className="text-xs text-neutral-600 dark:text-neutral-300">좌우로 밀어 나머지 종목 보기</p>}
-            <HoldingsList holdings={holdings} isUs={isUs} />
-        </div>
         <div className="py-2"><EtfShareButton item={item} /></div>
     </article>;
 }
 
-function PriceComparison({ holdings, prices, market, onRetry }: {
-    holdings: CommunityEtfHolding[];
+function PriceComparison({ item, prices, market, onCopy, onRetry }: {
+    item: CommunityEtf;
     prices: EtfHoldingPrices[] | undefined;
     market: CommunityEtf["market"];
+    onCopy: () => void;
     onRetry: () => void;
 }) {
+    const { holdings } = item;
     const [per, ...strategies] = etfValuationModels[market];
     const expected = averageEtfValuationReturn(prices ?? [], per);
     const sinceCreation = averageEtfReturn(prices?.map(price => etfReturnPercent(price.baseline?.price ?? null, price.current)) ?? []);
     const showPercent = (percent: number | null) => percent === null ? "자료 없음" : percentFormat.format(percent / 100);
-    const showPrice = (price: number | null | undefined) => price == null ? "자료 없음" : priceFormats[market].format(price);
+    const hasMissingPrices = prices?.some(price => price.current === null || price.baseline === null || price.valuationFailed);
 
     const actualTone = sinceCreation.percent === null || sinceCreation.percent === 0 ? ""
         : sinceCreation.percent > 0 ? "text-rose-700 dark:text-rose-400" : "text-blue-700 dark:text-blue-400";
 
     const detailPages: { holding: CommunityEtfHolding; price: EtfHoldingPrices | undefined }[][] = [];
-    for (let i = 0; i < holdings.length; i += 3) {
-        detailPages.push(holdings.slice(i, i + 3).map((holding, offset) => ({ holding, price: prices?.[i + offset] })));
+    for (let i = 0; i < holdings.length; i += HOLDINGS_PER_SLIDE) {
+        detailPages.push(holdings.slice(i, i + HOLDINGS_PER_SLIDE).map((holding, offset) => ({ holding, price: prices?.[i + offset] })));
     }
-    const detailScroller = useRef<HTMLDivElement>(null);
-    const [detailPage, setDetailPage] = useState(0);
-    const showDetailPage = (page: number) => {
-        const node = detailScroller.current;
+    const scroller = useRef<HTMLDivElement>(null);
+    const [page, setPage] = useState(0);
+    const pageCount = detailPages.length + 1;
+    const showPage = (nextPage: number) => {
+        const node = scroller.current;
         if (!node) return;
-        const nextPage = Math.max(0, Math.min(detailPages.length - 1, page));
-        node.scrollTo({ left: nextPage * node.clientWidth, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
-        setDetailPage(nextPage);
+        const next = Math.max(0, Math.min(pageCount - 1, nextPage));
+        node.scrollTo({ left: next * node.clientWidth, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+        setPage(next);
     };
 
     return <section aria-label="수익률과 종목별 가격 비교" className="mt-2 border-y border-neutral-200 dark:border-surface-dark-border">
-        <div className="py-2.5">
-            <span className="grid grid-cols-2 gap-x-2">
-                <span>
-                    <span className="block text-sm font-medium text-neutral-600 dark:text-neutral-300">기대 수익률 · PER</span>
-                    <span className={`block break-words font-bold leading-tight tracking-tight tabular-nums ${expected.percent === null ? "text-sm" : "text-xl min-[360px]:text-2xl"}`}>{prices ? showPercent(expected.percent) : "조회 중…"}</span>
-                    {expected.count > 0 && expected.count < holdings.length && <span className="text-xs text-neutral-600 dark:text-neutral-300">{expected.count}/{holdings.length}종목</span>}
-                </span>
-                <span className="border-l border-neutral-200 pl-2 pr-5 dark:border-surface-dark-border">
-                    <span className="block text-sm font-medium text-neutral-600 dark:text-neutral-300">실제 수익률<span className="sr-only"> (생성 후)</span></span>
-                    <span className={`block break-words font-bold leading-tight tracking-tight tabular-nums ${sinceCreation.percent === null ? "text-sm" : "text-xl min-[360px]:text-2xl"} ${actualTone}`}>{prices ? showPercent(sinceCreation.percent) : "조회 중…"}</span>
-                    {sinceCreation.count > 0 && sinceCreation.count < holdings.length && <span className="text-xs text-neutral-600 dark:text-neutral-300">{sinceCreation.count}/{holdings.length}종목</span>}
-                </span>
-            </span>
-            <span className="mt-2 grid grid-cols-2 gap-x-2 gap-y-1 border-t border-neutral-200 pt-2 dark:border-surface-dark-border sm:grid-cols-4">
-                <span className="sr-only">전략별 기대 수익률</span>
-                {strategies.map(model => {
-                    const { percent, count } = averageEtfValuationReturn(prices ?? [], model);
-                    const tone = percent !== null && percent > 0 ? "text-emerald-700 dark:text-emerald-300"
-                        : percent !== null && percent < 0 ? "text-red-600 dark:text-red-400" : "";
-                    return <span key={model} className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 text-xs">
-                        <span className="font-medium text-neutral-600 dark:text-neutral-300">{model === "SRIM" ? "S-RIM" : model}</span>
-                        <span className={`break-words font-semibold tabular-nums ${tone}`}>{prices ? showPercent(percent) : "조회 중…"}</span>
-                        {count > 0 && count < holdings.length && <span className="text-neutral-600 dark:text-neutral-300">{count}/{holdings.length}종목</span>}
-                    </span>;
-                })}
-            </span>
-            <ReturnBars values={[
-                { label: "기대 · PER", value: expected.percent },
-                { label: "실제", value: sinceCreation.percent },
-                ...strategies.map(model => ({ label: model === "SRIM" ? "S-RIM" : model, value: averageEtfValuationReturn(prices ?? [], model).percent })),
-            ]} />
-        </div>
-        <div className="border-t border-neutral-200 py-2 dark:border-surface-dark-border">
-            <div className="mb-2 flex min-h-11 items-center justify-between gap-2">
-                <div>
-                    <h4 className="text-sm font-semibold">종목별 가격 비교</h4>
-                    <p className="text-xs text-neutral-600 dark:text-neutral-300">{prices ? `${holdings.length}종목 · 좌우로 넘겨 보기` : "종목별 주가를 불러오는 중…"}</p>
-                </div>
+        <div className="border-y border-neutral-200 dark:border-surface-dark-border">
+            <div className="flex min-h-11 items-center justify-between gap-2">
+                <span className="text-sm font-semibold">{page === 0 ? "요약" : "종목별 상세"}</span>
                 <div className="flex items-center gap-1">
-                    <span aria-live="polite" className="min-w-12 text-center text-xs tabular-nums text-neutral-600 dark:text-neutral-300">{detailPages.length ? `${detailPage + 1} / ${detailPages.length}` : "– / –"}</span>
-                    <button type="button" onClick={() => showDetailPage(detailPage - 1)} disabled={detailPage <= 0} aria-label="이전 종목 페이지" className={`grid min-h-11 min-w-11 place-items-center text-brand-ink disabled:opacity-40 ${CONTROL_FOCUS_CLS}`}><ChevronLeft size={18} aria-hidden="true" /></button>
-                    <button type="button" onClick={() => showDetailPage(detailPage + 1)} disabled={detailPage >= detailPages.length - 1} aria-label="다음 종목 페이지" className={`grid min-h-11 min-w-11 place-items-center text-brand-ink disabled:opacity-40 ${CONTROL_FOCUS_CLS}`}><ChevronRight size={18} aria-hidden="true" /></button>
+                    <button type="button" onClick={onCopy} aria-label={`${item.name} 종목 리스트 복사`} className={`inline-flex min-h-11 items-center gap-1.5 px-2 text-sm font-semibold text-brand-ink ${CONTROL_FOCUS_CLS}`}><Copy size={16} aria-hidden="true" /> 종목 복사</button>
+                    <span aria-live="polite" className="min-w-12 text-center text-xs tabular-nums text-neutral-600 dark:text-neutral-300">{page + 1} / {pageCount}</span>
+                    <button type="button" onClick={() => showPage(page - 1)} disabled={page <= 0} aria-label="이전 페이지" className={`grid min-h-11 min-w-11 place-items-center text-brand-ink disabled:opacity-40 ${CONTROL_FOCUS_CLS}`}><ChevronLeft size={18} aria-hidden="true" /></button>
+                    <button type="button" onClick={() => showPage(page + 1)} disabled={page >= pageCount - 1} aria-label="다음 페이지" className={`grid min-h-11 min-w-11 place-items-center text-brand-ink disabled:opacity-40 ${CONTROL_FOCUS_CLS}`}><ChevronRight size={18} aria-hidden="true" /></button>
                 </div>
             </div>
-            {!prices ? <p role="status" className="pb-2 text-sm">가격 자료를 불러오는 중…</p> : <>
-                {prices.some(price => price.current === null || price.baseline === null || price.valuationFailed) && <button type="button" onClick={onRetry} className={`mb-2 min-h-11 text-sm font-semibold text-brand-ink ${CONTROL_FOCUS_CLS}`}>누락된 자료 다시 조회</button>}
-                <div ref={detailScroller} onScroll={event => setDetailPage(Math.round(event.currentTarget.scrollLeft / event.currentTarget.clientWidth))} aria-label="종목별 가격 비교 페이지" tabIndex={0} className="flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain scroll-smooth focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand">
-                    {detailPages.map((page, pageIndex) => <ul key={pageIndex} aria-label={`종목 상세 ${pageIndex + 1}페이지`} className="w-full shrink-0 snap-start divide-y divide-neutral-200 pr-2 dark:divide-surface-dark-border">
-                        {page.map(({ holding, price }) => {
-                            const baselineDate = price?.baseline?.priceDate.replace(/^(....)(..)(..)$/, "$1.$2.$3");
-                            return <li key={holding.ticker} className="py-2">
-                                <p className="break-words text-sm font-semibold">{holding.name} <span className="font-normal text-neutral-600 dark:text-neutral-300">{holding.ticker}</span></p>
-                                <dl className="mt-1 grid grid-cols-2 gap-x-3 gap-y-1 text-sm tabular-nums sm:grid-cols-4">
-                                    <div><dt className="text-xs text-neutral-600 dark:text-neutral-300">기준 종가 {baselineDate}</dt><dd>{showPrice(price?.baseline?.price)}</dd></div>
-                                    <div><dt className="text-xs text-neutral-600 dark:text-neutral-300">현재가</dt><dd>{showPrice(price?.current)}</dd></div>
-                                    <div><dt className="text-xs text-neutral-600 dark:text-neutral-300">{per} 평가액</dt><dd>{showPrice(price?.targets[per])}</dd></div>
-                                    <div><dt className="text-xs text-neutral-600 dark:text-neutral-300">실제 주가 수익률</dt><dd>{showPercent(etfReturnPercent(price?.baseline?.price ?? null, price?.current ?? null))}</dd></div>
-                                </dl>
-                            </li>;
+            {hasMissingPrices && <button type="button" onClick={onRetry} className={`min-h-11 px-1 text-sm font-semibold text-brand-ink ${CONTROL_FOCUS_CLS}`}>누락된 자료 다시 조회</button>}
+            <div ref={scroller} onScroll={event => setPage(Math.round(event.currentTarget.scrollLeft / event.currentTarget.clientWidth))} aria-label="가상 ETF 요약과 상세 페이지" tabIndex={0} className="flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain scroll-smooth focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand">
+                <section aria-label="가상 ETF 요약" className="w-full shrink-0 snap-start px-1 pb-2">
+                    <div className="grid grid-cols-2 gap-x-3 py-2.5">
+                        <div><span className="block text-sm font-medium text-neutral-600 dark:text-neutral-300">기대 수익률 · PER</span><span className={`block break-words font-bold leading-tight tabular-nums ${expected.percent === null ? "text-sm" : "text-xl min-[360px]:text-2xl"}`}>{prices ? showPercent(expected.percent) : "조회 중…"}</span></div>
+                        <div><span className="block text-sm font-medium text-neutral-600 dark:text-neutral-300">실제 수익률 · 생성 후</span><span className={`block break-words font-bold leading-tight tabular-nums ${sinceCreation.percent === null ? "text-sm" : "text-xl min-[360px]:text-2xl"} ${actualTone}`}>{prices ? showPercent(sinceCreation.percent) : "조회 중…"}</span></div>
+                    </div>
+                    <dl aria-label="전략별 기대 수익률" className="mb-2 grid grid-cols-4 gap-x-1 text-sm tabular-nums">
+                        {strategies.map(model => {
+                            const { percent } = averageEtfValuationReturn(prices ?? [], model);
+                            return <div key={model} className="min-w-0 break-words">
+                                <dt className="text-xs text-neutral-600 dark:text-neutral-300">{model === "SRIM" ? "S-RIM" : model}</dt>
+                                <dd className="font-semibold">{prices ? showPercent(percent) : "조회 중…"}</dd>
+                            </div>;
                         })}
-                    </ul>)}
-                </div>
-            </>}
+                    </dl>
+                    {expected.count > 0 && expected.count < holdings.length && <p className="mb-2 text-xs text-neutral-600 dark:text-neutral-300">PER 수익률은 {expected.count}/{holdings.length}종목 기준</p>}
+                    <div className="flex flex-wrap items-baseline justify-between gap-x-2 border-t border-neutral-200 pt-2 dark:border-surface-dark-border">
+                        <h4 className="font-semibold">구성 종목</h4>
+                        <span className="text-xs tabular-nums text-neutral-600 dark:text-neutral-300">
+                            {holdings.length}종목{holdings.length > 0 && ` · 각 ${(100 / holdings.length).toFixed(1)}%`}
+                        </span>
+                    </div>
+                    <ul className="mt-1 grid grid-cols-2 gap-x-3 gap-y-1 min-[360px]:grid-cols-3 sm:grid-cols-4">
+                        {holdings.map(holding => <li key={holding.ticker} title={holding.ticker} className="min-w-0 break-words text-sm leading-5">
+                            {holding.name}<span className="sr-only"> {holding.ticker}</span>
+                        </li>)}
+                    </ul>
+                </section>
+                {detailPages.map((rows, index) => <section key={index} aria-label={`종목 상세 ${index + 1}페이지`} className="w-full shrink-0 snap-start px-1 pb-2">
+                    <HoldingPriceTable rows={rows} market={market} loading={!prices} />
+                </section>)}
+            </div>
         </div>
     </section>;
 }
 
-function ReturnBars({ values }: { values: { label: string; value: number | null }[] }) {
-    const extent = Math.max(100, ...values.map(({ value }) => Math.abs(value ?? 0)));
-    return <div aria-label="전략별 수익률 그래프" className="mt-3 space-y-1.5">
-        {values.map(({ label, value }) => {
-            const positive = (value ?? 0) >= 0;
-            const width = value === null ? 0 : Math.min(48, Math.abs(value) / extent * 48);
-            return <div key={label} className="grid grid-cols-[5.5rem_1fr_4.5rem] items-center gap-2 text-xs tabular-nums">
-                <span className="text-neutral-600 dark:text-neutral-300">{label}</span>
-                <span className="relative h-4 border-b border-neutral-200 dark:border-neutral-700">
-                    <span aria-hidden="true" className="absolute bottom-0 left-1/2 top-0 border-l border-neutral-500 dark:border-neutral-400" />
-                    {value !== null && <span aria-hidden="true" className={`absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full ${positive ? "bg-rose-500" : "bg-blue-500"}`} style={{ left: positive ? "50%" : `${50 - width}%`, width: `${width}%` }} />}
-                </span>
-                <span className={`text-right font-semibold ${value === null ? "text-neutral-500" : positive ? "text-rose-700 dark:text-rose-400" : "text-blue-600 dark:text-blue-400"}`}>{value === null ? "자료 없음" : `${value > 0 ? "+" : ""}${value.toFixed(1)}%`}</span>
-            </div>;
-        })}
-    </div>;
-}
+function HoldingPriceTable({ rows, market, loading }: {
+    rows: { holding: CommunityEtfHolding; price: EtfHoldingPrices | undefined }[];
+    market: CommunityEtf["market"];
+    loading: boolean;
+}) {
+    const dates = new Set(rows.flatMap(({ price }) => price?.baseline ? [price.baseline.priceDate] : []));
+    const commonDate = dates.size === 1 ? [...dates][0] : undefined;
+    const formatDate = (date: string) => date.replace(/^(....)(..)(..)$/, "$1.$2.$3");
+    const showPrice = (value: number | null | undefined) => value == null
+        ? <span aria-label="자료 없음">–</span>
+        : priceFormats[market].format(value);
 
-function HoldingsList({ holdings, isUs }: { holdings: CommunityEtfHolding[]; isUs: boolean }) {
-    const pages: CommunityEtfHolding[][] = [];
-    for (let i = 0; i < holdings.length; i += 6) pages.push(holdings.slice(i, i + 6));
-    return <div aria-label="구성 종목 좌우로 넘기기" tabIndex={0} className="flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain scroll-smooth focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand">
-        {pages.map((page, pageIndex) => <ul key={pageIndex} className="grid w-full shrink-0 snap-start grid-cols-2 gap-x-3 pr-2 sm:gap-x-5">
-            {page.map(holding => <li key={holding.ticker} className="flex min-h-11 min-w-0 items-center gap-1.5 border-b border-neutral-200 py-1.5 dark:border-surface-dark-border sm:gap-2">
-                <StockLogo ticker={holding.ticker} name={holding.name} isUs={isUs} />
-                <span className="min-w-0 break-words text-sm leading-4">{holding.name} <span className="inline-block max-w-full text-xs tabular-nums text-neutral-600 dark:text-neutral-400">{holding.ticker}</span></span>
-            </li>)}
-        </ul>)}
-    </div>;
+    return <table className="w-full table-fixed text-sm leading-5 tabular-nums">
+        <caption className="py-1 text-left text-xs text-neutral-600 dark:text-neutral-300">
+            {loading ? "가격 조회 중…" : commonDate ? `기준일 ${formatDate(commonDate)}` : <span className="sr-only">종목별 가격 비교</span>}
+        </caption>
+        <thead className="border-b border-neutral-200 text-xs text-neutral-600 dark:border-surface-dark-border dark:text-neutral-300">
+            <tr>
+                <th scope="col" className="w-[34%] pb-1 pr-1 text-left font-medium">종목 · 수익률</th>
+                <th scope="col" className="pb-1 pl-1 text-right font-medium">기준 종가</th>
+                <th scope="col" className="pb-1 pl-1 text-right font-medium">현재가</th>
+                <th scope="col" className="pb-1 pl-1 text-right font-medium">PER 평가액</th>
+            </tr>
+        </thead>
+        <tbody className="divide-y divide-neutral-200 dark:divide-surface-dark-border">
+            {rows.map(({ holding, price }) => {
+                const baseline = price?.baseline;
+                const actual = etfReturnPercent(baseline?.price ?? null, price?.current ?? null);
+                const returnTone = actual === null || actual === 0 ? "text-neutral-600 dark:text-neutral-300"
+                    : actual > 0 ? "text-rose-700 dark:text-rose-400" : "text-blue-700 dark:text-blue-400";
+                return <tr key={holding.ticker}>
+                    <th scope="row" className="break-words py-1 pr-1 text-left font-semibold">
+                        <span title={holding.ticker}>{holding.name}<span className="sr-only"> {holding.ticker}</span></span>
+                        {actual !== null && <span className={`block text-xs ${returnTone}`}>{percentFormat.format(actual / 100)}</span>}
+                    </th>
+                    <td className="break-words pl-1 text-right">
+                        {showPrice(baseline?.price)}
+                        {baseline && !commonDate && <span className="block text-xs text-neutral-600 dark:text-neutral-300">{formatDate(baseline.priceDate)}</span>}
+                    </td>
+                    <td className="break-words pl-1 text-right">{showPrice(price?.current)}</td>
+                    <td className="break-words pl-1 text-right">{showPrice(price?.targets.PER)}</td>
+                </tr>;
+            })}
+        </tbody>
+    </table>;
 }
