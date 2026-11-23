@@ -111,6 +111,8 @@ export function PageHeader({
   const integrated = !!titleTarget && !!actionsTarget;
   const visibleMeta = compactMeta != null ? mobile ? compactMeta : meta ?? compactMeta : undefined;
   const mobileMenuAction = mobile && primaryActionInMobileMenu ? primaryAction : undefined;
+  const mobilePrimaryActionTarget = mobile ? slots?.primaryActionTarget : null;
+  const inlinePrimaryAction = primaryAction && !mobileMenuAction ? <div data-primary-action>{primaryAction}</div> : null;
   const setActive = slots?.setActive;
   useEffect(() => {
     setActive?.(integrated);
@@ -129,8 +131,9 @@ export function PageHeader({
     <>
     {integrated && createPortal(titleContent, titleTarget!)}
     {integrated && mobile && mobileTitleOnScroll && slots?.scrollTitleTarget && createPortal(titleContent, slots.scrollTitleTarget)}
+    {integrated && mobilePrimaryActionTarget && inlinePrimaryAction && createPortal(inlinePrimaryAction, mobilePrimaryActionTarget)}
     {integrated && createPortal(<div data-page-actions className="flex flex-nowrap items-center">
-      {primaryAction && !mobileMenuAction && <div data-primary-action>{primaryAction}</div>}
+      {!mobilePrimaryActionTarget && inlinePrimaryAction}
       <PageShareTools share={share}>
         {(mobileMenuAction || actions || description || meta) && <div className="mt-2 border-t border-neutral-200 pt-2 dark:border-neutral-700">
           <div data-page-secondary-actions className="flex flex-col gap-2">{mobileMenuAction}{actions}</div>

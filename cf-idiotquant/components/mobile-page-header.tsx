@@ -13,6 +13,8 @@ type MobilePageHeaderSlots = {
   setActive: (active: boolean) => void;
   titleTarget: HTMLDivElement | null;
   setTitleTarget: (target: HTMLDivElement | null) => void;
+  primaryActionTarget: HTMLDivElement | null;
+  setPrimaryActionTarget: (target: HTMLDivElement | null) => void;
   actionsTarget: HTMLDivElement | null;
   setActionsTarget: (target: HTMLDivElement | null) => void;
 };
@@ -25,8 +27,17 @@ export function MobilePageHeaderProvider({ children }: { children: ReactNode }) 
   const [tabsTarget, setTabsTarget] = useState<HTMLDivElement | null>(null);
   const [active, setActive] = useState(false);
   const [titleTarget, setTitleTarget] = useState<HTMLDivElement | null>(null);
+  const [primaryActionTarget, setPrimaryActionTarget] = useState<HTMLDivElement | null>(null);
   const [actionsTarget, setActionsTarget] = useState<HTMLDivElement | null>(null);
-  const value = useMemo(() => ({ infoTarget, setInfoTarget, scrollTitleTarget, setScrollTitleTarget, tabsTarget, setTabsTarget, active, setActive, titleTarget, setTitleTarget, actionsTarget, setActionsTarget }), [infoTarget, scrollTitleTarget, tabsTarget, active, titleTarget, actionsTarget]);
+  const value = useMemo(() => ({
+    infoTarget, setInfoTarget,
+    scrollTitleTarget, setScrollTitleTarget,
+    tabsTarget, setTabsTarget,
+    active, setActive,
+    titleTarget, setTitleTarget,
+    primaryActionTarget, setPrimaryActionTarget,
+    actionsTarget, setActionsTarget,
+  }), [infoTarget, scrollTitleTarget, tabsTarget, active, titleTarget, primaryActionTarget, actionsTarget]);
   return <MobilePageHeaderContext.Provider value={value}>{children}</MobilePageHeaderContext.Provider>;
 }
 
