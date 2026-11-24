@@ -19,6 +19,7 @@ import {
 } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import { useViewAsUser } from '@/lib/viewAsUser';
 import Link from 'next/link';
 import { selectLikedList, selectTogglePending, selectLikesState, reqGetMyLikes, reqToggleLike } from '@/lib/features/stockLikes/stockLikesSlice';
 import dynamic from 'next/dynamic';
@@ -341,6 +342,7 @@ function AnalyzeContent() {
   const { data: session } = useSession();
   const isLoggedIn = !!session;
   const isAdmin = (session?.user as { role?: string } | undefined)?.role === 'admin';
+  const viewAsUser = useViewAsUser();
   const { toasts, addToast, removeToast: dismissToast } = useToast();
   const [etfDraft, setEtfDraft] = useState<ReturnType<typeof readEtfDraft>>(null);
 
@@ -644,13 +646,13 @@ function AnalyzeContent() {
         </> : undefined}
         primaryActionInMenu={!isDesktop}
         primaryAction={isPriceLoaded ? <div className="flex flex-col gap-2 lg:mr-1 lg:flex-row lg:items-center">
-          {isInEtfDraft
+          {isAdmin && !viewAsUser && (isInEtfDraft
             ? <Link href="/etfs/draft" className={isDesktop ? DESKTOP_ANALYZE_ACTION_CLS : cn(PAGE_ACTION_CLS, ANALYZE_ACTION_CLS)}>
                 {isDesktop && <FileText size={17} aria-hidden="true" />}초안 보기
               </Link>
             : <button type="button" onClick={addToEtfDraft} className={isDesktop ? DESKTOP_ANALYZE_ACTION_CLS : cn(PAGE_ACTION_CLS, ANALYZE_ACTION_CLS)}>
                 {isDesktop && <Plus size={17} aria-hidden="true" />}ETF에 담기
-              </button>}
+              </button>)}
           <Link href={comparisonHref(krOrUs, [tickerLabel], new Date().toLocaleDateString('sv-SE'))}
             className={isDesktop ? DESKTOP_ANALYZE_ACTION_CLS : cn(PAGE_PRIMARY_ACTION_CLS, ANALYZE_ACTION_CLS, "dark:text-neutral-950")}>
             {isDesktop && <GitCompareArrows size={17} aria-hidden="true" />}비교에 추가
