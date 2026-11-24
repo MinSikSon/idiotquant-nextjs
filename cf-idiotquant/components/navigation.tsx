@@ -64,22 +64,12 @@ const MOBILE_NAV_CONTROL = "service-button-quiet service-nav-tab navigation-tab 
 
 // '더 보기'로 숨기는 보조 메뉴
 const MORE_NAV: NavItem[] = [
-  { label: "가상 ETF", href: "/etfs", icon: Layers },
+  { label: "가상 ETF", href: "/etfs", icon: Layers, adminOnly: true },
   { label: "종목 비교", href: "/compare", icon: GitCompareArrows },
   { label: "내 관심종목", href: "/screener?filter=liked", icon: Heart, authOnly: true },
-  { label: "수익 계산", href: "/calculator",  icon: Calculator              },
-  { label: "가계부",    href: "/ledger",      icon: NotebookText, authOnly: true },
-  // 게임은 주 메뉴가 아니라 여기 있다 — 매일 쓰는 도구가 아니라 가끔 켜는 것이다.
-  // 로그인 없이도 굴러가므로 authOnly 를 안 붙인다.
-  //
-  // ── 이름이 「모의투자」였다 ────────────────────────────────────────
-  // 그때는 주식 로그라이크였으니 맞는 이름이었는데, /game 이 Rogue(1980) 클론으로
-  // 바뀌면서 **메뉴가 없는 것을 가리키게 됐다.** 눌러 보면 던전이 나온다.
-  //
-  // 「로그」로 안 쓴다 — 이 앱에는 가계부와 기록이 있어서 그 두 글자가 log 로 읽힌다.
-  // 메뉴는 「게임」으로 묶어 누구나 쉽게 찾게 한다.
-  //
-  { label: "게임",     href: "/games",       icon: Swords },
+  { label: "수익 계산", href: "/calculator", icon: Calculator, adminOnly: true },
+  { label: "가계부", href: "/ledger", icon: NotebookText, adminOnly: true },
+  { label: "게임", href: "/games", icon: Swords, adminOnly: true },
 ];
 
 // 한 화면(/balance)으로 가는 항목이라 하나만 둔다. 국가 선택은 그 화면 안의 🇰🇷/🇺🇸 토글이 맡는다.
@@ -278,7 +268,10 @@ export function NavbarWithSimpleLinks() {
 
   // '더 보기' — 보조 메뉴(계산기·가계부) 접기/펼치기. 해당 경로에 있으면 자동 노출.
   // 필터는 한 번만 만들어 데스크톱·모바일이 같은 목록을 본다 — 따로 걸면 둘이 어긋난다.
-  const moreNav = MORE_NAV.filter(i => !i.authOnly || status === "authenticated");
+  const moreNav = MORE_NAV.filter(item => {
+    if (item.adminOnly) return status === "authenticated" && isAdmin;
+    return !item.authOnly || status === "authenticated";
+  });
   const utilityNav: NavItem[] = [...moreNav, ...(isMasterUser ? PORTFOLIO_NAV : []),
     ...(isMasterUser ? [{ label: "회원 관리", href: "/admin", icon: ShieldCheck }] : [])];
   const moreActive = moreNav.some(i => active(pathname, i.href, i.exact)) ||
