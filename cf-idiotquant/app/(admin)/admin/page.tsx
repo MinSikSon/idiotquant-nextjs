@@ -4,7 +4,7 @@ import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import OpenDartUsage from "./OpenDartUsage";
-import { Users, Shield, ArrowRight, BookOpen, Clock, CreditCard } from "lucide-react";
+import { Users, Shield, ArrowRight, BookOpen, Clock, CreditCard, Mail } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PageHeader, PAGE_WIDTH } from "@/components/pageHeader";
 
@@ -145,6 +145,14 @@ export default function AdminPage() {
         >
           <CreditCard size={14} aria-hidden="true" />
           이용권 관리
+          <ArrowRight size={11} aria-hidden="true" />
+        </Link>
+        <Link
+          href="/admin/mailing"
+          className="flex min-h-11 items-center gap-2 rounded-[var(--radius-control)] border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 transition-colors hover:border-brand hover:text-brand-ink dark:border-border-subtle-dark dark:bg-surface-dark-card dark:text-neutral-300"
+        >
+          <Mail size={14} aria-hidden="true" />
+          발송 종목 관리
           <ArrowRight size={11} aria-hidden="true" />
         </Link>
       </div>
