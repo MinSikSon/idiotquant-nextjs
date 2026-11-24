@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+    // Keep the 404 fallback static when the main layout reads a locale cookie.
+    experimental: { globalNotFound: true },
     images: {
         remotePatterns: [
             {
