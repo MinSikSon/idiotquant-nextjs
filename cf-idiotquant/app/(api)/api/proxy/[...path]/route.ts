@@ -16,11 +16,15 @@ async function handleProxy(req: Request, { params }: { params: Promise<{ path: s
         const isTradingOperations = pathArray[0] === 'admin' && pathArray[1] === 'trading';
         const isWatchReview = path === 'user/likes/review';
         const isBilling = pathArray[0] === 'billing';
-        if (isBilling && !['billing', 'billing/checkout'].includes(path)) {
+        const isBillingAdmin = path === 'billing/admin';
+        if (isBilling && !['billing', 'billing/checkout', 'billing/admin'].includes(path)) {
             return NextResponse.json({ success: false, error: "요청한 결제 경로가 없습니다." }, { status: 404 });
         }
         if (isBilling && !session?.user?.id) {
             return NextResponse.json({ success: false, error: "로그인이 필요합니다." }, { status: 401, headers: { 'Cache-Control': 'no-store' } });
+        }
+        if (isBillingAdmin && (session?.user as { role?: string } | undefined)?.role !== 'admin') {
+            return NextResponse.json({ success: false, error: "관리자 권한이 필요합니다." }, { status: 403, headers: { 'Cache-Control': 'no-store' } });
         }
         if (isBilling && (!process.env.BILLING_WORKER_URL || !process.env.BILLING_INTERNAL_JWT_SECRET)) {
             return NextResponse.json({ success: false, error: "결제 Worker 연결 설정이 필요합니다." }, { status: 503, headers: { 'Cache-Control': 'no-store' } });

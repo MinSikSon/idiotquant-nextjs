@@ -50,8 +50,15 @@ export function HomeWatchlist() {
     const visible = filter === 'valued' ? valued : filter === 'unscanned' ? unscanned : items;
     const filters = [{ key: 'all', label: t("all"), count: items.length }, { key: 'valued', label: t("valued"), count: valued.length }, { key: 'unscanned', label: t("unscanned"), count: unscanned.length }] as const;
 
+    const alertBenefits = process.env.NEXT_PUBLIC_STRIPE_TEST_CHECKOUT === 'true' && (
+        <Link href="/billing#alert-benefits" className="service-button-quiet inline-flex min-h-11 items-center gap-1 text-sm font-medium text-brand-ink">
+            {t("alertBenefits")}<ArrowRight size={16} aria-hidden="true" />
+        </Link>
+    );
+
     return <div className="mx-auto w-full max-w-4xl space-y-4 px-2 py-3 text-base text-neutral-900 dark:text-neutral-100 sm:px-6 sm:py-8">
         {error && <div role="alert" className={`${panel} text-sm`}><p>{error}</p><button type="button" onClick={() => void load()} disabled={loading} className="service-button mt-2 min-h-11 px-3">{t("retry")}</button></div>}
+        {!review && !loading && alertBenefits}
         {!review ? loading && <p role="status" className={panel}>{t("loadingWatchlist")}</p> : <>
             {loading && <p role="status" className="text-xs text-neutral-500">{t("refreshing")}</p>}
             {!review.items.length ? <section className={panel} aria-labelledby="empty-watchlist">
@@ -60,6 +67,7 @@ export function HomeWatchlist() {
                 <p className="mb-5 mt-2 text-sm leading-6 text-neutral-500">{t("emptyWatchlistHint")}</p>
                 <AddStock onSearch={openSearch} />
                 <div className="mt-5"><WatchlistSample /></div>
+                {alertBenefits}
             </section> : <>
                 <section className={panel} aria-labelledby="watchlist-title">
                     <div className="flex flex-wrap items-center justify-between gap-x-3"><h1 id="watchlist-title" className="text-lg font-semibold">{t("watchlist")} <span className="font-normal tabular-nums text-neutral-500">· {items.length}</span></h1><Link href={WATCHLIST_HREF} className="service-button-quiet inline-flex min-h-11 items-center gap-1 text-sm font-medium text-brand-ink">{t("manage")}<ArrowRight size={16} aria-hidden="true" /></Link></div>
@@ -81,6 +89,7 @@ export function HomeWatchlist() {
                     {visible.length ? <WatchlistItems items={visible} grouping={grouping} expanded={expanded} onToggle={key => setExpanded(current => current.includes(key) ? current.filter(value => value !== key) : [...current, key])} /> : <p role="status" className="py-6 text-sm text-neutral-500">{filter === 'valued' ? t("noValued") : t("allScanned")}</p>}
                     <details className="mt-2 border-t border-neutral-100 text-xs leading-5 text-neutral-600 dark:border-neutral-800 dark:text-neutral-300"><summary className="flex min-h-11 cursor-pointer items-center">{t("valuationMethod")}</summary><p className="pb-3">{t("valuationBasis")}</p></details>
                     <div className="flex flex-wrap gap-2 border-t border-neutral-100 pt-3 dark:border-neutral-800"><Link href="/screener" className={action}>{t("discoverNew")}<ArrowRight size={16} aria-hidden="true" /></Link><Link href="/compare" className={action}>{t("compare")}</Link></div>
+                    {alertBenefits}
                 </section>
             </>}
         </>}

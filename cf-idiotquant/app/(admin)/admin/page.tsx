@@ -4,7 +4,7 @@ import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import OpenDartUsage from "./OpenDartUsage";
-import { Users, Shield, ArrowRight, BookOpen, Clock } from "lucide-react";
+import { Users, Shield, ArrowRight, BookOpen, Clock, CreditCard } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PageHeader, PAGE_WIDTH } from "@/components/pageHeader";
 
@@ -138,6 +138,14 @@ export default function AdminPage() {
           <BookOpen size={13} className="text-neutral-600 dark:text-neutral-300 group-hover:text-brand-ink transition-colors" />
           종목명 매핑 관리
           <ArrowRight size={11} className="text-neutral-300 group-hover:text-brand-ink transition-colors" />
+        </Link>
+        <Link
+          href="/admin/billing"
+          className="flex min-h-11 items-center gap-2 rounded-[var(--radius-control)] border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 transition-colors hover:border-brand hover:text-brand-ink dark:border-border-subtle-dark dark:bg-surface-dark-card dark:text-neutral-300"
+        >
+          <CreditCard size={14} aria-hidden="true" />
+          이용권 관리
+          <ArrowRight size={11} aria-hidden="true" />
         </Link>
       </div>
 
