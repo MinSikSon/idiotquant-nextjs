@@ -380,7 +380,7 @@ export function NavbarWithSimpleLinks() {
       { label: "투자 도구 · 게임", items: moreNav.filter(item => !research.includes(item)) },
       { label: "관리", items: utilityNav.filter(item => !moreNav.includes(item)) },
     ];
-    return <div className="navigation-service-menu text-base">
+    return <div className="navigation-service-menu text-base md:text-sm">
       {!inEtfFeed && <section aria-label="페이지 도구" className="navigation-menu-group py-1.5">
         <p className="px-2.5 pb-1 pt-1.5 text-xs font-semibold text-[var(--service-muted)]">페이지 도구</p>
         <div ref={mobile === compact ? pageHeader?.setToolsTarget : undefined}>
@@ -540,7 +540,7 @@ export function NavbarWithSimpleLinks() {
       </aside>}
 
       {!inGame && <header data-navigation-header data-screener-navigation={inScreener || undefined} className="navigation-header fixed inset-x-0 top-0 z-40 md:sticky">
-        <div className="navigation-main flex items-center gap-2 px-3 md:gap-3 md:px-6">
+        <div className="navigation-main flex items-center gap-2 px-3 md:gap-3 md:px-4 lg:px-6">
           <Link href="/" aria-label="idiotquant 홈" className={cn(logoClass, "navigation-brand md:inline-flex md:min-h-7", inEtfFeed || identityScrolled ? "inline-flex" : "hidden")}>
             {logoText}
           </Link>
