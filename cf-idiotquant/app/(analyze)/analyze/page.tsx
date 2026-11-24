@@ -23,7 +23,15 @@ import { useSession } from 'next-auth/react';
 import { useViewAsUser } from '@/lib/viewAsUser';
 import Link from 'next/link';
 import { selectLikedList, selectTogglePending, selectLikesState, reqGetMyLikes, reqToggleLike } from '@/lib/features/stockLikes/stockLikesSlice';
-import dynamic from 'next/dynamic';
+import { StockCard } from '@/app/(search)/search/components/StockCard';
+import { StockMetrics } from '@/app/(search)/search/components/StockMetrics';
+import { ValuationSection } from '@/app/(search)/search/components/ValuationSection';
+import FinancialTables from '@/app/(search)/search/components/FinancialTables';
+import FinnhubTable from '@/app/(search)/search/components/FinnhubTable';
+import { DelistingRisk } from './components/DelistingRisk';
+import { UsDelistingRisk } from './components/UsDelistingRisk';
+import AnalysisIntro from './components/AnalysisIntro';
+import { FinancialBars } from '@/app/(search)/search/components/FinancialBars';
 import { useAppSelector, useAppDispatch } from '@/lib/hooks';
 import { useStockSearch } from '@/app/(search)/search/hooks/useStockSearch';
 import { selectKrMarketHistory } from '@/lib/features/searchHistory/searchHistorySlice';
@@ -51,51 +59,6 @@ import { AnalysisLoginPrompt } from './components/AnalysisLoginPrompt';
 const ANALYZE_WIDTH = cn(PAGE_WIDTH.data, styles.container);
 const ANALYZE_ACTION_CLS = "whitespace-nowrap md:px-2.5 md:text-sm";
 const DESKTOP_ANALYZE_ACTION_CLS = "service-button navigation-action";
-
-// =========================================================================
-// Dynamic imports
-// =========================================================================
-const StockCard = dynamic(
-  () => import('@/app/(search)/search/components/StockCard').then(mod => ({ default: mod.StockCard })),
-  { loading: () => <StockCardSkeleton />, ssr: false }
-);
-
-const StockMetrics = dynamic(
-  () => import('@/app/(search)/search/components/StockMetrics').then(mod => ({ default: mod.StockMetrics })),
-  { loading: () => <MetricsSkeleton />, ssr: false }
-);
-
-const ValuationSection = dynamic(
-  () => import('@/app/(search)/search/components/ValuationSection').then(mod => ({ default: mod.ValuationSection })),
-  { loading: () => <ValuationSkeleton /> }
-);
-
-const DelistingRisk = dynamic(
-  () => import('@/app/(analyze)/analyze/components/DelistingRisk').then(mod => ({ default: mod.DelistingRisk })),
-  { ssr: false }
-);
-
-const UsDelistingRisk = dynamic(
-  () => import('@/app/(analyze)/analyze/components/UsDelistingRisk').then(mod => ({ default: mod.UsDelistingRisk })),
-  { ssr: false }
-);
-
-const FinancialTables = dynamic(
-  () => import('@/app/(search)/search/components/FinancialTables'),
-  { ssr: false }
-);
-
-const FinnhubTable = dynamic(
-  () => import('@/app/(search)/search/components/FinnhubTable'),
-  { ssr: false }
-);
-
-const FinancialBars = dynamic(
-  () => import('@/app/(search)/search/components/FinancialBars').then(mod => ({ default: mod.FinancialBars })),
-  { ssr: false }
-);
-
-const AnalysisIntro = dynamic(() => import('./components/AnalysisIntro'));
 
 import { krStockCode, krStockDisplayName } from "@/lib/utils/krStockNames";
 import { useUsStockDirectory, usStockDisplayName } from "@/lib/utils/usStockNames";
@@ -152,31 +115,6 @@ const StockCardSkeleton = memo(() => (
   </div>
 ));
 StockCardSkeleton.displayName = 'StockCardSkeleton';
-
-const MetricsSkeleton = memo(() => (
-  <div className="w-full h-[380px] bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark animate-pulse p-6">
-    <div className="h-5 bg-neutral-200 dark:bg-surface-dark-card rounded w-1/3 mb-5" />
-    <div className="grid grid-cols-2 gap-3">
-      {[...Array(6)].map((_, i) => (
-        <div key={i} className="p-4 bg-surface-canvas dark:bg-surface-dark-card/50 rounded-xl space-y-2">
-          <div className="h-3 bg-neutral-200 dark:bg-surface-dark-elevated rounded w-1/2" />
-          <div className="h-5 bg-neutral-200 dark:bg-surface-dark-elevated rounded w-3/4" />
-        </div>
-      ))}
-    </div>
-  </div>
-));
-MetricsSkeleton.displayName = 'MetricsSkeleton';
-
-const ValuationSkeleton = memo(() => (
-  <div className="w-full h-[280px] bg-white dark:bg-surface-dark-card rounded-2xl animate-pulse p-6">
-    <div className="h-5 bg-neutral-200 dark:bg-surface-dark-card rounded w-1/3 mb-5" />
-    <div className="space-y-3">
-      {[...Array(3)].map((_, i) => <div key={i} className="h-14 bg-neutral-200 dark:bg-surface-dark-card rounded-xl" />)}
-    </div>
-  </div>
-));
-ValuationSkeleton.displayName = 'ValuationSkeleton';
 
 // 실제 화면과 같은 구성·높이로 자리를 잡는다. 모양이 다르면 데이터가 도착할 때 화면이 재배치된다.
 const ResultSkeleton = memo(() => (

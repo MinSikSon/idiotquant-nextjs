@@ -3,12 +3,11 @@
 import { useTranslations } from "next-intl";
 import Link from 'next/link';
 import Image from 'next/image';
-import dynamic from 'next/dynamic';
+import HeroCoinRain from '@/components/hero-coin-rain';
 import { ChevronDown } from 'lucide-react';
 import GuestWatchlist from './GuestWatchlist';
 import { useStockSearchModal } from '@/components/stock-search-provider';
 
-const HeroCoinRain = dynamic(() => import('@/components/hero-coin-rain'), { ssr: false });
 const choice = 'service-button group flex min-w-0 flex-col items-center justify-between gap-1 px-2 pb-3 pt-1 text-center font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink md:flex-row md:justify-center md:px-3 md:py-2 md:text-left';
 const choiceArt = 'h-24 w-full object-contain motion-safe:transition-transform motion-safe:group-hover:-translate-y-1 motion-safe:group-active:translate-y-0 motion-safe:group-active:scale-95 md:h-20 md:w-20';
 const choiceDescription = 'hidden break-keep text-sm font-normal leading-snug md:block';
