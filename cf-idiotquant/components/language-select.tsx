@@ -12,10 +12,9 @@ export function LanguageSelect() {
     const router = useRouter();
     const [pending, startTransition] = useTransition();
 
-    return <label className="navigation-menu-group flex min-h-11 items-center gap-2 px-2.5 py-1">
-        <Globe size={17} aria-hidden="true" className="shrink-0" />
-        <span className="min-w-0 flex-1">{t('language')}</span>
-        <select value={locale} disabled={pending} className="min-h-11 rounded border border-neutral-400 bg-transparent px-2 text-base md:min-h-8 md:text-sm dark:border-neutral-600 dark:bg-surface-dark-card"
+    return <div className="relative">
+        <Globe size={18} aria-hidden="true" className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2" />
+        <select aria-label={t('language')} value={locale} disabled={pending} className="navigation-menu-link min-h-11 w-full cursor-pointer border border-[var(--service-line)] bg-transparent pl-10 pr-2.5 text-base disabled:cursor-wait md:text-sm"
             onChange={event => {
                 const nextLocale = event.currentTarget.value;
                 if (!isLocale(nextLocale) || nextLocale === locale) return;
@@ -25,5 +24,5 @@ export function LanguageSelect() {
             }}>
             {Object.entries(localeNames).map(([value, label]) => <option key={value} value={value} lang={value}>{label}</option>)}
         </select>
-    </label>;
+    </div>;
 }

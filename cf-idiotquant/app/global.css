@@ -720,7 +720,7 @@ html:has(#rogue-root) body { background-color: var(--rg-bg); }
     max-width: 1440px;
     margin-inline: auto;
   }
-  .navigation-header .navigation-main :is(.navigation-brand, .navigation-menubar-item, .navigation-login, .navigation-action, [data-page-title-meta]) {
+  .navigation-header .navigation-main :is(.navigation-brand, .navigation-menubar-item, .navigation-action, [data-page-title-meta]) {
     font-size: .875rem;
     line-height: 1.3;
   }
@@ -737,6 +737,11 @@ html:has(#rogue-root) body { background-color: var(--rg-bg); }
     height: var(--navigation-button-height);
     min-height: var(--navigation-button-height);
     max-height: var(--navigation-button-height);
+  }
+  .navigation-header .navigation-main button.navigation-account {
+    width: var(--navigation-button-height);
+    min-width: 0;
+    padding-inline: 0;
   }
 }
 [data-navigation-actions] { min-width: 0; }
@@ -813,14 +818,6 @@ html:has(.navigation-header [data-page-tabs]) { --navigation-h: calc(var(--topba
 .navigation-tab:is([aria-current="page"], [aria-expanded="true"], [data-current-section]) {
   --button-pressed: var(--button-edge);
 }
-
-.navigation-login {
-  --button-edge: rgb(0 0 0 / 32%);
-  background: var(--service-action);
-  color: var(--service-panel);
-}
-
-.navigation-login:hover { background: var(--service-action-hover); }
 
 .navigation-service-popover {
   color-scheme: light;
