@@ -281,7 +281,7 @@ function buildVerdict(metrics: VerdictMetrics) {
     label: check.label, criterion: check.criterion, value: check.value(metrics), ok: check.test(metrics),
   }));
   const metCount = checks.filter(check => check.ok).length;
-  return { lead: `저평가 기준 ${metCount}/${checks.length} 충족`, checks };
+  return { metCount, checks };
 }
 
 // =========================================================================
@@ -754,17 +754,26 @@ function AnalyzeContent() {
                     aria-expanded={verdictOpen}
                     className="flex min-h-11 w-full items-center justify-between gap-2 text-left font-semibold"
                   >
-                    <span className="tabular-nums">{verdict.lead}</span>
+                    <span className="flex flex-wrap items-center gap-x-2">
+                      <span>저평가 기준</span>
+                      <span className={styles.verdictCount}>{verdict.metCount}/{verdict.checks.length} 충족</span>
+                    </span>
                     <ChevronDown size={15} aria-hidden="true" className={cn("shrink-0 transition-transform", verdictOpen && "rotate-180")} />
                   </button>
                   {verdictOpen && (
                     <ul className={styles.verdictChecks}>
                       {verdict.checks.map(check => (
-                        <li key={check.label} className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 py-1.5 text-sm">
+                        <li key={check.label} className={styles.verdictCheck}>
                           <span className="font-semibold">{check.label}</span>
-                          <span className="text-neutral-600 dark:text-neutral-300">{check.criterion}</span>
-                          <span className="ml-auto tabular-nums">{check.value === '—' ? '자료 없음' : check.value}</span>
-                          {check.value !== '—' && <span className="text-neutral-600 dark:text-neutral-300">{check.ok ? '충족' : '미충족'}</span>}
+                          {check.value === '—' ? (
+                            <span className={styles.verdictStatus}>자료 없음</span>
+                          ) : (
+                            <div className={styles.verdictReading}>
+                              <span className={styles.verdictValue}>{check.value.replace(/x$/, '배')}</span>
+                              <span className={styles.verdictStatus} data-met={check.ok}>{check.ok ? '충족' : '미충족'}</span>
+                            </div>
+                          )}
+                          <span className={styles.verdictCriterion}>기준 {check.criterion}</span>
                         </li>
                       ))}
                     </ul>
