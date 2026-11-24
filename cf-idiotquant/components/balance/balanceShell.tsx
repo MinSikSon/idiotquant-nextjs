@@ -3,8 +3,8 @@
 import { BalanceScrollControls } from "./balanceScrollControls";
 import styles from "./balanceTheme.module.css";
 
-import { PageHeader, PAGE_WIDTH, PAGE_ACTION_CLS } from "@/components/pageHeader";
-import { Clock, RefreshCw } from "lucide-react";
+import { PageHeader, PAGE_WIDTH } from "@/components/pageHeader";
+import { Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SectionNav, type NavSection } from "@/components/balance/sectionNav";
 import {
@@ -64,7 +64,6 @@ export function BalanceShell({
           {lastUpdated && <span className="inline-flex items-center gap-1"><Clock size={10} />{lastUpdated.toLocaleTimeString("ko-KR")} 기준</span>}
           {footerBadge}
         </>}
-        primaryAction={<button type="button" onClick={onRefresh} disabled={isLoading} aria-label="새로고침" className={PAGE_ACTION_CLS}><RefreshCw size={16} className={isLoading ? "animate-spin" : ""} /></button>}
         tabs={<SectionNav sections={navSections} mobileTab={mobileTab} onMobileTabChange={onMobileTabChange} />}
         actions={<>
           <BalanceHeaderActions
@@ -72,7 +71,6 @@ export function BalanceShell({
             onToggleAutoRefresh={onToggleAutoRefresh}
             isLoading={isLoading}
             onRefresh={onRefresh}
-            hideRefresh
             extra={headerExtra}
           />
         </>}

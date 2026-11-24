@@ -27,7 +27,7 @@ import { useStockSearch } from '@/app/(search)/search/hooks/useStockSearch';
 import { selectKrMarketHistory } from '@/lib/features/searchHistory/searchHistorySlice';
 import {
   AlertCircle, Loader2, Flame, CheckCircle,
-  Heart, ChevronDown,
+  Heart, ChevronDown, FileText, Plus, GitCompareArrows,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PageHeader, PAGE_WIDTH, PAGE_ACTION_CLS, PAGE_PRIMARY_ACTION_CLS } from '@/components/pageHeader';
@@ -48,6 +48,7 @@ import { AnalysisLoginPrompt } from './components/AnalysisLoginPrompt';
 
 const ANALYZE_WIDTH = cn(PAGE_WIDTH.data, styles.container);
 const ANALYZE_ACTION_CLS = "whitespace-nowrap md:px-2.5 md:text-sm";
+const DESKTOP_ANALYZE_ACTION_CLS = "service-button navigation-action";
 
 // =========================================================================
 // Dynamic imports
@@ -644,9 +645,16 @@ function AnalyzeContent() {
         primaryActionInMenu={!isDesktop}
         primaryAction={isPriceLoaded ? <div className="flex flex-col gap-2 lg:mr-1 lg:flex-row lg:items-center">
           {isInEtfDraft
-            ? <Link href="/etfs/draft" className={cn(PAGE_ACTION_CLS, ANALYZE_ACTION_CLS)}>초안 보기</Link>
-            : <button type="button" onClick={addToEtfDraft} className={cn(PAGE_ACTION_CLS, ANALYZE_ACTION_CLS)}>ETF에 담기</button>}
-          <Link href={comparisonHref(krOrUs, [tickerLabel], new Date().toLocaleDateString('sv-SE'))} className={cn(PAGE_PRIMARY_ACTION_CLS, ANALYZE_ACTION_CLS, "dark:text-neutral-950")}>비교에 추가</Link>
+            ? <Link href="/etfs/draft" className={isDesktop ? DESKTOP_ANALYZE_ACTION_CLS : cn(PAGE_ACTION_CLS, ANALYZE_ACTION_CLS)}>
+                {isDesktop && <FileText size={17} aria-hidden="true" />}초안 보기
+              </Link>
+            : <button type="button" onClick={addToEtfDraft} className={isDesktop ? DESKTOP_ANALYZE_ACTION_CLS : cn(PAGE_ACTION_CLS, ANALYZE_ACTION_CLS)}>
+                {isDesktop && <Plus size={17} aria-hidden="true" />}ETF에 담기
+              </button>}
+          <Link href={comparisonHref(krOrUs, [tickerLabel], new Date().toLocaleDateString('sv-SE'))}
+            className={isDesktop ? DESKTOP_ANALYZE_ACTION_CLS : cn(PAGE_PRIMARY_ACTION_CLS, ANALYZE_ACTION_CLS, "dark:text-neutral-950")}>
+            {isDesktop && <GitCompareArrows size={17} aria-hidden="true" />}비교에 추가
+          </Link>
         </div> : undefined}
         share={{ path: tickerFromUrl ? `/analyze?${shareParams}` : "/analyze" }}
         actions={isPriceLoaded ? <div className="flex min-w-0 flex-col gap-3">
@@ -664,7 +672,7 @@ function AnalyzeContent() {
         mobileTitleOnScroll={isPriceLoaded}
 
       >
-        <PageSearch purpose="analyze" onSelect={handleSearch} hideTrigger />
+        <PageSearch purpose="analyze" onSelect={handleSearch} />
 
         {/* 인기 종목 + 최근 검색 — 검색 화면에서만 보여준다 */}
         {!isPriceLoaded && (popularStocks.length > 0 || krMarketHistory.length > 0) && (

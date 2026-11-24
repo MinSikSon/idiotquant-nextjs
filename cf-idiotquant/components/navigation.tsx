@@ -57,7 +57,7 @@ const MAIN_NAV: NavItem[] = [
 ];
 
 const DESKTOP_NAV_CONTROL = cn(
-  "navigation-menubar-item inline-flex min-h-11 items-center whitespace-nowrap px-2.5 text-base font-medium lg:px-3",
+  "navigation-menubar-item inline-flex min-h-7 items-center whitespace-nowrap px-2.5 font-medium lg:px-3",
   CONTROL_FOCUS_CLS,
 );
 const MOBILE_NAV_CONTROL = "service-button-quiet service-nav-tab navigation-tab flex h-11 min-w-0 flex-1 basis-0 flex-col items-center justify-center gap-[3px] py-1";
@@ -381,6 +381,12 @@ export function NavbarWithSimpleLinks() {
       { label: "관리", items: utilityNav.filter(item => !moreNav.includes(item)) },
     ];
     return <div className="navigation-service-menu text-base">
+      {!inEtfFeed && <section aria-label="페이지 도구" className="navigation-menu-group py-1.5">
+        <p className="px-2.5 pb-1 pt-1.5 text-xs font-semibold text-[var(--service-muted)]">페이지 도구</p>
+        <div ref={mobile === compact ? pageHeader?.setToolsTarget : undefined}>
+          {mobile === compact && !pageHeader?.active && <PageShareTools key={pathname} inMenu share={pathname.startsWith("/ledger/join/") ? { path: "/ledger" } : undefined} />}
+        </div>
+      </section>}
       <nav aria-label={compact ? "전체 서비스" : "추가 서비스"}>
         {groups.filter(group => group.items.length).map(group => <section key={group.label} aria-label={group.label} className="navigation-menu-group py-1.5">
           <p className="px-2.5 pb-1 pt-1.5 text-xs font-semibold text-[var(--service-muted)]">{group.label}</p>
@@ -534,8 +540,8 @@ export function NavbarWithSimpleLinks() {
       </aside>}
 
       {!inGame && <header data-navigation-header data-screener-navigation={inScreener || undefined} className="navigation-header fixed inset-x-0 top-0 z-40 md:sticky">
-        <div className="navigation-main flex h-12 items-center gap-2 px-3 md:gap-3 md:px-5">
-          <Link href="/" aria-label="idiotquant 홈" className={cn(logoClass, "md:inline-flex md:text-lg", inEtfFeed || identityScrolled ? "inline-flex" : "hidden")}>
+        <div className="navigation-main flex items-center gap-2 px-3 md:gap-3 md:px-6">
+          <Link href="/" aria-label="idiotquant 홈" className={cn(logoClass, "navigation-brand md:inline-flex md:min-h-7", inEtfFeed || identityScrolled ? "inline-flex" : "hidden")}>
             {logoText}
           </Link>
           <nav aria-label="주요 서비스" className="hidden shrink-0 items-center gap-1 md:flex">
@@ -562,16 +568,15 @@ export function NavbarWithSimpleLinks() {
           </div>
           <div className="flex shrink-0 items-center gap-2 md:ml-auto md:gap-1.5">
             <div ref={pageHeader?.setPrimaryActionTarget} className="shrink-0 empty:hidden md:hidden" />
-            <div className="navigation-search flex shrink-0 items-center"><StockSearchTrigger showDesktopLabel /></div>
             <div ref={pageHeader?.setActionsTarget} data-navigation-actions className="shrink-0 empty:hidden" />
-            {inEtfFeed && <Link href="/etfs/draft" className={cn("service-button-quiet order-first inline-flex min-h-11 shrink-0 items-center gap-1 rounded px-1.5 text-sm font-semibold text-brand-ink sm:px-2", CONTROL_FOCUS_CLS)}>
+            {inEtfFeed && <Link href="/etfs/draft" className={cn("service-button-quiet order-first inline-flex min-h-11 shrink-0 items-center gap-1 rounded px-1.5 text-sm font-semibold text-brand-ink sm:px-2 md:min-h-7", CONTROL_FOCUS_CLS)}>
               <Plus size={16} aria-hidden="true" />ETF 만들기
             </Link>}
-            {!pageHeader?.active && !inEtfFeed && <PageShareTools key={pathname} share={pathname.startsWith("/ledger/join/") ? { path: "/ledger" } : undefined} />}
             {status === "unauthenticated" && pathname !== "/login" && <Link href="/login"
-              className="service-button navigation-login hidden min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap px-3 text-sm font-semibold md:inline-flex">
+              className="service-button navigation-login hidden min-h-7 shrink-0 items-center gap-1.5 whitespace-nowrap px-3 font-semibold md:inline-flex">
               <LogIn size={16} aria-hidden="true" />로그인
             </Link>}
+            <StockSearchTrigger showDesktopLabel />
           </div>
         </div>
         {fixedPageIdentity && (

@@ -88,10 +88,11 @@ test("모바일 게임은 상단 헤더만큼만 빼고 하단 여백을 없앤�
 
         // 공통 상단 머리줄과 하단 탭 바 치수는 레이아웃 여백 값과 일치해야 한다.
         // 게임은 하단 탭이 숨겨져 있어 해당 padding 만 별도로 없앤다.
-        const headerHeight = /\.navigation-main\s*\{[^}]*min-height:\s*(\d+)px/.exec(css);
+        const headerHeight = /--topbar-h:\s*(\d+)px/.exec(css);
         assert.ok(headerHeight, "공통 헤더의 기본 높이를 찾지 못했다");
         assert.equal(Number(headerHeight[1]), pt, "헤더의 기본 높이와 레이아웃의 기본 상단 여백이 다르다");
-        assert.match(css, /--navigation-h:\s*48px/);
+        assert.match(css, /\.navigation-main\s*\{[^}]*min-height:\s*var\(--topbar-h\)/);
+        assert.match(css, /--navigation-h:\s*var\(--topbar-h\)/);
         assert.match(css, /--bottombar-h:\s*calc\(52px \+ env\(safe-area-inset-bottom, 0px\)\)/);
         assert.match(css, /\[data-bottom-navigation\]\s*\{[^}]*height: var\(--bottombar-h\)/);
         assert.match(nav, /inGame \? "hidden" : "md:hidden/);

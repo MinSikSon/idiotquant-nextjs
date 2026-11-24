@@ -327,14 +327,12 @@ export function OrderSectionIcon({ viewerTab }: { viewerTab: "ccnl" | "nccs" }) 
 export function BalanceHeaderActions({
   autoRefresh, onToggleAutoRefresh,
   isLoading, onRefresh,
-  hideRefresh = false,
   extra,
 }: {
   autoRefresh: boolean;
   onToggleAutoRefresh: () => void;
   isLoading: boolean;
   onRefresh: () => void;
-  hideRefresh?: boolean;
   extra?: React.ReactNode;
 }) {
   return (
@@ -356,7 +354,7 @@ export function BalanceHeaderActions({
         <Activity size={13} className={autoRefresh ? "animate-pulse text-emerald-500" : ""} />
         {autoRefresh ? "자동갱신 ON" : "자동갱신"}
       </button>
-      {!hideRefresh && <button
+      <button
         type="button"
         onClick={onRefresh}
         disabled={isLoading}
@@ -365,7 +363,7 @@ export function BalanceHeaderActions({
       >
         <RefreshCw size={13} className={isLoading ? "animate-spin" : ""} />
         <span className="hidden md:inline">새로고침</span>
-      </button>}
+      </button>
     </div>
   );
 }

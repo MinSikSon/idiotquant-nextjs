@@ -75,8 +75,8 @@ export function StockSearchTrigger({ showDesktopLabel = false }: { showDesktopLa
   const { openSearch, label, open } = useStockSearchModal();
   return <button type="button" data-page-search-trigger data-page-input-trigger aria-label={label}
     aria-haspopup="dialog" aria-controls="stock-search-modal" aria-expanded={open}
-    onClick={openSearch} className="navigation-icon">
-    <Search size={21} className={showDesktopLabel ? "lg:h-[19px] lg:w-[19px]" : undefined} aria-hidden="true" />
-    {showDesktopLabel && <span className="hidden whitespace-nowrap lg:inline">종목 검색</span>}
+    onClick={openSearch} className="service-button navigation-action navigation-stock-search">
+    <Search size={17} aria-hidden="true" />
+    {showDesktopLabel && <span className="hidden whitespace-nowrap md:inline">종목 검색</span>}
   </button>;
 }
