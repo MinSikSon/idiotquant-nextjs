@@ -716,32 +716,24 @@ html:has(#rogue-root) body { background-color: var(--rg-bg); }
 @media (min-width: 768px) {
   html:has(.navigation-header) { --topbar-h: 32px; }
   .navigation-header .navigation-main {
-    --navigation-type-scale: calc(2 / 3);
-    --navigation-button-width: max(44px, 4.875rem);
     --navigation-button-height: 26px;
     max-width: 1440px;
     margin-inline: auto;
   }
-  .navigation-brand {
-    font-size: calc(1.125rem * var(--navigation-type-scale));
+  .navigation-header .navigation-main :is(.navigation-brand, .navigation-menubar-item, .navigation-login, .navigation-action, [data-page-title-meta]) {
+    font-size: .875rem;
     line-height: 1.3;
   }
-  .navigation-menubar-item {
-    font-size: calc(1rem * var(--navigation-type-scale));
-    line-height: 1.3;
-  }
-  .navigation-header .navigation-main :is(.navigation-login, .navigation-action),
-  [data-screener-navigation] .navigation-menubar-item {
-    font-size: calc(.875rem * var(--navigation-type-scale));
-    line-height: 1.3;
-  }
+  .navigation-header .navigation-main [data-page-title-meta] { max-height: none; }
   .navigation-header .navigation-main [data-primary-action] :is(button, a) {
     min-height: 28px;
     max-height: 28px;
     padding-block: 0;
   }
   .navigation-header .navigation-main :is(button, a).navigation-action {
-    width: var(--navigation-button-width);
+    width: max-content;
+    min-width: 6.25rem;
+    padding-inline: .375rem;
     height: var(--navigation-button-height);
     min-height: var(--navigation-button-height);
     max-height: var(--navigation-button-height);

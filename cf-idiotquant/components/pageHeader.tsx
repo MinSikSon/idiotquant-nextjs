@@ -141,7 +141,7 @@ export function PageHeader({
       <PageShareTools share={share} inMenu={!!toolsTarget}>
         {(menuPrimaryAction || actions || description || meta) && <div className="mt-2 border-t border-neutral-200 pt-2 dark:border-neutral-700">
           <div data-page-secondary-actions className="flex flex-col gap-2">{menuPrimaryAction}{actions}</div>
-          {(description || meta) && <div className="p-3 text-xs leading-6">{description}{meta && <div>{meta}</div>}</div>}
+          {(description || meta) && <div className="p-3 text-xs leading-6 md:text-sm md:leading-6">{description}{meta && <div>{meta}</div>}</div>}
         </div>}
       </PageShareTools>, toolsTarget ?? actionsTarget!)}
     {slots?.tabsTarget && tabs && createPortal(<div data-page-tabs>{tabs}</div>, slots.tabsTarget)}
