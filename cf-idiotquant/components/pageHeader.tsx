@@ -8,7 +8,7 @@ import { createPortal } from "react-dom";
 import { useMobilePageHeader } from "@/components/mobile-page-header";
 
 /* 페이지 제목·메타·작업 버튼은 공통 내비게이션의 슬롯으로 보낸다.
-   핵심 작업과 페이지 작업 메뉴는 상단 한 줄에, 탭은 바로 아래에 표시한다.
+   핵심 작업은 상단에, 보조 작업은 더 보기 메뉴에, 탭은 상단바 바로 아래에 표시한다.
    검색은 상단 검색 메뉴로 보내고 필터(children)는 본문과 함께 스크롤한다.
    슬롯이 없는 독립 화면에서는 자체 헤더로 표시한다. */
 
@@ -56,7 +56,6 @@ export function PageHeader({
   compactMetaOnScrollOnly = false,
   actions,
   share,
-  captureInMenu,
   primaryAction,
   primaryActionInMenu = false,
   tabs,
@@ -82,7 +81,6 @@ export function PageHeader({
   compactMetaOnScrollOnly?: boolean;
   actions?: React.ReactNode;
   share?: ScreenShare;
-  captureInMenu?: boolean;
   /** 상단 한 줄에 표시할 핵심 작업 하나. */
   primaryAction?: React.ReactNode;
   /** 핵심 작업을 상단 바로가기 대신 페이지 도구 메뉴에 표시할 때 사용한다. */
@@ -113,11 +111,12 @@ export function PageHeader({
   }, []);
   const titleTarget = slots?.titleTarget;
   const actionsTarget = slots?.actionsTarget;
+  const toolsTarget = slots?.toolsTarget;
   const integrated = !!titleTarget && !!actionsTarget;
   const visibleMeta = compactMeta != null ? mobile ? compactMeta : meta ?? compactMeta : undefined;
   const menuPrimaryAction = primaryActionInMenu ? primaryAction : undefined;
   const mobilePrimaryActionTarget = mobile ? slots?.primaryActionTarget : null;
-  const inlinePrimaryAction = primaryAction && !menuPrimaryAction ? <div data-primary-action>{primaryAction}</div> : null;
+  const inlinePrimaryAction = primaryAction && !menuPrimaryAction ? <div data-page-actions data-primary-action>{primaryAction}</div> : null;
   const setActive = slots?.setActive;
   useEffect(() => {
     setActive?.(integrated);
@@ -137,15 +136,14 @@ export function PageHeader({
     {integrated && createPortal(renderTitle(mobile && compactMetaOnScrollOnly ? undefined : visibleMeta), titleTarget!)}
     {integrated && mobile && mobileTitleOnScroll && slots?.scrollTitleTarget && createPortal(renderTitle(visibleMeta), slots.scrollTitleTarget)}
     {integrated && mobilePrimaryActionTarget && inlinePrimaryAction && createPortal(inlinePrimaryAction, mobilePrimaryActionTarget)}
-    {integrated && createPortal(<div data-page-actions className="flex flex-nowrap items-center">
-      {!mobilePrimaryActionTarget && inlinePrimaryAction}
-      <PageShareTools share={share} captureInMenu={captureInMenu}>
+    {integrated && !mobilePrimaryActionTarget && inlinePrimaryAction && createPortal(inlinePrimaryAction, actionsTarget!)}
+    {integrated && createPortal(
+      <PageShareTools share={share} inMenu={!!toolsTarget}>
         {(menuPrimaryAction || actions || description || meta) && <div className="mt-2 border-t border-neutral-200 pt-2 dark:border-neutral-700">
           <div data-page-secondary-actions className="flex flex-col gap-2">{menuPrimaryAction}{actions}</div>
           {(description || meta) && <div className="p-3 text-xs leading-6">{description}{meta && <div>{meta}</div>}</div>}
         </div>}
-      </PageShareTools>
-    </div>, actionsTarget!)}
+      </PageShareTools>, toolsTarget ?? actionsTarget!)}
     {slots?.tabsTarget && tabs && createPortal(<div data-page-tabs>{tabs}</div>, slots.tabsTarget)}
     <header
       data-page-header

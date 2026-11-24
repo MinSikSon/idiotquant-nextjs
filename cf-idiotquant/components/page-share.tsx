@@ -21,12 +21,12 @@ type ShareContent =
   | { kind: "link"; url?: string }
   | { kind: "image"; capture?: Awaited<ReturnType<typeof captureScreen>>; preview?: string };
 
-export function PageShareTools({ share, children, captureInMenu = false }: {
+export function PageShareTools({ share, children, inMenu = false }: {
   share?: ScreenShare;
   children?: ReactNode;
-  captureInMenu?: boolean;
+  inMenu?: boolean;
 }) {
-  const hasMenu = Boolean(children || captureInMenu);
+  const hasMenu = Boolean(children);
   const pathname = usePathname();
   const dialog = useRef<HTMLDialogElement>(null);
   const request = useRef<AbortController | null>(null);
@@ -115,25 +115,31 @@ export function PageShareTools({ share, children, captureInMenu = false }: {
     }
   }
 
-  return <div data-share-controls className="flex shrink-0 items-center">
-    {!captureInMenu && <button type="button" onClick={() => void open("image")} className={TOOL + " service-button hidden justify-center md:inline-flex"} aria-haspopup="dialog">
-      <Camera size={17} aria-hidden="true" /> 캡처
-    </button>}
-    {!children && <button type="button" onClick={() => void open("link")} className={TOOL + " service-button hidden justify-center md:inline-flex"} aria-label="링크 공유" aria-haspopup="dialog">
-      <Link2 size={17} aria-hidden="true" /> 공유
-    </button>}
-    <NavigationPopover label="페이지 도구" className="page-share-menu" trigger={
-      <button type="button" aria-label="페이지 도구" className={cn(TOOL, "justify-center", !hasMenu && "md:hidden")}>
-        <MoreHorizontal size={20} className={hasMenu ? "md:hidden" : undefined} aria-hidden="true" />
-        {hasMenu && <><span className="hidden md:inline">도구</span><ChevronDown size={14} className="hidden md:block" aria-hidden="true" /></>}
+  const menuItems = <>
+    <div className="flex flex-col">
+      <button type="button" onClick={() => void open("link")} className={MENU_ITEM} aria-haspopup="dialog"><Link2 size={17} aria-hidden="true" /> 링크 공유</button>
+      <button type="button" onClick={() => void open("image")} className={cn(MENU_ITEM, !inMenu && "md:hidden")} aria-haspopup="dialog"><Camera size={17} aria-hidden="true" /> 화면 캡처</button>
+    </div>
+    {children}
+  </>;
+
+  return <>
+    {inMenu ? menuItems : <div data-share-controls className="flex shrink-0 items-center">
+      <button type="button" onClick={() => void open("image")} className={TOOL + " service-button hidden justify-center md:inline-flex"} aria-haspopup="dialog">
+        <Camera size={17} aria-hidden="true" /> 캡처
       </button>
-    }>
-      <div className="flex flex-col">
-        <button type="button" onClick={() => void open("link")} className={MENU_ITEM} aria-haspopup="dialog"><Link2 size={17} aria-hidden="true" /> 링크 공유</button>
-        <button type="button" onClick={() => void open("image")} className={cn(MENU_ITEM, !captureInMenu && "md:hidden")} aria-haspopup="dialog"><Camera size={17} aria-hidden="true" /> 화면 캡처</button>
-      </div>
-      {children}
-    </NavigationPopover>
+      {!children && <button type="button" onClick={() => void open("link")} className={TOOL + " service-button hidden justify-center md:inline-flex"} aria-label="링크 공유" aria-haspopup="dialog">
+        <Link2 size={17} aria-hidden="true" /> 공유
+      </button>}
+      <NavigationPopover label="페이지 도구" className="page-share-menu" trigger={
+        <button type="button" aria-label="페이지 도구" className={cn(TOOL, "justify-center", !hasMenu && "md:hidden")}>
+          <MoreHorizontal size={20} className={hasMenu ? "md:hidden" : undefined} aria-hidden="true" />
+          {hasMenu && <><span className="hidden md:inline">도구</span><ChevronDown size={14} className="hidden md:block" aria-hidden="true" /></>}
+        </button>
+      }>
+        {menuItems}
+      </NavigationPopover>
+    </div>}
     <dialog ref={dialog} onClose={close} aria-label={title} data-screen-share data-html2canvas-ignore
       className="fixed inset-0 m-auto max-h-[90dvh] w-[calc(100%_-_32px)] max-w-lg overflow-auto rounded-lg border border-neutral-200 bg-surface-canvas p-4 text-neutral-900 backdrop:bg-black/50 dark:border-neutral-700 dark:bg-surface-dark-canvas dark:text-neutral-100">
       <div className="flex items-center justify-between gap-3">
@@ -160,5 +166,5 @@ export function PageShareTools({ share, children, captureInMenu = false }: {
       {notice && <p role="status" className="mt-2 text-sm text-brand-ink">{notice}</p>}
       {error && <p role="alert" className="mt-2 text-sm text-rose-700 dark:text-rose-300">{error}</p>}
     </dialog>
-  </div>;
+  </>;
 }

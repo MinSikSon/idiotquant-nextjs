@@ -1242,7 +1242,6 @@ function ScreenerContent() {
                 mobileCompact
                 mobileTitleOnScroll
                 compactMetaOnScrollOnly
-                captureInMenu
                 compactMeta={<span className="text-xs">
                     {country === 'KR' ? '국내' : '미국'} · {isLoading
                         ? '불러오는 중…'
@@ -1270,9 +1269,10 @@ function ScreenerContent() {
                 )}
                 share={{ path: filterMethod === 'worldcup' && worldcupSharePath ? worldcupSharePath : `/screener?${shareParams}` }}
                 actions={<>
-                    {etfCreationMode && <button type="button" onClick={handleRefresh} disabled={isLoading || isRefreshing} className={PAGE_ACTION_CLS}>
-                        <RefreshCw size={13} aria-hidden="true" />목록 새로고침
-                    </button>}
+                    <button type="button" onClick={handleRefresh} disabled={isLoading || isRefreshing} className={PAGE_ACTION_CLS}>
+                        <RefreshCw size={16} aria-hidden="true" className={isLoading || isRefreshing ? "motion-safe:animate-spin" : undefined} />
+                        목록 새로고침
+                    </button>
                     <ScreenerUsageGuide />
                     {scanningInProgress && !showLikedOnly && filterMethod === 'manual' && (
                         <div className="flex items-start gap-2 rounded-lg bg-amber-50 p-3 text-xs font-medium leading-5 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400">
@@ -1288,10 +1288,7 @@ function ScreenerContent() {
                         <Plus size={16} aria-hidden="true" className="min-[480px]:hidden" />
                         <span className="max-[479px]:sr-only">초안에 담기{compareTickers.length > 0 && ` (${compareTickers.length})`}</span>
                     </button>
-                    : <button type="button" data-screener-refresh onClick={handleRefresh} disabled={isLoading || isRefreshing} className={PAGE_ACTION_CLS} title="목록 새로고침" aria-label="목록 새로고침">
-                        <RefreshCw size={16} aria-hidden="true" className={isLoading || isRefreshing ? "animate-spin" : ""} />
-                        <span className="hidden sm:max-md:inline">새로고침</span>
-                    </button>}
+                    : undefined}
 
             />
 

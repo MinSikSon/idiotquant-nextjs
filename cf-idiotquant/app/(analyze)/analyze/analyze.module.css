@@ -29,6 +29,27 @@
 .quoteTicker { font-variant-numeric: tabular-nums; }
 .quotePrice, .price { color: var(--analysis-ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .quoteAux { color: var(--analysis-muted); }
+
+@media (min-width: 768px) {
+  :global([data-navigation-desktop-context]):has(.quoteTicker) {
+    flex: 1 1 0%;
+  }
+
+  :global([data-navigation-desktop-context] [data-page-title]) > div:has(.quoteTicker) {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  :global([data-navigation-desktop-context] [data-page-title]) > div:has(.quoteTicker) > h1 {
+    min-width: 0;
+  }
+
+  :global([data-navigation-desktop-context] [data-page-title-meta]):has(.quoteTicker) {
+    flex-shrink: 0;
+  }
+}
+
 .page .searchRow { padding-block: 16px; }
 .searchField { min-width: 0; }
 .page .searchField > div > div:first-child { min-height: 48px; border-radius: var(--radius-input); border-color: var(--analysis-control-line); background: var(--analysis-soft); box-shadow: none; }
