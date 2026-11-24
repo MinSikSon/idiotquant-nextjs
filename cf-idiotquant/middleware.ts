@@ -86,5 +86,5 @@ export default auth((req: any) => {
 });
 
 export const config = {
-    matcher: ["/((?!api/public|login|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)"]
+    matcher: ["/((?!api/public|api/internal/watchlist-valuation|login|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)"]
 };

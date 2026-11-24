@@ -22,7 +22,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useViewAsUser } from '@/lib/viewAsUser';
 import Link from 'next/link';
-import { selectLikedList, selectTogglePending, selectLikesState, reqGetMyLikes, reqToggleLike } from '@/lib/features/stockLikes/stockLikesSlice';
+import { selectLikedList, selectTogglePending, selectLikesState, reqGetMyLikes, reqToggleLike, WATCHLIST_MARKET_LIMIT } from '@/lib/features/stockLikes/stockLikesSlice';
 import { StockCard } from '@/app/(search)/search/components/StockCard';
 import { StockMetrics } from '@/app/(search)/search/components/StockMetrics';
 import { ValuationSection } from '@/app/(search)/search/components/ValuationSection';
@@ -378,7 +378,8 @@ function AnalyzeContent() {
 
   const currency = krOrUs === 'US' ? '$' : '₩';
   const watchStock = useMemo(() => ({ ticker: tickerFromUrl ?? '', name: displayName ?? tickerFromUrl ?? '', isUs: krOrUs === 'US' }), [tickerFromUrl, displayName, krOrUs]);
-  const isInWatchlist = isLoggedIn && likedList.some(item => matchesWatchStock(item, watchStock));
+  const savedWatchStock = isLoggedIn ? likedList.find(item => matchesWatchStock(item, watchStock)) : undefined;
+  const isInWatchlist = !!savedWatchStock;
   const likeBusy = watchSaving || (isLoggedIn && likesState === 'pending') || togglePending.some(ticker => ticker === watchStock.ticker || ticker === watchStock.name);
   const analysisPath = tickerFromUrl ? analysisHref(tickerFromUrl, returnTo ?? undefined) : '/analyze';
   const loginHref = `/login?callbackUrl=${encodeURIComponent(analysisPath)}`;
@@ -397,11 +398,11 @@ function AnalyzeContent() {
     }
     setWatchSaving(true);
     try {
-      await dispatch(reqToggleLike({ ticker: watchStock.isUs ? watchStock.ticker : watchStock.name, name: watchStock.name, isUs: watchStock.isUs })).unwrap();
+      await dispatch(reqToggleLike({ ticker: savedWatchStock?.ticker ?? (watchStock.isUs ? watchStock.ticker : watchStock.name), name: watchStock.name, isUs: watchStock.isUs })).unwrap();
       addToast('success', isInWatchlist ? t("removed") : t("saved"));
-    } catch {
-      await dispatch(reqGetMyLikes());
-      addToast('error', isInWatchlist ? t("removeFailed") : t("saveFailed"));
+    } catch (error) {
+      if (error !== WATCHLIST_MARKET_LIMIT) await dispatch(reqGetMyLikes());
+      addToast('error', error === WATCHLIST_MARKET_LIMIT ? t("watchlistMarketLimit") : isInWatchlist ? t("removeFailed") : t("saveFailed"));
     } finally { setWatchSaving(false); }
   };
 
@@ -423,9 +424,9 @@ function AnalyzeContent() {
           stock => dispatch(reqToggleLike({ ticker: stock.isUs ? stock.ticker : stock.name, name: stock.name, isUs: stock.isUs })).unwrap(),
         );
         addToast('success', t("saved"));
-      } catch {
-        await dispatch(reqGetMyLikes());
-        addToast('error', t("saveFailed"));
+      } catch (error) {
+        if (error !== WATCHLIST_MARKET_LIMIT) await dispatch(reqGetMyLikes());
+        addToast('error', error === WATCHLIST_MARKET_LIMIT ? t("watchlistMarketLimit") : t("saveFailed"));
       } finally { setWatchSaving(false); }
     })();
   }, [session?.user?.id, isPriceLoaded, watchStock.ticker, dispatch, addToast, t]);
