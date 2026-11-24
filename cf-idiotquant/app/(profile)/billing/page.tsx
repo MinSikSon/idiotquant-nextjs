@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import BillingCheckout from "./BillingCheckout";
 
 export const metadata: Metadata = { title: "테스트 결제" };
+export const runtime = "edge";
 
 export default async function BillingPage({ searchParams }: {
     searchParams: Promise<{ session_id?: string | string[]; canceled?: string | string[] }>;
