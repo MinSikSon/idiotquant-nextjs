@@ -20,7 +20,7 @@ test('월드컵은 선택한 기준만 적용하고 미정·거절에는 필터�
 
 test('월드컵 초안은 기존 전략·검색·직접 필터와 함께 실제 필터 엔진에 적용된다', () => {
     const existing: ScreenerFilters = {
-        country: 'KR', strategies: new Set(['custom']), mode: 'OR', q: '후보',
+        country: 'KR', strategies: new Set(['custom']), q: '후보',
         excludeHoldings: false, excludeDeficit: false, excludePreferred: false, excludeAdr: false,
         excludeHalted: false, excludeManaged: false, excludeDelisting: false,
         sectors: new Set(['소재']), markets: new Set(), maxW52Pos: 0, minTrAmt: 0,
@@ -45,9 +45,8 @@ function harness(country: 'KR' | 'US' = 'KR', hasTradingAmount = true, initialAn
     let cursor = 0;
     let tree: any;
     const applications: WorldcupFilters[] = [];
-    let manual = 0;
     const props = { initialAnswers, country, hasTradingAmount, loading: false, previewCount: () => 2,
-        onApply: (proposal: WorldcupFilters) => applications.push(proposal), onManual: () => manual++,
+        onApply: (proposal: WorldcupFilters) => applications.push(proposal),
         onSharePathChange: (path?: string) => { sharePath = path; } };
     const react = {
         useState(initial: unknown) {
@@ -77,7 +76,7 @@ function harness(country: 'KR' | 'US' = 'KR', hasTradingAmount = true, initialAn
         button.props.onClick(); render();
     };
     render();
-    return { click, props, render, applications, sharePath: () => sharePath, manual: () => manual, text: () => text(tree), buttons, textOf: text };
+    return { click, props, render, applications, sharePath: () => sharePath, text: () => text(tree), buttons, textOf: text };
 }
 
 test('선택·앞뒤 이동·다시 시작은 조건을 바꾸지 않고 마지막 적용만 필터를 갱신한다', () => {
@@ -86,9 +85,6 @@ test('선택·앞뒤 이동·다시 시작은 조건을 바꾸지 않고 마지�
     h.click('건너뛰기'); h.click('건너뛰기'); h.click('B');
     assert.equal(h.applications.length, 0);
     assert.match(h.text(), /2종목/);
-    h.click('직접 필터 설정');
-    assert.equal(h.manual(), 1);
-    assert.equal(h.applications.length, 0);
     h.click('처음부터 다시 고르기');
     for (let index = 0; index < 4; index++) h.click('A');
     assert.equal(h.applications.length, 0);

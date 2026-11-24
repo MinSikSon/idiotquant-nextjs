@@ -10,7 +10,7 @@ import { applyFilters, parseIncomeTaxBound, sortList, roeOf, grahamOk, marketOf,
 
 /** 아무것도 안 거르는 기본값. 테스트마다 한 조건씩만 켠다. */
 const none = (over: Partial<ScreenerFilters> = {}): ScreenerFilters => ({
-    strategies: new Set(), mode: "OR", q: "",
+    strategies: new Set(), q: "",
     excludeHoldings: false, excludeDeficit: false, excludePreferred: false, excludeAdr: false,
     excludeHalted: false, excludeManaged: false, excludeDelisting: false,
     sectors: new Set(), markets: new Set(),
@@ -99,7 +99,7 @@ test("적자 제외는 EPS 가 양수인 것만 남긴다 · 지주·우선주 �
     }
 });
 
-test("업종·시장은 고른 것만 남긴다 · 전략 OR 은 하나만 걸려도 남고, AND 는 전부 걸려야 남는다", () => {
+test("업종·시장은 고른 것만 남긴다 · 여러 전략은 모두 충족해야 남는다", () => {
     // ── 업종·시장은 고른 것만 남긴다
     {
         const list = [
@@ -110,7 +110,7 @@ test("업종·시장은 고른 것만 남긴다 · 전략 OR 은 하나만 걸�
         assert.deepEqual(names(applyFilters(list, none({ markets: new Set(["KOSDAQ"]) }))), ["나"]);
     }
 
-    // ── 전략 OR 은 하나만 걸려도 남고, AND 는 전부 걸려야 남는다
+    // ── 여러 전략은 모두 충족해야 남는다
     {
         // 저PBR(pbr<0.5) 과 저PER(per<10, eps>0) 둘 다 만족 / 하나만 만족
         const both = stock({ name: "둘다", pbr: 0.4, per: 8, eps: 100 });
@@ -118,8 +118,8 @@ test("업종·시장은 고른 것만 남긴다 · 전략 OR 은 하나만 걸�
         const list = [both, onlyPbr];
         const picked = new Set(["low_pbr", "low_per"]);
 
-        assert.deepEqual(names(applyFilters(list, none({ strategies: picked, mode: "OR" }))), ["둘다", "PBR만"]);
-        assert.deepEqual(names(applyFilters(list, none({ strategies: picked, mode: "AND" }))), ["둘다"]);
+        assert.deepEqual(names(applyFilters(list, none({ strategies: new Set(["low_pbr"]) }))), ["둘다", "PBR만"]);
+        assert.deepEqual(names(applyFilters(list, none({ strategies: picked }))), ["둘다"]);
     }
 });
 

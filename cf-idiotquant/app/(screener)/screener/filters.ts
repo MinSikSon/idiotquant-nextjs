@@ -73,7 +73,6 @@ const filterNameOf = (item: { eng_name?: string; name?: string }, country: "KR" 
 export interface ScreenerFilters {
     country?: "KR" | "US";
     strategies: Set<string>;
-    mode: "OR" | "AND";
     q: string;
     excludeHoldings: boolean;
     excludeDeficit: boolean;
@@ -120,10 +119,9 @@ export function applyFilters(list: Record<string, any>[], f: ScreenerFilters): R
     let out = list.filter(item => isValuationEligible(item, country));
 
     if (f.strategies.size > 0) {
-        const check = f.mode === "AND" ? "every" : "some";
         const ids = Array.from(f.strategies);
         out = out.filter(item =>
-            ids[check](stratId => {
+            ids.every(stratId => {
                 const preset = STRATEGY_PRESETS.find(p => p.id === stratId);
                 return preset?.clientFilter ? preset.clientFilter(item) : resolveStrategies(item).includes(stratId);
             })

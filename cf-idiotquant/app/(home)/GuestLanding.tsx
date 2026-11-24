@@ -7,7 +7,7 @@ import { ChevronDown } from 'lucide-react';
 import GuestWatchlist from './GuestWatchlist';
 import { useStockSearchModal } from '@/components/stock-search-provider';
 
-const HeroArt = dynamic(() => import('./HeroArt'), { ssr: false });
+const HeroCoinRain = dynamic(() => import('@/components/hero-coin-rain'), { ssr: false });
 const choice = 'service-button group flex min-w-0 flex-col items-center justify-between gap-1 px-2 pb-3 pt-1 text-center font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink md:flex-row md:justify-center md:px-3 md:py-2 md:text-left';
 const choiceArt = 'h-24 w-full object-contain motion-safe:transition-transform motion-safe:group-hover:-translate-y-1 motion-safe:group-active:translate-y-0 motion-safe:group-active:scale-95 md:h-20 md:w-20';
 const choiceDescription = 'hidden break-keep text-sm font-normal leading-snug md:block';
@@ -17,7 +17,7 @@ export default function GuestLanding() {
   return <div className="mx-auto w-full max-w-5xl space-y-5 px-4 py-3 text-neutral-900 dark:text-neutral-100 sm:space-y-8 sm:px-6 sm:py-8">
     <section aria-labelledby="home-title" className="relative isolate rounded-2xl bg-[#faf4e9] p-4 dark:bg-[#26221f] md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.65fr)] md:items-center md:gap-5 md:p-5">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-2xl [mask-image:linear-gradient(to_bottom,transparent_2.25rem,black_4rem,black_90%,transparent)]">
-        <HeroArt />
+        <HeroCoinRain />
       </div>
       <h1 id="home-title" className="text-balance break-keep text-center text-2xl font-semibold leading-tight tracking-tight">종목을 어떻게 찾을까요?</h1>
       <div className="mt-3 grid grid-cols-2 gap-3 md:mt-0 md:gap-4">

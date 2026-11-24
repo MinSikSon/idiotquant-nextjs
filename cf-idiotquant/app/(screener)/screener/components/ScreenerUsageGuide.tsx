@@ -1,7 +1,7 @@
 const topics = [
     {
         title: "전략 조합",
-        description: "전략을 여러 개 고르면 OR는 하나 이상, AND는 모두 충족하는 종목을 찾습니다.",
+        description: "전략을 여러 개 고르면 선택한 전략을 모두 충족하는 종목을 찾습니다.",
     },
     {
         title: "전략과 필터",

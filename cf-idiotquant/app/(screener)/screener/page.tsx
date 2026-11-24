@@ -2,14 +2,14 @@
 
 export const dynamic = 'force-dynamic';
 
+import * as Popover from "@radix-ui/react-popover";
 import * as Tabs from "@radix-ui/react-tabs";
 import Link from "next/link";
 
 import { ComparisonCheckbox, type ComparisonChoice } from "@/components/comparison-checkbox";
 import { addEtfHoldings, ETF_HOLDING_LIMIT } from "@/lib/features/communityEtfs/draft";
 import { analysisHref, comparisonHref, matchesWatchStock, PENDING_WATCH_KEY, toggleComparisonSelection } from "@/lib/investmentFlow";
-import { SecondarySection } from "@/components/secondary-section";
-import { useEffect, useMemo, useState, useCallback, Suspense, memo } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef, Suspense, memo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useViewAsUser } from "@/lib/viewAsUser";
@@ -26,17 +26,17 @@ import { cn } from "@/lib/utils";
 import { PageHeader, PAGE_ACTION_CLS, PAGE_PRIMARY_ACTION_CLS } from "@/components/pageHeader";
 import { buildGroups, defaultOpenGroups, GroupedResults, type Group, type GroupMode } from "./components/GroupedResults";
 import { ResultSummary, TermStrip } from "./components/ResultSummary";
-import { StockGridCard } from "./components/StockGridCard";
 import { StockRatioRow } from "./components/StockRatioRow";
 import { StockResult, type StockResultActions } from "./components/StockResult";
 import { FilterWorldcup } from "./components/FilterWorldcup";
 import { expandWorldcupParams, readWorldcupCode, worldcupCode, worldcupFilters, type WorldcupAnswer } from "./worldcup";
 import ScreenerUsageGuide from "./components/ScreenerUsageGuide";
+import { ScreenerHeroCoins } from "./components/ScreenerHeroCoins";
 import { LiquidityBadge, w52Position } from "./components/LiquidityBadge";
 import { scanTradingAmount } from "@/lib/utils/scanFinancials";
 import { isUsTicker } from "@/lib/utils/stockSearchInput";
 import ScanRefreshNotice from "@/components/scan-refresh-notice";
-import { STRATEGY_LABEL, STRATEGY_BADGE, STRATEGY_PRESETS_CLIENT as STRATEGY_PRESETS, MKTCAP_PRESETS, STRATEGY_ACTIVE_CLS, STRATEGY_HEX } from "@/lib/constants/strategies";
+import { STRATEGY_LABEL, STRATEGY_BADGE, STRATEGY_PRESETS_CLIENT as STRATEGY_PRESETS, MKTCAP_PRESETS, STRATEGY_HEX } from "@/lib/constants/strategies";
 import {
     safeNum, parseIncomeTaxBound, isPreferredStock, marketOf, sectorOf, roeOf, grahamOk,
     resolveStrategies, primaryStrategyOf,
@@ -57,7 +57,7 @@ import * as Tooltip from "@radix-ui/react-tooltip";
 // 상수 & 타입
 // =========================================================================
 const DAILY_PAGE_SIZE = 30;
-const TABLE_COLUMNS = "grid-cols-[minmax(0,1fr)_3.375rem_3.5rem_3.25rem_44px] min-[360px]:grid-cols-[minmax(0,1fr)_3.75rem_3.5rem_3.25rem_44px] sm:grid-cols-[minmax(0,1fr)_4.25rem_3.25rem_3.25rem_44px] lg:grid-cols-[minmax(160px,2fr)_minmax(110px,1.25fr)_minmax(88px,1fr)_minmax(68px,1fr)_minmax(68px,1fr)_minmax(68px,1fr)_minmax(112px,1fr)]";
+const TABLE_COLUMNS = "grid-cols-[minmax(0,1fr)_3.375rem_3.5rem_3.25rem_44px] min-[360px]:grid-cols-[minmax(0,1fr)_3.75rem_3.5rem_3.25rem_44px] sm:grid-cols-[minmax(0,1fr)_4.25rem_3.25rem_3.25rem_44px] lg:grid-cols-[minmax(160px,2fr)_minmax(110px,1.25fr)_minmax(88px,1fr)_minmax(68px,1fr)_minmax(68px,1fr)_minmax(68px,1fr)_9.5rem]";
 
 // 비로그인에게 보여 주는 줄 수. 검색엔진과 처음 온 사람에게 "무엇이 나오는 화면인지"는
 // 보여 주되, 목록 전체는 계정이 있어야 본다.
@@ -174,22 +174,16 @@ function MixRow({ label, mix }: { label: string; mix: Mix }) {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 
 // 단일 전략 선택 시 강조할 지표 컬럼 + 기준 충족 판정. 키는 전략의 기준이 되는 컬럼.
-// table: 표 · card: 카드 · ratio: 자산·부채·시총 비율 비교
-type ViewMode = 'table' | 'card' | 'ratio';
+// table: 표 · ratio: 자산·부채·시총 비율 비교
+type ViewMode = 'table' | 'ratio';
 const VIEW_MODE_TITLE: Record<ViewMode, string> = {
     table: "표로 보기",
-    card: "카드로 보기",
     ratio: "비율로 보기 — 유동자산·부채총계·시가총액을 같은 축에서 비교",
 };
-// 한눈에 여러 종목을 비교할 수 있는 카드가 첫 방문의 기본 보기다.
-// 자산 비율 보기는 필요할 때 선택하는 상세 보기로 남긴다.
-const DEFAULT_VIEW: ViewMode = 'card';
-// 묶었을 때 카드·비율 뷰의 그룹 본문 — 격자 뷰라 격자 클래스를 그대로 넘긴다.
-const GRID_BODY = cn('grid grid-cols-1 sm:grid-cols-2 gap-3 p-3', styles.stockGrid);
-const CARD_GRID_BODY = cn('grid grid-cols-1 sm:grid-cols-2 gap-1.5 p-1.5 sm:gap-3 sm:p-3', styles.stockGrid);
-// URL·localStorage 어디서 읽든 같은 규칙으로 해석한다. 한 곳만 고치면 복원 경로에서 어긋난다.
-const parseViewMode = (v: string | null | undefined): ViewMode =>
-    (['table', 'card', 'ratio'] as ViewMode[]).includes(v as ViewMode) ? (v as ViewMode) : DEFAULT_VIEW;
+const DEFAULT_VIEW: ViewMode = 'table';
+// 예전 카드 보기 링크와 저장값도 목록으로 열리도록 한다.
+const parseViewMode = (value: string | null | undefined): ViewMode =>
+    value === 'ratio' ? value : DEFAULT_VIEW;
 type MetricKey = "ncav_ratio" | "pbr" | "per" | "roe";
 type HighlightMap = Partial<Record<MetricKey, (i: any) => boolean>>;
 // 상세 분석 화면의 S-RIM 카드는 ROE를 당기순이익÷자본총계(연결 전체)로 계산해 값이 다르다.
@@ -237,34 +231,18 @@ const TOOLTIP_CLS =
     "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95";
 
 // =========================================================================
-// 전략 격자 셀 — 이름 위 / 종목 수 아래. 폭이 고정이라 개수가 같은 열에 선다.
-// =========================================================================
-function StrategyCell({ label, count, active, activeCls, title, onClick, compact = false }: {
+// 전략 이름과 해당 종목 수를 함께 보여준다.
+function StrategyCell({ label, count, active, title, onClick }: {
     label: string;
     count: number;
     active: boolean;
-    activeCls: string;
     title?: string;
     onClick: () => void;
-    compact?: boolean;
 }) {
     return (
-        <button
-            onClick={onClick}
-            title={title}
-            aria-pressed={active}
-            className={cn(
-                "flex min-h-11 items-center justify-center gap-1 rounded-lg border text-center leading-none transition-colors",
-                compact ? "w-[82px] shrink-0 py-2 md:w-auto md:flex-col md:gap-0.5 md:py-1.5" : "flex-col py-1.5",
-                active
-                    ? activeCls
-                    : "border-neutral-200 dark:border-surface-dark-border text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-surface-dark-card"
-            )}
-        >
-            <span className={cn("text-sm font-semibold truncate max-w-full px-1", active && "underline decoration-2 underline-offset-4")}>{label}</span>
-            <span className={cn("text-xs font-bold font-mono tabular-nums", active ? "opacity-75" : "text-neutral-500", compact && "md:mt-0.5")}>
-                {count}
-            </span>
+        <button type="button" onClick={onClick} title={title} aria-pressed={active} className={styles.strategyOption}>
+            <span>{label}</span>
+            <span className={styles.strategyCount}>{count.toLocaleString('ko-KR')}</span>
         </button>
     );
 }
@@ -291,8 +269,8 @@ function SortableHeader({ label, sortKey: key, currentKey, order, onToggle, rele
             aria-label={active ? `${label}, ${ascending ? "오름차순" : "내림차순"} 정렬 중` : `${label} 정렬`}
             onClick={() => onToggle(key)}
             className={cn(
-                "flex min-h-11 w-full items-center gap-0.5 whitespace-nowrap text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-ink",
-                key !== "ticker" && "justify-end",
+                styles.sortControl,
+                key !== "ticker" && styles.metricSort,
                 active ? "text-brand-ink" : "text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-200",
                 relevant && !active && "text-emerald-600/90 dark:text-emerald-400/90"
             )}
@@ -324,7 +302,7 @@ const TableRow = memo(function TableRow({ item, actions, isLiked, onToggleLike, 
             name={item.name}
             actions={actions}
             comparison={comparison}
-            className={cn("group grid min-h-[48px] gap-0.5 min-[360px]:gap-1 lg:gap-4 items-center px-2 py-0.5 sm:px-4 sm:py-2.5 lg:px-6 lg:py-3 hover:bg-brand-light/40 dark:hover:bg-surface-dark-card/50 cursor-pointer transition-colors border-b border-neutral-100 dark:border-border-subtle-dark last:border-0", TABLE_COLUMNS)}
+            className={cn("group grid min-h-[48px] gap-0.5 min-[360px]:gap-1 lg:gap-4 items-center px-2 py-0.5 sm:px-4 sm:py-2.5 lg:px-6 lg:py-0.5 hover:bg-brand-light/40 dark:hover:bg-surface-dark-card/50 cursor-pointer transition-colors border-b border-neutral-100 dark:border-border-subtle-dark last:border-0", TABLE_COLUMNS)}
         >
             <div className="min-w-0 flex items-center gap-1.5">
                 <ComparisonCheckbox choice={comparison} name={item.name} />
@@ -374,7 +352,7 @@ const TableRow = memo(function TableRow({ item, actions, isLiked, onToggleLike, 
                 </span>
             </div>
 
-            <div className="hidden lg:block text-right whitespace-nowrap">
+            <div className={cn(styles.metricCell, "hidden lg:block")}>
                 <span className={cn(
                     "text-sm font-mono tabular-nums",
                     roe > 15 ? "text-emerald-600 dark:text-emerald-400 font-bold" :
@@ -385,10 +363,12 @@ const TableRow = memo(function TableRow({ item, actions, isLiked, onToggleLike, 
                 </span>
             </div>
 
-            <div className="flex justify-end items-center gap-1.5">
+            <div className="grid grid-flow-col auto-cols-max items-center justify-end gap-1.5">
                 <button
+                    type="button"
                     className={cn(
-                        "flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded transition-all",
+                        styles.tableLike,
+                        "flex h-11 w-11 items-center justify-center rounded transition-colors",
                         isLiked
                             ? "text-rose-500 dark:text-rose-400"
                             : "text-neutral-300 dark:text-neutral-600 hover:text-rose-400 dark:hover:text-rose-500"
@@ -400,7 +380,7 @@ const TableRow = memo(function TableRow({ item, actions, isLiked, onToggleLike, 
                     <Heart size={14} fill={isLiked ? "currentColor" : "none"} />
                 </button>
                 {comparison?.purpose !== "etf" && (
-                    <span aria-hidden="true" className="hidden lg:flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-canvas dark:bg-surface-dark-card group-hover:bg-neutral-200 dark:group-hover:bg-surface-dark-hover text-neutral-600 dark:text-neutral-400 text-xs font-bold whitespace-nowrap">
+                    <span aria-hidden="true" className="hidden lg:flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-surface-canvas dark:bg-surface-dark-card group-hover:bg-neutral-200 dark:group-hover:bg-surface-dark-hover text-neutral-600 dark:text-neutral-400 text-xs font-bold whitespace-nowrap">
                         종목 메뉴
                         <Ellipsis size={14} />
                     </span>
@@ -424,20 +404,14 @@ function DrawerCard({ label, remain, dashed, span2, children }: {
     label: string; remain?: number; dashed?: boolean; span2?: boolean; children: React.ReactNode;
 }) {
     return (
-        <div className={cn(
-            "rounded-xl px-4 py-3.5 bg-white dark:bg-surface-dark-card",
-            dashed
-                ? "border border-dashed border-brand-light-hover dark:border-brand/60"
-                : "border border-brand-light dark:border-brand/40",
-            span2 && "sm:col-span-2"
-        )}>
-            <div className="flex items-center justify-between gap-2 mb-2.5">
-                <span className="text-xs font-extrabold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">{label}</span>
-                {remain !== undefined && (
-                    <span className="text-xs font-bold font-mono text-brand-ink tabular-nums shrink-0">→ {remain}개</span>
-                )}
+        <div className={cn(styles.drawerCard, dashed && styles.drawerSaved, span2 && "sm:col-span-2")}>
+            <div className={styles.drawerCardHeading}>
+                <h3>{label}</h3>
+                {remain !== undefined && <span className="tabular-nums">{remain.toLocaleString('ko-KR')}개</span>}
             </div>
-            {children}
+            <div className={styles.drawerCardBody}>
+                {children}
+            </div>
         </div>
     );
 }
@@ -450,14 +424,9 @@ function DrawerChip({ active, onClick, children, title }: { active: boolean; onC
             aria-pressed={active}
             onClick={onClick}
             title={title}
-            className={cn(
-                "inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold border transition-colors",
-                active
-                    ? "bg-brand border-brand text-white"
-                    : "bg-surface-canvas dark:bg-surface-dark border-neutral-200 dark:border-surface-dark-border text-neutral-500 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600"
-            )}
+            className={styles.drawerChip}
         >
-            {active && <Check size={12} aria-hidden="true" />}
+            <Check size={12} aria-hidden="true" className={active ? undefined : "invisible"} />
             {children}
         </button>
     );
@@ -468,26 +437,19 @@ function DrawerCheck({ checked, onChange, label, delta }: {
     checked: boolean; onChange: (v: boolean) => void; label: string; delta: number;
 }) {
     return (
-        <label className="flex items-center gap-2.5 cursor-pointer select-none py-0.5 rounded focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-brand-ink">
-            <span
-                className={cn(
-                    "w-[15px] h-[15px] rounded-md flex items-center justify-center shrink-0 transition-colors",
-                    checked
-                        ? "bg-brand"
-                        : "bg-white dark:bg-surface-dark border-[1.5px] border-neutral-300 dark:border-surface-dark-elevated"
-                )}
-            >
-                {checked && <Check size={10} className="text-white" strokeWidth={3.5} />}
+        <label className={styles.drawerCheck} data-checked={checked}>
+            <span className={styles.drawerCheckIcon} aria-hidden="true">
+                {checked && <Check size={11} strokeWidth={3} />}
             </span>
             <input type="checkbox" className="sr-only" checked={checked} onChange={e => onChange(e.target.checked)} />
             <span className={cn(
-                "flex-1 text-xs",
-                checked ? "font-semibold text-neutral-900 dark:text-neutral-100" : "font-medium text-neutral-500 dark:text-neutral-400"
+                "flex-1 text-sm",
+                checked ? "font-semibold" : "font-medium"
             )}>
                 {label}
             </span>
             {delta > 0 && (
-                <span className="text-xs font-mono text-neutral-400 tabular-nums shrink-0">−{delta}</span>
+                <span className={styles.drawerDelta}>−{delta}</span>
             )}
         </label>
     );
@@ -555,9 +517,7 @@ function ScreenerContent() {
         const src = urlS ?? (Array.isArray(saved.strategies) ? saved.strategies.join(',') : '');
         return new Set((src || '').split(',').filter(id => STRATEGY_PRESETS.some(p => p.id === id)));
     });
-    const [filterMode, setFilterMode] = useState<'OR' | 'AND'>(() =>
-        (searchParams.get('mode') ?? saved.mode) === 'AND' ? 'AND' : 'OR'
-    );
+    const [strategiesOpen, setStrategiesOpen] = useState(false);
     const [showGuide, setShowGuide] = useState(false);
     const [etfCreationMode, setEtfCreationMode] = useState(() => rawSearchParams.get('createEtf') === '1');
     const [etfSelectionError, setEtfSelectionError] = useState('');
@@ -601,6 +561,10 @@ function ScreenerContent() {
     const [minTrAmt, setMinTrAmt] = useState<number>(() => initNum('mintr', 'mintr', country === 'US' ? US_TR_AMT_PRESETS : KR_TR_AMT_PRESETS));
     const [filterOpen, setFilterOpen] = useState(false);
     const [filterMethod, setFilterMethod] = useState<'manual' | 'worldcup'>(sharedWorldcup && !fromSharedScreen ? 'worldcup' : 'manual');
+    const filterButton = useRef<HTMLButtonElement>(null);
+    const worldcupBackButton = useRef<HTMLButtonElement>(null);
+    const previousFilterMethod = useRef(filterMethod);
+
     const [likedOnlyRequested, setShowLikedOnly] = useState(() =>
         (searchParams.get('filter') ?? saved.filter) === 'liked'
     );
@@ -700,8 +664,6 @@ function ScreenerContent() {
         else if (country === 'US') params.set('country', 'US');
         if (activeStrategyIds.size > 0)
             params.set('strategies', Array.from(activeStrategyIds).join(','));
-        if (filterMode !== 'OR')
-            params.set('mode', filterMode);
         if (sortKey !== DEFAULT_SORT)
             params.set('sort', sortKey);
         if (sortOrder !== 'desc')
@@ -737,7 +699,7 @@ function ScreenerContent() {
         if (fromSharedScreen) params.set('from', 'share');
         if (etfCreationMode) params.set('createEtf', '1');
         return params.toString();
-    }, [worldcupAnswers, country, activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludePreferred, excludeAdr, excludeChinaSmall, excludeLowLiquidity, excludeCashBurn, excludeHalted, excludeManaged, excludeDelisting, sectors, markets, maxW52Pos, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav, minIncomeTax, maxIncomeTax, showLikedOnly, groupMode, viewMode, fromSharedScreen, etfCreationMode]);
+    }, [worldcupAnswers, country, activeStrategyIds, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludePreferred, excludeAdr, excludeChinaSmall, excludeLowLiquidity, excludeCashBurn, excludeHalted, excludeManaged, excludeDelisting, sectors, markets, maxW52Pos, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav, minIncomeTax, maxIncomeTax, showLikedOnly, groupMode, viewMode, fromSharedScreen, etfCreationMode]);
 
     // 필터 상태 → URL 동기화 + localStorage 저장 (페이지 이동 후 재진입 시에도 전체 필터 유지)
     useEffect(() => {
@@ -749,7 +711,6 @@ function ScreenerContent() {
         const snapshot: Record<string, any> = {};
         if (country === 'US') snapshot.country = country;
         if (activeStrategyIds.size > 0) snapshot.strategies = Array.from(activeStrategyIds);
-        if (filterMode !== 'OR') snapshot.mode = filterMode;
         if (sortKey !== DEFAULT_SORT) snapshot.sort = sortKey;
         if (sortOrder !== 'desc') snapshot.order = sortOrder;
         const excludeArr = [
@@ -790,7 +751,7 @@ function ScreenerContent() {
         localStorage.removeItem('screener:filterMode');
         }, 300);
         return () => clearTimeout(debounce);
-    }, [queryString, country, activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludePreferred, excludeAdr, excludeChinaSmall, excludeLowLiquidity, excludeCashBurn, excludeHalted, excludeManaged, excludeDelisting, sectors, markets, maxW52Pos, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav, minIncomeTax, maxIncomeTax, showLikedOnly, groupMode, viewMode, router]);
+    }, [queryString, country, activeStrategyIds, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludePreferred, excludeAdr, excludeChinaSmall, excludeLowLiquidity, excludeCashBurn, excludeHalted, excludeManaged, excludeDelisting, sectors, markets, maxW52Pos, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav, minIncomeTax, maxIncomeTax, showLikedOnly, groupMode, viewMode, router]);
 
     const handleRefresh = useCallback(() => {
         if (showLikedOnly) void dispatch(reqGetMyLikes());
@@ -819,13 +780,11 @@ function ScreenerContent() {
 
     const clearStrategies = useCallback(() => {
         setActiveStrategyIds(new Set());
-        setFilterMode('OR');
         setDisplayCount(DAILY_PAGE_SIZE);
     }, []);
 
     const resetAllFilters = useCallback(() => {
         setActiveStrategyIds(new Set());
-        setFilterMode('OR');
         setSortKey('ncav_ratio');
         setSortOrder('desc');
         setExcludeHoldings(false);
@@ -882,12 +841,11 @@ function ScreenerContent() {
     const filters = useMemo<ScreenerFilters>(() => ({
         country,
         strategies: activeStrategyIds,
-        mode: filterMode,
         q: '',
         excludeHoldings, excludeDeficit, excludePreferred, excludeAdr: country === 'US' && excludeAdr, excludeChinaSmall, excludeLowLiquidity, excludeCashBurn, excludeHalted, excludeManaged, excludeDelisting,
         sectors, markets, maxW52Pos, minTrAmt,
         minMarketCap, maxPbr, maxPer, minRoe, minNcav, minIncomeTax, maxIncomeTax,
-    }), [country, activeStrategyIds, filterMode, excludeHoldings, excludeDeficit, excludePreferred, excludeAdr, excludeChinaSmall, excludeLowLiquidity, excludeCashBurn, excludeHalted, excludeManaged, excludeDelisting, sectors, markets, maxW52Pos, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav, minIncomeTax, maxIncomeTax]);
+    }), [country, activeStrategyIds, excludeHoldings, excludeDeficit, excludePreferred, excludeAdr, excludeChinaSmall, excludeLowLiquidity, excludeCashBurn, excludeHalted, excludeManaged, excludeDelisting, sectors, markets, maxW52Pos, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav, minIncomeTax, maxIncomeTax]);
 
     const [usEnglishNames, setUsEnglishNames] = useState<Map<string, string> | null>(null);
     useEffect(() => {
@@ -981,18 +939,19 @@ function ScreenerContent() {
         [accessibleList]
     );
 
-    // 조건 깔때기 — 어느 단계에서 결과가 확 줄었는지 보여준다
+    // 상세 필터가 열려 있을 때 단계별 남은 종목 수를 계산한다.
     const funnel = useMemo(() => {
+        if (!filterOpen) return [];
         const none: ScreenerFilters = {
             country,
-            strategies: new Set(), mode: 'OR', q: '',
+            strategies: new Set(), q: '',
             excludeHoldings: false, excludeDeficit: false, excludePreferred: false, excludeAdr: false, excludeChinaSmall: false, excludeLowLiquidity: false, excludeCashBurn: false, excludeHalted: false, excludeManaged: false, excludeDelisting: false,
             sectors: new Set<string>(), markets: new Set<string>(), maxW52Pos: 0, minTrAmt: 0,
             minMarketCap: 0, maxPbr: 0, maxPer: 0, minRoe: 0, minNcav: 0,
         };
         const steps: { label: string; patch: Partial<ScreenerFilters> }[] = [
             { label: '전체',      patch: {} },
-            { label: '전략',      patch: { strategies: filters.strategies, mode: filters.mode } },
+            { label: '전략',      patch: { strategies: filters.strategies } },
             { label: '가치 지표', patch: { minMarketCap: filters.minMarketCap, maxPbr: filters.maxPbr, maxPer: filters.maxPer, minNcav: filters.minNcav } },
             { label: '수익·제외', patch: { minRoe: filters.minRoe, minIncomeTax: filters.minIncomeTax, maxIncomeTax: filters.maxIncomeTax, excludeDeficit: filters.excludeDeficit, excludeHoldings: filters.excludeHoldings, excludePreferred: filters.excludePreferred, excludeAdr: filters.excludeAdr, excludeChinaSmall: filters.excludeChinaSmall, excludeLowLiquidity: filters.excludeLowLiquidity, excludeCashBurn: filters.excludeCashBurn } },
             { label: '시장·업종', patch: { markets: filters.markets, sectors: filters.sectors } },
@@ -1100,7 +1059,7 @@ function ScreenerContent() {
 
     const activeFilterCount = [excludeHoldings, excludeDeficit, excludePreferred, country === 'US' && excludeAdr, excludeChinaSmall, excludeLowLiquidity, excludeCashBurn, excludeHalted, excludeManaged, excludeDelisting, sectors.size > 0, markets.size > 0, maxW52Pos > 0, minTrAmt > 0, minMarketCap > 0, maxPbr > 0, maxPer > 0, minRoe > 0, minNcav > 0, minIncomeTax !== null, maxIncomeTax !== null].filter(Boolean).length;
     const isAllActive = activeStrategyIds.size === 0;
-    const hasActiveFilters = activeStrategyIds.size > 0 || excludeHoldings || excludeDeficit || excludePreferred || (country === 'US' && excludeAdr) || excludeChinaSmall || excludeLowLiquidity || excludeCashBurn || excludeHalted || excludeManaged || excludeDelisting || sectors.size > 0 || markets.size > 0 || maxW52Pos > 0 || minTrAmt > 0 || minMarketCap > 0 || maxPbr > 0 || maxPer > 0 || minRoe > 0 || minNcav > 0 || minIncomeTax !== null || maxIncomeTax !== null || sortKey !== DEFAULT_SORT || sortOrder !== 'desc' || showLikedOnly;
+    const hasActiveNonStrategyFilters = excludeHoldings || excludeDeficit || excludePreferred || (country === 'US' && excludeAdr) || excludeChinaSmall || excludeLowLiquidity || excludeCashBurn || excludeHalted || excludeManaged || excludeDelisting || sectors.size > 0 || markets.size > 0 || maxW52Pos > 0 || minTrAmt > 0 || minMarketCap > 0 || maxPbr > 0 || maxPer > 0 || minRoe > 0 || minNcav > 0 || minIncomeTax !== null || maxIncomeTax !== null || sortKey !== DEFAULT_SORT || sortOrder !== 'desc' || showLikedOnly;
     const isFiltered = !showLikedOnly && filteredList.length !== ncavDailyList.list.length;
     // 업종 묶기는 응답에 sector/industry 가 있을 때만. 없으면 세그먼트에서 비활성.
     const hasSectorData = ncavDailyList.list.some((i: any) => i.sector ?? i.industry);
@@ -1132,12 +1091,6 @@ function ScreenerContent() {
         }
         return [...counts.entries()].sort((a, b) => b[1] - a[1]);
     }, [baseList]);
-
-    // 단일 전략 선택 시에만 기준 배너를 띄운다 — 여러 전략을 겹치면 "이 값이 왜 초록인지"를
-    // 한 줄로 설명할 수 없어 오히려 오해를 만든다.
-    const bannerPreset = activeStrategyIds.size === 1
-        ? STRATEGY_PRESETS.find(p => p.id === Array.from(activeStrategyIds)[0]) ?? null
-        : null;
 
     // 활성 조건에 걸린 컬럼은 초록 pill — 전략 기준이든 상세 필터든 규칙을 하나로 통일한다.
     const metricHighlight = useMemo<HighlightMap | null>(() => {
@@ -1212,7 +1165,6 @@ function ScreenerContent() {
         setWorldcupAnswers(readWorldcupCode(p.get('w'))?.answers ?? []);
         setCountry(p.get('country') === 'US' ? 'US' : 'KR');
         setActiveStrategyIds(new Set((p.get('strategies') ?? '').split(',').filter(id => STRATEGY_PRESETS.some(s => s.id === id))));
-        setFilterMode(p.get('mode') === 'AND' ? 'AND' : 'OR');
         setSortKey(VALID_SORT_KEYS.includes(p.get('sort') as DiscoverySortKey) ? p.get('sort') as DiscoverySortKey : DEFAULT_SORT);
         setSortOrder(p.get('order') === 'asc' ? 'asc' : 'desc');
         const ex = p.get('exclude')?.split(',') ?? [];
@@ -1251,6 +1203,34 @@ function ScreenerContent() {
         setComparisonSelection({ country, tickers: [] });
     };
 
+    useEffect(() => {
+        if (previousFilterMethod.current === filterMethod) return;
+        previousFilterMethod.current = filterMethod;
+        (filterMethod === 'worldcup' ? worldcupBackButton : filterButton).current?.focus();
+    }, [filterMethod]);
+
+    const changeMarket = (value: 'KR' | 'US') => {
+        if (country === value) return;
+        setCountry(value);
+        setEtfSelectionError('');
+        setWorldcupAnswers([]);
+        setSelectedDate("latest");
+        setAvailableDates([]);
+        setWeeklyPeriods([]);
+        setMarkets(new Set());
+        setSectors(new Set());
+        // 두 시장의 시가총액·거래대금 입력 단위가 달라 이전 값을 옮길 수 없다.
+        setMinMarketCap(0);
+        setMinTrAmt(0);
+        setMinIncomeTax(null); setMaxIncomeTax(null);
+        setExcludeAdr(false); setExcludeChinaSmall(false); setExcludeLowLiquidity(false); setExcludeCashBurn(false);
+        setExcludeHalted(false);
+        setExcludeManaged(false);
+        setExcludeDelisting(false);
+        setShowLikedOnly(false);
+        setDisplayCount(DAILY_PAGE_SIZE);
+    };
+
     return (
         <Tooltip.Provider delayDuration={300}>
         <div id="screener-page" className={cn(styles.page, "landing-style-page min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas text-neutral-900 dark:text-neutral-100")}>
@@ -1261,12 +1241,14 @@ function ScreenerContent() {
                 mobileTitleInNavigation={!showLikedOnly}
                 mobileCompact
                 mobileTitleOnScroll
+                compactMetaOnScrollOnly
+                captureInMenu
                 compactMeta={<span className="text-xs">
                     {country === 'KR' ? '국내' : '미국'} · {isLoading
                         ? '불러오는 중…'
                         : resultsFailed
                             ? '조회 실패'
-                            : `${matchedTotal}종목`}
+                            : `${matchedTotal.toLocaleString('ko-KR')}종목`}
                 </span>}
                 meta={(
                     isLoading ? (
@@ -1306,44 +1288,11 @@ function ScreenerContent() {
                         <Plus size={16} aria-hidden="true" className="min-[480px]:hidden" />
                         <span className="max-[479px]:sr-only">초안에 담기{compareTickers.length > 0 && ` (${compareTickers.length})`}</span>
                     </button>
-                    : <button onClick={handleRefresh} disabled={isLoading || isRefreshing} className={PAGE_ACTION_CLS} title="목록 새로고침" aria-label="목록 새로고침">
-                        <RefreshCw size={13} className={isLoading || isRefreshing ? "animate-spin" : ""} />
-                        <span className="hidden sm:inline">새로고침</span>
+                    : <button type="button" data-screener-refresh onClick={handleRefresh} disabled={isLoading || isRefreshing} className={PAGE_ACTION_CLS} title="목록 새로고침" aria-label="목록 새로고침">
+                        <RefreshCw size={16} aria-hidden="true" className={isLoading || isRefreshing ? "animate-spin" : ""} />
+                        <span className="hidden sm:max-md:inline">새로고침</span>
                     </button>}
 
-                tabs={
-                    <div className={styles.marketTabs} role="group" aria-label="발굴 시장">
-                        {([['KR', '국내'], ['US', '미국']] as const).map(([value, label]) => (
-                        <button
-                            key={value}
-                            type="button"
-                            aria-pressed={country === value}
-                            onClick={() => {
-                                if (country === value) return;
-                                setCountry(value);
-                                setEtfSelectionError('');
-                                setWorldcupAnswers([]);
-                                setSelectedDate("latest");
-                                setAvailableDates([]);
-                                setWeeklyPeriods([]);
-                                setMarkets(new Set());
-                                setSectors(new Set());
-                                // 두 시장의 시가총액·거래대금 입력 단위가 달라 이전 값을 옮길 수 없다.
-                                setMinMarketCap(0);
-                                setMinTrAmt(0);
-                                setMinIncomeTax(null); setMaxIncomeTax(null);
-                                setExcludeAdr(false); setExcludeChinaSmall(false); setExcludeLowLiquidity(false); setExcludeCashBurn(false);
-                                setExcludeHalted(false);
-                                setExcludeManaged(false);
-                                setExcludeDelisting(false);
-                                setShowLikedOnly(false);
-                                setDisplayCount(DAILY_PAGE_SIZE);
-                            }}
-                            className={styles.tab}
-                        >{label}</button>
-                        ))}
-                    </div>
-                }
             />
 
             {etfCreationMode && <div className="service-container flex flex-wrap items-center justify-between gap-x-3">
@@ -1396,133 +1345,149 @@ function ScreenerContent() {
                 </div>
             </div>}
 
-            <div className="bg-white dark:bg-surface-dark-card">
+            <div className="service-container pt-2 md:pt-5">
+                <section aria-label="발굴 현황" className={styles.overview}>
+                    <div className={styles.overviewIntro}>
+                        <h2>{etfCreationMode ? 'ETF 종목 고르기' : showLikedOnly ? '내 관심 종목' : '종목 발굴'}</h2>
+                        <p>나만의 기준으로 종목을 찾고,<br />투자 지표를 한눈에 비교하세요.</p>
+                        <div className={styles.overviewArt} aria-hidden="true">
+                            <ScreenerHeroCoins className={styles.overviewCoins} />
+                        </div>
+                    </div>
+                    <div className={styles.overviewMetrics}>
+                        <div className={styles.overviewMetric}>
+                            <Popover.Root>
+                                <Popover.Trigger id="screener-market" className={styles.marketTrigger}>
+                                    <span className={styles.marketLabel}>선택 시장</span>
+                                    <span className={styles.marketValue}>{country === 'KR' ? '국내' : '미국'}</span>
+                                    <ChevronDown aria-hidden="true" size={16} className={styles.marketChevron} />
+                                </Popover.Trigger>
+                                <Popover.Portal>
+                                    <Popover.Content aria-label="시장 선택" align="end" sideOffset={6} collisionPadding={8} className={styles.marketMenu}>
+                                        {([['KR', '국내'], ['US', '미국']] as const).map(([value, label]) => (
+                                            <Popover.Close key={value} type="button" aria-pressed={country === value}
+                                                className={styles.marketOption} onClick={() => changeMarket(value)}>
+                                                {label}
+                                                {country === value && <Check size={16} aria-hidden="true" />}
+                                            </Popover.Close>
+                                        ))}
+                                    </Popover.Content>
+                                </Popover.Portal>
+                            </Popover.Root>
+                        </div>
+                        <div className={styles.overviewMetric}>
+                            <span>조건 충족</span>
+                            <strong className="tabular-nums">{isLoading ? '—' : resultsFailed ? '—' : matchedTotal.toLocaleString('ko-KR')} <small>{isLoading ? '조회 중' : resultsFailed ? '조회 실패' : '종목'}</small></strong>
+                        </div>
+                        <div className={styles.overviewMetric}>
+                            <span>상세 조건</span>
+                            <strong className="tabular-nums">{activeFilterCount}<small>개</small></strong>
+                        </div>
+                        <div className={styles.overviewMetric}>
+                            <span>데이터 기준</span>
+                            <strong className={styles.overviewDate}>{isLoading ? '조회 중' : resultsFailed ? '조회 실패' : showLikedOnly ? '해당 없음' : formattedDate || '확인 불가'}</strong>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <div id="screener-worldcup" className={styles.worldcupSection} hidden={filterMethod !== 'worldcup'}>
                 <div className="service-container">
-                    <div role="group" aria-label="필터 설정 방식" className={styles.methodTabs}>
-                        {([['worldcup', '이상형 월드컵'], ['manual', '직접 필터 설정']] as const).map(([method, label]) => <button
-                            key={method} type="button" aria-pressed={filterMethod === method}
-                            onClick={() => { setFilterMethod(method); setFilterOpen(false); }}
-                            className={styles.tab}
-                        >{label}</button>)}
-                    </div>
-                    <div className={filterMethod === 'worldcup' ? undefined : 'hidden'}>
-                        <FilterWorldcup key={`${country}:${worldcupAnswers.join()}`} country={country} initialAnswers={worldcupAnswers} hasTradingAmount={hasTrAmtData} loading={scanLoading}
-                            previewCount={proposal => applyFilters(baseList, { ...filters, ...proposal }).length}
-                            onManual={() => setFilterMethod('manual')}
-                            onSharePathChange={setWorldcupSharePath}
-                            onApply={(proposal, answers) => {
-                                setWorldcupAnswers(answers);
-                                setExcludeDeficit(proposal.excludeDeficit); setMaxPer(proposal.maxPer);
-                                setMaxPbr(proposal.maxPbr); setMinTrAmt(proposal.minTrAmt);
-                                setDisplayCount(DAILY_PAGE_SIZE); setFilterOpen(false); setFilterMethod('manual');
-                            }} />
-                    </div>
+                    <button
+                        type="button"
+                        ref={worldcupBackButton}
+                        className={styles.actionQuiet}
+                        onClick={() => setFilterMethod('manual')}
+                    >
+                        직접 필터로 돌아가기
+                    </button>
+                    <FilterWorldcup key={`${country}:${worldcupAnswers.join()}`} country={country} initialAnswers={worldcupAnswers} hasTradingAmount={hasTrAmtData} loading={scanLoading}
+                        previewCount={proposal => applyFilters(baseList, { ...filters, ...proposal }).length}
+                        onSharePathChange={setWorldcupSharePath}
+                        onApply={(proposal, answers) => {
+                            setWorldcupAnswers(answers);
+                            setExcludeDeficit(proposal.excludeDeficit); setMaxPer(proposal.maxPer);
+                            setMaxPbr(proposal.maxPbr); setMinTrAmt(proposal.minTrAmt);
+                            setDisplayCount(DAILY_PAGE_SIZE); setFilterOpen(false); setFilterMethod('manual');
+                        }} />
                 </div>
             </div>
 
             {/* 검색은 상단바에, 전략 조건·정렬·필터는 본문에 둔다. */}
             <div className={cn(
-                "bg-white/95 dark:bg-surface-dark/95",
-                "border-b border-neutral-200 dark:border-surface-dark-border",
+                styles.filterSection,
                 (filterMethod === 'worldcup') && "hidden"
             )}>
                 <div className="service-container">
-
                     <div className={styles.filterToolbar}>
-                    {/* 전략 격자.
-                        칩(가변 폭)을 격자(고정 폭)로 바꾼 이유 — 칩은 이름 길이대로 폭이 달라져서
-                        종목 수가 매번 다른 위치에 서고, 전략끼리 개수를 비교할 수가 없었다.
-                        격자는 이름 위 / 개수 아래로 열을 맞추므로 훑는 것만으로 비교가 된다. */}
-                    <SecondarySection title={`전략 · ${isAllActive ? "전체" : `${activeStrategyIds.size}개 선택`}`} className={styles.strategyControl}>
-                    <div className="flex w-full items-center gap-2 py-2 sm:py-2.5">
-                        <div className="min-w-0 flex-1 flex items-center gap-2 text-left">
-                            <span className="min-w-0 truncate text-xs font-bold text-brand-ink">
-                                {isAllActive ? '전체' : `${activeStrategyIds.size}개 선택`} · {filteredList.length}종목
-                            </span>
-                        </div>
-                        {activeStrategyIds.size > 1 && (
-                            <div className="shrink-0 flex items-center rounded-full border border-neutral-200 dark:border-surface-dark-border overflow-hidden text-xs font-black sm:text-xs">
-                                <button onClick={() => setFilterMode('OR')} aria-label="선택 전략 중 하나 이상 만족" title="선택한 전략 중 하나 이상 충족" className={cn("min-h-[44px] min-w-[44px] px-2 py-1.5", filterMode === 'OR' ? "bg-brand text-white" : "text-neutral-500 dark:text-neutral-400")}>OR</button>
-                                <button onClick={() => setFilterMode('AND')} aria-label="선택 전략 모두 만족" title="선택한 전략을 모두 충족" className={cn("min-h-[44px] min-w-[44px] px-2 py-1.5 border-l border-neutral-200 dark:border-surface-dark-border", filterMode === 'AND' ? "bg-brand text-white" : "text-neutral-500 dark:text-neutral-400")}>AND</button>
+                        <button
+                            type="button"
+                            className={styles.strategyControl}
+                            aria-expanded={strategiesOpen}
+                            aria-controls="screener-strategies"
+                            onClick={() => setStrategiesOpen(open => !open)}
+                        >
+                            <span>전략 <span className={styles.strategySelection}>· {isAllActive ? '전체' : <>{activeStrategyIds.size}개<span className="max-[359px]:sr-only"> 선택</span></>}</span></span>
+                            <ChevronDown size={14} aria-hidden="true" />
+                        </button>
+
+                        <div id="screener-strategies" className={styles.strategyLane} hidden={!strategiesOpen}>
+                            <div role="group" aria-label="발굴 전략" className={styles.strategyOptions}>
+                                <StrategyCell label="전체" count={strategyCounts.all} active={isAllActive} onClick={clearStrategies} />
+                                {STRATEGY_PRESETS.map(preset => (
+                                    <StrategyCell
+                                        key={preset.id}
+                                        label={preset.label}
+                                        count={strategyCounts[preset.id] ?? 0}
+                                        active={activeStrategyIds.has(preset.id)}
+                                        title={preset.hint}
+                                        onClick={() => toggleStrategy(preset.id)}
+                                    />
+                                ))}
                             </div>
-                        )}
-                        <button
-                            onClick={() => setShowGuide(o => !o)}
-                            title="전략 설명 보기"
-                            aria-label="전략 설명 보기"
-                            className={cn("shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center p-1.5 rounded-lg transition-colors", showGuide ? "bg-brand-light text-brand-ink" : "text-neutral-400 hover:text-neutral-600")}
-                        >
-                            <Info size={14} />
-                        </button>
-                    </div>
+                            <button type="button" aria-expanded={showGuide} onClick={() => setShowGuide(open => !open)}
+                                title="전략 설명 보기" aria-label="전략 설명 보기" className={styles.strategyHelp}>
+                                <Info size={16} aria-hidden="true" />
+                            </button>
+                        </div>
 
-                    <div role="group" aria-label="발굴 전략" className="flex gap-1 overflow-x-auto no-scrollbar pb-3 md:grid md:grid-cols-5 lg:grid-cols-10">
-                        <StrategyCell
-                            label="전체" count={strategyCounts.all} active={isAllActive}
-                            activeCls={STRATEGY_ACTIVE_CLS.all} onClick={clearStrategies} compact
-                        />
-                        {STRATEGY_PRESETS.map(preset => (
-                            <StrategyCell
-                                key={preset.id}
-                                label={preset.label}
-                                count={strategyCounts[preset.id] ?? 0}
-                                active={activeStrategyIds.has(preset.id)}
-                                activeCls={STRATEGY_ACTIVE_CLS[preset.id]}
-                                title={preset.hint}
-                                onClick={() => toggleStrategy(preset.id)}
-                                compact
-                            />
-                        ))}
-                    </div>
-                    </SecondarySection>
+                        <div className={styles.filterActions}>
+                            <button
+                                type="button"
+                                ref={filterButton}
+                                aria-expanded={filterOpen}
+                                aria-controls={filterOpen ? "screener-filters" : undefined}
+                                onClick={() => setFilterOpen(o => !o)}
+                                data-active={filterOpen || activeFilterCount > 0}
+                                className={styles.filterAction}
+                            >
+                                <SlidersHorizontal size={12} />
+                                상세 필터
+                                {activeFilterCount > 0 && (
+                                    <span className={styles.filterCount}>
+                                        {activeFilterCount}
+                                    </span>
+                                )}
+                            </button>
 
-                        <button
-                            type="button"
-                            aria-expanded={filterOpen}
-                            onClick={() => setFilterOpen(o => !o)}
-                            className={cn(
-                                "flex min-h-11 items-center justify-center gap-1 rounded px-2 py-1 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-ink sm:px-3",
-                                filterOpen
-                                    ? "bg-brand text-white"
-                                    : activeFilterCount > 0
-                                        ? "bg-brand-light dark:bg-brand-muted/30 text-brand-ink"
-                                        : "text-neutral-700 hover:bg-surface-canvas dark:text-neutral-300 dark:hover:bg-surface-dark-hover"
-                            )}
-                        >
-                            <SlidersHorizontal size={12} />
-                            필터
-                            {activeFilterCount > 0 && (
-                                <span className={cn(
-                                    "px-1.5 rounded-full text-xs font-black",
-                                    filterOpen ? "bg-white/25 text-white" : "bg-brand-light dark:bg-brand-muted/60 text-brand-ink"
-                                )}>
-                                    {activeFilterCount}
-                                </span>
-                            )}
-                        </button>
-
-                        {/* 관심 종목 */}
-                        <button
-                            type="button"
-                            aria-pressed={showLikedOnly}
-                            aria-label="관심 종목만 보기"
-                            onClick={() => {
-                                if (!isLoggedIn) { requireLogin(); return; }
-                                setShowLikedOnly(o => !o); setActiveStrategyIds(new Set()); setDisplayCount(DAILY_PAGE_SIZE);
-                            }}
-                            className={cn(
-                                "flex min-h-11 items-center justify-center gap-1 rounded px-2 py-1 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-ink sm:px-3",
-                                showLikedOnly
-                                    ? "bg-brand-light text-brand-ink dark:bg-brand-muted/30"
-                                    : "text-neutral-700 hover:bg-surface-canvas dark:text-neutral-300 dark:hover:bg-surface-dark-hover"
-                            )}
-                        >
-                            <Heart size={11} fill={showLikedOnly ? "currentColor" : "none"} />
-                            관심
-                            {isLoggedIn
-                                ? <span className="text-xs tabular-nums">{likedTickers.size}</span>
-                                : <Lock size={10} aria-label="로그인 필요" />}
-                        </button>
+                            {/* 관심 종목 */}
+                            <button
+                                type="button"
+                                aria-pressed={showLikedOnly}
+                                aria-label="관심 종목만 보기"
+                                onClick={() => {
+                                    if (!isLoggedIn) { requireLogin(); return; }
+                                    setShowLikedOnly(o => !o); setActiveStrategyIds(new Set()); setDisplayCount(DAILY_PAGE_SIZE);
+                                }}
+                                className={styles.filterAction}
+                            >
+                                <Heart size={11} fill={showLikedOnly ? "currentColor" : "none"} />
+                                관심
+                                {isLoggedIn
+                                    ? <span className="text-xs tabular-nums">{likedTickers.size}</span>
+                                    : <Lock size={10} aria-label="로그인 필요" />}
+                            </button>
+                        </div>
 
                     </div>
 
@@ -1551,24 +1516,25 @@ function ScreenerContent() {
                         if (maxW52Pos > 0)   chips.push({ key: 'w52',  label: `52주 저점권 ${maxW52Pos}%`, clear: () => { setMaxW52Pos(0); setDisplayCount(DAILY_PAGE_SIZE); } });
                         if (sectors.size > 0) chips.push({ key: 'sec', label: `업종 ${sectors.size}개`, clear: () => { setSectors(new Set()); setDisplayCount(DAILY_PAGE_SIZE); } });
                         if (markets.size > 0) chips.push({ key: 'mkt', label: `시장 ${Array.from(markets).join('·')}`, clear: () => { setMarkets(new Set()); setDisplayCount(DAILY_PAGE_SIZE); } });
-                        // 칩이 없어도 걸린 조건(정렬·관심·전략)이 있으면 초기화 경로는 남겨야 한다.
-                        if (chips.length === 0 && !hasActiveFilters) return null;
+                        // 전략은 옵션의 ‘전체’에서 해제한다. 정렬·관심을 초기화하는 경로는 유지한다.
+                        if (chips.length === 0 && !hasActiveNonStrategyFilters) return null;
                         return (
                             <div className="pb-2.5 flex items-center gap-1.5 min-w-0">
                                 {chips.length > 0 && <span className="hidden sm:inline text-xs text-neutral-400 font-medium shrink-0">적용:</span>}
                                 <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-x-auto no-scrollbar">
                                 {chips.map(c => (
-                                    <span key={c.key} className="inline-flex shrink-0 items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full bg-brand-light dark:bg-brand-muted/30 border border-brand-light-hover dark:border-brand/50 text-brand-ink-hover dark:text-brand-ink">
+                                    <span key={c.key} className={styles.appliedChip}>
                                         {c.label}
-                                        <button onClick={c.clear} className="hover:opacity-60" title="제거"><X size={9} /></button>
+                                        <button type="button" onClick={c.clear} className={styles.actionQuiet} aria-label={`${c.label} 해제`}><X size={13} aria-hidden="true" /></button>
                                     </span>
                                 ))}
                                 </div>
-                                {hasActiveFilters && (
+                                {hasActiveNonStrategyFilters && (
                                     <button
+                                        type="button"
                                         onClick={resetAllFilters}
                                         title="모든 조건 초기화"
-                                        className="shrink-0 text-xs font-bold text-neutral-400 hover:text-red-500 underline underline-offset-2 transition-colors"
+                                        className={cn(styles.actionQuiet, "shrink-0")}
                                     >
                                         전체 해제
                                     </button>
@@ -1581,40 +1547,42 @@ function ScreenerContent() {
 
             {/* ── 필터 서랍 ── */}
             {filterOpen && (
-                <div aria-label="상세 필터" className="fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-surface-canvas dark:bg-surface-dark sm:static sm:overflow-visible sm:bg-brand-light sm:dark:bg-brand-muted/25 sm:border-b sm:border-brand-light sm:dark:border-brand/40">
-                    <div className="service-container pt-4 sm:pt-5 pb-5 sm:pb-[18px]">
+                <div id="screener-filters" aria-label="상세 필터" className={styles.drawer}>
+                    <div className="service-container">
+                        <section className={styles.drawerFrame}>
 
-                        <div className="flex items-center justify-between gap-3 mb-4">
-                            <div className="min-w-0">
-                                <p className="text-base sm:text-[12.5px] font-extrabold text-brand-ink dark:text-brand-ink">상세 필터</p>
-                                <p className="text-xs text-brand-ink dark:text-[#4ade80]/80 mt-0.5">현재 {filteredList.length}종목 · 조건을 바꾸면 바로 반영됩니다</p>
-                            </div>
-                            <div className="flex shrink-0 items-center gap-2">
-                                <button onClick={clearDetailFilters} className="text-xs font-bold text-brand-ink hover:opacity-70 transition-opacity">전체 해제</button>
-                                <button onClick={() => setFilterOpen(false)} aria-label="필터 닫기" className="sm:hidden rounded-lg border border-neutral-200 bg-white p-2 text-neutral-600 dark:border-surface-dark-border dark:bg-surface-dark-card dark:text-neutral-300"><X size={16} /></button>
-                            </div>
-                        </div>
-
-                        {/* 조건 깔때기 — 어느 단계에서 결과가 확 줄었는지 한눈에 */}
-                        <div className="mb-4 hidden sm:flex flex-col gap-1">
-                            {funnel.map((s, i) => (
-                                <div key={s.label} className="flex items-center gap-2">
-                                    <span className="w-[76px] shrink-0 text-xs font-bold text-neutral-500 dark:text-neutral-400">{s.label}</span>
-                                    <span className="flex-1 h-2.5 rounded-full bg-white/60 dark:bg-black/20 overflow-hidden">
-                                        <span
-                                            className="block h-full rounded-full"
-                                            style={{
-                                                width: `${funnel[0].count > 0 ? (s.count / funnel[0].count) * 100 : 0}%`,
-                                                background: ['#e5e5e5', '#bbf7d0', '#86efac', '#4ade80', '#16a34a'][i],
-                                            }}
-                                        />
-                                    </span>
-                                    <span className="w-12 shrink-0 text-right text-xs font-mono font-bold tabular-nums text-brand-ink-hover dark:text-brand-ink">{s.count}</span>
+                            <header className={styles.drawerHeader}>
+                                <div className="min-w-0">
+                                    <h2 className="text-lg font-bold">상세 필터</h2>
+                                    <p className={styles.drawerMeta} aria-live="polite">현재 {filteredList.length.toLocaleString('ko-KR')}종목 · 조건을 바꾸면 바로 반영됩니다</p>
                                 </div>
-                            ))}
-                        </div>
+                                <div className={styles.drawerHeaderActions}>
+                                    <button type="button" className={cn(styles.action, styles.actionRaised)}
+                                        aria-label="이상형 월드컵으로 필터 고르기" onClick={() => {
+                                        setFilterOpen(false);
+                                        setFilterMethod('worldcup');
+                                    }}>
+                                        이상형 월드컵
+                                    </button>
+                                    <button type="button" onClick={clearDetailFilters} className={styles.actionQuiet}>전체 해제</button>
+                                    <button type="button" onClick={() => setFilterOpen(false)} aria-label="필터 닫기" className={styles.actionQuiet}>
+                                        <X size={16} aria-hidden="true" />
+                                    </button>
+                                </div>
+                            </header>
+                            <dl className={styles.drawerFunnel} aria-label="조건별 남은 종목 수">
+                                {funnel.map(step => (
+                                    <div key={step.label}>
+                                        <dt>{step.label}</dt>
+                                        <dd>{step.count.toLocaleString('ko-KR')}<span>종목</span></dd>
+                                        <span aria-hidden="true" className={styles.funnelTrack}>
+                                            <span style={{ width: `${funnel[0].count > 0 ? (step.count / funnel[0].count) * 100 : 0}%` }} />
+                                        </span>
+                                    </div>
+                                ))}
+                            </dl>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                        <div className={styles.drawerGrid}>
 
                             {/* 시가총액 — 프리셋과 직접 입력을 함께 둔다. 프리셋만 있으면 정확한 값을
                                 못 넣고, 입력만 있으면 초보자가 무슨 값을 넣을지 모른다. */}
@@ -1632,16 +1600,15 @@ function ScreenerContent() {
                                 </div>
                                 <div className="flex items-center gap-1.5 text-xs">
                                     <input
+                                        aria-label="시가총액 하한 직접 입력"
                                         type="number"
                                         min={0}
                                         value={minMarketCap || ''}
                                         onChange={e => { setMinMarketCap(Math.max(0, safeNum(e.target.value))); setDisplayCount(DAILY_PAGE_SIZE); }}
                                         placeholder="0"
-                                        className="w-20 px-2 py-1 rounded-md font-mono tabular-nums bg-surface-canvas dark:bg-surface-dark border border-neutral-200 dark:border-surface-dark-border outline-none focus:border-brand"
+                                        className="w-24"
                                     />
-                                    <span className="text-neutral-400">~</span>
-                                    <span className="text-neutral-300 dark:text-neutral-600">제한 없음</span>
-                                    <span className="text-neutral-400">{country === 'US' ? '백만 달러' : '억원'}</span>
+                                    <span className={styles.drawerMeta}>{country === 'US' ? '백만 달러' : '억원'} 이상</span>
                                 </div>
                             </DrawerCard>
 
@@ -1659,9 +1626,9 @@ function ScreenerContent() {
                                     min={0} max={1.3} step={0.05}
                                     value={maxPbr}
                                     onChange={e => { setMaxPbr(Number(e.target.value)); setDisplayCount(DAILY_PAGE_SIZE); }}
-                                    className="w-full h-1 accent-brand cursor-pointer"
+                                    aria-label="PBR 상한" className="w-full h-1 accent-brand cursor-pointer"
                                 />
-                                <div className="flex items-center justify-between mt-1.5 text-xs font-mono text-neutral-300 dark:text-neutral-600">
+                                <div className={cn(styles.drawerMeta, "mt-1 flex items-center justify-between tabular-nums")}>
                                     <span>0</span>
                                     <span className={cn(maxPbr > 0 && "font-bold text-brand-ink")}>{maxPbr > 0 ? maxPbr.toFixed(2) : '미적용'}</span>
                                     <span>1.3</span>
@@ -1678,7 +1645,7 @@ function ScreenerContent() {
                                     ))}
                                 </div>
                                 <label className="mt-3 block text-xs text-neutral-500">직접 입력 · PER
-                                    <input aria-label="PER 직접 입력" type="number" min="0" step="0.1" value={maxPer || ''} placeholder="미적용" onChange={e => { setMaxPer(Math.max(0, safeNum(e.target.value))); setDisplayCount(DAILY_PAGE_SIZE); }} className="mt-1 w-full rounded border border-neutral-200 bg-transparent px-2 py-2 text-base dark:border-surface-dark-border sm:text-sm" />
+                                    <input aria-label="PER 직접 입력" type="number" min="0" step="0.1" value={maxPer || ''} placeholder="미적용" onChange={e => { setMaxPer(Math.max(0, safeNum(e.target.value))); setDisplayCount(DAILY_PAGE_SIZE); }} className="mt-1 w-full" />
                                 </label>
                             </DrawerCard>
 
@@ -1692,7 +1659,7 @@ function ScreenerContent() {
                                     ))}
                                 </div>
                                 <label className="mt-3 block text-xs text-neutral-500">직접 입력 · NCAV 비율
-                                    <input aria-label="NCAV 비율 직접 입력" type="number" min="0" step="0.01" value={minNcav || ''} placeholder="미적용" onChange={e => { setMinNcav(Math.max(0, safeNum(e.target.value))); setDisplayCount(DAILY_PAGE_SIZE); }} className="mt-1 w-full rounded border border-neutral-200 bg-transparent px-2 py-2 text-base dark:border-surface-dark-border sm:text-sm" />
+                                    <input aria-label="NCAV 비율 직접 입력" type="number" min="0" step="0.01" value={minNcav || ''} placeholder="미적용" onChange={e => { setMinNcav(Math.max(0, safeNum(e.target.value))); setDisplayCount(DAILY_PAGE_SIZE); }} className="mt-1 w-full" />
                                 </label>
                             </DrawerCard>
 
@@ -1714,16 +1681,16 @@ function ScreenerContent() {
                                         : filteredList.length - countWith({ excludeDeficit: true })}
                                 />
                                 <label className="mt-3 block text-xs text-neutral-500">직접 입력 · ROE (%)
-                                    <input aria-label="ROE (%) 직접 입력" type="number" min="0" step="0.1" value={minRoe || ''} placeholder="미적용" onChange={e => { setMinRoe(Math.max(0, safeNum(e.target.value))); setDisplayCount(DAILY_PAGE_SIZE); }} className="mt-1 w-full rounded border border-neutral-200 bg-transparent px-2 py-2 text-base dark:border-surface-dark-border sm:text-sm" />
+                                    <input aria-label="ROE (%) 직접 입력" type="number" min="0" step="0.1" value={minRoe || ''} placeholder="미적용" onChange={e => { setMinRoe(Math.max(0, safeNum(e.target.value))); setDisplayCount(DAILY_PAGE_SIZE); }} className="mt-1 w-full" />
                                 </label>
                                 <fieldset className="mt-3 border-t border-neutral-200 pt-3 dark:border-surface-dark-border">
                                     <legend className="text-xs font-bold">{country === 'KR' ? '법인세 등(차액) · 억 원' : '법인세비용(혜택) · 백만 달러'}</legend>
                                     <div className="grid grid-cols-2 gap-2">
                                         <label className="text-xs text-neutral-500">최소 금액
-                                            <input aria-label="법인세 등 최소 금액" type="number" step="any" value={minIncomeTax ?? ''} placeholder="미적용" onChange={e => { setMinIncomeTax(parseIncomeTaxBound(e.target.value)); setDisplayCount(DAILY_PAGE_SIZE); }} className="mt-1 w-full rounded border border-neutral-200 bg-transparent px-2 py-2 text-base dark:border-surface-dark-border sm:text-sm" />
+                                            <input aria-label="법인세 등 최소 금액" type="number" step="any" value={minIncomeTax ?? ''} placeholder="미적용" onChange={e => { setMinIncomeTax(parseIncomeTaxBound(e.target.value)); setDisplayCount(DAILY_PAGE_SIZE); }} className="mt-1 w-full" />
                                         </label>
                                         <label className="text-xs text-neutral-500">최대 금액
-                                            <input aria-label="법인세 등 최대 금액" type="number" step="any" value={maxIncomeTax ?? ''} placeholder="미적용" onChange={e => { setMaxIncomeTax(parseIncomeTaxBound(e.target.value)); setDisplayCount(DAILY_PAGE_SIZE); }} className="mt-1 w-full rounded border border-neutral-200 bg-transparent px-2 py-2 text-base dark:border-surface-dark-border sm:text-sm" />
+                                            <input aria-label="법인세 등 최대 금액" type="number" step="any" value={maxIncomeTax ?? ''} placeholder="미적용" onChange={e => { setMaxIncomeTax(parseIncomeTaxBound(e.target.value)); setDisplayCount(DAILY_PAGE_SIZE); }} className="mt-1 w-full" />
                                         </label>
                                     </div>
                                     <p className="mt-2 text-xs leading-5 text-neutral-500">{country === 'KR' ? '경상이익 + 특별이익 − 특별손실 − 당기순이익의 차액이며, 공시 법인세비용과 다를 수 있습니다.' : '공시된 법인세비용이며 음수는 세금 혜택입니다.'} 최신 수집 재무기간 기준이며, 조건 적용 시 자료가 없는 종목은 제외합니다. 0·음수도 입력할 수 있습니다.</p>
@@ -1779,7 +1746,7 @@ function ScreenerContent() {
                                     {sectors.size > 0 && (
                                         <button
                                             onClick={() => { setSectors(new Set()); setDisplayCount(DAILY_PAGE_SIZE); }}
-                                            className="mt-2 text-xs font-bold text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
+                                            className={cn(styles.actionQuiet, "mt-2")}
                                         >
                                             업종 선택 해제
                                         </button>
@@ -1910,12 +1877,12 @@ function ScreenerContent() {
                                 {savedSets.length > 0 && (
                                     <div className="flex items-center gap-1.5 flex-wrap mb-2.5">
                                         {savedSets.map(s => (
-                                            <span key={s.id} className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-brand-light dark:bg-brand-muted/40 border border-brand-light-hover dark:border-brand/50 text-xs font-bold text-brand-ink-hover dark:text-brand-ink">
-                                                <button onClick={() => applySavedSet(s.qs)} className="hover:opacity-70 max-w-[160px] truncate" title={s.name}>
-                                                    {s.name}
+                                            <span key={s.id} className={styles.savedChip}>
+                                                <button type="button" onClick={() => applySavedSet(s.qs)} className={styles.actionQuiet} title={s.name}>
+                                                    <span className="max-w-[160px] truncate">{s.name}</span>
                                                 </button>
-                                                <button onClick={() => persistSets(savedSets.filter(x => x.id !== s.id))} className="hover:opacity-60" title="삭제">
-                                                    <X size={9} />
+                                                <button type="button" onClick={() => persistSets(savedSets.filter(x => x.id !== s.id))} className={styles.actionQuiet} aria-label={`${s.name} 삭제`}>
+                                                    <X size={13} aria-hidden="true" />
                                                 </button>
                                             </span>
                                         ))}
@@ -1923,49 +1890,36 @@ function ScreenerContent() {
                                 )}
                                 <button
                                     onClick={saveCurrentSet}
-                                    className="flex items-center justify-center gap-1.5 service-button w-full py-2.5 bg-brand hover:bg-brand-hover text-white text-xs font-bold"
+                                    className={cn(styles.action, "w-full")}
                                 >
-                                    ＋ 내 필터로 저장
+                                    <Plus size={14} aria-hidden="true" /> 내 필터로 저장
                                 </button>
                             </DrawerCard>
                         </div>
+                        </section>
                     </div>
-                    <div className="sticky bottom-0 border-t border-neutral-200 bg-white px-4 py-3 dark:border-surface-dark-border dark:bg-surface-dark sm:hidden" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
-                        <button onClick={() => setFilterOpen(false)} className="service-button w-full bg-brand py-3 text-sm font-extrabold text-white">
+                    <div className={styles.drawerFooter}>
+                        <button type="button" onClick={() => setFilterOpen(false)} className={cn(styles.actionPrimary, "w-full")}>
                             {filteredList.length}종목 결과 보기
                         </button>
                     </div>
                 </div>
             )}
 
-            {/* ── 전략 기준 배너 — 어떤 값이 왜 초록으로 표시되는지 한 줄로 밝힌다.
-                   기존에는 전략 이름만 있고 판정 기준이 화면 어디에도 없었다. ── */}
-            {filterMethod === 'manual' && bannerPreset && (
-                <div className="bg-brand-light dark:bg-brand-muted/25 border-b border-brand-light dark:border-brand/40">
-                    <div className="service-container py-2.5 flex items-start gap-2">
-                        <span className={cn(
-                            "shrink-0 mt-px px-1.5 py-0.5 rounded-md text-xs font-extrabold",
-                            STRATEGY_BADGE[bannerPreset.id] ?? "bg-brand-light text-brand-ink-hover"
-                        )}>
-                            {bannerPreset.label}
-                        </span>
-                        <p className="text-xs leading-relaxed text-brand-ink-hover dark:text-brand-ink break-keep">
-                            <span className="font-bold">{bannerPreset.formula}</span>
-                            {` — ${bannerPreset.plain}. 기준을 충족한 값에 초록 표시가 붙습니다.`}
-                        </p>
-                    </div>
-                </div>
-            )}
-
             {/* ── 전략 가이드 패널 ── */}
             {filterMethod === 'manual' && showGuide && (
-                <div className="bg-white dark:bg-surface-dark-card border-b border-neutral-200 dark:border-border-subtle-dark">
-                    <div className="service-container py-5">
+                <div className="service-container py-2">
+                    <section className={cn(styles.panelSurface, "p-3 sm:p-4")}>
                         <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-sm font-black text-neutral-900 dark:text-white">전략 설명</h2>
+                            <div>
+                                <h2 className="text-sm font-black text-neutral-900 dark:text-white">전략 설명</h2>
+                                <p className="text-xs text-neutral-600 dark:text-neutral-400">목록의 ✓는 강조 기준 충족, ×는 미충족을 뜻합니다.</p>
+                            </div>
                             <button
+                                type="button"
                                 onClick={() => setShowGuide(false)}
-                                className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
+                                aria-label="전략 설명 닫기"
+                                className={styles.actionQuiet}
                             >
                                 <X size={14} />
                             </button>
@@ -1975,12 +1929,9 @@ function ScreenerContent() {
                                 <button
                                     key={preset.id}
                                     onClick={() => toggleStrategy(preset.id)}
-                                    className={cn(
-                                        "text-left p-3.5 rounded-xl border-2 transition-all",
-                                        activeStrategyIds.has(preset.id)
-                                            ? "border-brand dark:border-brand bg-brand-light dark:bg-brand-muted/20"
-                                            : "border-neutral-200 dark:border-surface-dark-border hover:border-neutral-300 dark:hover:border-neutral-600 bg-surface-canvas dark:bg-surface-dark-card/50"
-                                    )}
+                                    type="button"
+                                    aria-pressed={activeStrategyIds.has(preset.id)}
+                                    className={styles.guideOption}
                                 >
                                     <div className="flex items-center gap-2 mb-2">
                                         <span className={cn(
@@ -1996,6 +1947,7 @@ function ScreenerContent() {
                                             <span className="ml-auto text-xs font-black text-brand-ink dark:text-brand-ink bg-brand-light dark:bg-brand-muted/40 px-1.5 py-0.5 rounded">선택됨</span>
                                         )}
                                     </div>
+                                    <p className="text-xs font-semibold text-neutral-700 dark:text-neutral-200">{preset.formula}</p>
                                     <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed">
                                         {preset.hint}
                                     </p>
@@ -2003,14 +1955,14 @@ function ScreenerContent() {
                             ))}
                         </div>
 
-                    </div>
+                    </section>
                 </div>
             )}
 
             {/* ── 종목 리스트 ── */}
             {filterMethod === 'manual' && showLikedOnly && likesState === "fulfilled" && session?.user?.id && <WatchlistChanges />}
 
-            <div className={cn('service-container pt-2 sm:pt-5 pb-20', filterMethod === 'worldcup' && 'hidden')}>
+            <div className={cn('service-container pt-2 sm:pt-4 pb-20', filterMethod === 'worldcup' && 'hidden')}>
 
 
                 {isLoading && (
@@ -2022,7 +1974,7 @@ function ScreenerContent() {
 
                 {!isLoading && filteredList.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-20 text-center gap-4">
-                        <div className="p-4 bg-surface-canvas dark:bg-surface-dark-card rounded-2xl">
+                        <div className={cn(styles.panelSurface, "p-4")}>
                             {showLikedOnly
                                 ? <Heart size={24} className="text-neutral-400" />
                                 : <Search size={24} className="text-neutral-400" />
@@ -2032,7 +1984,7 @@ function ScreenerContent() {
                             {resultsFailed ? (
                                 <>
                                     <p role="alert" className="text-sm font-bold text-neutral-700 dark:text-neutral-300">{showLikedOnly ? "관심종목을" : "스캔 데이터를"} 불러오지 못했습니다</p>
-                                    <button type="button" onClick={handleRefresh} className={cn(PAGE_ACTION_CLS, "mt-2")}>다시 조회</button>
+                                    <button type="button" onClick={handleRefresh} className={cn(styles.action, "mt-2")}>다시 조회</button>
                                 </>
                             ) : baseList.length === 0 ? (
                                 <>
@@ -2040,7 +1992,7 @@ function ScreenerContent() {
                                         {country === 'US' ? '미국' : '국내'} {showLikedOnly ? '관심종목이 없습니다' : '스캔 데이터가 없습니다'}
                                     </p>
                                     {showLikedOnly && <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-300">발굴 목록에서 하트를 눌러 종목을 저장하세요.</p>}
-                                    <button type="button" onClick={() => showLikedOnly ? setShowLikedOnly(false) : handleRefresh()} className={cn(PAGE_ACTION_CLS, "mt-2")}>
+                                    <button type="button" onClick={() => showLikedOnly ? setShowLikedOnly(false) : handleRefresh()} className={cn(styles.action, "mt-2")}>
                                         {showLikedOnly ? '발굴 목록 보기' : '다시 조회'}
                                     </button>
                                 </>
@@ -2051,14 +2003,14 @@ function ScreenerContent() {
                                     </p>
                                     <div className="mt-2 flex flex-wrap justify-center gap-2">
                                         {emptySuggestion ? (
-                                            <button type="button" onClick={() => { emptySuggestion.clear(); setDisplayCount(DAILY_PAGE_SIZE); }} className={PAGE_ACTION_CLS}>
+                                            <button type="button" onClick={() => { emptySuggestion.clear(); setDisplayCount(DAILY_PAGE_SIZE); }} className={styles.action}>
                                                 &lsquo;{emptySuggestion.label}&rsquo; 해제 · {emptySuggestion.count}종목 충족
                                             </button>
                                         ) : activeConditions.length > 0 && (
-                                            <button type="button" onClick={clearDetailFilters} className={PAGE_ACTION_CLS}>상세 필터 해제</button>
+                                            <button type="button" onClick={clearDetailFilters} className={styles.action}>상세 필터 해제</button>
                                         )}
                                         {activeStrategyIds.size > 0 && (
-                                            <button type="button" onClick={clearStrategies} className={PAGE_ACTION_CLS}>전략 선택 해제</button>
+                                            <button type="button" onClick={clearStrategies} className={styles.action}>전략 선택 해제</button>
                                         )}
                                     </div>
                                 </>
@@ -2069,12 +2021,12 @@ function ScreenerContent() {
 
                 {!isLoading && filteredList.length > 0 && (
                     <>
-                    <Tabs.Root value={viewMode} onValueChange={value => setViewMode(value as ViewMode)}>
+                    <Tabs.Root value={viewMode} onValueChange={value => setViewMode(parseViewMode(value))} className={styles.resultsWorkbench}>
                         {/* 결과 분포 — 목록을 늘어놓기 전에 "무엇을 받았는지"를 먼저 보여준다.
                             업종과 전략을 한 카드에 둔다: 같은 목록을 두 각도로 자른 것이라
                             나란히 놓아야 "이 업황 하나에 이 전략 하나" 같은 쏠림이 눈에 띈다. */}
                         {showInsights && (sectorMix || strategyMix) && (
-                            <div className="mb-3 rounded-xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card px-3.5 py-3">
+                            <div className={cn(styles.panelSurface, "m-3 px-3.5 py-3")}>
                                 <div className="flex items-baseline justify-between gap-2 mb-2">
                                     <span className="text-xs font-extrabold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">결과 분포</span>
                                     <span className="text-xs font-mono text-neutral-400 tabular-nums shrink-0">{accessibleList.length}종목</span>
@@ -2093,32 +2045,26 @@ function ScreenerContent() {
                         )}
 
                         {/* 검색 조건과 결과 표현을 분리해, 목록을 훑으면서 보기/묶기를 바꿀 수 있게 한다. */}
-                        <div className="flex flex-wrap items-center gap-x-2">
-                            <h2 className="text-sm font-extrabold text-neutral-900 dark:text-white">
+                        <div className={styles.resultsHeading}>
+                            <h2 className="text-base font-semibold tracking-tight text-neutral-900 dark:text-white">
                                 {showLikedOnly ? '관심 종목' : '발굴 결과'} <span className="font-mono tabular-nums text-brand-ink">{filteredList.length.toLocaleString('ko-KR')}종목</span>
                             </h2>
-                            {etfCreationMode && <button type="button" onClick={clearStockSelection} className="min-h-11 rounded px-2 text-sm">선택 취소</button>}
+                            {etfCreationMode && <button type="button" onClick={clearStockSelection} className={styles.actionQuiet}>선택 취소</button>}
                             <button
                                 onClick={() => setShowInsights(v => !v)}
                                 aria-expanded={showInsights}
-                                className={cn(
-                                    "ml-auto min-h-11 rounded px-0.5 py-2 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-ink",
-                                    showInsights
-                                        ? "bg-brand-light dark:bg-brand-muted/30 border-brand-light-hover dark:border-brand/40 text-brand-ink-hover dark:text-brand-ink"
-                                        : "text-neutral-600 hover:text-brand-ink dark:text-neutral-300"
-                                )}
+                                className={cn(styles.actionQuiet, "ml-auto")}
                             >
                                 {showInsights ? '해석 접기' : '결과 해석'}
                             </button>
                         </div>
-                        {compareMode && <div aria-label={etfCreationMode ? "ETF 종목 선택 현황" : "비교 선택 현황"} className="mb-3 rounded-xl border border-brand/30 p-3 text-sm">
+                        {compareMode && <div aria-label={etfCreationMode ? "ETF 종목 선택 현황" : "비교 선택 현황"} className={cn(styles.panelSurface, "m-3 p-3 text-sm")}>
                             <p role="status">{etfCreationMode ? "선택한 종목" : "목록에서 비교할 종목을 선택하세요."} {compareTickers.length}/{compareLimit}개</p>
                             {!etfCreationMode && etfSelectionError && <p role="alert" className="text-rose-700 dark:text-rose-300">{etfSelectionError}</p>}
-                            <div className="mt-2 flex flex-wrap gap-2">{compareTickers.map(ticker => <button key={ticker} type="button" onClick={() => toggleComparison(ticker)} className="min-h-11 rounded-lg bg-brand/10 px-3 text-brand-ink" aria-label={`${ticker} 선택 해제`}>
+                            <div className="mt-2 flex flex-wrap gap-2">{compareTickers.map(ticker => <button key={ticker} type="button" onClick={() => toggleComparison(ticker)} className={styles.action} aria-label={`${ticker} 선택 해제`}>
                                 {filteredList.find((item: any) => item.ticker === ticker)?.name ?? ticker} ×
                             </button>)}</div>
                         </div>}
-                        {viewMode === 'table' && metricHighlight && <p className="mb-3 text-xs text-neutral-600 dark:text-neutral-400">✓ 강조 기준 충족 · × 강조 기준 미충족</p>}
 
                         {/* 지표 설명과 산점도는 필요할 때만 펼친다 — 목록을 훑는 흐름을 막지 않는다. */}
                         {showInsights && <>
@@ -2128,7 +2074,7 @@ function ScreenerContent() {
 
                         <div className={styles.resultToolbar}>
                             <Tabs.List aria-label="결과 보기 방식" className={styles.viewTabs}>
-                                {([['table', '목록'], ['card', '카드'], ['ratio', '자산 비율']] as const).map(([id, label]) => (
+                                {([['table', '목록'], ['ratio', '자산 비율']] as const).map(([id, label]) => (
                                     <Tabs.Trigger key={id} value={id} title={VIEW_MODE_TITLE[id]} className={styles.tab}>
                                         {label}
                                     </Tabs.Trigger>
@@ -2152,37 +2098,22 @@ function ScreenerContent() {
                         {viewMode === 'ratio' ? (
                             groups ? (
                                 <div className="bg-white dark:bg-surface-dark-card rounded-lg border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
-                                    <GroupedResults {...groupedProps} bodyClassName={GRID_BODY}
+                                    <GroupedResults {...groupedProps} bodyClassName={styles.stockGrid}
                                         renderRow={(item: any) => (
                                             <StockRatioRow key={item.ticker} item={item} actions={stockActions} isLiked={likedTickers.has(watchTickerFor(item.ticker, item.name))} onToggleLike={handleToggleLike} comparison={comparisonFor(item.ticker)} />
                                         )} />
                                 </div>
                             ) : (
-                                <div className={cn("grid grid-cols-1 sm:grid-cols-2 gap-3", styles.stockGrid)}>
+                                <div className={styles.stockGrid}>
                                     {visibleList.map((item: any) => (
                                         <StockRatioRow key={item.ticker} item={item} actions={stockActions} isLiked={likedTickers.has(watchTickerFor(item.ticker, item.name))} onToggleLike={handleToggleLike} comparison={comparisonFor(item.ticker)} />
                                     ))}
                                 </div>
                             )
-                        ) : viewMode === 'card' ? (
-                            groups ? (
-                                <div className="bg-white dark:bg-surface-dark-card rounded-lg border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
-                                    <GroupedResults {...groupedProps} bodyClassName={CARD_GRID_BODY}
-                                        renderRow={(item: any) => (
-                                            <StockGridCard key={item.ticker} item={item} actions={stockActions} isLiked={likedTickers.has(watchTickerFor(item.ticker, item.name))} onToggleLike={handleToggleLike} comparison={comparisonFor(item.ticker)} />
-                                        )} />
-                                </div>
-                            ) : (
-                                <div className={cn("grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-3", styles.stockGrid)}>
-                                    {visibleList.map((item: any) => (
-                                        <StockGridCard key={item.ticker} item={item} actions={stockActions} isLiked={likedTickers.has(watchTickerFor(item.ticker, item.name))} onToggleLike={handleToggleLike} comparison={comparisonFor(item.ticker)} />
-                                    ))}
-                                </div>
-                            )
                         ) : (
-                        <div className="bg-white dark:bg-surface-dark-card rounded-lg border border-neutral-200 dark:border-border-subtle-dark overflow-x-auto">
+                        <div className="bg-white dark:bg-surface-dark-card overflow-x-auto">
                             <div className="min-w-[17rem]">
-                                <div className={cn("grid gap-0.5 min-[360px]:gap-1 lg:gap-4 items-center px-2 sm:px-4 sm:py-2.5 lg:px-6 lg:py-4 bg-surface-canvas dark:bg-surface-dark border-b border-neutral-200 dark:border-border-subtle-dark", TABLE_COLUMNS)}>
+                                <div className={cn("grid gap-0.5 min-[360px]:gap-1 lg:gap-4 items-center px-2 sm:px-4 sm:py-2.5 lg:px-6 lg:py-1 bg-surface-canvas dark:bg-surface-dark border-b border-neutral-200 dark:border-border-subtle-dark", TABLE_COLUMNS)}>
                                     <SortableHeader label="종목명" sortKey="ticker" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} />
                                     <div className="hidden lg:block text-xs font-bold text-neutral-400 uppercase tracking-wider">전략</div>
                                     <SortableHeader label="NCAV" sortKey="ncav_ratio" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} relevant={!!metricHighlight && "ncav_ratio" in metricHighlight} />
@@ -2211,7 +2142,7 @@ function ScreenerContent() {
                         </Tabs.Content>
 
                         {previewCapped && (
-                            <div className="mt-8 rounded-2xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card p-6 text-center">
+                            <div className={cn(styles.panelSurface, "m-3 p-5 text-center")}>
                                 <Lock size={18} className="mx-auto mb-3 text-neutral-400" />
                                 <p className="text-sm font-bold text-neutral-900 dark:text-neutral-100">
                                     {matchedTotal - PREVIEW_SIZE}개 종목이 더 있습니다
@@ -2221,7 +2152,7 @@ function ScreenerContent() {
                                 </p>
                                 <button
                                     onClick={requireLogin}
-                                    className="service-button mt-4 px-6 py-2.5 bg-brand hover:bg-brand-hover text-white text-sm font-bold"
+                                    className={cn(styles.actionPrimary, "mt-4")}
                                 >
                                     로그인하고 전체 보기
                                 </button>
@@ -2229,10 +2160,10 @@ function ScreenerContent() {
                         )}
 
                         {hasMore && (
-                            <div className="flex justify-center mt-10">
+                            <div className="flex justify-center p-3">
                                 <button
                                     onClick={() => setDisplayCount(c => c + DAILY_PAGE_SIZE)}
-                                    className="px-6 py-2.5 rounded-xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card text-sm font-bold text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-surface-dark-elevated hover:text-neutral-900 dark:hover:text-white transition-all"
+                                    className={styles.action}
                                 >
                                     더 보기 ({filteredList.length - displayCount}개 남음)
                                 </button>
@@ -2242,10 +2173,10 @@ function ScreenerContent() {
                     </>
                 )}
                 {!etfCreationMode && compareTickers.length > 0 && (
-                    <div aria-label="선택한 종목 비교" role="group" className="sticky bottom-[var(--bottombar-h)] z-30 mt-3 flex flex-wrap items-center justify-end gap-2 rounded-lg border border-neutral-200 bg-white p-2 shadow-md md:bottom-4 dark:border-border-subtle-dark dark:bg-surface-dark-card">
-                        <button type="button" onClick={clearStockSelection} className={PAGE_ACTION_CLS}>선택 취소</button>
-                        {canAddEtfHoldings && <button type="button" onClick={addSelectionToEtf} className={PAGE_ACTION_CLS}>ETF에 담기</button>}
-                        <button type="button" className={PAGE_PRIMARY_ACTION_CLS} onClick={() => {
+                    <div aria-label="선택한 종목 비교" role="group" className={cn(styles.panelSurface, "sticky bottom-[var(--bottombar-h)] z-30 mt-3 flex flex-wrap items-center justify-end gap-2 p-2 md:bottom-4")}>
+                        <button type="button" onClick={clearStockSelection} className={styles.action}>선택 취소</button>
+                        {canAddEtfHoldings && <button type="button" onClick={addSelectionToEtf} className={styles.action}>ETF에 담기</button>}
+                        <button type="button" className={styles.actionPrimary} onClick={() => {
                             router.push(comparisonHref(country, compareTickers, scanDate || new Date().toLocaleDateString('sv-SE'), crypto.randomUUID()));
                         }}>
                             {compareTickers.length}종목 비교하기
@@ -2254,7 +2185,7 @@ function ScreenerContent() {
                 )}
             </div>
             {country === 'KR' && <p className="mt-6 text-xs leading-relaxed text-neutral-500">국내 재무정보 출처: <a href="https://opendart.fss.or.kr/" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">금융감독원 OpenDART</a> · 공시자료를 가공하여 제공합니다.</p>}
-            {isLoggedIn && filterMethod === 'manual' && <FactorWorkbench items={ncavDailyList.country === country ? filteredList : []} scanDate={ncavDailyList.country === country ? ncavDailyList.scanDate : null} country={country} isAdmin={isAdmin} availableDates={availableDates} />}
+            {isLoggedIn && filterMethod === 'manual' && <div className="service-container"><FactorWorkbench appearance={{ panel: cn(styles.panelSurface, styles.factorPanel), action: styles.action, primary: styles.actionPrimary, input: styles.factorInput }} items={ncavDailyList.country === country ? filteredList : []} scanDate={ncavDailyList.country === country ? ncavDailyList.scanDate : null} country={country} isAdmin={isAdmin} availableDates={availableDates} /></div>}
         </div>
         </Tooltip.Provider>
     );

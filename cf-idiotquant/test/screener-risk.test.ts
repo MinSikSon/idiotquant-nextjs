@@ -37,7 +37,7 @@ test('지속 소진: 최근 3개 연도 연속 음수만 판별하고 누락·�
 });
 
 test('위험 제외는 확인된 대상만 제거하고 미확인과 해제 상태를 보존한다', () => {
-    const filters = { ...Object.assign({}, ...Object.values(GROUP_DEFAULTS)), country: 'US', strategies: new Set(), mode: 'OR', q: '' } as ScreenerFilters;
+    const filters = { ...Object.assign({}, ...Object.values(GROUP_DEFAULTS)), country: 'US', strategies: new Set(), q: '' } as ScreenerFilters;
     const unknown = us({ ticker: 'UNKNOWN' });
     const china = us({ ticker: 'CN', headquarters_country: 'CN' });
     const liquid = us({ ticker: 'LIQ', acml_tr_pbmn: 1_000_000 });
