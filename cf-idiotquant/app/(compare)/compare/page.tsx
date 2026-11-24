@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from "next-intl";
 import { PageSearch } from "@/components/page-search";
 import { SecondarySection } from "@/components/secondary-section";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -100,6 +101,7 @@ async function loadStock(ticker: string, market: 'KR' | 'US', nameHint: string, 
 }
 
 function ComparePageContent() {
+  const t = useTranslations("compare");
   const searchParams = useSearchParams();
   const { data: session, status: sessionStatus } = useSession();
   const isAdmin = (session?.user as { role?: string } | undefined)?.role === 'admin';
@@ -320,17 +322,17 @@ function ComparePageContent() {
     const result = priceReturns.get(`${stock.id}:${date}`);
     const comparison = pricesByStock.get(stock.id)!;
     const value = comparison.prices[date];
-    return item?.loading ? <Loader2 size={16} className="animate-spin" aria-label="가격 조회 중" /> : item?.price ? <>
+    return item?.loading ? <Loader2 size={16} className="animate-spin" aria-label={t("priceLoading")} /> : item?.price ? <>
       <p>{`${stock.currency}${show(value)}`}</p>
-      <p className="mt-1 text-xs font-normal text-neutral-600 dark:text-neutral-400">{formatDate(item.priceDate!)} {comparison.closing ? '종가 기준' : '시총 환산가'}</p>
-      {item.marketCap && <p className="mt-1 text-xs font-normal text-neutral-500">당시 시총 {stock.currency}{show(item.marketCap, 0)} · {item.marketCapSource === 'data-go-kr' ? '공공데이터포털' : '일별 저장값'}</p>}
+      <p className="mt-1 text-xs font-normal text-neutral-600 dark:text-neutral-400">{formatDate(item.priceDate!)} {comparison.closing ? t("closing") : t("adjusted")}</p>
+      {item.marketCap && <p className="mt-1 text-xs font-normal text-neutral-500">{t("marketCap")} {stock.currency}{show(item.marketCap, 0)} · {item.marketCapSource === 'data-go-kr' ? t("portal") : t("savedPrice")}</p>}
       {item.marketCapError && <p className="mt-1 text-xs font-normal text-amber-700 dark:text-amber-400">{item.marketCapError}</p>}
-      {result && <p className={`mt-1 text-xs font-semibold ${result.baseline ? 'text-neutral-600 dark:text-neutral-400' : result.percent >= 0 ? 'text-rose-600 dark:text-rose-400' : 'text-blue-600 dark:text-blue-400'}`}>{result.baseline ? '변화율 기준' : `${result.percent >= 0 ? '+' : ''}${show(result.percent)}%`}</p>}
-    </> : <span className="text-xs font-normal text-rose-600 dark:text-rose-400">{item?.error ?? '가격 없음'}</span>;
+      {result && <p className={`mt-1 text-xs font-semibold ${result.baseline ? 'text-neutral-600 dark:text-neutral-400' : result.percent >= 0 ? 'text-rose-600 dark:text-rose-400' : 'text-blue-600 dark:text-blue-400'}`}>{result.baseline ? t("returnBaseline") : `${result.percent >= 0 ? '+' : ''}${show(result.percent)}%`}</p>}
+    </> : <span className="text-xs font-normal text-rose-600 dark:text-rose-400">{item?.error ?? t("noPrice")}</span>;
   }
 
   const rows: { label: string; value: (s: ComparisonStock) => string }[] = [
-    { label: '현재 상장주식 수', value: s => s.currentShares ? `${show(s.currentShares, 0)}주` : '—' },
+    { label: t("shares"), value: s => s.currentShares ? t("shareCount", { count: show(s.currentShares, 0) }) : '—' },
     { label: 'PER', value: s => show(s.per) },
     { label: 'PBR', value: s => show(s.pbr) },
     { label: 'EPS', value: s => `${s.currency}${show(s.eps)}` },
@@ -348,35 +350,35 @@ function ComparePageContent() {
       }}
     />}
     <PageHeader
-      title="종목 비교"
+      title={t("title")}
       mobileTitleInNavigation
-      meta={storageFailed ? "이 브라우저에 저장하지 못했습니다. 이 화면을 벗어나기 전까지는 비교를 계속할 수 있습니다." : "비교 종목과 날짜는 이 브라우저에 저장합니다."}
+      meta={storageFailed ? t("storageError") : t("storage")}
       mobileCompact
       share={!loading && !dateLoading && stocks.length ? { getSnapshot: () => compareSnapshot(stocks, dates) } : undefined}
     />
     <main className={`${PAGE_WIDTH.data} service-content`}>
-      <section aria-label="비교 종목 추가">
+      <section aria-label={t("addSection")}>
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-sm font-semibold">비교 종목</h2>
-          <button type="button" aria-label="전체 비우기" onClick={() => dispatch(clearComparison())}
+          <h2 className="text-sm font-semibold">{t("stocks")}</h2>
+          <button type="button" aria-label={t("clear")} onClick={() => dispatch(clearComparison())}
             disabled={loading || dateLoading || (!stocks.length && !dates.length && !query && !dateInput && !error)}
             className={PAGE_ACTION_CLS}>
-            <Trash2 size={15} aria-hidden="true" /><span>전체 비우기</span>
+            <Trash2 size={15} aria-hidden="true" /><span>{t("clear")}</span>
           </button>
         </div>
-        <PageSearch purpose="compare" label="비교할 종목 검색" onSelect={addStock}
+        <PageSearch purpose="compare" label={t("search")} onSelect={addStock}
           disabled={!comparisonReady || sessionLoading || loading || dateLoading || stocks.length >= limits.stocks}
-          disabledMessage={stocks.length >= limits.stocks ? `비교 종목은 최대 ${limits.stocks}개까지 추가할 수 있어요. 기존 종목을 지운 뒤 다시 선택해 주세요.` : "현재 비교 자료를 준비하고 있어요. 조회가 끝나면 종목을 추가할 수 있어요."} />
-        <p className="mt-2 text-xs text-neutral-600 dark:text-neutral-400">종목 {stocks.length}/{limits.stocks}개 · 국내와 미국 종목을 함께 볼 수 있습니다. PER·PBR 등 재무지표는 현재 기준입니다.</p>
-        {sessionStatus === 'unauthenticated' && <p className="mt-2 text-xs text-neutral-600 dark:text-neutral-400">로그인 없이 {GUEST_LIMITS.stocks}종목·{GUEST_LIMITS.dates}개 날짜까지, 로그인하면 {MEMBER_LIMITS.stocks}종목·{MEMBER_LIMITS.dates}개 날짜까지 비교할 수 있습니다.</p>}
-        {importProgress && <p role="status" className="mt-2 text-xs text-neutral-600 dark:text-neutral-400">스크리너 종목을 불러오는 중 · {importProgress.loaded}/{importProgress.total}</p>}
+          disabledMessage={stocks.length >= limits.stocks ? t("searchLimit", { limit: limits.stocks }) : t("searchBusy")} />
+        <p className="mt-2 text-xs text-neutral-600 dark:text-neutral-400">{t("stockCount", { count: stocks.length, limit: limits.stocks })}</p>
+        {sessionStatus === 'unauthenticated' && <p className="mt-2 text-xs text-neutral-600 dark:text-neutral-400">{t("guestLimit", { guestStocks: GUEST_LIMITS.stocks, guestDates: GUEST_LIMITS.dates, memberStocks: MEMBER_LIMITS.stocks, memberDates: MEMBER_LIMITS.dates })}</p>}
+        {importProgress && <p role="status" className="mt-2 text-xs text-neutral-600 dark:text-neutral-400">{t("importing", importProgress)}</p>}
         {error && <p role="alert" className="mt-3 text-sm text-rose-600 dark:text-rose-400">{error}</p>}
       </section>
 
-      {recentStocks.length > 0 && !query.trim() && stocks.length < limits.stocks && <section className="mt-5" aria-label="최근 검색한 종목">
+      {recentStocks.length > 0 && !query.trim() && stocks.length < limits.stocks && <section className="mt-5" aria-label={t("recentLabel")}>
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">최근 검색</h2>
-          <button type="button" onClick={() => setRecentStocks([])} className="inline-flex min-h-11 items-center px-3 text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200">기록 지우기</button>
+          <h2 className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">{t("recent")}</h2>
+          <button type="button" onClick={() => setRecentStocks([])} className="inline-flex min-h-11 items-center px-3 text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200">{t("clearHistory")}</button>
         </div>
         <div className="mt-2 flex flex-wrap gap-2">
           {recentStocks.map(stock => <button key={`${stock.market}:${stock.ticker}`} type="button" onClick={() => void addStock(stock.market === 'US' ? stock.ticker : stock.name)} disabled={loading || dateLoading || stocks.some(item => item.ticker === stock.ticker && item.market === stock.market)} className="min-h-11 rounded border border-neutral-200 bg-white px-3 py-2 text-left text-sm font-medium hover:border-brand-ink hover:text-brand-ink disabled:cursor-default disabled:opacity-45 dark:border-neutral-700 dark:bg-surface-dark-card dark:hover:text-brand-ink">
@@ -385,32 +387,32 @@ function ComparePageContent() {
         </div>
       </section>}
 
-      {dates.length > 0 && <p className="mt-4 text-xs text-neutral-600 dark:text-neutral-400">비교 기준일: {dates.map(date => formatDate(date.replaceAll('-', ''))).join(', ')}</p>}
-      <SecondarySection title="비교 날짜 추가·변경" className="mt-4">
-        <p className="mt-2 text-xs text-neutral-600 dark:text-neutral-400">날짜 하나로 환산가를 나란히 보고, 서로 다른 거래일을 두 개 이상 추가하면 가장 이른 거래일 대비 변화율도 비교할 수 있습니다.</p>
+      {dates.length > 0 && <p className="mt-4 text-xs text-neutral-600 dark:text-neutral-400">{t("dates", { dates: dates.map(date => formatDate(date.replaceAll('-', ''))).join(', ') })}</p>}
+      <SecondarySection title={t("editDates")} className="mt-4">
+        <p className="mt-2 text-xs text-neutral-600 dark:text-neutral-400">{t("dateHint")}</p>
         <div className="mt-4 grid min-w-0 gap-3 sm:flex sm:items-end">
           <label className="block min-w-0 text-xs font-medium text-neutral-600 dark:text-neutral-300">
-            가격 기준일
+            {t("priceDate")}
             <input type="date" value={dateInput} max={today} aria-invalid={dateInvalid || undefined} aria-describedby={dateInvalid ? "compare-date-error" : undefined} onChange={e => dispatch(setDateInput(e.target.value))} disabled={sessionLoading || dateLoading || loading} className={cn(CONTROL_INPUT_CLS, "relative mt-1 block h-11 w-full min-w-0 max-w-full appearance-none bg-white px-3 text-center text-base text-neutral-900 outline-none dark:bg-surface-dark-card dark:text-neutral-100 sm:w-56 sm:text-sm [&::-webkit-date-and-time-value]:m-0 [&::-webkit-date-and-time-value]:flex [&::-webkit-date-and-time-value]:h-full [&::-webkit-date-and-time-value]:w-full [&::-webkit-date-and-time-value]:min-h-0 [&::-webkit-date-and-time-value]:items-center [&::-webkit-date-and-time-value]:justify-center [&::-webkit-date-and-time-value]:text-center [&::-webkit-datetime-edit]:flex [&::-webkit-datetime-edit]:h-full [&::-webkit-datetime-edit]:w-full [&::-webkit-datetime-edit]:items-center [&::-webkit-datetime-edit]:justify-center [&::-webkit-datetime-edit]:p-0 [&::-webkit-datetime-edit-fields-wrapper]:p-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 [&::-webkit-calendar-picker-indicator]:top-1/2 [&::-webkit-calendar-picker-indicator]:-translate-y-1/2")} />
           </label>
           <button type="button" onClick={() => void addDate()} disabled={sessionLoading || !isComparisonDate(dateInput, today) || dates.includes(dateInput) || dates.length >= limits.dates || dateLoading || loading} className={PAGE_PRIMARY_ACTION_CLS}>
-            {dateLoading ? <Loader2 size={16} className="shrink-0 animate-spin" /> : <Plus size={16} className="shrink-0" />} 날짜 추가
+            {dateLoading ? <Loader2 size={16} className="shrink-0 animate-spin" /> : <Plus size={16} className="shrink-0" />} {t("addDate")}
           </button>
         </div>
-        {dateInvalid && <p id="compare-date-error" role="alert" className="mt-2 text-xs text-rose-600 dark:text-rose-400">오늘 또는 이전의 올바른 날짜를 선택해 주세요.</p>}
-        <p className="mt-2 text-xs text-neutral-600 dark:text-neutral-400">날짜 {dates.length}/{limits.dates}개 · {sessionStatus === 'authenticated' ? '로그인' : '비로그인'} 기준</p>
+        {dateInvalid && <p id="compare-date-error" role="alert" className="mt-2 text-xs text-rose-600 dark:text-rose-400">{t("invalidDate")}</p>}
+        <p className="mt-2 text-xs text-neutral-600 dark:text-neutral-400">{t("dateCount", { count: dates.length, limit: limits.dates, access: t(sessionStatus === "authenticated" ? "signedIn" : "guest") })}</p>
         {dates.length > 0 && <div className="mt-3 flex flex-wrap gap-2">
           {dates.map(date => <span key={date} className="inline-flex items-center gap-1.5 rounded border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium dark:border-neutral-700 dark:bg-surface-dark-card">
             {formatDate(date.replaceAll('-', ''))}
-            <button type="button" onClick={() => removeDate(date)} disabled={dateLoading || loading} aria-label={`${date} 날짜 제거`} className={CONTROL_ICON_BUTTON_CLS}><X size={13} /></button>
+            <button type="button" onClick={() => removeDate(date)} disabled={dateLoading || loading} aria-label={t("removeDate", { date })} className={CONTROL_ICON_BUTTON_CLS}><X size={13} /></button>
           </span>)}
         </div>}
       </SecondarySection>
 
       {stocks.length === 0 ? <section className="mt-8 border-t border-neutral-200 px-0 py-8 dark:border-neutral-700">
-        <p className="text-sm font-medium">상단 검색에서 비교할 종목을 추가하세요.</p>
-        <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">기본값은 최근 거래일입니다. 다른 날의 가격은 ‘비교 날짜 추가·변경’에서 조회하세요.</p>
-      </section> : <section className="mt-5 sm:mt-8" aria-label="종목 비교 결과">
+        <p className="text-sm font-medium">{t("empty")}</p>
+        <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">{t("emptyHint")}</p>
+      </section> : <section className="mt-5 sm:mt-8" aria-label={t("results")}>
         <div className="space-y-2 md:hidden">
           {stocks.map(stock => {
             const latestDate = dates.at(-1);
@@ -422,19 +424,19 @@ function ComparePageContent() {
             return <details key={stock.id} className="group overflow-hidden rounded-lg border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-surface-dark-card">
               <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-3 py-2 [&::-webkit-details-marker]:hidden focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand-ink">
                 <span className="min-w-0 flex-1 truncate text-sm font-semibold" title={stock.name}>{stock.name}</span>
-                <span className={`shrink-0 whitespace-nowrap text-sm font-semibold tabular-nums ${latest?.error ? 'text-rose-600 dark:text-rose-400' : ''}`} title={latestDate ? `${formatDate(latest?.priceDate ?? latestDate.replaceAll('-', ''))} ${comparison.closing ? '종가 기준' : '시총 환산가'}` : undefined}>
-                  {latestDate ? latest?.loading ? '조회 중' : latest?.price ? `${stock.currency}${show(latestPrice)}` : latest?.error ? '조회 실패' : '가격 없음' : '날짜 추가'}
+                <span className={`shrink-0 whitespace-nowrap text-sm font-semibold tabular-nums ${latest?.error ? 'text-rose-600 dark:text-rose-400' : ''}`} title={latestDate ? `${formatDate(latest?.priceDate ?? latestDate.replaceAll('-', ''))} ${comparison.closing ? t("closing") : t("adjusted")}` : undefined}>
+                  {latestDate ? latest?.loading ? t("loading") : latest?.price ? `${stock.currency}${show(latestPrice)}` : latest?.error ? t("failed") : t("noPrice") : t("addDate")}
                 </span>
-                {hasReturn && <span className={`shrink-0 whitespace-nowrap text-sm font-semibold tabular-nums ${latestReturn.percent >= 0 ? 'text-rose-600 dark:text-rose-400' : 'text-blue-600 dark:text-blue-400'}`} title={`${formatDate(latestReturn.baselineDate)} 대비`}>{latestReturn.percent >= 0 ? '+' : ''}{show(latestReturn.percent)}%</span>}
+                {hasReturn && <span className={`shrink-0 whitespace-nowrap text-sm font-semibold tabular-nums ${latestReturn.percent >= 0 ? 'text-rose-600 dark:text-rose-400' : 'text-blue-600 dark:text-blue-400'}`} title={t("relativeTo", { date: formatDate(latestReturn.baselineDate) })}>{latestReturn.percent >= 0 ? '+' : ''}{show(latestReturn.percent)}%</span>}
                 <ChevronDown size={15} className="shrink-0 text-neutral-600 dark:text-neutral-400 transition-transform group-open:rotate-180" aria-hidden />
               </summary>
               <div className="border-t border-neutral-100 px-3 py-2 dark:border-neutral-800">
                 <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
                   <span className="min-w-0 break-words text-sm font-semibold">{stock.name}</span>
-                  <span className="text-xs text-neutral-600 dark:text-neutral-400">{stock.ticker} · {stock.market} · {comparison.closing ? '종가 기준' : '시총 환산가'}</span>
+                  <span className="text-xs text-neutral-600 dark:text-neutral-400">{stock.ticker} · {stock.market} · {comparison.closing ? t("closing") : t("adjusted")}</span>
                 </p>
-                {!latestDate && <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">비교 날짜를 추가하면 가격을 볼 수 있습니다.</p>}
-                {latest?.price && !latest.loading && comparison.closing && <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">환산가가 없어 모든 날짜를 종가로 비교합니다.</p>}
+                {!latestDate && <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">{t("missingDate")}</p>}
+                {latest?.price && !latest.loading && comparison.closing && <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">{t("closingFallback")}</p>}
               </div>
               <div className="divide-y divide-neutral-100 border-t border-neutral-100 dark:divide-neutral-800 dark:border-neutral-800">
                 {dates.map(date => {
@@ -444,13 +446,13 @@ function ComparePageContent() {
                     <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-baseline gap-x-2">
                       <p className="text-xs text-neutral-600 dark:text-neutral-400">{formatDate(date.replaceAll('-', ''))}</p>
                       <div className="text-right text-sm font-semibold tabular-nums">
-                        {item?.loading ? <Loader2 size={16} className="animate-spin" aria-label="가격 조회 중" /> : item?.price ? `${stock.currency}${show(comparison.prices[date])}` : <span className="text-rose-600 dark:text-rose-400">{item?.error ? '조회 실패' : '가격 없음'}</span>}
+                        {item?.loading ? <Loader2 size={16} className="animate-spin" aria-label={t("priceLoading")} /> : item?.price ? `${stock.currency}${show(comparison.prices[date])}` : <span className="text-rose-600 dark:text-rose-400">{item?.error ? t("failed") : t("noPrice")}</span>}
                       </div>
                       <p className={`min-w-14 text-right text-sm font-semibold tabular-nums ${!result || result.baseline ? 'text-neutral-600 dark:text-neutral-400' : result.percent >= 0 ? 'text-rose-600 dark:text-rose-400' : 'text-blue-600 dark:text-blue-400'}`}>
-                        {result ? result.baseline ? '기준' : `${result.percent >= 0 ? '+' : ''}${show(result.percent)}%` : '—'}
+                        {result ? result.baseline ? t("baseline") : `${result.percent >= 0 ? '+' : ''}${show(result.percent)}%` : '—'}
                       </p>
                     </div>
-                    {item?.price && item.priceDate && item.priceDate !== date.replaceAll('-', '') && <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">실제 거래일 {formatDate(item.priceDate)}</p>}
+                    {item?.price && item.priceDate && item.priceDate !== date.replaceAll('-', '') && <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">{t("actualDate", { date: formatDate(item.priceDate) })}</p>}
                     {item?.error && <p className="mt-1 break-words text-xs text-rose-600 dark:text-rose-400">{item.error}</p>}
                     {item?.marketCapError && <p className="mt-1 break-words text-xs text-amber-700 dark:text-amber-400">{item.marketCapError}</p>}
                   </div>;
@@ -458,27 +460,27 @@ function ComparePageContent() {
               </div>
               {dates.some(date => stock.prices[date]?.marketCap) && <details className="group/evidence border-t border-neutral-100 dark:border-neutral-800">
                 <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 px-3 text-xs text-neutral-600 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand-ink dark:text-neutral-400 [&::-webkit-details-marker]:hidden">
-                  당시 시총·출처
+                  {t("marketCapSource")}
                   <ChevronDown size={14} className="shrink-0 transition-transform group-open/evidence:rotate-180" aria-hidden />
                 </summary>
                 <div className="space-y-1 px-3 pb-2 text-xs text-neutral-600 dark:text-neutral-400">
                   {dates.map(date => {
                     const item = stock.prices[date];
-                    return item?.marketCap ? <p key={date} className="break-words tabular-nums">{formatDate(item.priceDate ?? date.replaceAll('-', ''))} · {stock.currency}{show(item.marketCap, 0)} · {item.marketCapSource === 'data-go-kr' ? '공공데이터포털' : '일별 저장값'}</p> : null;
+                    return item?.marketCap ? <p key={date} className="break-words tabular-nums">{formatDate(item.priceDate ?? date.replaceAll('-', ''))} · {stock.currency}{show(item.marketCap, 0)} · {item.marketCapSource === 'data-go-kr' ? t("portal") : t("savedPrice")}</p> : null;
                   })}
                 </div>
               </details>}
               <div className="border-t border-neutral-100 px-3 pt-2 dark:border-neutral-800">
-                <p className="text-xs text-neutral-600 dark:text-neutral-400">조회 당시 지표</p>
+                <p className="text-xs text-neutral-600 dark:text-neutral-400">{t("metrics")}</p>
                 <dl className="mt-1 grid grid-cols-2 gap-x-4 gap-y-1">
-                  {rows.map(row => <div key={row.label} className={row.label === '현재 상장주식 수' ? 'col-span-2 flex items-baseline justify-between gap-2' : 'flex min-w-0 flex-wrap items-baseline justify-between gap-x-2'}>
+                  {rows.map(row => <div key={row.label} className={row.label === t("shares") ? 'col-span-2 flex items-baseline justify-between gap-2' : 'flex min-w-0 flex-wrap items-baseline justify-between gap-x-2'}>
                     <dt className="text-xs text-neutral-600 dark:text-neutral-400">{row.label}</dt>
                     <dd className="min-w-0 break-words text-sm font-medium tabular-nums">{row.value(stock)}</dd>
                   </div>)}
                 </dl>
                 <div className="mt-2 flex items-center justify-between border-t border-neutral-100 dark:border-neutral-800">
-                  <Link href={`/analyze?ticker=${encodeURIComponent(stock.market === 'US' ? stock.ticker : stock.name)}`} className="inline-flex min-h-11 items-center gap-1 pr-3 text-sm font-semibold text-brand-ink dark:text-brand-ink">상세 분석 <ArrowRight size={14} /></Link>
-                  <button type="button" aria-label={`${stock.name} 제거`} onClick={() => dispatch(removeStock(stock.id))} disabled={loading || dateLoading} className={PAGE_ACTION_CLS}><X size={15} /> 제거</button>
+                  <Link href={`/analyze?ticker=${encodeURIComponent(stock.market === 'US' ? stock.ticker : stock.name)}`} className="inline-flex min-h-11 items-center gap-1 pr-3 text-sm font-semibold text-brand-ink dark:text-brand-ink">{t("analyze")} <ArrowRight size={14} /></Link>
+                  <button type="button" aria-label={t("removeStock", { stock: stock.name })} onClick={() => dispatch(removeStock(stock.id))} disabled={loading || dateLoading} className={PAGE_ACTION_CLS}><X size={15} /> {t("remove")}</button>
                 </div>
               </div>
             </details>;
@@ -487,14 +489,14 @@ function ComparePageContent() {
         <div className="hidden overflow-x-auto rounded-lg border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-surface-dark-card md:block">
           <table className="w-full min-w-max border-collapse text-sm">
             <thead><tr className="border-b border-neutral-200 dark:border-neutral-700">
-              <th className="sticky left-0 z-10 min-w-44 bg-white px-4 py-4 text-left text-sm font-medium text-neutral-600 dark:text-neutral-400 dark:bg-surface-dark-card">종목</th>
-              {dates.map(date => <th key={date} className="min-w-40 px-4 py-4 text-left text-sm font-medium text-neutral-600 dark:text-neutral-400">{formatDate(date.replaceAll('-', ''))} 가격</th>)}
-              {rows.map(row => <th key={row.label} className="min-w-24 px-4 py-4 text-left text-sm font-medium text-neutral-600 dark:text-neutral-400">{row.label}<span className="block text-xs font-normal">조회 당시</span></th>)}
+              <th className="sticky left-0 z-10 min-w-44 bg-white px-4 py-4 text-left text-sm font-medium text-neutral-600 dark:text-neutral-400 dark:bg-surface-dark-card">{t("stock")}</th>
+              {dates.map(date => <th key={date} className="min-w-40 px-4 py-4 text-left text-sm font-medium text-neutral-600 dark:text-neutral-400">{t("priceOn", { date: formatDate(date.replaceAll('-', '')) })}</th>)}
+              {rows.map(row => <th key={row.label} className="min-w-24 px-4 py-4 text-left text-sm font-medium text-neutral-600 dark:text-neutral-400">{row.label}<span className="block text-xs font-normal">{t("onLookup")}</span></th>)}
             </tr></thead>
             <tbody>{stocks.map(stock => <tr key={stock.id} className="border-b border-neutral-100 last:border-0 dark:border-neutral-800">
               <th className="sticky left-0 z-10 bg-white px-4 py-4 text-left dark:bg-surface-dark-card">
-                <div className="flex items-start justify-between gap-2"><div><p className="font-semibold">{stock.name}</p><p className="mt-1 text-xs font-normal text-neutral-600 dark:text-neutral-400">{stock.ticker} · {stock.market}</p></div><button type="button" aria-label={`${stock.name} 제거`} onClick={() => dispatch(removeStock(stock.id))} disabled={loading || dateLoading} className={CONTROL_ICON_BUTTON_CLS}><X size={15} /></button></div>
-                <Link href={`/analyze?ticker=${encodeURIComponent(stock.market === 'US' ? stock.ticker : stock.name)}`} className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-brand-ink dark:text-brand-ink">상세 분석 <ArrowRight size={13} /></Link>
+                <div className="flex items-start justify-between gap-2"><div><p className="font-semibold">{stock.name}</p><p className="mt-1 text-xs font-normal text-neutral-600 dark:text-neutral-400">{stock.ticker} · {stock.market}</p></div><button type="button" aria-label={t("removeStock", { stock: stock.name })} onClick={() => dispatch(removeStock(stock.id))} disabled={loading || dateLoading} className={CONTROL_ICON_BUTTON_CLS}><X size={15} /></button></div>
+                <Link href={`/analyze?ticker=${encodeURIComponent(stock.market === 'US' ? stock.ticker : stock.name)}`} className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-brand-ink dark:text-brand-ink">{t("analyze")} <ArrowRight size={13} /></Link>
               </th>
               {dates.map(date => <td key={date} className="px-4 py-4 align-top font-medium tabular-nums">{priceContent(stock, date)}</td>)}
               {rows.map(row => <td key={row.label} className="px-4 py-4 align-top font-medium tabular-nums">{row.value(stock)}</td>)}
@@ -502,30 +504,31 @@ function ComparePageContent() {
           </table>
         </div>
       </section>}
-      {returnStats.length > 0 && <SecondarySection title="날짜별 주가 변화율 통계" className="mt-5">
-        <p className="mt-1 hidden text-xs text-neutral-600 dark:text-neutral-400 sm:block">종목마다 가장 이른 거래일 가격을 기준으로 변화율을 계산합니다.</p>
+      {returnStats.length > 0 && <SecondarySection title={t("stats")} className="mt-5">
+        <p className="mt-1 hidden text-xs text-neutral-600 dark:text-neutral-400 sm:block">{t("statsHint")}</p>
         <div className="mt-2 grid gap-1.5 sm:mt-3 sm:gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {returnStats.map(({ date, summary }) => summary && <div key={date} className="rounded-xl border border-neutral-200 bg-white px-3 py-2 dark:border-neutral-700 dark:bg-surface-dark-card sm:p-4">
             <div className="flex items-center justify-between gap-2 sm:block">
-              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">{formatDate(date.replaceAll('-', ''))} · {summary.count}종목</p>
-              <p className={`text-sm font-semibold tabular-nums sm:mt-2 sm:text-xl ${summary.average >= 0 ? 'text-rose-600 dark:text-rose-400' : 'text-blue-600 dark:text-blue-400'}`}>평균 {summary.average >= 0 ? '+' : ''}{show(summary.average)}%</p>
+              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">{formatDate(date.replaceAll('-', ''))} · {t("count", { count: summary.count })}</p>
+              <p className={`text-sm font-semibold tabular-nums sm:mt-2 sm:text-xl ${summary.average >= 0 ? 'text-rose-600 dark:text-rose-400' : 'text-blue-600 dark:text-blue-400'}`}>{t("average", { value: `${summary.average >= 0 ? "+" : ""}${show(summary.average)}` })}</p>
             </div>
-            <p className="mt-0.5 text-xs text-neutral-600 dark:text-neutral-400 sm:mt-1">중앙값 {summary.median >= 0 ? '+' : ''}{show(summary.median)}% · 상승 {summary.positiveCount}/{summary.count}종목</p>
+            <p className="mt-0.5 text-xs text-neutral-600 dark:text-neutral-400 sm:mt-1">{t("median", { value: `${summary.median >= 0 ? "+" : ""}${show(summary.median)}`, rising: summary.positiveCount, total: summary.count })}</p>
           </div>)}
         </div>
       </SecondarySection>}
       {isAdmin && <p className="mt-5 text-xs leading-5 text-neutral-500">출처: 한국투자증권(시세·지표), 금융위원회 · 공공데이터포털(과거 시가총액 보완). <Link href="/data-sources" className="underline">데이터별 출처 및 이용 조건</Link></p>}
-      <p className="mt-5 max-w-prose text-xs leading-5 text-neutral-600 dark:text-neutral-400">주가 변화율에는 배당금·수수료·세금을 반영하지 않습니다.</p>
-      <SecondarySection title="가격 산정 방식과 데이터 기준" className="mt-3">
-        <p className="mt-2 text-sm leading-6 text-neutral-700 dark:text-neutral-300">국내 종목의 시총 환산가는 해당 거래일 시가총액을 조회 당시 상장주식 수로 나눈 값입니다. 저장 자료에 시총이 없고 당시 가격과 주식 수로도 시총을 구할 수 없으면 공공데이터포털에서 조회합니다.</p>
-        <p className="mt-3 text-sm leading-6 text-neutral-700 dark:text-neutral-300">미국 종목과 일부 날짜의 환산가를 구할 수 없는 종목은 모든 날짜를 종가로 비교합니다. 휴장일을 고르면 그날 이전의 가장 가까운 거래일을 사용합니다.</p>
-        <p className="mt-3 text-sm leading-6 text-neutral-700 dark:text-neutral-300">환산가는 액면분할·병합·증자·감자에 따른 주식 수 변화를 반영합니다. 수집 시점의 시총을 쓰므로 종가와 다를 수 있습니다. 종가로 비교할 때는 원본 시세의 조정 여부에 따라 주식 수 변화가 빠질 수 있습니다.</p>
-        <p className="mt-3 text-sm leading-6 text-neutral-700 dark:text-neutral-300">PER·PBR·EPS·BPS·ROE는 종목을 조회한 시점의 값입니다. 브라우저에 저장한 값은 자동으로 갱신하지 않습니다.</p>
+      <p className="mt-5 max-w-prose text-xs leading-5 text-neutral-600 dark:text-neutral-400">{t("returnNotice")}</p>
+      <SecondarySection title={t("method")} className="mt-3">
+        <p className="mt-2 text-sm leading-6 text-neutral-700 dark:text-neutral-300">{t("methodKr")}</p>
+        <p className="mt-3 text-sm leading-6 text-neutral-700 dark:text-neutral-300">{t("methodUs")}</p>
+        <p className="mt-3 text-sm leading-6 text-neutral-700 dark:text-neutral-300">{t("methodAdjusted")}</p>
+        <p className="mt-3 text-sm leading-6 text-neutral-700 dark:text-neutral-300">{t("methodMetrics")}</p>
       </SecondarySection>
     </main>
   </div>;
 }
 
 export default function ComparePage() {
-  return <Suspense fallback={<p className="p-6 text-sm text-neutral-500">비교 내용을 불러오는 중...</p>}><ComparePageContent /></Suspense>;
+  const t = useTranslations("compare");
+  return <Suspense fallback={<p className="p-6 text-sm text-neutral-500">{t("opening")}</p>}><ComparePageContent /></Suspense>;
 }

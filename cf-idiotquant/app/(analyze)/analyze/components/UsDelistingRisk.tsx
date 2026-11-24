@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { LockedAnalysisValue } from "@/components/locked-analysis-value";
@@ -82,20 +83,20 @@ const STATUS_ROW_CLS: Record<Status, string> = {
   "—":    "bg-surface-canvas dark:bg-surface-dark-card/50 border-neutral-100 dark:border-border-subtle-dark",
 };
 
-const OVERALL_CONFIG: Record<Exclude<Status, "—">, { badge: string; sub: string }> = {
+const OVERALL_CONFIG = {
   "위험": {
     badge: "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400 border-red-200 dark:border-red-900/50",
-    sub: "NYSE/NASDAQ 상장유지 기준 위반 가능성",
+    sub: "usDangerSummary",
   },
   "주의": {
     badge: "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 border-amber-200 dark:border-amber-900/50",
-    sub: "재무 건전성 악화 요인 존재",
+    sub: "usCautionSummary",
   },
   "양호": {
     badge: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900/50",
-    sub: "주요 상장유지 기준 충족",
+    sub: "usOkSummary",
   },
-};
+} as const;
 
 function OpBar({ val, max }: { val: number; max: number }) {
   const pct = max > 0 ? Math.min(Math.abs(val) / max, 1) * 100 : 0;
@@ -119,6 +120,9 @@ interface Props {
 }
 
 export function UsDelistingRisk({ finnhubData, usDetail, showHistory }: Props) {
+  const t = useTranslations("risk");
+  const statusLabel = (status: "위험" | "주의" | "양호" | "—") =>
+    t(({ "위험": "danger", "주의": "caution", "양호": "ok", "—": "noData" } as const)[status]);
   const result = useMemo(() => {
     const allReports: any[] = finnhubData?.annualData ?? finnhubData?.data ?? [];
     const annuals = allReports
@@ -156,14 +160,14 @@ export function UsDelistingRisk({ finnhubData, usDetail, showHistory }: Props) {
     // 1. 주가
     if (price > 0) {
       criteria.push({
-        label: "주가",
+        label: t("price"),
         value: `$${price.toFixed(2)}`,
         status: price < 1 ? "위험" : price < 5 ? "주의" : "양호",
         note: price < 1
-          ? "$1 미만 — 30일 지속 시 NYSE/NASDAQ 상장폐지 통보"
+          ? t("lowPrice")
           : price < 5
-          ? "$5 미만 — 일부 기관투자자 제한, 패닉셀 위험"
-          : "$5 이상, 정상 범위",
+          ? t("watchPrice")
+          : t("normalPrice"),
         law: "NASDAQ Rule 5550(a)(2) / NYSE §802.01C",
       });
     }
@@ -171,14 +175,14 @@ export function UsDelistingRisk({ finnhubData, usDetail, showHistory }: Props) {
     // 2. 주주자본
     if (equity !== null) {
       criteria.push({
-        label: "주주자본",
+        label: t("shareholderEquity"),
         value: fmtUSDPlain(equity),
         status: equity < 0 ? "위험" : equity < 2_500_000 ? "주의" : "양호",
         note: equity < 0
-          ? "음의 자본 — 부채 > 자산, 청산 시 주주 회수 불가"
+          ? t("negativeEquity")
           : equity < 2_500_000
-          ? "NASDAQ 최소 주주자본 기준($2.5M) 미충족"
-          : "양호",
+          ? t("lowEquity")
+          : t("ok"),
         law: "NASDAQ Rule 5550(b)(1)",
       });
     }
@@ -187,14 +191,14 @@ export function UsDelistingRisk({ finnhubData, usDetail, showHistory }: Props) {
     if (currentAssets !== null && currentLiab !== null && currentLiab > 0) {
       const ratio = currentAssets / currentLiab;
       criteria.push({
-        label: "유동비율",
+        label: t("currentRatio"),
         value: `${ratio.toFixed(2)}x`,
         status: ratio < 1 ? "위험" : ratio < 1.5 ? "주의" : "양호",
         note: ratio < 1
-          ? "유동부채 > 유동자산 — 단기 지급 불능 위험"
+          ? t("shortfall")
           : ratio < 1.5
-          ? "단기 유동성 다소 부족"
-          : "단기 채무 대응 능력 양호",
+          ? t("lowLiquidity")
+          : t("adequateLiquidity"),
         law: "참고지표",
       });
     }
@@ -202,12 +206,12 @@ export function UsDelistingRisk({ finnhubData, usDetail, showHistory }: Props) {
     // 4. 영업현금흐름
     if (cfo !== null) {
       criteria.push({
-        label: "영업현금흐름",
+        label: t("operatingCash"),
         value: fmtUSDPlain(cfo),
         status: cfo < 0 ? "주의" : "양호",
         note: cfo < 0
-          ? "현금 유출 중 — 외부 자금 조달 의존도 높음"
-          : "자생적 현금 창출 가능",
+          ? t("cashOutflow")
+          : t("cashGeneration"),
         law: "참고지표",
       });
     }
@@ -215,10 +219,10 @@ export function UsDelistingRisk({ finnhubData, usDetail, showHistory }: Props) {
     // 5. 당기순이익
     if (netIncome !== null) {
       criteria.push({
-        label: "당기순이익",
+        label: t("netIncome"),
         value: fmtUSDPlain(netIncome),
         status: netIncome < 0 ? "주의" : "양호",
-        note: netIncome < 0 ? "당기순손실 — 자본 잠식 가속 요인" : "당기순이익 흑자",
+        note: netIncome < 0 ? t("usNetLoss") : t("usNetProfit"),
         law: "참고지표",
       });
     }
@@ -257,13 +261,13 @@ export function UsDelistingRisk({ finnhubData, usDetail, showHistory }: Props) {
     if (isAvoidancePattern && curOp) {
       if (curOp.rev > 0 && (curOp.op / curOp.rev) * 100 < 0.5)
         flags.push({
-          label: "극미 영업이익률",
-          desc: `영업이익률 ${((curOp.op / curOp.rev) * 100).toFixed(2)}% — 실질 체질 개선 불확실`,
+          label: t("thinMargin"),
+          desc: t("thinMarginUs", { margin: ((curOp.op / curOp.rev) * 100).toFixed(2) }),
         });
       if (prevOp && prevOp.rev > 0 && curOp.rev < prevOp.rev)
         flags.push({
-          label: "매출 감소 + 흑자전환",
-          desc: "매출 감소 추세임에도 흑자전환 — 비용 절감 효과일 가능성",
+          label: t("revenueDownProfit"),
+          desc: t("revenueDownProfitUs"),
         });
     }
 
@@ -275,12 +279,12 @@ export function UsDelistingRisk({ finnhubData, usDetail, showHistory }: Props) {
       : "양호";
 
     return { criteria, opYears, consLossCount, isAvoidancePattern, flags, overallGrade };
-  }, [finnhubData, usDetail]);
+  }, [finnhubData, usDetail, t]);
 
   if (!result) {
     return (
       <div className="w-full bg-transparent sm:bg-white dark:sm:bg-surface-dark-card rounded-none border-0 sm:rounded-xl sm:border border-neutral-200 dark:border-border-subtle-dark p-0 sm:p-6">
-        <p className="text-[15px] text-neutral-500">위험도를 점검할 재무 자료가 부족합니다.</p>
+        <p className="text-[15px] text-neutral-500">{t("riskDataMissing")}</p>
       </div>
     );
   }
@@ -293,14 +297,14 @@ export function UsDelistingRisk({ finnhubData, usDetail, showHistory }: Props) {
     <div data-share-risk data-share-overall={overallGrade} className="w-full bg-transparent sm:bg-white dark:sm:bg-surface-dark-card rounded-none border-0 sm:rounded-xl sm:border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
       {/* 헤더 */}
       <div className={cn(styles.riskHeader, "flex items-center justify-between px-0 sm:px-3 py-2 border-b border-neutral-100 dark:border-border-subtle-dark")}>
-        <h3 className="text-sm font-semibold">미국 상장유지 점검 결과</h3>
+        <h3 className="text-sm font-semibold">{t("usTitle")}</h3>
         <span className={cn("px-2.5 py-0.5 rounded-lg text-[15px] font-semibold border", cfg.badge)}>
-          {overallGrade}
+          {statusLabel(overallGrade)}
         </span>
       </div>
 
       <div className={cn(styles.riskBody, "pt-2 sm:px-3 sm:pb-2 space-y-2")}>
-        <p className="text-[15px] text-neutral-500 dark:text-neutral-400">{cfg.sub}</p>
+        <p className="text-[15px] text-neutral-500 dark:text-neutral-400">{t(cfg.sub)}</p>
 
         {/* 기준 목록 */}
         <div className="space-y-2">
@@ -312,12 +316,12 @@ export function UsDelistingRisk({ finnhubData, usDetail, showHistory }: Props) {
                 <div className="flex-1 min-w-0">
                   <div className={cn(styles.riskCheck, "grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]")}>
                     <span className="inline-flex min-w-0 items-center gap-2 text-[13px] font-bold text-neutral-700 dark:text-neutral-300"><Icon size={14} className={cn("shrink-0", STATUS_COLOR[c.status])} />{c.label}</span>
-                  <span className={cn("shrink-0 whitespace-nowrap rounded-md px-2 py-0.5 text-[13px] font-semibold", STATUS_COLOR[c.status])}>{c.status === "—" ? "자료 없음" : c.status}</span>
+                  <span className={cn("shrink-0 whitespace-nowrap rounded-md px-2 py-0.5 text-[13px] font-semibold", STATUS_COLOR[c.status])}>{statusLabel(c.status)}</span>
                     <span className={cn("col-span-2 min-w-0 break-words text-sm font-semibold font-mono tabular-nums sm:col-span-1 sm:text-[13px]", STATUS_COLOR[c.status])}>{c.value}</span>
                   </div>
                   <p className="text-[13px] text-neutral-500 dark:text-neutral-400 mt-0.5 leading-relaxed">{c.note}</p>
                   {c.law !== "참고지표" && (
-                    <details className="group mt-2 text-[13px] leading-relaxed text-neutral-500 dark:text-neutral-400"><summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-lg border border-neutral-200 px-3 font-medium hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-white/5 [&::-webkit-details-marker]:hidden">판정 기준<ChevronDown size={15} aria-hidden="true" className="shrink-0 transition-transform group-open:rotate-180" /></summary><p className="mt-2 break-words">{c.law}</p></details>
+                    <details className="group mt-2 text-[13px] leading-relaxed text-neutral-500 dark:text-neutral-400"><summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-lg border border-neutral-200 px-3 font-medium hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-white/5 [&::-webkit-details-marker]:hidden">{t("criteria")}<ChevronDown size={15} aria-hidden="true" className="shrink-0 transition-transform group-open:rotate-180" /></summary><p className="mt-2 break-words">{c.law}</p></details>
                   )}
                 </div>
               </div>
@@ -329,7 +333,7 @@ export function UsDelistingRisk({ finnhubData, usDetail, showHistory }: Props) {
         {opYears.length > 0 && (
           <div>
             <p className="text-[13px] font-bold text-neutral-600 dark:text-neutral-300 uppercase tracking-wide mb-2.5">
-              연간 공시 기준 영업이익 추이
+              {t("usAnnualOperating")}
             </p>
             <div className="space-y-2">
               {opYears.map((y, i) => (
@@ -351,7 +355,7 @@ export function UsDelistingRisk({ finnhubData, usDetail, showHistory }: Props) {
             </div>
             {consLossCount > 0 && (
               <p className="text-[15px] font-semibold text-amber-600 dark:text-amber-400 mt-2">
-                현재 {showHistory ? consLossCount : <LockedAnalysisValue />}년 연속 영업손실
+                {t.rich("usLossYears", { count: () => showHistory ? consLossCount : <LockedAnalysisValue /> })}
               </p>
             )}
           </div>
@@ -361,10 +365,10 @@ export function UsDelistingRisk({ finnhubData, usDetail, showHistory }: Props) {
         {isAvoidancePattern && (
           <div className="p-3 rounded-xl bg-orange-50 dark:bg-orange-950/20 border border-orange-200/60 dark:border-orange-800/40">
             <div className="flex items-center gap-2 mb-1.5">
-              <span className="text-[13px] font-bold text-orange-700 dark:text-orange-400">연속 영업손실 후 흑자 전환</span>
+              <span className="text-[13px] font-bold text-orange-700 dark:text-orange-400">{t("returnedToProfit")}</span>
             </div>
             <p className="text-[15px] text-orange-600 dark:text-orange-400 mb-2">
-              직전 {showHistory ? opYears.length - 1 : <LockedAnalysisValue />}개 연도에 영업손실을 기록한 뒤 최근 연도에 흑자로 전환했습니다.
+              {t.rich("usReturnedToProfitDetail", { count: () => showHistory ? opYears.length - 1 : <LockedAnalysisValue /> })}
             </p>
             {flags.map(f => (
               <div key={f.label} className="flex items-start gap-1.5 mt-1">
@@ -375,7 +379,7 @@ export function UsDelistingRisk({ finnhubData, usDetail, showHistory }: Props) {
               </div>
             ))}
             {flags.length === 0 && (
-              <p className="text-[13px] text-orange-600 dark:text-orange-400">조회한 재무 항목에서 추가 신호를 찾지 못했습니다.</p>
+              <p className="text-[13px] text-orange-600 dark:text-orange-400">{t("noMoreSignals")}</p>
             )}
           </div>
         )}

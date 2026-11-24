@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale, useTranslations } from "next-intl";
 import React, { useMemo } from "react";
 import { formatKoreanUnit } from "@/lib/utils/financeCalc";
 import { cn } from "@/lib/utils";
@@ -68,15 +69,21 @@ function SectionLabel({ icon, label }: { icon: React.ReactNode; label: string })
 // StockMetrics
 // =========================================================================
 export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
+  const t = useTranslations("metrics");
 
-  const n = (val: any) => {
-    const num = Number(val);
-    return isNaN(num) ? 0 : num;
-  };
-
-  const isDelistedSuspect = !isUs && data?.kiChart?.output1 ? n(data.kiChart.output1.lstn_stcn) === 0 : false;
+  const locale = useLocale();
+  const isDelistedSuspect = !isUs && data?.kiChart?.output1 ? Number(data.kiChart.output1.lstn_stcn) === 0 : false;
 
   const metrics: MetricItem[] = useMemo(() => {
+    const amount = (value: number) => locale === "ko" ? (isUs ? "$" : "") + formatKoreanUnit(value)
+      : new Intl.NumberFormat(locale, { style: "currency", currency: isUs ? "USD" : "KRW", currencyDisplay: "narrowSymbol", notation: "compact", maximumFractionDigits: 2 }).format(value);
+    const won = (value: number) => locale === "ko" ? `${value.toLocaleString(locale)}원` : `₩${value.toLocaleString(locale)}`;
+    const shares = (value: number) => t("shareCount", { count: value.toLocaleString(locale) });
+
+    const n = (val: any) => {
+      const num = Number(val);
+      return isNaN(num) ? 0 : num;
+    };
     if (!data) return [];
     if (isUs) {
       const detail = data.usDetail?.output;
@@ -90,15 +97,15 @@ export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
 
       // PER·PBR 은 같은 탭 위쪽 종목 카드가 크게 보여준다 — 여기서 또 적으면 같은 숫자가 두 번이다.
       return [
-        { label: "EPS",     val: n(detail.epsx) ? `$${n(detail.epsx).toLocaleString()}` : "—", type: "valuation", desc: "주당순이익. 기업이 1주당 얼마의 순이익을 냈는지 보여줍니다." },
-        { label: "BPS",     val: n(detail.bpsx) ? `$${n(detail.bpsx).toLocaleString()}` : "—", type: "valuation", desc: "주당순자산. 장부상 순자산을 주식 수로 나눈 값입니다." },
-        { label: "52주 최고", val: n(detail.h52p) ? `$${Number(detail.h52p).toFixed(2)}` : "—", sub: detail.h52d ? `${detail.h52d.slice(0,4)}-${detail.h52d.slice(4,6)}-${detail.h52d.slice(6,8)}` : "", type: "price", desc: "최근 52주간 가장 높았던 주가입니다." },
-        { label: "52주 최저", val: n(detail.l52p) ? `$${Number(detail.l52p).toFixed(2)}` : "—", sub: detail.l52d ? `${detail.l52d.slice(0,4)}-${detail.l52d.slice(4,6)}-${detail.l52d.slice(6,8)}` : "", type: "price", desc: "최근 52주간 가장 낮았던 주가입니다." },
-        { label: "시가총액",  val: `$${formatKoreanUnit(usMarketCap)}`, type: "volume", desc: "상장주식 전체를 현재 주가로 평가한 총 금액입니다." },
-        { label: "상장주식수", val: n(search.lstg_stck_num) ? `${n(search.lstg_stck_num).toLocaleString()}주` : "—", type: "volume", desc: "시장에 발행되어 상장된 총 주식 수입니다." },
-        { label: "거래량",    val: n(detail.tvol) ? `${n(detail.tvol).toLocaleString()}` : "—", type: "volume", desc: "당일 시장에서 매매가 완료된 주식의 총 수량입니다." },
-        { label: "거래대금",  val: `$${formatKoreanUnit(n(detail.tamt))}`, type: "volume", desc: "당일 거래된 주식의 총 거래 금액입니다." },
-        { label: "대금 / 시총", val: `${turnoverRatio}%`, highlight: true, type: "volume", desc: "시가총액 대비 거래대금 비율. 자본의 유동성 및 시장 활성도를 나타내는 퀀트 지표입니다." },
+        { label: "EPS",     val: n(detail.epsx) ? `$${n(detail.epsx).toLocaleString()}` : "—", type: "valuation", desc: t("epsDesc") },
+        { label: "BPS",     val: n(detail.bpsx) ? `$${n(detail.bpsx).toLocaleString()}` : "—", type: "valuation", desc: t("bpsDesc") },
+        { label: t("high"), val: n(detail.h52p) ? `$${Number(detail.h52p).toFixed(2)}` : "—", sub: detail.h52d ? `${detail.h52d.slice(0,4)}-${detail.h52d.slice(4,6)}-${detail.h52d.slice(6,8)}` : "", type: "price", desc: t("highDesc") },
+        { label: t("low"), val: n(detail.l52p) ? `$${Number(detail.l52p).toFixed(2)}` : "—", sub: detail.l52d ? `${detail.l52d.slice(0,4)}-${detail.l52d.slice(4,6)}-${detail.l52d.slice(6,8)}` : "", type: "price", desc: t("lowDesc") },
+        { label: t("marketCap"),  val: amount(usMarketCap), type: "volume", desc: t("marketCapDesc") },
+        { label: t("shares"), val: n(search.lstg_stck_num) ? shares(n(search.lstg_stck_num)) : "—", type: "volume", desc: t("sharesDesc") },
+        { label: t("volume"),    val: n(detail.tvol) ? `${n(detail.tvol).toLocaleString()}` : "—", type: "volume", desc: t("volumeDesc") },
+        { label: t("turnover"),  val: amount(n(detail.tamt)), type: "volume", desc: t("turnoverDesc") },
+        { label: t("turnoverRatio"), val: `${turnoverRatio}%`, highlight: true, type: "volume", desc: t("turnoverRatioDesc") },
       ];
     } else {
       if (!data.kiPrice?.output || !data.kiChart?.output1) return [];
@@ -149,18 +156,18 @@ export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
 
       // PER·PBR 은 같은 탭 위쪽 종목 카드가 크게 보여준다 — 여기서 또 적으면 같은 숫자가 두 번이다.
       return [
-        { label: "EPS",     val: n(p.eps) ? `${n(p.eps).toLocaleString()}원` : "—", type: "valuation", desc: "주당순이익. 기업이 1주당 얼마의 순이익을 냈는지 보여줍니다." },
-        { label: "BPS",     val: n(p.bps) ? `${n(p.bps).toLocaleString()}원` : "—", type: "valuation", desc: "주당순자산. 장부상 순자산을 주식 수로 나눈 값입니다." },
-        { label: "52주 최고", val: finalHigh.val > 0 ? `${Math.round(finalHigh.val).toLocaleString()}원` : "—", sub: fmt52Date(finalHigh.date), type: "price", desc: "최근 52주간 가장 높았던 주가입니다." },
-        { label: "52주 최저", val: finalLow.val  > 0 ? `${Math.round(finalLow.val).toLocaleString()}원`  : "—", sub: fmt52Date(finalLow.date),  type: "price", desc: "최근 52주간 가장 낮았던 주가입니다." },
-        { label: "시가총액",  val: formatKoreanUnit(calculatedMarketCap), type: "volume", desc: "상장주식 전체를 현재 주가로 평가한 총 금액입니다." },
-        { label: "상장주식수", val: n(c.lstn_stcn) ? `${n(c.lstn_stcn).toLocaleString()}주` : "—", type: "volume", desc: "시장에 발행되어 상장된 총 주식 수입니다." },
-        { label: "거래량",    val: n(p.acml_vol) ? `${n(p.acml_vol).toLocaleString()}` : "—", type: "volume", desc: "당일 시장에서 매매가 완료된 주식의 총 수량입니다." },
-        { label: "거래대금",  val: formatKoreanUnit(n(p.acml_tr_pbmn)), type: "volume", desc: "당일 거래된 주식의 총 거래 금액입니다." },
-        { label: "대금 / 시총", val: `${turnoverRatio}%`, highlight: true, type: "volume", desc: "시가총액 대비 거래대금 비율. 자본의 유동성 및 시장 활성도를 나타내는 퀀트 지표입니다." },
+        { label: "EPS",     val: n(p.eps) ? won(n(p.eps)) : "—", type: "valuation", desc: t("epsDesc") },
+        { label: "BPS",     val: n(p.bps) ? won(n(p.bps)) : "—", type: "valuation", desc: t("bpsDesc") },
+        { label: t("high"), val: finalHigh.val > 0 ? won(Math.round(finalHigh.val)) : "—", sub: fmt52Date(finalHigh.date), type: "price", desc: t("highDesc") },
+        { label: t("low"), val: finalLow.val  > 0 ? won(Math.round(finalLow.val))  : "—", sub: fmt52Date(finalLow.date),  type: "price", desc: t("lowDesc") },
+        { label: t("marketCap"),  val: amount(calculatedMarketCap), type: "volume", desc: t("marketCapDesc") },
+        { label: t("shares"), val: n(c.lstn_stcn) ? shares(n(c.lstn_stcn)) : "—", type: "volume", desc: t("sharesDesc") },
+        { label: t("volume"),    val: n(p.acml_vol) ? `${n(p.acml_vol).toLocaleString()}` : "—", type: "volume", desc: t("volumeDesc") },
+        { label: t("turnover"),  val: amount(n(p.acml_tr_pbmn)), type: "volume", desc: t("turnoverDesc") },
+        { label: t("turnoverRatio"), val: `${turnoverRatio}%`, highlight: true, type: "volume", desc: t("turnoverRatioDesc") },
       ];
     }
-  }, [data, isUs]);
+  }, [data, isUs, locale, t]);
 
   if (!data) return null;
 
@@ -181,10 +188,10 @@ export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
           </div>
           <div>
             <h4 className={ui.sectionTitle}>
-              시장 지표
+              {t("title")}
             </h4>
             <p className="hidden md:block text-[13px] text-neutral-500 dark:text-neutral-400 font-mono font-bold uppercase tracking-normal mt-0.5">
-              주당 가치 · 가격 범위 · 거래 규모
+              {t("subheading")}
             </p>
           </div>
         </div>
@@ -208,7 +215,7 @@ export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
         <div className="px-0 sm:px-5 py-3 bg-red-50 dark:bg-red-950/20 border-b border-red-200 dark:border-red-900/30 flex items-center gap-x-6">
           <AlertTriangle size={14} className="text-red-500 dark:text-red-400 shrink-0" />
           <p className="text-[13px] font-bold text-red-600 dark:text-red-400 leading-normal">
-            상장주식 수를 확인할 수 없습니다. 거래 상태는 거래소 공시에서 확인하세요.
+            {t("noShares")}
           </p>
         </div>
       )}
@@ -219,7 +226,7 @@ export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
         {/* 밸류에이션 지표 */}
         {valuationMetrics.length > 0 && (
           <div>
-            <SectionLabel icon={<Layers size={11} />} label="한 주당 이익과 순자산" />
+            <SectionLabel icon={<Layers size={11} />} label={t("perShareGroup")} />
             <div className={cn(ui.metricGrid, styles.grid)}>
               {valuationMetrics.map((m, i) => <MetricCard key={i} m={m} />)}
             </div>
@@ -229,7 +236,7 @@ export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
         {/* 52주 가격 범위 */}
         {priceMetrics.length > 0 && (
           <div>
-            <SectionLabel icon={<TrendingUp size={11} />} label="52주 가격 범위" />
+            <SectionLabel icon={<TrendingUp size={11} />} label={t("rangeGroup")} />
             <div className={cn(ui.metricGrid, styles.grid)}>
               {priceMetrics.map((m, i) => <MetricCard key={i} m={m} />)}
             </div>
@@ -239,7 +246,7 @@ export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
         {/* 시장 데이터 */}
         {volumeMetrics.length > 0 && (
           <div>
-            <SectionLabel icon={<Activity size={11} />} label="시장 데이터" />
+            <SectionLabel icon={<Activity size={11} />} label={t("marketGroup")} />
             <div className={cn(ui.metricGrid, styles.grid)}>
               {volumeMetrics.map((m, i) => <MetricCard key={i} m={m} />)}
             </div>

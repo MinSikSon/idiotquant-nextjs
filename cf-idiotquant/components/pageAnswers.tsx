@@ -1,13 +1,15 @@
 import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
 import { faqSchema, type FaqItem } from '@/lib/seo-content';
 
 // 클라이언트 도구가 로딩 중이어도 설명과 답변은 서버 HTML에 포함한다.
-export default function PageAnswers({ title, path, items }: {
+export default async function PageAnswers({ title, path, items }: {
   title: string; path: string; items: readonly FaqItem[];
 }) {
+  const t = await getTranslations("faq");
   return (
-    <section aria-label={`${title} 도움말`} className="desktop-page-answers mx-auto max-w-5xl lg:max-w-none px-4 py-10 sm:px-6 sm:py-14">
-      <h2 className="text-lg font-semibold tracking-tight">{title} 자주 묻는 질문</h2>
+    <section aria-label={t("help", { title })} className="desktop-page-answers mx-auto max-w-5xl lg:max-w-none px-4 py-10 sm:px-6 sm:py-14">
+      <h2 className="text-lg font-semibold tracking-tight">{t("heading", { title })}</h2>
       <div className="mt-5 divide-y divide-neutral-200 border-y border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
         {items.map(({ q, a }) => (
           <details key={q} className="group py-4">
@@ -16,10 +18,10 @@ export default function PageAnswers({ title, path, items }: {
           </details>
         ))}
       </div>
-      <nav aria-label="관련 도구" className="mt-5 flex flex-wrap gap-x-5 gap-y-3 text-sm text-brand-ink">
+      <nav aria-label={t("related")} className="mt-5 flex flex-wrap gap-x-5 gap-y-3 text-sm text-brand-ink">
         {[
-          ['/quant', '퀀트 투자 안내'], ['/screener', '종목 발굴'],
-          ['/compare', '종목 비교'], ['/analyze', '주식 분석'], ['/calculator', '복리 계산기'],
+          ['/quant', t('quant')], ['/screener', t('screener')],
+          ['/compare', t('compare')], ['/analyze', t('analyze')], ['/calculator', t('calculator')],
         ].filter(([href]) => href !== path).map(([href, label]) => (
           <Link key={href} href={href} className="underline underline-offset-4">{label}</Link>
         ))}

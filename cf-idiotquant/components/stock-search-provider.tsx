@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from "react";
 import { flushSync } from "react-dom";
 import { usePathname, useRouter } from "next/navigation";
@@ -37,6 +38,7 @@ export function useStockSearchModal() {
 }
 
 export function StockSearchProvider({ children }: { children: ReactNode }) {
+  const t = useTranslations("search");
   const pathname = usePathname();
   const router = useRouter();
   const [config, setConfig] = useState<PageSearchConfig | null>(null);
@@ -61,7 +63,7 @@ export function StockSearchProvider({ children }: { children: ReactNode }) {
     if (config) void config.onSelect(value);
     else router.push(`/analyze?ticker=${encodeURIComponent(value)}`);
   };
-  const label = config?.label ?? "종목 검색";
+  const label = config?.label ?? t("title");
   const context = useMemo(() => ({ register, openSearch, label, open }),
     [register, openSearch, label, open]);
   return <Context.Provider value={context}>
@@ -72,11 +74,12 @@ export function StockSearchProvider({ children }: { children: ReactNode }) {
 }
 
 export function StockSearchTrigger({ showDesktopLabel = false }: { showDesktopLabel?: boolean }) {
+  const t = useTranslations("search");
   const { openSearch, label, open } = useStockSearchModal();
   return <button type="button" data-page-search-trigger data-page-input-trigger aria-label={label}
     aria-haspopup="dialog" aria-controls="stock-search-modal" aria-expanded={open}
     onClick={openSearch} className="service-button navigation-action navigation-stock-search">
     <Search size={17} aria-hidden="true" />
-    {showDesktopLabel && <span className="hidden whitespace-nowrap md:inline">종목 검색</span>}
+    {showDesktopLabel && <span className="hidden whitespace-nowrap md:inline">{t("title")}</span>}
   </button>;
 }

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { koreanIntl } from './intl-mock.ts';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import test from 'node:test';
@@ -17,6 +18,7 @@ function harness(extra: Record<string, unknown> = {}) {
   runInNewContext(script, {
     exports: output.exports, module: output,
     require(name: string) {
+      if (name === 'next-intl') return koreanIntl;
       if (name === 'react') return {
         useState(initial: unknown) {
           const index = cursor++;

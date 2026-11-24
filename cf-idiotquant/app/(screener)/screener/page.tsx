@@ -2,6 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
+import { useLocale, useTranslations } from "next-intl";
 import * as Popover from "@radix-ui/react-popover";
 import * as Tabs from "@radix-ui/react-tabs";
 import Link from "next/link";
@@ -26,6 +27,7 @@ import { cn } from "@/lib/utils";
 import { PageHeader, PAGE_ACTION_CLS, PAGE_PRIMARY_ACTION_CLS } from "@/components/pageHeader";
 import { buildGroups, defaultOpenGroups, GroupedResults, type Group, type GroupMode } from "./components/GroupedResults";
 import { ResultSummary, TermStrip } from "./components/ResultSummary";
+import { krStockDisplayName } from "@/lib/utils/krStockNames";
 import { StockRatioRow } from "./components/StockRatioRow";
 import { StockResult, type StockResultActions } from "./components/StockResult";
 import { FilterWorldcup } from "./components/FilterWorldcup";
@@ -36,7 +38,8 @@ import { LiquidityBadge, w52Position } from "./components/LiquidityBadge";
 import { scanTradingAmount } from "@/lib/utils/scanFinancials";
 import { isUsTicker } from "@/lib/utils/stockSearchInput";
 import ScanRefreshNotice from "@/components/scan-refresh-notice";
-import { STRATEGY_LABEL, STRATEGY_BADGE, STRATEGY_PRESETS_CLIENT as STRATEGY_PRESETS, MKTCAP_PRESETS, STRATEGY_HEX } from "@/lib/constants/strategies";
+import { useStrategyText } from "@/i18n/strategy-labels";
+import { STRATEGY_BADGE, STRATEGY_PRESETS_CLIENT as STRATEGY_PRESETS, MKTCAP_PRESETS, STRATEGY_HEX } from "@/lib/constants/strategies";
 import {
     safeNum, parseIncomeTaxBound, isPreferredStock, marketOf, sectorOf, roeOf, grahamOk,
     resolveStrategies, primaryStrategyOf,
@@ -72,10 +75,6 @@ const NCAV_MIN_PRESETS = [0.7, 1.0, 1.5];   // NCAV 비율 이상
 // 업종 분포 띠 색 — 앱 강조색(초록)에서 단계적으로 옅어지고, 마지막은 "그 외"용 중립색.
 // 두 테마 모두 같은 값을 쓴다: 채도가 있는 면 위에 흰 글씨라 바탕색이 바뀌어도 대비가 유지된다.
 const MIX_COLORS = ['#126557', '#218774', '#4a9d8b', '#78b5a6', '#93a89b', '#a8a29e'];
-// 전략 띠는 전략 고유색을 그대로 쓴다 — 요약의 산점도 점도 같은 색이라 이 범례가 그쪽 범례를 겸한다.
-const STRATEGY_HEX_BY_LABEL: Record<string, string> = Object.fromEntries(
-    Object.entries(STRATEGY_HEX).map(([id, hex]) => [STRATEGY_LABEL[id] ?? id, hex])
-);
 
 // 일 거래대금 하한 프리셋 (단위: 억원, 0 = 미적용)
 const KR_TR_AMT_PRESETS = [1, 3, 10, 50]; // 억원
@@ -135,16 +134,19 @@ function buildMix(list: any[], keyOf: (i: any) => string, colorAt: (idx: number,
 
 /** 비율 띠 한 줄. 좁은 화면에서는 띠 안에 이름을 넣을 자리가 없어 이름은 항상 아래 범례가 맡고,
     띠 안에는 넉넉한 조각에만 퍼센트를 얹는다. */
-function MixRow({ label, mix }: { label: string; mix: Mix }) {
+function MixRow({ label, mix, strategy = false }: { label: string; mix: Mix; strategy?: boolean }) {
+    const t = useTranslations("screener");
+    const strategyText = useStrategyText();
+    const nameFor = (name: string) => strategy ? strategyText(name) : name === "그 외" ? t("otherSectors") : name;
     return (
         <div className="flex items-start gap-2.5">
-            <span className="w-7 shrink-0 pt-[5px] text-xs font-extrabold text-neutral-400">{label}</span>
+            <span className="w-16 shrink-0 break-words pt-[5px] text-xs font-extrabold text-neutral-400">{label}</span>
             <div className="flex-1 min-w-0">
                 <div className="flex h-6 rounded-md overflow-hidden border border-neutral-200 dark:border-surface-dark-border">
                     {mix.segs.map(seg => (
                         <div
                             key={seg.name}
-                            title={`${seg.name} ${seg.n}종목 (${seg.pct.toFixed(0)}%)`}
+                            title={`${nameFor(seg.name)} · ${t("count", { count: seg.n })} (${seg.pct.toFixed(0)}%)`}
                             style={{ width: `${seg.pct}%`, minWidth: '3px', background: seg.color }}
                             className="relative flex items-center justify-center"
                         >
@@ -158,7 +160,7 @@ function MixRow({ label, mix }: { label: string; mix: Mix }) {
                     {mix.segs.map(seg => (
                         <span key={seg.name} className="inline-flex items-center gap-1.5 text-xs text-neutral-600 dark:text-neutral-400">
                             <i className="w-2 h-2 rounded-sm shrink-0" style={{ background: seg.color }} />
-                            <span className="font-semibold">{seg.name}</span>
+                            <span className="font-semibold">{nameFor(seg.name)}</span>
                             <span className="font-mono tabular-nums text-neutral-400">{seg.n}</span>
                         </span>
                     ))}
@@ -176,10 +178,6 @@ function MixRow({ label, mix }: { label: string; mix: Mix }) {
 // 단일 전략 선택 시 강조할 지표 컬럼 + 기준 충족 판정. 키는 전략의 기준이 되는 컬럼.
 // table: 표 · ratio: 자산·부채·시총 비율 비교
 type ViewMode = 'table' | 'ratio';
-const VIEW_MODE_TITLE: Record<ViewMode, string> = {
-    table: "표로 보기",
-    ratio: "비율로 보기 — 유동자산·부채총계·시가총액을 같은 축에서 비교",
-};
 const DEFAULT_VIEW: ViewMode = 'table';
 // 예전 카드 보기 링크와 저장값도 목록으로 열리도록 한다.
 const parseViewMode = (value: string | null | undefined): ViewMode =>
@@ -210,9 +208,10 @@ function hlPillCls(highlight: HighlightMap | null, key: MetricKey, item: any): s
 }
 
 function MetricStatus({ highlight, metric, item }: { highlight: HighlightMap | null; metric: MetricKey; item: any }) {
+    const t = useTranslations("screener");
     if (!highlight?.[metric]) return null;
     const matched = highlight[metric]!(item);
-    const label = matched ? "강조 기준 충족" : "강조 기준 미충족";
+    const label = t(matched ? "highlightMet" : "highlightUnmet");
     return <span className="ml-0.5" title={label}><span aria-hidden="true">{matched ? "✓" : "×"}</span><span className="sr-only"> {label}</span></span>;
 }
 
@@ -284,14 +283,17 @@ function SortableHeader({ label, sortKey: key, currentKey, order, onToggle, rele
 // =========================================================================
 // TableRow — 목록 뷰 공통 행. 좁은 화면에서는 핵심 지표만 한 줄에 표시한다.
 // =========================================================================
-const TableRow = memo(function TableRow({ item, actions, isLiked, onToggleLike, highlight, comparison }: {
+const TableRow = memo(function TableRow({ item, displayName, actions, isLiked, onToggleLike, highlight, comparison }: {
     item: any;
+    displayName: string;
     actions: StockResultActions;
     isLiked: boolean;
     onToggleLike: (ticker: string, name: string) => void;
     highlight: HighlightMap | null;
     comparison?: ComparisonChoice;
 }) {
+    const t = useTranslations("screener");
+    const strategyText = useStrategyText();
     const roe = roeOf(item);
     const strategies: string[] = resolveStrategies(item);
     const ncav = safeNum(item.ncav_ratio);
@@ -300,15 +302,16 @@ const TableRow = memo(function TableRow({ item, actions, isLiked, onToggleLike, 
         <StockResult
             ticker={item.ticker}
             name={item.name}
+            displayName={displayName}
             actions={actions}
             comparison={comparison}
             className={cn("group grid min-h-[48px] gap-0.5 min-[360px]:gap-1 lg:gap-4 items-center px-2 py-0.5 sm:px-4 sm:py-2.5 lg:px-6 lg:py-0.5 hover:bg-brand-light/40 dark:hover:bg-surface-dark-card/50 cursor-pointer transition-colors border-b border-neutral-100 dark:border-border-subtle-dark last:border-0", TABLE_COLUMNS)}
         >
             <div className="min-w-0 flex items-center gap-1.5">
-                <ComparisonCheckbox choice={comparison} name={item.name} />
+                <ComparisonCheckbox choice={comparison} name={displayName} />
                 <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-1.5">
-                    <p className="min-w-0 font-semibold text-sm text-neutral-900 dark:text-white [overflow-wrap:anywhere]">{item.name}</p>
-                    {item.ticker !== item.name && <span className="text-xs text-neutral-500 dark:text-neutral-400 font-mono [overflow-wrap:anywhere]">{item.ticker}</span>}
+                    <p className="min-w-0 font-semibold text-sm text-neutral-900 dark:text-white [overflow-wrap:anywhere]">{displayName}</p>
+                    {item.ticker !== displayName && <span className="text-xs text-neutral-500 dark:text-neutral-400 font-mono [overflow-wrap:anywhere]">{item.ticker}</span>}
                     <span className="min-w-0 empty:hidden [&>span]:inline-block [&>span]:whitespace-normal [&>span]:[overflow-wrap:anywhere]">
                         <LiquidityBadge item={item} />
                     </span>
@@ -319,7 +322,7 @@ const TableRow = memo(function TableRow({ item, actions, isLiked, onToggleLike, 
             <div className="hidden lg:flex min-w-0 items-center gap-1 overflow-hidden whitespace-nowrap">
                 {strategies.slice(0, 2).map(s => (
                     <span key={s} className={cn("px-1.5 py-0.5 rounded text-xs font-semibold", STRATEGY_BADGE[s] ?? "bg-surface-canvas text-neutral-500")}>
-                        {STRATEGY_LABEL[s] ?? s}
+                        {strategyText(s)}
                     </span>
                 ))}
                 {strategies.length > 2 && (
@@ -374,14 +377,14 @@ const TableRow = memo(function TableRow({ item, actions, isLiked, onToggleLike, 
                             : "text-neutral-300 dark:text-neutral-600 hover:text-rose-400 dark:hover:text-rose-500"
                     )}
                     onClick={(e) => { e.stopPropagation(); onToggleLike(item.ticker, item.name); }}
-                    title={isLiked ? "관심 해제" : "관심 추가"}
-                    aria-label={`${item.name} ${isLiked ? "관심 해제" : "관심 추가"}`}
+                    title={isLiked ? t("removeWatch") : t("addWatch")}
+                    aria-label={`${displayName} ${isLiked ? t("removeWatch") : t("addWatch")}`}
                 >
                     <Heart size={14} fill={isLiked ? "currentColor" : "none"} />
                 </button>
                 {comparison?.purpose !== "etf" && (
                     <span aria-hidden="true" className="hidden lg:flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-surface-canvas dark:bg-surface-dark-card group-hover:bg-neutral-200 dark:group-hover:bg-surface-dark-hover text-neutral-600 dark:text-neutral-400 text-xs font-bold whitespace-nowrap">
-                        종목 메뉴
+                        {t("stockMenu")}
                         <Ellipsis size={14} />
                     </span>
                 )}
@@ -462,6 +465,10 @@ function DrawerCheck({ checked, onChange, label, delta }: {
 // 값으로 순서가 정해지게 돼, 목록에 실제로 보이는 NCAV 비율을 기준으로 바꿨다.
 
 function ScreenerContent() {
+  const locale = useLocale();
+  const t = useTranslations("screener");
+  const analysis = useTranslations("analysis");
+  const strategyText = useStrategyText();
     const dispatch = useAppDispatch();
     const router = useRouter();
     const rawSearchParams = useSearchParams();
@@ -914,7 +921,7 @@ function ScreenerContent() {
             return next;
         }),
         hint: (g: Group) => groupMode === 'strategy'
-            ? (STRATEGY_PRESETS.find(p => p.id === g.key)?.formula ?? '')
+            ? strategyText(g.key, "formula", "")
             : '',
     };
 
@@ -931,9 +938,9 @@ function ScreenerContent() {
     const strategyMix = useMemo(
         () => buildMix(
             accessibleList,
-            i => { const id = primaryStrategyOf(i); return id ? (STRATEGY_LABEL[id] ?? id) : ""; },
+            i => primaryStrategyOf(i) ?? "",
             // 색과 폴백 회색은 산점도 점과 같은 값이어야 범례가 성립한다.
-            (idx, name) => STRATEGY_HEX_BY_LABEL[name] ?? "#a3a3a3",
+            (idx, name) => STRATEGY_HEX[name] ?? "#a3a3a3",
             Infinity,
         ),
         [accessibleList]
@@ -950,8 +957,8 @@ function ScreenerContent() {
             minMarketCap: 0, maxPbr: 0, maxPer: 0, minRoe: 0, minNcav: 0,
         };
         const steps: { label: string; patch: Partial<ScreenerFilters> }[] = [
-            { label: '전체',      patch: {} },
-            { label: '전략',      patch: { strategies: filters.strategies } },
+            { label: t("all"),      patch: {} },
+            { label: t("strategy"),      patch: { strategies: filters.strategies } },
             { label: '가치 지표', patch: { minMarketCap: filters.minMarketCap, maxPbr: filters.maxPbr, maxPer: filters.maxPer, minNcav: filters.minNcav } },
             { label: '수익·제외', patch: { minRoe: filters.minRoe, minIncomeTax: filters.minIncomeTax, maxIncomeTax: filters.maxIncomeTax, excludeDeficit: filters.excludeDeficit, excludeHoldings: filters.excludeHoldings, excludePreferred: filters.excludePreferred, excludeAdr: filters.excludeAdr, excludeChinaSmall: filters.excludeChinaSmall, excludeLowLiquidity: filters.excludeLowLiquidity, excludeCashBurn: filters.excludeCashBurn } },
             { label: '시장·업종', patch: { markets: filters.markets, sectors: filters.sectors } },
@@ -972,7 +979,7 @@ function ScreenerContent() {
     const isLoading = showLikedOnly ? likesState === 'pending' || likesState === 'init' : scanLoading;
     const isRefreshing = !showLikedOnly && ncavDailyList.refreshing;
     const resultsFailed = showLikedOnly ? likesState === 'rejected' : ncavDailyList.state === 'rejected';
-    const resultName = showLikedOnly ? '관심종목' : '스캔 데이터';
+    const resultName = showLikedOnly ? t("watchlist") : t("scanData");
 
     const returnPath = `/screener${queryString ? `?${queryString}` : ''}`;
     const shareParams = new URLSearchParams(queryString);
@@ -1030,6 +1037,9 @@ function ScreenerContent() {
         router.push(analysisHref(country === 'US' ? ticker : name, returnPath));
     };
 
+    const stockName = (item: { ticker: string; name: string; eng_name?: string }) =>
+        country === 'KR' ? krStockDisplayName(item.ticker, item.name, locale)
+            : locale === 'ko' ? item.name : item.eng_name || item.name;
     const stockActions: StockResultActions = { openDetails: openStockDetails, toggleComparison };
 
     // 국내 관심종목은 이름 또는 코드로 저장된 기존 자료가 모두 있다.
@@ -1154,7 +1164,7 @@ function ScreenerContent() {
     }, []);
 
     const saveCurrentSet = useCallback(() => {
-        const fallback = activeConditions.map(c => c.label).join(' · ') || '전체';
+        const fallback = activeConditions.map(c => c.label).join(' · ') || t("all");
         const name = (window.prompt('저장할 이름', fallback) ?? '').trim();
         if (!name) return;
         persistSets([...savedSets, { id: `${Date.now()}`, name, qs: queryString }].slice(-12));
@@ -1237,32 +1247,32 @@ function ScreenerContent() {
 
             {/* ── 페이지 헤더 (공통 규칙) ── */}
             <PageHeader
-                title={etfCreationMode ? "ETF 종목 고르기" : showLikedOnly ? "내 관심 종목" : "종목 발굴"}
+                title={etfCreationMode ? t("etfTitle") : showLikedOnly ? t("watchlistTitle") : t("title")}
                 mobileTitleInNavigation={!showLikedOnly}
                 mobileCompact
                 mobileTitleOnScroll
                 compactMetaOnScrollOnly
                 compactMeta={<span className="text-xs">
-                    {country === 'KR' ? '국내' : '미국'} · {isLoading
-                        ? '불러오는 중…'
+                    {country === 'KR' ? t("kr") : t("us")} · {isLoading
+                        ? t("loading")
                         : resultsFailed
-                            ? '조회 실패'
-                            : `${matchedTotal.toLocaleString('ko-KR')}종목`}
+                            ? t("failed")
+                            : t("count", { count: matchedTotal })}
                 </span>}
                 meta={(
                     isLoading ? (
                         <span className="flex items-center gap-1.5">
                             <Loader2 size={11} className="animate-spin" />
-                            {resultName} 조회 중…
+                            {t("loadingResult", { result: resultName })}
                         </span>
                     ) : resultsFailed ? (
-                        <span>{resultName} 조회 실패</span>
+                        <span>{t("failedResult", { result: resultName })}</span>
                     ) : (
                         <>
                             {!showLikedOnly && formattedDate && <><span className="font-mono">{formattedDate}</span><span>·</span></>}
-                            <span>조건 충족 <span className={cn("font-extrabold", isFiltered ? "text-brand-ink-hover dark:text-brand-ink" : "text-neutral-700 dark:text-neutral-300")}>{matchedTotal}개</span></span>
+                            <span>{t.rich("matchCount", { count: matchedTotal, strong: value => <span className={cn("font-extrabold", isFiltered ? "text-brand-ink-hover dark:text-brand-ink" : "text-neutral-700 dark:text-neutral-300")}>{value}</span> })}</span>
                             {!showLikedOnly && ncavDailyList.list.length !== filteredList.length && (
-                                <span className="text-neutral-300 dark:text-neutral-600">(전체 {ncavDailyList.list.length}개 중)</span>
+                                <span className="text-neutral-300 dark:text-neutral-600">{t("totalCount", { count: ncavDailyList.list.length })}</span>
                             )}
                         </>
                     )
@@ -1271,14 +1281,14 @@ function ScreenerContent() {
                 actions={<>
                     <button type="button" onClick={handleRefresh} disabled={isLoading || isRefreshing} className={PAGE_ACTION_CLS}>
                         <RefreshCw size={16} aria-hidden="true" className={isLoading || isRefreshing ? "motion-safe:animate-spin" : undefined} />
-                        목록 새로고침
+                        {t("refresh")}
                     </button>
                     <ScreenerUsageGuide />
                     {scanningInProgress && !showLikedOnly && filterMethod === 'manual' && (
                         <div className="flex items-start gap-2 rounded-lg bg-amber-50 p-3 text-xs font-medium leading-5 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400">
                             <Clock size={13} className="mt-1 shrink-0" />
                             <p>
-                                최근 발굴 종목 수집 중 — 아직 스캔되지 않은 종목은{formattedPrevDate ? ` 이전(${formattedPrevDate})` : " 이전"} 데이터로 보완됩니다.
+                                {formattedPrevDate ? t("scanningDate", { date: formattedPrevDate }) : t("scanning")}
                             </p>
                         </div>
                     )}
@@ -1343,10 +1353,10 @@ function ScreenerContent() {
             </div>}
 
             <div className="service-container pt-2 md:pt-5">
-                <section aria-label="발굴 현황" className={styles.overview}>
+                <section aria-label={t("overview")} className={styles.overview}>
                     <div className={styles.overviewIntro}>
-                        <h2>{etfCreationMode ? 'ETF 종목 고르기' : showLikedOnly ? '내 관심 종목' : '종목 발굴'}</h2>
-                        <p>나만의 기준으로 종목을 찾고,<br />투자 지표를 한눈에 비교하세요.</p>
+                        <h2>{etfCreationMode ? t("etfTitle") : showLikedOnly ? t("watchlistTitle") : t("title")}</h2>
+                        <p>{t.rich("intro", { br: () => <br /> })}</p>
                         <div className={styles.overviewArt} aria-hidden="true">
                             <ScreenerHeroCoins className={styles.overviewCoins} />
                         </div>
@@ -1355,13 +1365,13 @@ function ScreenerContent() {
                         <div className={styles.overviewMetric}>
                             <Popover.Root>
                                 <Popover.Trigger id="screener-market" className={styles.marketTrigger}>
-                                    <span className={styles.marketLabel}>선택 시장</span>
-                                    <span className={styles.marketValue}>{country === 'KR' ? '국내' : '미국'}</span>
+                                    <span className={styles.marketLabel}>{t("market")}</span>
+                                    <span className={styles.marketValue}>{country === 'KR' ? t("kr") : t("us")}</span>
                                     <ChevronDown aria-hidden="true" size={16} className={styles.marketChevron} />
                                 </Popover.Trigger>
                                 <Popover.Portal>
-                                    <Popover.Content aria-label="시장 선택" align="end" sideOffset={6} collisionPadding={8} className={styles.marketMenu}>
-                                        {([['KR', '국내'], ['US', '미국']] as const).map(([value, label]) => (
+                                    <Popover.Content aria-label={t("selectMarket")} align="end" sideOffset={6} collisionPadding={8} className={styles.marketMenu}>
+                                        {([['KR', t("kr")], ['US', t("us")]] as const).map(([value, label]) => (
                                             <Popover.Close key={value} type="button" aria-pressed={country === value}
                                                 className={styles.marketOption} onClick={() => changeMarket(value)}>
                                                 {label}
@@ -1373,16 +1383,16 @@ function ScreenerContent() {
                             </Popover.Root>
                         </div>
                         <div className={styles.overviewMetric}>
-                            <span>조건 충족</span>
-                            <strong className="tabular-nums">{isLoading ? '—' : resultsFailed ? '—' : matchedTotal.toLocaleString('ko-KR')} <small>{isLoading ? '조회 중' : resultsFailed ? '조회 실패' : '종목'}</small></strong>
+                            <span>{t("match")}</span>
+                            <strong className="tabular-nums">{isLoading ? '—' : resultsFailed ? '—' : matchedTotal.toLocaleString('ko-KR')} <small>{isLoading ? t("querying") : resultsFailed ? t("failed") : t("stocks")}</small></strong>
                         </div>
                         <div className={styles.overviewMetric}>
-                            <span>상세 조건</span>
+                            <span>{t("conditions")}</span>
                             <strong className="tabular-nums">{activeFilterCount}<small>개</small></strong>
                         </div>
                         <div className={styles.overviewMetric}>
-                            <span>데이터 기준</span>
-                            <strong className={styles.overviewDate}>{isLoading ? '조회 중' : resultsFailed ? '조회 실패' : showLikedOnly ? '해당 없음' : formattedDate || '확인 불가'}</strong>
+                            <span>{t("asOf")}</span>
+                            <strong className={styles.overviewDate}>{isLoading ? t("querying") : resultsFailed ? t("failed") : showLikedOnly ? t("notApplicable") : formattedDate || t("unavailable")}</strong>
                         </div>
                     </div>
                 </section>
@@ -1424,26 +1434,26 @@ function ScreenerContent() {
                             aria-controls="screener-strategies"
                             onClick={() => setStrategiesOpen(open => !open)}
                         >
-                            <span>전략 <span className={styles.strategySelection}>· {isAllActive ? '전체' : <>{activeStrategyIds.size}개<span className="max-[359px]:sr-only"> 선택</span></>}</span></span>
+                            <span>{t("strategy")} <span className={styles.strategySelection}>· {isAllActive ? t("all") : t("selected", { count: activeStrategyIds.size })}</span></span>
                             <ChevronDown size={14} aria-hidden="true" />
                         </button>
 
                         <div id="screener-strategies" className={styles.strategyLane} hidden={!strategiesOpen}>
-                            <div role="group" aria-label="발굴 전략" className={styles.strategyOptions}>
-                                <StrategyCell label="전체" count={strategyCounts.all} active={isAllActive} onClick={clearStrategies} />
+                            <div role="group" aria-label={t("strategies")} className={styles.strategyOptions}>
+                                <StrategyCell label={t("all")} count={strategyCounts.all} active={isAllActive} onClick={clearStrategies} />
                                 {STRATEGY_PRESETS.map(preset => (
                                     <StrategyCell
                                         key={preset.id}
-                                        label={preset.label}
+                                        label={strategyText(preset.id)}
                                         count={strategyCounts[preset.id] ?? 0}
                                         active={activeStrategyIds.has(preset.id)}
-                                        title={preset.hint}
+                                        title={strategyText(preset.id, "hint", preset.hint)}
                                         onClick={() => toggleStrategy(preset.id)}
                                     />
                                 ))}
                             </div>
                             <button type="button" aria-expanded={showGuide} onClick={() => setShowGuide(open => !open)}
-                                title="전략 설명 보기" aria-label="전략 설명 보기" className={styles.strategyHelp}>
+                                title={t("strategyGuide")} aria-label={t("strategyGuide")} className={styles.strategyHelp}>
                                 <Info size={16} aria-hidden="true" />
                             </button>
                         </div>
@@ -1459,7 +1469,7 @@ function ScreenerContent() {
                                 className={styles.filterAction}
                             >
                                 <SlidersHorizontal size={12} />
-                                상세 필터
+                                {t("advanced")}
                                 {activeFilterCount > 0 && (
                                     <span className={styles.filterCount}>
                                         {activeFilterCount}
@@ -1471,7 +1481,7 @@ function ScreenerContent() {
                             <button
                                 type="button"
                                 aria-pressed={showLikedOnly}
-                                aria-label="관심 종목만 보기"
+                                aria-label={t("watchlistOnly")}
                                 onClick={() => {
                                     if (!isLoggedIn) { requireLogin(); return; }
                                     setShowLikedOnly(o => !o); setActiveStrategyIds(new Set()); setDisplayCount(DAILY_PAGE_SIZE);
@@ -1479,10 +1489,10 @@ function ScreenerContent() {
                                 className={styles.filterAction}
                             >
                                 <Heart size={11} fill={showLikedOnly ? "currentColor" : "none"} />
-                                관심
+                                {t("watchlistButton")}
                                 {isLoggedIn
                                     ? <span className="text-xs tabular-nums">{likedTickers.size}</span>
-                                    : <Lock size={10} aria-label="로그인 필요" />}
+                                    : <Lock size={10} aria-label={t("signInRequired")} />}
                             </button>
                         </div>
 
@@ -1544,14 +1554,14 @@ function ScreenerContent() {
 
             {/* ── 필터 서랍 ── */}
             {filterOpen && (
-                <div id="screener-filters" aria-label="상세 필터" className={styles.drawer}>
+                <div id="screener-filters" aria-label={t("advanced")} className={styles.drawer}>
                     <div className="service-container">
                         <section className={styles.drawerFrame}>
 
                             <header className={styles.drawerHeader}>
                                 <div className="min-w-0">
-                                    <h2 className="text-lg font-bold">상세 필터</h2>
-                                    <p className={styles.drawerMeta} aria-live="polite">현재 {filteredList.length.toLocaleString('ko-KR')}종목 · 조건을 바꾸면 바로 반영됩니다</p>
+                                    <h2 className="text-lg font-bold">{t("advanced")}</h2>
+                                    <p className={styles.drawerMeta} aria-live="polite">현재 {t("count", { count: filteredList.length })} · 조건을 바꾸면 바로 반영됩니다</p>
                                 </div>
                                 <div className={styles.drawerHeaderActions}>
                                     <button type="button" className={cn(styles.action, styles.actionRaised)}
@@ -1571,7 +1581,7 @@ function ScreenerContent() {
                                 {funnel.map(step => (
                                     <div key={step.label}>
                                         <dt>{step.label}</dt>
-                                        <dd>{step.count.toLocaleString('ko-KR')}<span>종목</span></dd>
+                                        <dd>{step.count.toLocaleString('ko-KR')}<span>{t("stocks")}</span></dd>
                                         <span aria-hidden="true" className={styles.funnelTrack}>
                                             <span style={{ width: `${funnel[0].count > 0 ? (step.count / funnel[0].count) * 100 : 0}%` }} />
                                         </span>
@@ -1909,13 +1919,13 @@ function ScreenerContent() {
                     <section className={cn(styles.panelSurface, "p-3 sm:p-4")}>
                         <div className="flex items-center justify-between mb-4">
                             <div>
-                                <h2 className="text-sm font-black text-neutral-900 dark:text-white">전략 설명</h2>
-                                <p className="text-xs text-neutral-600 dark:text-neutral-400">목록의 ✓는 강조 기준 충족, ×는 미충족을 뜻합니다.</p>
+                                <h2 className="text-sm font-black text-neutral-900 dark:text-white">{t("strategyExplanation")}</h2>
+                                <p className="text-xs text-neutral-600 dark:text-neutral-400">{t("strategyLegend")}</p>
                             </div>
                             <button
                                 type="button"
                                 onClick={() => setShowGuide(false)}
-                                aria-label="전략 설명 닫기"
+                                aria-label={t("closeStrategyExplanation")}
                                 className={styles.actionQuiet}
                             >
                                 <X size={14} />
@@ -1935,18 +1945,18 @@ function ScreenerContent() {
                                             "text-xs font-extrabold px-2 py-0.5 rounded",
                                             STRATEGY_BADGE[preset.id] ?? "bg-surface-canvas text-neutral-500"
                                         )}>
-                                            {preset.label}
+                                            {strategyText(preset.id)}
                                         </span>
                                         <span className="text-xs text-neutral-400 font-mono">
-                                            {strategyCounts[preset.id] ?? 0}개
+                                            {t("groupCount", { count: strategyCounts[preset.id] ?? 0 })}
                                         </span>
                                         {activeStrategyIds.has(preset.id) && (
-                                            <span className="ml-auto text-xs font-black text-brand-ink dark:text-brand-ink bg-brand-light dark:bg-brand-muted/40 px-1.5 py-0.5 rounded">선택됨</span>
+                                            <span className="ml-auto text-xs font-black text-brand-ink dark:text-brand-ink bg-brand-light dark:bg-brand-muted/40 px-1.5 py-0.5 rounded">{t("strategySelected")}</span>
                                         )}
                                     </div>
-                                    <p className="text-xs font-semibold text-neutral-700 dark:text-neutral-200">{preset.formula}</p>
+                                    <p className="text-xs font-semibold text-neutral-700 dark:text-neutral-200">{strategyText(preset.id, "formula", preset.formula)}</p>
                                     <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed">
-                                        {preset.hint}
+                                        {strategyText(preset.id, "hint", preset.hint)}
                                     </p>
                                 </button>
                             ))}
@@ -1965,7 +1975,7 @@ function ScreenerContent() {
                 {isLoading && (
                     <div role="status" className="flex flex-col items-center justify-center py-24 gap-4">
                         <Loader2 size={32} aria-hidden="true" className="animate-spin text-brand-ink/50" />
-                        <p className="text-sm font-bold text-neutral-400">{resultName} 조회 중…</p>
+                        <p className="text-sm font-bold text-neutral-400">{t("loadingResult", { result: resultName })}</p>
                     </div>
                 )}
 
@@ -1981,22 +1991,22 @@ function ScreenerContent() {
                             {resultsFailed ? (
                                 <>
                                     <p role="alert" className="text-sm font-bold text-neutral-700 dark:text-neutral-300">{showLikedOnly ? "관심종목을" : "스캔 데이터를"} 불러오지 못했습니다</p>
-                                    <button type="button" onClick={handleRefresh} className={cn(styles.action, "mt-2")}>다시 조회</button>
+                                    <button type="button" onClick={handleRefresh} className={cn(styles.action, "mt-2")}>{t("retry")}</button>
                                 </>
                             ) : baseList.length === 0 ? (
                                 <>
                                     <p className="text-sm font-bold text-neutral-700 dark:text-neutral-300">
-                                        {country === 'US' ? '미국' : '국내'} {showLikedOnly ? '관심종목이 없습니다' : '스캔 데이터가 없습니다'}
+                                        {country === 'US' ? t("us") : t("kr")} {showLikedOnly ? '관심종목이 없습니다' : '스캔 데이터가 없습니다'}
                                     </p>
                                     {showLikedOnly && <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-300">발굴 목록에서 하트를 눌러 종목을 저장하세요.</p>}
                                     <button type="button" onClick={() => showLikedOnly ? setShowLikedOnly(false) : handleRefresh()} className={cn(styles.action, "mt-2")}>
-                                        {showLikedOnly ? '발굴 목록 보기' : '다시 조회'}
+                                        {showLikedOnly ? t("showScreener") : t("retry")}
                                     </button>
                                 </>
                             ) : (
                                 <>
                                     <p className="text-sm font-bold text-neutral-700 dark:text-neutral-300">
-                                        {showLikedOnly ? '현재 조건에 맞는 관심종목이 없습니다' : '조건에 맞는 종목이 없습니다'}
+                                        {showLikedOnly ? t("noWatchlistMatch") : t("noMatch")}
                                     </p>
                                     <div className="mt-2 flex flex-wrap justify-center gap-2">
                                         {emptySuggestion ? (
@@ -2004,7 +2014,7 @@ function ScreenerContent() {
                                                 &lsquo;{emptySuggestion.label}&rsquo; 해제 · {emptySuggestion.count}종목 충족
                                             </button>
                                         ) : activeConditions.length > 0 && (
-                                            <button type="button" onClick={clearDetailFilters} className={styles.action}>상세 필터 해제</button>
+                                            <button type="button" onClick={clearDetailFilters} className={styles.action}>{t("clearAdvanced")}</button>
                                         )}
                                         {activeStrategyIds.size > 0 && (
                                             <button type="button" onClick={clearStrategies} className={styles.action}>전략 선택 해제</button>
@@ -2025,17 +2035,16 @@ function ScreenerContent() {
                         {showInsights && (sectorMix || strategyMix) && (
                             <div className={cn(styles.panelSurface, "m-3 px-3.5 py-3")}>
                                 <div className="flex items-baseline justify-between gap-2 mb-2">
-                                    <span className="text-xs font-extrabold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">결과 분포</span>
-                                    <span className="text-xs font-mono text-neutral-400 tabular-nums shrink-0">{accessibleList.length}종목</span>
+                                    <span className="text-xs font-extrabold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">{t("distribution")}</span>
+                                    <span className="text-xs font-mono text-neutral-400 tabular-nums shrink-0">{t("count", { count: accessibleList.length })}</span>
                                 </div>
                                 <div className="flex flex-col gap-3">
-                                    {sectorMix && <MixRow label="업종" mix={sectorMix} />}
-                                    {strategyMix && <MixRow label="전략" mix={strategyMix} />}
+                                    {sectorMix && <MixRow label={t("sector")} mix={sectorMix} />}
+                                    {strategyMix && <MixRow label={t("strategy")} mix={strategyMix} strategy />}
                                 </div>
                                 {sectorMix && sectorMix.top3Pct >= 60 && (
                                     <p className="mt-2.5 pt-2.5 border-t border-neutral-100 dark:border-border-subtle-dark text-xs leading-relaxed text-[#b8762e] dark:text-[#d9a05a] break-keep">
-                                        상위 3개 업종({sectorMix.topNames.join(' · ')})이 {sectorMix.top3Pct.toFixed(0)}%를 차지합니다.
-                                        여기서 고르면 사실상 그 업황에 거는 셈입니다.
+                                        {t("sectorConcentration", { names: sectorMix.topNames.join(" · "), percent: sectorMix.top3Pct.toFixed(0) })}
                                     </p>
                                 )}
                             </div>
@@ -2044,7 +2053,7 @@ function ScreenerContent() {
                         {/* 검색 조건과 결과 표현을 분리해, 목록을 훑으면서 보기/묶기를 바꿀 수 있게 한다. */}
                         <div className={styles.resultsHeading}>
                             <h2 className="text-base font-semibold tracking-tight text-neutral-900 dark:text-white">
-                                {showLikedOnly ? '관심 종목' : '발굴 결과'} <span className="font-mono tabular-nums text-brand-ink">{filteredList.length.toLocaleString('ko-KR')}종목</span>
+                                {showLikedOnly ? t("watchlistLabel") : t("results")} <span className="font-mono tabular-nums text-brand-ink">{t("count", { count: filteredList.length })}</span>
                             </h2>
                             {etfCreationMode && <button type="button" onClick={clearStockSelection} className={styles.actionQuiet}>선택 취소</button>}
                             <button
@@ -2052,14 +2061,14 @@ function ScreenerContent() {
                                 aria-expanded={showInsights}
                                 className={cn(styles.actionQuiet, "ml-auto")}
                             >
-                                {showInsights ? '해석 접기' : '결과 해석'}
+                                {showInsights ? t("hideInsights") : t("insights")}
                             </button>
                         </div>
                         {compareMode && <div aria-label={etfCreationMode ? "ETF 종목 선택 현황" : "비교 선택 현황"} className={cn(styles.panelSurface, "m-3 p-3 text-sm")}>
                             <p role="status">{etfCreationMode ? "선택한 종목" : "목록에서 비교할 종목을 선택하세요."} {compareTickers.length}/{compareLimit}개</p>
                             {!etfCreationMode && etfSelectionError && <p role="alert" className="text-rose-700 dark:text-rose-300">{etfSelectionError}</p>}
                             <div className="mt-2 flex flex-wrap gap-2">{compareTickers.map(ticker => <button key={ticker} type="button" onClick={() => toggleComparison(ticker)} className={styles.action} aria-label={`${ticker} 선택 해제`}>
-                                {filteredList.find((item: any) => item.ticker === ticker)?.name ?? ticker} ×
+                                {stockName({ ticker, name: filteredList.find((item: any) => item.ticker === ticker)?.name ?? ticker })} ×
                             </button>)}</div>
                         </div>}
 
@@ -2070,23 +2079,23 @@ function ScreenerContent() {
                         </>}
 
                         <div className={styles.resultToolbar}>
-                            <Tabs.List aria-label="결과 보기 방식" className={styles.viewTabs}>
-                                {([['table', '목록'], ['ratio', '자산 비율']] as const).map(([id, label]) => (
-                                    <Tabs.Trigger key={id} value={id} title={VIEW_MODE_TITLE[id]} className={styles.tab}>
+                            <Tabs.List aria-label={t("resultView")} className={styles.viewTabs}>
+                                {([['table', t("list")], ['ratio', t("ratio")]] as const).map(([id, label]) => (
+                                    <Tabs.Trigger key={id} value={id} title={t(id === "table" ? "listTip" : "ratioTip")} className={styles.tab}>
                                         {label}
                                     </Tabs.Trigger>
                                 ))}
                             </Tabs.List>
                             <label className="relative flex min-w-0 items-center text-neutral-700 dark:text-neutral-200">
-                                <span className="sr-only">결과 묶기</span>
+                                <span className="sr-only">{t("group")}</span>
                                 <select
                                     value={groupMode}
                                     onChange={event => setGroupMode(event.target.value as GroupMode)}
                                     className="min-h-11 min-w-0 w-full appearance-none rounded bg-transparent py-1 pl-2 pr-6 text-base font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-ink"
                                 >
-                                    <option value="none">묶기 안 함</option>
-                                    <option value="sector" disabled={!hasSectorData}>업종별 묶기</option>
-                                    <option value="strategy">전략별 묶기</option>
+                                    <option value="none">{t("noGroup")}</option>
+                                    <option value="sector" disabled={!hasSectorData}>{t("bySector")}</option>
+                                    <option value="strategy">{t("byStrategy")}</option>
                                 </select>
                                 <ChevronDown size={14} aria-hidden="true" className="pointer-events-none absolute right-1.5" />
                             </label>
@@ -2097,13 +2106,13 @@ function ScreenerContent() {
                                 <div className="bg-white dark:bg-surface-dark-card rounded-lg border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
                                     <GroupedResults {...groupedProps} bodyClassName={styles.stockGrid}
                                         renderRow={(item: any) => (
-                                            <StockRatioRow key={item.ticker} item={item} actions={stockActions} isLiked={likedTickers.has(watchTickerFor(item.ticker, item.name))} onToggleLike={handleToggleLike} comparison={comparisonFor(item.ticker)} />
+                                            <StockRatioRow key={item.ticker} item={item} displayName={stockName(item)} actions={stockActions} isLiked={likedTickers.has(watchTickerFor(item.ticker, item.name))} onToggleLike={handleToggleLike} comparison={comparisonFor(item.ticker)} />
                                         )} />
                                 </div>
                             ) : (
                                 <div className={styles.stockGrid}>
                                     {visibleList.map((item: any) => (
-                                        <StockRatioRow key={item.ticker} item={item} actions={stockActions} isLiked={likedTickers.has(watchTickerFor(item.ticker, item.name))} onToggleLike={handleToggleLike} comparison={comparisonFor(item.ticker)} />
+                                        <StockRatioRow key={item.ticker} item={item} displayName={stockName(item)} actions={stockActions} isLiked={likedTickers.has(watchTickerFor(item.ticker, item.name))} onToggleLike={handleToggleLike} comparison={comparisonFor(item.ticker)} />
                                     ))}
                                 </div>
                             )
@@ -2111,8 +2120,8 @@ function ScreenerContent() {
                         <div className="bg-white dark:bg-surface-dark-card overflow-x-auto">
                             <div className="min-w-[17rem]">
                                 <div className={cn("grid gap-0.5 min-[360px]:gap-1 lg:gap-4 items-center px-2 sm:px-4 sm:py-2.5 lg:px-6 lg:py-1 bg-surface-canvas dark:bg-surface-dark border-b border-neutral-200 dark:border-border-subtle-dark", TABLE_COLUMNS)}>
-                                    <SortableHeader label="종목명" sortKey="ticker" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} />
-                                    <div className="hidden lg:block text-xs font-bold text-neutral-400 uppercase tracking-wider">전략</div>
+                                    <SortableHeader label={t("stockName")} sortKey="ticker" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} />
+                                    <div className="hidden lg:block text-xs font-bold text-neutral-400 uppercase tracking-wider">{t("strategy")}</div>
                                     <SortableHeader label="NCAV" sortKey="ncav_ratio" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} relevant={!!metricHighlight && "ncav_ratio" in metricHighlight} />
                                     <SortableHeader label="PBR" sortKey="pbr" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} relevant={!!metricHighlight && "pbr" in metricHighlight} />
                                     <SortableHeader label="PER" sortKey="per" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} relevant={!!metricHighlight && "per" in metricHighlight} />
@@ -2122,13 +2131,13 @@ function ScreenerContent() {
                                 {groups ? (
                                     <GroupedResults {...groupedProps} bodyClassName=""
                                         renderRow={(item: any) => (
-                                            <TableRow key={item.ticker} item={item} actions={stockActions} isLiked={likedTickers.has(watchTickerFor(item.ticker, item.name))} onToggleLike={handleToggleLike} highlight={metricHighlight} comparison={comparisonFor(item.ticker)} />
+                                            <TableRow key={item.ticker} item={item} displayName={stockName(item)} actions={stockActions} isLiked={likedTickers.has(watchTickerFor(item.ticker, item.name))} onToggleLike={handleToggleLike} highlight={metricHighlight} comparison={comparisonFor(item.ticker)} />
                                         )}
                                     />
                                 ) : (
                                     <div>
                                         {visibleList.map((item: any) => (
-                                            <TableRow key={item.ticker} item={item} actions={stockActions} isLiked={likedTickers.has(watchTickerFor(item.ticker, item.name))} onToggleLike={handleToggleLike} highlight={metricHighlight} comparison={comparisonFor(item.ticker)} />
+                                            <TableRow key={item.ticker} item={item} displayName={stockName(item)} actions={stockActions} isLiked={likedTickers.has(watchTickerFor(item.ticker, item.name))} onToggleLike={handleToggleLike} highlight={metricHighlight} comparison={comparisonFor(item.ticker)} />
                                         ))}
                                     </div>
                                 )}
@@ -2142,16 +2151,16 @@ function ScreenerContent() {
                             <div className={cn(styles.panelSurface, "m-3 p-5 text-center")}>
                                 <Lock size={18} className="mx-auto mb-3 text-neutral-400" />
                                 <p className="text-sm font-bold text-neutral-900 dark:text-neutral-100">
-                                    {matchedTotal - PREVIEW_SIZE}개 종목이 더 있습니다
+                                    {t("moreStocks", { count: matchedTotal - PREVIEW_SIZE })}
                                 </p>
                                 <p className="mt-1.5 text-xs text-neutral-500 dark:text-neutral-400">
-                                    로그인하면 관심종목을 저장하고 팩터 실험실을 이용할 수 있습니다.
+                                    {t("signInHint")}
                                 </p>
                                 <button
                                     onClick={requireLogin}
                                     className={cn(styles.actionPrimary, "mt-4")}
                                 >
-                                    로그인하고 전체 보기
+                                    {t("signInMore")}
                                 </button>
                             </div>
                         )}
@@ -2181,7 +2190,7 @@ function ScreenerContent() {
                     </div>
                 )}
             </div>
-            {country === 'KR' && <p className="mt-6 text-xs leading-relaxed text-neutral-500">국내 재무정보 출처: <a href="https://opendart.fss.or.kr/" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">금융감독원 OpenDART</a> · 공시자료를 가공하여 제공합니다.</p>}
+            {country === 'KR' && <p className="mt-6 text-xs leading-relaxed text-neutral-500">{analysis.rich("krSource", { source: text => <a href="https://opendart.fss.or.kr/" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">{text}</a> })}</p>}
             {isLoggedIn && filterMethod === 'manual' && <div className="service-container"><FactorWorkbench appearance={{ panel: cn(styles.panelSurface, styles.factorPanel), action: styles.action, primary: styles.actionPrimary, input: styles.factorInput }} items={ncavDailyList.country === country ? filteredList : []} scanDate={ncavDailyList.country === country ? ncavDailyList.scanDate : null} country={country} isAdmin={isAdmin} availableDates={availableDates} /></div>}
         </div>
         </Tooltip.Provider>

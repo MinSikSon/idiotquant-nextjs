@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent, type RefObject } from "react";
 import { ChevronLeft } from "lucide-react";
 import SearchAutocomplete from "@/components/searchAutoComplete";
@@ -24,11 +25,19 @@ export function StockSearchModal({ open, label, purpose = "analyze", disabledMes
   onClose: () => void;
   trigger: RefObject<HTMLElement | null>;
 }) {
+  const t = useTranslations("search");
+  const locale = useLocale();
   const dialog = useRef<HTMLDialogElement>(null);
   const surface = useRef<HTMLDivElement>(null);
   const swipe = useRef<(SwipePoint & { pointerId: number }) | null>(null);
   const [resultsTarget, setResultsTarget] = useState<HTMLDivElement | null>(null);
-  const guidance = STOCK_SEARCH_GUIDANCE[purpose];
+  const guidance = purpose === "balance" || purpose === "ticker-map" ? STOCK_SEARCH_GUIDANCE[purpose] : {
+    title: t(`${purpose}Title`),
+    description: t(`${purpose}Description`),
+    placeholder: t(`${purpose}Placeholder`),
+    steps: [t(`${purpose}Step1`), t(`${purpose}Step2`)],
+    note: t(`${purpose}Note`),
+  };
   const [data, setData] = useState<StaticStockData | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [loadAttempt, setLoadAttempt] = useState(0);
@@ -80,18 +89,24 @@ export function StockSearchModal({ open, label, purpose = "analyze", disabledMes
 
   const values = options ?? (market === "KR" ? data?.krTickers : market === "US" ? data?.usTickers : data?.allTickers) ?? [];
   const searchNames = useMemo(() => {
-    const names = stockNames ?? (market !== "KR" ? data?.usStocks : undefined);
-    if (!names || !options) return names;
+    const names = stockNames ?? [
+      ...(market !== "US" ? data?.krStocks ?? [] : []),
+      ...(market !== "KR" ? data?.usStocks ?? [] : []),
+    ];
+    if (!options) return names;
     const allowed = new Set(options);
     return names.filter(stock => allowed.has(stock.symbol));
   }, [stockNames, market, data, options]);
+  const recentNames = useMemo(() => new Map(searchNames.flatMap(stock =>
+    stock.market === "KR" ? [[stock.symbol, stock] as const] : []
+  )), [searchNames]);
   const recent = recentSearches.filter(value => values.some(item => item.toLowerCase() === value.toLowerCase()));
   const select = (raw: string) => {
     const value = raw.trim();
     if (!value || disabled) return;
     // 계좌 검색은 실제 주문 가능한 마스터 항목만 선택할 수 있다.
     if (requireSelection && options && !options.some(item => item.toLowerCase() === value.toLowerCase())) {
-      setError("검색 결과에서 종목을 선택해 주세요.");
+      setError(t("selectRequired"));
       return;
     }
     const knownValue = values.find(item => item.toLowerCase() === value.toLowerCase());
@@ -165,37 +180,41 @@ export function StockSearchModal({ open, label, purpose = "analyze", disabledMes
       }}>
       <h2 id="stock-search-title" className="sr-only">{label}</h2>
       <header className="stock-search-header" data-search-content>
-        <button type="button" onClick={onClose} aria-label="검색창 닫기" title="뒤로" className="stock-search-back"><ChevronLeft size={26} strokeWidth={1.8} /></button>
+        <button type="button" onClick={onClose} aria-label={t("close")} title={t("back")} className="stock-search-back"><ChevronLeft size={26} strokeWidth={1.8} /></button>
         <div className="min-w-0 flex-1">
           <SearchAutocomplete validCorpNameArray={values} onSearchButton={select} autoFocus onEscape={onClose} stockNames={searchNames} resultsTarget={resultsTarget}
             disabled={disabled} loading={!data && !options && !loadError} selectionRequired={requireSelection}
             onQueryChange={value => { setQuery(value); setError(""); }}
-            placeHolder={market === "US" ? "미국 종목명 또는 티커 검색" : guidance.placeholder} />
+            placeHolder={market === "US" ? t("usPlaceholder") : guidance.placeholder} />
         </div>
       </header>
       <div className="stock-search-body" data-search-content role="search" aria-label={label}>
         <div ref={setResultsTarget} className="stock-search-results" />
         {loadError && !data && !options && <div className="stock-search-status">
-          <p role="status">자동완성 목록을 불러오지 못했어요. 종목명이나 티커를 직접 입력하거나 다시 불러와 주세요.</p>
+          <p role="status">{t("loadFailed")}</p>
           <button type="button" onClick={() => { setLoadError(false); setLoadAttempt(attempt => attempt + 1); }}
-            className="mt-1 min-h-11 rounded border border-neutral-500 px-3 text-sm font-medium">종목 목록 다시 불러오기</button>
+            className="mt-1 min-h-11 rounded border border-neutral-500 px-3 text-sm font-medium">{t("reload")}</button>
         </div>}
-        {disabled && <p role="status" className="stock-search-status">{disabledMessage ?? "종목 정보를 준비하고 있어요. 현재 작업이 끝나면 선택할 수 있어요."}</p>}
+        {disabled && <p role="status" className="stock-search-status">{disabledMessage ?? t("preparing")}</p>}
         {error && <p role="alert" className="stock-search-error">{error}</p>}
-        {!disabled && !query.trim() && recent.length > 0 && <section className="stock-search-guidance" aria-label="이번 방문의 최근 검색">
+        {!disabled && !query.trim() && recent.length > 0 && <section className="stock-search-guidance" aria-label={t("recent")}>
           <div className="flex items-center justify-between gap-2">
-            <h3>이번 방문의 최근 검색</h3>
+            <h3>{t("recent")}</h3>
             <button type="button" onClick={() => setRecentSearches([])}
-              className="min-h-11 rounded px-3 text-sm text-neutral-600 dark:text-neutral-400">기록 지우기</button>
+              className="min-h-11 rounded px-3 text-sm text-neutral-600 dark:text-neutral-400">{t("clearRecent")}</button>
           </div>
           <ul className="divide-y divide-neutral-200 dark:divide-neutral-700">
-            {recent.map(value => <li key={value}>
+            {recent.map(value => {
+              const stock = recentNames.get(value);
+              const name = stock && (locale === "ko" ? stock.koreanName : (locale === "ja" ? stock.japaneseName : undefined) || stock.name);
+              return <li key={value}>
               <button type="button" onClick={() => select(value)}
-                className="min-h-11 w-full break-words rounded px-3 py-2 text-left text-base hover:bg-neutral-100 dark:hover:bg-neutral-800">{value}</button>
-            </li>)}
+                className="min-h-11 w-full break-words rounded px-3 py-2 text-left text-base hover:bg-neutral-100 dark:hover:bg-neutral-800">{name && name !== value ? `${name} · ${value}` : value}</button>
+            </li>;
+            })}
           </ul>
         </section>}
-        {!disabled && !query.trim() && recent.length === 0 && <section className="stock-search-guidance" aria-label={`${label} 가이드`}>
+        {!disabled && !query.trim() && recent.length === 0 && <section className="stock-search-guidance" aria-label={guidance.title}>
           <h3>{guidance.title}</h3>
           <p className="stock-search-description">{guidance.description}</p>
           <SearchGuide market={market} onSelect={select} showAnalysis={purpose === "analyze"} />

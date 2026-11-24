@@ -1,5 +1,6 @@
 "use client";
 
+import { useFormatter, useLocale, useTranslations } from "next-intl";
 import styles from "../screener.module.css";
 
 import { Ellipsis, Heart } from "lucide-react";
@@ -14,14 +15,12 @@ import { ratioMetrics, barPct } from "./ratioMetrics";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Item = Record<string, any>;
 
-const money = (v: number, us: boolean) => us ? `$${(v / 1_000_000).toLocaleString(undefined, { maximumFractionDigits: 1 })}M` : `${Math.round(v).toLocaleString()}억`;
-const x = (v: number | null) => (v === null ? "—" : `${v.toFixed(2)}x`);
 
 // 세 막대를 같은 축(scale)에 그려 길이 자체가 비율이 되게 한다. 숫자만 나열하면
 // "유동자산 3000억 / 부채 1000억 / 시총 1500억" 을 머릿속에서 비교해야 하지만,
 // 같은 축에 눕히면 어느 쪽이 큰지 한눈에 읽힌다.
-function Bar({ label, value, scale, color, hint, us }: {
-    label: string; value: number; scale: number; color: string; hint: string; us: boolean;
+function Bar({ label, value, scale, color, hint, amount }: {
+    label: string; value: number; scale: number; color: string; hint: string; amount: string;
 }) {
     return (
         <div className={styles.ratioBar} title={hint}>
@@ -33,90 +32,109 @@ function Bar({ label, value, scale, color, hint, us }: {
                 />
             </div>
             <span className="text-right text-sm font-semibold tabular-nums text-neutral-700 dark:text-neutral-200">
-                {money(value, us)}
+                {amount}
             </span>
         </div>
     );
 }
 
-const Ratio = ({ label, value, ok, hint }: { label: string; value: number | null; ok: boolean; hint: string }) => (
-    <div title={hint}>
-        <dt>{label}</dt>
-        <dd className={cn(
-            value === null ? "text-neutral-400" : ok ? "text-brand-ink" : "text-neutral-700 dark:text-neutral-200"
-        )}>
-            {x(value)}
-            {ok && value !== null && <><span aria-hidden="true" title="강조 기준 충족"> ✓</span><span className="sr-only"> 강조 기준 충족</span></>}
-        </dd>
-    </div>
-);
+function Ratio({ label, value, ok, hint }: { label: string; value: number | null; ok: boolean; hint: string }) {
+    const t = useTranslations("screener");
+    const analysis = useTranslations("analysis");
+    const locale = useLocale();
+    return (
+        <div title={hint}>
+            <dt>{label}</dt>
+            <dd className={cn(
+                value === null ? "text-neutral-400" : ok ? "text-brand-ink" : "text-neutral-700 dark:text-neutral-200"
+            )}>
+                {value === null ? "—" : locale === "ko" ? `${value.toFixed(2)}x` : analysis("multiple", { value: value.toFixed(2) })}
+                {ok && value !== null && <><span aria-hidden="true" title={t("highlightMet")}> ✓</span><span className="sr-only"> {t("highlightMet")}</span></>}
+            </dd>
+        </div>
+    );
+}
 
-export function StockRatioRow({ item, actions, isLiked, onToggleLike, comparison }: {
+export function StockRatioRow({ item, displayName, actions, isLiked, onToggleLike, comparison }: {
     item: Item;
+    displayName: string;
     actions: StockResultActions;
     isLiked: boolean;
     comparison?: ComparisonChoice;
     onToggleLike: (ticker: string, name: string) => void;
 }) {
+    const t = useTranslations("screener");
+    const ratio = useTranslations("assetRatios");
+    const locale = useLocale();
     const m = ratioMetrics(item);
     const us = item.country === "US";
+    const format = useFormatter();
+    const money = (value: number) => {
+        if (locale !== "ko") return format.number(us ? value : value * 100_000_000, {
+            style: "currency", currency: us ? "USD" : "KRW", currencyDisplay: "narrowSymbol",
+            notation: "compact", maximumFractionDigits: 2,
+        });
+        return us ? `$${(value / 1_000_000).toLocaleString(locale, { maximumFractionDigits: 1 })}M`
+            : `${Math.round(value).toLocaleString(locale)}억`;
+    };
 
     return (
         <StockResult
             ticker={item.ticker}
             name={item.name}
+            displayName={displayName}
             actions={actions}
             comparison={comparison}
             className={styles.ratioCard}
         >
             <div className="flex min-w-0 items-center gap-2">
-                <ComparisonCheckbox choice={comparison} name={item.name} />
+                <ComparisonCheckbox choice={comparison} name={displayName} />
                 <div className="min-w-0 flex-1">
                     <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-                        <span className="min-w-0 break-words text-base font-semibold text-neutral-900 dark:text-white leading-tight" title={item.name}>{item.name}</span>
-                        {item.ticker !== item.name && <span className="shrink-0 text-xs font-mono text-neutral-500">{item.ticker}</span>}
+                        <span className="min-w-0 break-words text-base font-semibold text-neutral-900 dark:text-white leading-tight" title={displayName}>{displayName}</span>
+                        {item.ticker !== displayName && <span className="shrink-0 text-xs font-mono text-neutral-500">{item.ticker}</span>}
                         <LiquidityBadge item={item} />
                         <FinancialFreshnessNotice compact periods={scanFinancialPeriods(item)} source={item.financial_source} collectionDate={scanCollectionDate(item)} />
                     </div>
                 </div>
                 <button
                     type="button"
-                    aria-label={`${item.name} 관심 종목`}
+                    aria-label={`${displayName} · ${t("watchlistLabel")}`}
                     aria-pressed={isLiked}
                     onClick={e => { e.stopPropagation(); onToggleLike(item.ticker, item.name); }}
                     className={cn(styles.tableLike, "flex h-11 w-11 items-center justify-center rounded shrink-0 transition-colors",
                         isLiked ? "text-rose-500" : "text-neutral-500 dark:text-neutral-400 hover:text-rose-500")}
-                    title={isLiked ? "관심 해제" : "관심 추가"}
+                    title={isLiked ? t("removeWatch") : t("addWatch")}
                 >
                     <Heart size={16} fill={isLiked ? "currentColor" : "none"} />
                 </button>
                 {comparison?.purpose !== "etf" && (
-                    <span className="flex min-h-11 shrink-0 items-center text-brand-ink" aria-hidden="true" title="종목 메뉴">
+                    <span className="flex min-h-11 shrink-0 items-center text-brand-ink" aria-hidden="true" title={t("stockMenu")}>
                         <Ellipsis size={16} />
                     </span>
                 )}
             </div>
 
             <div className={styles.ratioRows}>
-                <Bar label="유동자산" value={m.currentAssets} scale={m.scale} color="bg-brand-ink" us={us}
-                     hint="유동자산 — 1년 안에 현금화할 수 있는 자산" />
-                <Bar label="부채총계" value={m.liabilities} scale={m.scale} color="bg-[#d4525c]" us={us}
-                     hint="부채총계 — 갚아야 할 돈 전체" />
-                <Bar label="시가총액" value={m.marketCap} scale={m.scale} color="bg-neutral-400 dark:bg-neutral-500" us={us}
-                     hint="시가총액 — 시장이 이 회사에 매긴 값" />
+                <Bar label={ratio("currentAssets")} value={m.currentAssets} amount={money(m.currentAssets)} scale={m.scale} color="bg-brand-ink"
+                     hint={ratio("currentAssetsHint")} />
+                <Bar label={ratio("totalLiabilities")} value={m.liabilities} amount={money(m.liabilities)} scale={m.scale} color="bg-[#d4525c]"
+                     hint={ratio("liabilitiesHint")} />
+                <Bar label={ratio("marketCap")} value={m.marketCap} amount={money(m.marketCap)} scale={m.scale} color="bg-neutral-400 dark:bg-neutral-500"
+                     hint={ratio("marketCapHint")} />
             </div>
 
             <dl className={styles.ratioSummary}>
                 <div>
-                    <dt>순유동자산</dt>
-                    <dd>{money(m.netCurrent, us)}</dd>
+                    <dt>{ratio("netCurrentAssets")}</dt>
+                    <dd>{money(m.netCurrent)}</dd>
                 </div>
-                <Ratio label="순유동/시총" value={m.ncavMultiple} ok={(m.ncavMultiple ?? 0) >= 1}
-                       hint="(유동자산 − 부채총계) ÷ 시가총액. 1x 이상이면 순유동자산이 시가총액보다 큽니다." />
-                <Ratio label="부채/유동자산" value={m.debtToAssets} ok={m.debtToAssets !== null && m.debtToAssets < 1}
-                       hint="부채총계 ÷ 유동자산. 1x 미만이면 유동자산으로 부채를 덮을 수 있습니다." />
-                <Ratio label="시총/유동자산" value={m.capToAssets} ok={m.capToAssets !== null && m.capToAssets < 1}
-                       hint="시가총액 ÷ 유동자산." />
+                <Ratio label={ratio("ncavRatio")} value={m.ncavMultiple} ok={(m.ncavMultiple ?? 0) >= 1}
+                       hint={ratio("ncavHint")} />
+                <Ratio label={ratio("debtRatio")} value={m.debtToAssets} ok={m.debtToAssets !== null && m.debtToAssets < 1}
+                       hint={ratio("debtHint")} />
+                <Ratio label={ratio("priceRatio")} value={m.capToAssets} ok={m.capToAssets !== null && m.capToAssets < 1}
+                       hint={ratio("marketValueHint")} />
             </dl>
         </StockResult>
     );

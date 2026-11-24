@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale, useTranslations } from "next-intl";
 import { useState, useMemo } from "react";
 import {
     AreaChart,
@@ -62,6 +63,8 @@ const CustomTooltip = ({ active, payload, label, mode }: any) => {
 };
 
 export default function LineChart(props: any) {
+    const t = useTranslations("metrics");
+    const locale = useLocale();
     const { theme } = useTheme();
     // forceTheme — 앱 테마를 무시하고 이 명암으로 그린다. 늘 어두운 바탕 위에 놓이는
     // 자리(게임의 브라운관 화면)에서 밝은 테마의 축 글자가 사라지는 것을 막는다.
@@ -128,13 +131,13 @@ export default function LineChart(props: any) {
                     <>
                         <span className="text-neutral-500 dark:text-neutral-400">{activeDate}</span>
                         <span className="font-semibold text-neutral-900 dark:text-white">
-                            종가 {activePrice.toLocaleString('ko-KR', {
-                                style: 'currency', currency: props.currency ?? 'KRW',
-                            })}
+                            {t("closingPrice", { price: activePrice.toLocaleString(locale, {
+                                style: 'currency', currency: props.currency ?? 'KRW', currencyDisplay: 'narrowSymbol',
+                            }) })}
                         </span>
                     </>
                 ) : (
-                    <span className="text-neutral-500 dark:text-neutral-400">차트에 마우스를 올리거나 터치하여 날짜·종가 확인</span>
+                    <span className="text-neutral-500 dark:text-neutral-400">{t("chartHint")}</span>
                 )}
             </div>
         )}

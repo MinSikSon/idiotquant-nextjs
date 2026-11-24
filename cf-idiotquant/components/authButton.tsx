@@ -1,4 +1,5 @@
 "use client"
+import { useTranslations } from "next-intl";
 import { useSession, signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
@@ -36,6 +37,7 @@ function ProviderAuthButton({ provider, pending, onClick, label }: {
     onClick: () => void
     label: string
 }) {
+  const t = useTranslations("login");
     const google = provider === "google"
     const loading = pending === provider
     return (
@@ -49,12 +51,13 @@ function ProviderAuthButton({ provider, pending, onClick, label }: {
         >
             {loading ? <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                 : google ? <GoogleIcon size={18} /> : <KakaoIcon size={18} />}
-            {loading ? `${google ? "Google" : "카카오"} 연결 중...` : label}
+            {loading ? t(google ? "connectingGoogle" : "connectingKakao") : label}
         </button>
     )
 }
 
 export default function AuthButton({ callbackUrl = "/screener" }: { callbackUrl?: string }) {
+  const t = useTranslations("login");
     const { data: session, status } = useSession()
     const [pending, setPending] = useState<Pending>(null)
     const router = useRouter()
@@ -73,7 +76,7 @@ export default function AuthButton({ callbackUrl = "/screener" }: { callbackUrl?
         return (
             <div className="flex items-center justify-center gap-2 py-3 text-sm text-neutral-500 dark:text-neutral-400">
                 <span className="inline-block w-4 h-4 rounded-full border-2 border-neutral-300 border-t-neutral-600 animate-spin" />
-                이동 중...
+                {t("redirecting")}
             </div>
         )
     }
@@ -90,8 +93,8 @@ export default function AuthButton({ callbackUrl = "/screener" }: { callbackUrl?
     // 연결 중에는 두 제공자 버튼을 함께 잠근다.
     return (
         <div className="flex flex-col gap-2">
-            <ProviderAuthButton provider="kakao" pending={pending} onClick={() => handleLogin("kakao")} label="카카오로 로그인" />
-            <ProviderAuthButton provider="google" pending={pending} onClick={() => handleLogin("google")} label="Google로 로그인" />
+            <ProviderAuthButton provider="kakao" pending={pending} onClick={() => handleLogin("kakao")} label={t("kakao")} />
+            <ProviderAuthButton provider="google" pending={pending} onClick={() => handleLogin("google")} label={t("google")} />
         </div>
     )
 }

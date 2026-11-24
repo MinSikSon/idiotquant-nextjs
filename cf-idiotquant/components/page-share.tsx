@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Camera, ChevronDown, Copy, Download, Link2, MoreHorizontal, Share2, X } from "lucide-react";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -26,6 +27,7 @@ export function PageShareTools({ share, children, inMenu = false }: {
   children?: ReactNode;
   inMenu?: boolean;
 }) {
+  const t = useTranslations("sharing");
   const hasMenu = Boolean(children);
   const pathname = usePathname();
   const dialog = useRef<HTMLDialogElement>(null);
@@ -75,7 +77,7 @@ export function PageShareTools({ share, children, inMenu = false }: {
         if (!controller.signal.aborted) setContent({ kind, url });
       }
     } catch {
-      if (!controller.signal.aborted) setError(kind === "link" ? "공유 링크를 만들지 못했습니다. 창을 닫고 다시 시도해 주세요." : "화면을 캡처하지 못했습니다. 창을 닫고 다시 시도해 주세요.");
+      if (!controller.signal.aborted) setError(kind === "link" ? t("linkFailed") : t("captureFailed"));
     }
   }
 
@@ -86,11 +88,11 @@ export function PageShareTools({ share, children, inMenu = false }: {
       if (content?.kind === "image" && content.capture) await navigator.clipboard.write([new ClipboardItem({ "image/png": content.capture.file })]);
       if (current?.signal.aborted) return;
       setError("");
-      setNotice(content?.kind === "link" ? "링크를 복사했습니다." : "이미지를 복사했습니다.");
+      setNotice(content?.kind === "link" ? t("linkCopied") : t("imageCopied"));
     } catch {
       if (!current?.signal.aborted) {
         setNotice("");
-        setError(content?.kind === "link" ? "아래 주소를 직접 선택해 복사해 주세요." : "이미지 저장을 이용해 주세요.");
+        setError(content?.kind === "link" ? t("copyManually") : t("useDownload"));
       }
     }
   }
@@ -100,7 +102,7 @@ export function PageShareTools({ share, children, inMenu = false }: {
     : content?.kind === "image" && content.capture ? { files: [content.capture.file] } : undefined;
   const canShare = !!shareData && typeof navigator.share === "function"
     && (!shareData.files || navigator.canShare?.(shareData));
-  const title = content?.kind === "image" ? "화면 캡처" : "링크 공유";
+  const title = content?.kind === "image" ? t("captureScreen") : t("shareLink");
   const link = shareData?.url ? new URL(shareData.url) : null;
   const expires = link?.pathname === "/share" && link.searchParams.has("id");
 
@@ -110,15 +112,15 @@ export function PageShareTools({ share, children, inMenu = false }: {
     catch (error) {
       if (!current?.signal.aborted && (!(error instanceof Error) || error.name !== "AbortError")) {
         setNotice("");
-        setError("공유하지 못했습니다. 복사하거나 저장해 주세요.");
+        setError(t("shareFailed"));
       }
     }
   }
 
   const menuItems = <>
     <div className="flex flex-col">
-      <button type="button" onClick={() => void open("link")} className={MENU_ITEM} aria-haspopup="dialog"><Link2 size={17} aria-hidden="true" /> 링크 공유</button>
-      <button type="button" onClick={() => void open("image")} className={cn(MENU_ITEM, !inMenu && "md:hidden")} aria-haspopup="dialog"><Camera size={17} aria-hidden="true" /> 화면 캡처</button>
+      <button type="button" onClick={() => void open("link")} className={MENU_ITEM} aria-haspopup="dialog"><Link2 size={17} aria-hidden="true" /> {t("shareLink")}</button>
+      <button type="button" onClick={() => void open("image")} className={cn(MENU_ITEM, !inMenu && "md:hidden")} aria-haspopup="dialog"><Camera size={17} aria-hidden="true" /> {t("captureScreen")}</button>
     </div>
     {children}
   </>;
@@ -126,15 +128,15 @@ export function PageShareTools({ share, children, inMenu = false }: {
   return <>
     {inMenu ? menuItems : <div data-share-controls className="flex shrink-0 items-center">
       <button type="button" onClick={() => void open("image")} className={TOOL + " service-button hidden justify-center md:inline-flex"} aria-haspopup="dialog">
-        <Camera size={17} aria-hidden="true" /> 캡처
+        <Camera size={17} aria-hidden="true" /> {t("capture")}
       </button>
-      {!children && <button type="button" onClick={() => void open("link")} className={TOOL + " service-button hidden justify-center md:inline-flex"} aria-label="링크 공유" aria-haspopup="dialog">
-        <Link2 size={17} aria-hidden="true" /> 공유
+      {!children && <button type="button" onClick={() => void open("link")} className={TOOL + " service-button hidden justify-center md:inline-flex"} aria-label={t("shareLink")} aria-haspopup="dialog">
+        <Link2 size={17} aria-hidden="true" /> {t("share")}
       </button>}
-      <NavigationPopover label="페이지 도구" className="page-share-menu" trigger={
-        <button type="button" aria-label="페이지 도구" className={cn(TOOL, "justify-center", !hasMenu && "md:hidden")}>
+      <NavigationPopover label={t("pageTools")} className="page-share-menu" trigger={
+        <button type="button" aria-label={t("pageTools")} className={cn(TOOL, "justify-center", !hasMenu && "md:hidden")}>
           <MoreHorizontal size={20} className={hasMenu ? "md:hidden" : undefined} aria-hidden="true" />
-          {hasMenu && <><span className="hidden md:inline">도구</span><ChevronDown size={14} className="hidden md:block" aria-hidden="true" /></>}
+          {hasMenu && <><span className="hidden md:inline">{t("tools")}</span><ChevronDown size={14} className="hidden md:block" aria-hidden="true" /></>}
         </button>
       }>
         {menuItems}
@@ -144,25 +146,25 @@ export function PageShareTools({ share, children, inMenu = false }: {
       className="fixed inset-0 m-auto max-h-[90dvh] w-[calc(100%_-_32px)] max-w-lg overflow-auto rounded-lg border border-neutral-200 bg-surface-canvas p-4 text-neutral-900 backdrop:bg-black/50 dark:border-neutral-700 dark:bg-surface-dark-canvas dark:text-neutral-100">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-base font-semibold">{title}</h2>
-        <button type="button" onClick={() => dialog.current?.close()} aria-label="공유 창 닫기" className={TOOL + " justify-center"}><X size={18} aria-hidden="true" /></button>
+        <button type="button" onClick={() => dialog.current?.close()} aria-label={t("close")} className={TOOL + " justify-center"}><X size={18} aria-hidden="true" /></button>
       </div>
       {content?.kind === "link" && content.url && <>
-        <input aria-label="공유 링크" readOnly value={content.url} onFocus={event => event.target.select()} className={`mb-2 min-h-11 w-full rounded border border-neutral-300 bg-transparent px-3 text-base dark:border-neutral-600 ${CONTROL_FOCUS_CLS}`} />
+        <input aria-label={t("link")} readOnly value={content.url} onFocus={event => event.target.select()} className={`mb-2 min-h-11 w-full rounded border border-neutral-300 bg-transparent px-3 text-base dark:border-neutral-600 ${CONTROL_FOCUS_CLS}`} />
         <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={() => void copy()} className={TOOL}><Copy size={16} aria-hidden="true" /> 링크 복사</button>
-          {canShare && <button type="button" onClick={() => void shareNative()} className={TOOL}><Share2 size={16} aria-hidden="true" /> 링크 공유</button>}
+          <button type="button" onClick={() => void copy()} className={TOOL}><Copy size={16} aria-hidden="true" /> {t("copyLink")}</button>
+          {canShare && <button type="button" onClick={() => void shareNative()} className={TOOL}><Share2 size={16} aria-hidden="true" /> {t("shareLink")}</button>}
         </div>
-        {expires && <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">이 링크는 생성 후 30일 동안 열 수 있습니다.</p>}
+        {expires && <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">{t("expires")}</p>}
       </>}
       {content?.kind === "image" && content.capture && content.preview && <>
-        <Image unoptimized src={content.preview} alt="현재 화면 캡처" width={content.capture.width} height={content.capture.height} className="h-auto max-h-[55dvh] w-full rounded object-contain" />
+        <Image unoptimized src={content.preview} alt={t("imageAlt")} width={content.capture.width} height={content.capture.height} className="h-auto max-h-[55dvh] w-full rounded object-contain" />
         <div className="mt-2 flex flex-wrap gap-2">
-          <button type="button" onClick={() => { const file = content.capture?.file; if (file) downloadFile(file, file.name); }} className={TOOL}><Download size={16} aria-hidden="true" /> 이미지 저장</button>
-          {typeof ClipboardItem !== "undefined" && typeof navigator.clipboard?.write === "function" && <button type="button" onClick={() => void copy()} className={TOOL}><Copy size={16} aria-hidden="true" /> 이미지 복사</button>}
-          {canShare && <button type="button" onClick={() => void shareNative()} className={TOOL}><Share2 size={16} aria-hidden="true" /> 이미지 공유</button>}
+          <button type="button" onClick={() => { const file = content.capture?.file; if (file) downloadFile(file, file.name); }} className={TOOL}><Download size={16} aria-hidden="true" /> {t("saveImage")}</button>
+          {typeof ClipboardItem !== "undefined" && typeof navigator.clipboard?.write === "function" && <button type="button" onClick={() => void copy()} className={TOOL}><Copy size={16} aria-hidden="true" /> {t("copyImage")}</button>}
+          {canShare && <button type="button" onClick={() => void shareNative()} className={TOOL}><Share2 size={16} aria-hidden="true" /> {t("shareImage")}</button>}
         </div>
       </>}
-      {content && !shareData && !error && <p role="status" className="py-3 text-sm">{content.kind === "link" ? "링크 준비 중…" : "화면 캡처 중…"}</p>}
+      {content && !shareData && !error && <p role="status" className="py-3 text-sm">{content.kind === "link" ? t("preparingLink") : t("capturing")}</p>}
       {notice && <p role="status" className="mt-2 text-sm text-brand-ink">{notice}</p>}
       {error && <p role="alert" className="mt-2 text-sm text-rose-700 dark:text-rose-300">{error}</p>}
     </dialog>

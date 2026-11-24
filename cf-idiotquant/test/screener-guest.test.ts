@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import { koreanIntl } from './intl-mock.ts';
+import { krStockDisplayName } from '../lib/utils/krStockNames.ts';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import test from 'node:test';
@@ -34,6 +36,9 @@ function screen(query = '', loggedIn = false, savedFilters = {}) {
         return [states[index], (value: any) => { states[index] = typeof value === 'function' ? value(states[index]) : value; }];
       },
     },
+    'next-intl': koreanIntl,
+    '@/i18n/strategy-labels': { useStrategyText: () => (id: string) => id },
+    '@/lib/utils/krStockNames': { krStockDisplayName },
     'react/jsx-runtime': { jsx: element, jsxs: element, Fragment: 'Fragment' },
     'next/navigation': { useRouter: () => ({ push: (url: string) => pushes.push(url) }), useSearchParams: () => new URLSearchParams(query) },
     'next-auth/react': { useSession: () => ({ data: loggedIn ? { user: { id: 'user' } } : null, status: loggedIn ? 'authenticated' : 'unauthenticated' }) },

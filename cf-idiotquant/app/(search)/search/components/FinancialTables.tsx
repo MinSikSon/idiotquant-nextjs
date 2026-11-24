@@ -1,5 +1,7 @@
 "use client";
 
+import { useLocale, useTranslations } from "next-intl";
+import { useFinancialLabels } from "@/i18n/financial-labels";
 import { krIncomeValue } from "@/lib/utils/financialIncome";
 import { latestFirst } from "@/lib/utils/financialPeriods";
 import React, { useMemo } from "react";
@@ -109,15 +111,17 @@ function pctChange(curr: number, prev: number): number | null {
 }
 
 function InfoPopover({ label, description, isTotal }: { label: string; description: string; isTotal?: boolean }) {
+      const t = useTranslations("statementTable");
+    const translated = useFinancialLabels();
     return (
         <Popover.Root>
             <Popover.Trigger asChild>
                 <button
                     type="button"
-                    aria-label={`${label} 설명`}
+                    aria-label={t("explanation", { label: translated(label) })}
                     className={cn("inline-flex min-h-11 w-full items-center justify-between gap-2 rounded-md text-left leading-relaxed hover:bg-neutral-100 dark:hover:bg-surface-dark-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2", isTotal ? "font-semibold text-neutral-900 dark:text-neutral-100" : "font-medium text-neutral-700 dark:text-neutral-300")}
                 >
-                    <span>{label}</span><Info size={14} aria-hidden="true" className="shrink-0 text-neutral-500 dark:text-neutral-400" />
+                    <span>{translated(label)}</span><Info size={14} aria-hidden="true" className="shrink-0 text-neutral-500 dark:text-neutral-400" />
                 </button>
             </Popover.Trigger>
             <Popover.Portal>
@@ -128,8 +132,8 @@ function InfoPopover({ label, description, isTotal }: { label: string; descripti
                     collisionPadding={12}
                     className="z-[200] w-80 max-w-[calc(100vw-24px)] rounded-xl bg-neutral-900 border border-neutral-700/60 p-4 shadow-2xl shadow-black/40 animate-in fade-in zoom-in-95 duration-150 focus:outline-none"
                 >
-                    <p className="text-[13px] font-semibold text-amber-400 mb-1.5 uppercase tracking-normal">{label}</p>
-                    <p className="text-[13px] text-neutral-300 leading-relaxed">{description}</p>
+                    <p className="text-[13px] font-semibold text-amber-400 mb-1.5 uppercase tracking-normal">{translated(label)}</p>
+                    <p className="text-[13px] text-neutral-300 leading-relaxed">{translated(description)}</p>
                     <Popover.Arrow className="fill-neutral-700/60" />
                 </Popover.Content>
             </Popover.Portal>
@@ -162,20 +166,24 @@ const TAB_TRIGGER_BASE = [
 ].join(" ");
 
 function FinancialTable({ sections, data, showHistory }: { sections: SectionDef[]; data: any; showHistory: boolean }) {
+      const t = useTranslations("statementTable");
+    const translated = useFinancialLabels();
+    const locale = useLocale();
+    const currency = new Intl.NumberFormat(locale, { style: "currency", currency: "KRW", currencyDisplay: "narrowSymbol", notation: "compact", maximumFractionDigits: 2 });
     const periods: any[] = useMemo(() => latestFirst<any>(data?.output).slice(0, 5), [data]);
 
     if (!periods.length) return (
         <div className="py-16 text-center text-[15px] text-neutral-600 dark:text-neutral-300">
-            데이터를 불러올 수 없습니다
+            {t("loadFailed")}
         </div>
     );
 
     return (
         <div className="min-w-0">
-            <p className="border-b border-neutral-200 px-3 py-2 text-[13px] leading-5 text-neutral-600 dark:border-border-subtle-dark dark:text-neutral-300 sm:hidden">좌우로 밀어 이전 공시와 비교하세요. 항목명은 왼쪽에 고정됩니다.</p>
-        <div className="relative max-w-full overflow-x-auto overscroll-x-contain focus-visible:outline focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-brand" role="region" aria-label="기간별 재무 수치" tabIndex={0}>
+            <p className="border-b border-neutral-200 px-3 py-2 text-[13px] leading-5 text-neutral-600 dark:border-border-subtle-dark dark:text-neutral-300 sm:hidden">{t("scrollHint")}</p>
+        <div className="relative max-w-full overflow-x-auto overscroll-x-contain focus-visible:outline focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-brand" role="region" aria-label={t("financialPeriods")} tabIndex={0}>
             <table className="w-full table-fixed border-separate border-spacing-0 text-[15px]" style={{ minWidth: `${128 + periods.length * 144}px` }}>
-                <caption className="sr-only">계정과목별 최근 공시와 이전 공시의 재무 수치</caption>
+                <caption className="sr-only">{t("caption")}</caption>
                 <colgroup>
                     <col className="w-32 sm:w-44" />
                     {periods.map((_, index) => <col key={index} className="w-36 sm:w-44" />)}
@@ -184,7 +192,7 @@ function FinancialTable({ sections, data, showHistory }: { sections: SectionDef[
                     <tr className="border-b border-neutral-200 dark:border-border-subtle-dark">
                         <th scope="col" className="sticky left-0 z-20 border-b border-r border-neutral-200 bg-neutral-50 px-4 py-4 text-left dark:border-border-subtle-dark dark:bg-surface-dark-card sm:px-5">
                             <span className="text-[13px] font-semibold text-neutral-600 dark:text-neutral-300 select-none">
-                                계정과목
+                                {t("account")}
                             </span>
                         </th>
                         {periods.map((p, i) => {
@@ -204,7 +212,7 @@ function FinancialTable({ sections, data, showHistory }: { sections: SectionDef[
                                             "text-[13px] font-semibold",
                                             i === 0 ? "text-brand-ink dark:text-brand-ink" : "text-neutral-600 dark:text-neutral-300"
                                         )}>
-                                            {i === 0 ? "최근 공시" : `이전 공시 ${i}`}
+                                            {i === 0 ? t("latest") : t("earlier", { count: i })}
                                         </span>
                                         <span className={cn(
                                             "text-[14px] font-semibold leading-6 tabular-nums whitespace-normal break-keep",
@@ -232,7 +240,7 @@ function FinancialTable({ sections, data, showHistory }: { sections: SectionDef[
                                         section.accent
                                     )}>
                                         <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", section.dotColor)} />
-                                        <span>{section.label}</span>
+                                        <span>{translated(section.label)}</span>
                                     </div>
                                 </th>
                             </tr>
@@ -282,7 +290,7 @@ function FinancialTable({ sections, data, showHistory }: { sections: SectionDef[
                                                                     : "font-medium text-neutral-700 dark:text-neutral-300",
                                                         "text-[15px]"
                                                     )}>
-                                                        {!showHistory && i > 0 && val !== null ? <LockedAnalysisValue /> : val === null ? "—" : formatKoreanUnit(val * ONE_HUNDRED_MILLION)}
+                                                        {!showHistory && i > 0 && val !== null ? <LockedAnalysisValue /> : val === null ? "—" : (locale === "ko" ? formatKoreanUnit(val * ONE_HUNDRED_MILLION) : currency.format(val * ONE_HUNDRED_MILLION))}
                                                     </span>
                                                     {i === 0 && row.key !== "tax_difference" && <YoYBadge pct={yoy} showHistory={showHistory} />}
                                                 </div>
@@ -301,17 +309,19 @@ function FinancialTable({ sections, data, showHistory }: { sections: SectionDef[
 }
 
 export default function FinancialTables({ kiBS, kiIS, showHistory = true }: FinancialTablesProps) {
+    const t = useTranslations("statementTable");
+    const financial = useTranslations("financialLabels");
     if (!kiBS?.output?.length || !kiIS?.output?.length) return null;
 
     const footer = (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-2 sm:px-5 py-2 sm:py-3 border-t border-neutral-100 dark:border-border-subtle-dark">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
             <span className="text-[13px] text-neutral-600 dark:text-neutral-300 font-mono">
-                DART 공시 기준 · 단위 억 원 (KRW 100M) · 최근 5개 결산기
+                {t("source")}
             </span>
             <div className="ml-auto flex items-center gap-2">
                 <span className="text-[13px] font-mono text-neutral-600 dark:text-neutral-300 flex items-center gap-1">
-                    <TrendingUp size={8} className="text-emerald-500" /> YoY 전기 대비
+                    <TrendingUp size={8} className="text-emerald-500" /> {t("periodChange")}
                 </span>
             </div>
         </div>
@@ -327,18 +337,18 @@ export default function FinancialTables({ kiBS, kiIS, showHistory = true }: Fina
                         className={cn(TAB_TRIGGER_BASE, "data-[state=active]:text-brand-ink-hover dark:data-[state=active]:text-brand-ink")}
                     >
                         <BookOpen size={12} />
-                        재무상태표
+                        {financial("balanceSheet")}
                     </Tabs.Trigger>
                     <Tabs.Trigger
                         value="is"
                         className={cn(TAB_TRIGGER_BASE, "data-[state=active]:text-emerald-700 dark:data-[state=active]:text-emerald-300")}
                     >
                         <BarChart2 size={12} />
-                        손익계산서
+                        {financial("incomeStatement")}
                     </Tabs.Trigger>
                 </Tabs.List>
                 <span className="hidden sm:block text-[13px] font-mono font-bold text-neutral-600 dark:text-neutral-300 uppercase tracking-normal">
-                    Balance Sheet · P&amp;L
+                    {t("summary")}
                 </span>
             </div>
 
