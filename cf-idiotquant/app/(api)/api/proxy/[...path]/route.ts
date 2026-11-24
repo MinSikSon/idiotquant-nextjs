@@ -55,7 +55,7 @@ async function handleProxy(req: Request, { params }: { params: Promise<{ path: s
         const fetchOptions: RequestInit = {
             method,
             headers: backendHeaders,
-            ...(isBilling ? { redirect: 'error' as const } : {}),
+            ...(isBilling ? { redirect: 'manual' as const } : {}),
             ...((isTradingOperations || isWatchReview || isBilling) ? { cache: 'no-store' as const } : {}),
         };
 
@@ -83,6 +83,9 @@ async function handleProxy(req: Request, { params }: { params: Promise<{ path: s
         // user id(?owner=)가 실려 있어서 그대로 찍으면 로그가 곧 사본이 된다.
         console.log(`[Proxy] ${method} /${path}`);
         const response = await fetch(backendUrl, fetchOptions);
+        if (isBilling && response.status >= 300 && response.status < 400) {
+            return NextResponse.json({ success: false, error: "결제 Worker 주소를 확인해 주세요." }, { status: 502, headers: { 'Cache-Control': 'no-store' } });
+        }
 
         const newResponseHeaders = new Headers(response.headers);
         // 응답 본문 가공 및 압축 해제 전달을 위해 압축 관련 메타 헤더 제거
