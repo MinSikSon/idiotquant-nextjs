@@ -345,6 +345,13 @@ export default function ProfilePage() {
                     </div>
                 </div>
 
+                {process.env.NEXT_PUBLIC_STRIPE_TEST_CHECKOUT === "true" && (
+                    <Link href="/billing" className="flex min-h-11 items-center justify-between gap-3 px-5 py-3 text-sm font-semibold text-neutral-700 hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand dark:text-neutral-300 dark:hover:bg-surface-dark-hover">
+                        테스트 결제
+                        <ChevronRight size={16} aria-hidden="true" />
+                    </Link>
+                )}
+
                 {/* Admin: Portfolio section */}
                 {isMasterUser && (
                     <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
