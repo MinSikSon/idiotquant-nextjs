@@ -408,15 +408,6 @@ export function NavbarWithSimpleLinks() {
         </section>)}
       </nav>
       <div className="navigation-menu-group flex flex-wrap items-center gap-2 px-2.5 pt-2"><ThemeChanger compact /><QuickNavigation compact={compact} items={[...mainNav, ...utilityNav]} /></div>
-      <LanguageSelect />
-      {(compact || status === "authenticated") && <div className="navigation-menu-group mt-2 pt-1">
-        {status === "authenticated" ? <>
-          <Link href="/profile" aria-current={pathname === "/profile" ? "page" : undefined} className="navigation-menu-link flex min-h-11 items-center gap-3 px-2.5 py-2">
-            <UserRound size={18} aria-hidden="true" className="shrink-0 text-neutral-500 dark:text-neutral-400" /><span className="min-w-0 flex-1 break-words">{session?.user?.name || t("account")}<span className="ml-2 text-xs text-neutral-500 dark:text-neutral-400">{t("account")}</span></span>
-          </Link>
-          <button type="button" onClick={() => signOut({ callbackUrl: "/" })} className="navigation-menu-link flex min-h-11 w-full items-center gap-3 px-2.5 py-2 text-left"><LogOut size={18} aria-hidden="true" className="shrink-0" />{t("signOut")}</button>
-        </> : status === "unauthenticated" ? <Link href="/login" className="navigation-menu-link flex min-h-11 items-center gap-3 px-2.5 py-2"><LogIn size={18} aria-hidden="true" className="shrink-0" />{t("signIn")}</Link> : <span className="block p-3 text-sm text-neutral-500 dark:text-neutral-400">{t("checkingAccount")}</span>}
-      </div>}
     </div>;
   };
 
@@ -576,11 +567,25 @@ export function NavbarWithSimpleLinks() {
             {inEtfFeed && <Link href="/etfs/draft" className={cn("service-button-quiet order-first inline-flex min-h-11 shrink-0 items-center gap-1 rounded px-1.5 text-sm font-semibold text-brand-ink sm:px-2 md:min-h-7", CONTROL_FOCUS_CLS)}>
               <Plus size={16} aria-hidden="true" />{t("createEtf")}
             </Link>}
-            {status === "unauthenticated" && pathname !== "/login" && <Link href="/login"
-              className="service-button navigation-login hidden min-h-7 shrink-0 items-center gap-1.5 whitespace-nowrap px-3 font-semibold md:inline-flex">
-              <LogIn size={16} aria-hidden="true" />{t("signIn")}
-            </Link>}
             <StockSearchTrigger showDesktopLabel />
+            <NavigationPopover label={t("account")} className="navigation-service-popover text-base md:text-sm" trigger={
+              <button type="button" aria-label={t("account")} className="service-button navigation-action navigation-account">
+                <UserRound size={18} aria-hidden="true" />
+              </button>
+            }>
+              {(status !== "unauthenticated" || pathname !== "/login") && <div className="mb-1 border-b border-[var(--service-line)] pb-1">
+                {status === "authenticated" ? <>
+                  <Link href="/profile" aria-current={pathname === "/profile" ? "page" : undefined} className="navigation-menu-link flex min-h-11 items-center gap-3 px-2.5 py-2">
+                    <UserRound size={18} aria-hidden="true" className="shrink-0" />
+                    <span className="min-w-0 flex-1 break-words">{session?.user?.name || t("account")}{session?.user?.name && <span className="ml-2 text-xs text-[var(--service-muted)]">{t("account")}</span>}</span>
+                  </Link>
+                  <button type="button" onClick={() => signOut({ callbackUrl: "/" })} className="navigation-menu-link flex min-h-11 w-full items-center gap-3 px-2.5 py-2 text-left"><LogOut size={18} aria-hidden="true" className="shrink-0" />{t("signOut")}</button>
+                </> : status === "unauthenticated" ?
+                  <Link href="/login" className="navigation-menu-link flex min-h-11 items-center gap-3 px-2.5 py-2"><LogIn size={18} aria-hidden="true" className="shrink-0" />{t("signIn")}</Link> :
+                  <span className="block px-2.5 py-3 text-[var(--service-muted)]">{t("checkingAccount")}</span>}
+              </div>}
+              <LanguageSelect />
+            </NavigationPopover>
           </div>
         </div>
         {fixedPageIdentity && (
