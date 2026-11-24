@@ -66,6 +66,8 @@ function header(initialY = 0, pathname = '/analyze') {
     return {
       identity: tree.find(node => node.props?.className?.includes('navigation-analysis-identity')),
       header,
+      desktopNav: tree.find(node => node.props?.['aria-label'] === '주요 서비스'),
+      bottomNav: tree.find(node => node.props?.['aria-label'] === '하단 메뉴'),
       fixedLogo: nodes(header).find(node => node.props?.['aria-label'] === 'idiotquant 홈'),
       identityLogoRow: identity?.props.children,
       title: tree.find(node => 'data-navigation-scroll-title' in (node.props ?? {})),
@@ -75,6 +77,18 @@ function header(initialY = 0, pathname = '/analyze') {
   for (const effect of effects) effect();
   return { render, scroll(y: number) { window.scrollY = y; listeners.get('scroll')!(); return render(); } };
 }
+
+test('주요 메뉴는 발굴과 분석을 순서대로 표시하고 현재 경로의 항목을 선택한다', () => {
+  for (const pathname of ['/screener', '/analyze']) {
+    const { desktopNav, bottomNav } = header(0, pathname).render();
+    const desktopLinks = desktopNav.props.children[0];
+    const bottomTabs = bottomNav.props.children[0];
+    assert.deepEqual(Array.from(desktopLinks, (node: any) => node.props.children), ['오늘', '발굴', '분석']);
+    assert.deepEqual(Array.from(bottomTabs, (node: any) => node.props.label), ['오늘', '발굴', '분석']);
+    assert.equal(desktopLinks.find((node: any) => node.props['aria-current'] === 'page')?.props.href, pathname);
+    assert.equal(bottomTabs.find((node: any) => node.props.isActive)?.props.href, pathname);
+  }
+});
 
 test('모바일 분석: 로고 행이 스크롤만큼 접히고 종목 정보가 고정 상단으로 이동한다', () => {
   const app = header();

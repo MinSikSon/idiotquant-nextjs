@@ -17,7 +17,7 @@ import { useViewAsUser, setViewAsUser } from "@/lib/viewAsUser";
 import {
   Home,
   Filter,
-  Search,
+  ChartLine,
   Calculator,
   LogOut,
   LogIn,
@@ -49,10 +49,11 @@ type NavItem = {
   authOnly?: boolean;   // 로그인해야 보이는 항목 (미들웨어가 어차피 막지만, 못 쓸 메뉴를 띄우지 않는다)
 };
 
-// 순서·아이콘을 홈 온보딩 설명 순서에 맞춤: 발굴(🥇) → 분석(💎).
+// 홈 온보딩 순서에 맞춰 발굴 다음에 분석을 표시한다.
 const MAIN_NAV: NavItem[] = [
   { label: "오늘", href: "/", icon: Home, exact: true },
-  { label: "종목 발굴", href: "/screener",    icon: Filter,     emoji: "🥇", badge: "Pro" },
+  { label: "발굴", href: "/screener", icon: Filter, emoji: "🥇", badge: "Pro" },
+  { label: "분석", href: "/analyze", icon: ChartLine },
 ];
 
 const DESKTOP_NAV_CONTROL = cn(
@@ -64,7 +65,6 @@ const MOBILE_NAV_CONTROL = "service-button-quiet service-nav-tab flex h-full min
 // '더 보기'로 숨기는 보조 메뉴
 const MORE_NAV: NavItem[] = [
   { label: "가상 ETF", href: "/etfs", icon: Layers },
-  { label: "종목 분석", href: "/analyze", icon: Search },
   { label: "종목 비교", href: "/compare", icon: GitCompareArrows },
   { label: "내 관심종목", href: "/screener?filter=liked", icon: Heart, authOnly: true },
   { label: "수익 계산", href: "/calculator",  icon: Calculator              },
@@ -93,6 +93,8 @@ const MOBILE_PAGE_TITLES: Pick<NavItem, "href" | "label" | "exact">[] = [
   { href: "/admin/ticker-map", label: "종목 매핑" },
   { href: "/ledger/join", label: "가계부 초대" },
   { href: "/games/crafting-prototype", label: "제작 게임" },
+  { href: "/screener", label: "종목 발굴" },
+  { href: "/analyze", label: "종목 분석" },
   ...MAIN_NAV,
   ...MORE_NAV,
   ...PORTFOLIO_NAV,
@@ -157,9 +159,9 @@ function SideItem({
 
 /* ─── BOTTOM TAB ITEM (mobile) ────────────────────────────────────── */
 function TabItem({
-  href, label, icon: Icon, emoji, isActive,
+  href, label, icon: Icon, isActive,
 }: {
-  href: string; label: string; icon?: any; emoji?: string; isActive: boolean;
+  href: string; label: string; icon?: any; isActive: boolean;
 }) {
   return (
     <Link
@@ -371,7 +373,7 @@ export function NavbarWithSimpleLinks() {
 
   const serviceMenu = (compact: boolean) => {
     const research = [...(compact ? MAIN_NAV : []), ...moreNav.filter(item =>
-      ["/analyze", "/compare", "/screener?filter=liked"].includes(item.href))];
+      ["/compare", "/screener?filter=liked"].includes(item.href))];
     const groups = [
       { label: "종목 리서치", items: research },
       { label: "투자 도구 · 게임", items: moreNav.filter(item => !research.includes(item)) },
@@ -609,9 +611,10 @@ export function NavbarWithSimpleLinks() {
       <nav ref={bottomNav} aria-label="하단 메뉴" data-bottom-navigation data-hidden={bottomHidden && !moreSheet && !inEtfFeed || undefined}
         onFocusCapture={() => setBottomHidden(false)}
         className={cn(inGame ? "hidden" : "md:hidden fixed bottom-0 left-0 right-0 z-40 flex items-center gap-1.5 px-3 bg-surface-canvas/95 backdrop-blur-[12px] dark:bg-surface-dark-canvas/95")}>
-        <TabItem href="/" label="오늘" icon={Home} isActive={pathname === "/"} />
-        {/* 게임(Rogue)은 아래쪽 탭이 아니라 "메뉴" 안에 있다(MORE_NAV) */}
-        <TabItem href="/screener"   label="발굴"   icon={Filter}     emoji="🥇" isActive={pathname.startsWith("/screener")} />
+        {MAIN_NAV.map(item => (
+          <TabItem key={item.href} href={item.href} label={item.label} icon={item.icon}
+            isActive={active(pathname, item.href, item.exact)} />
+        ))}
         <NavigationPopover label="서비스 메뉴" side="top" onOpenChange={open => { setMoreSheet(open); setBottomHidden(false); }} trigger={
           <button type="button" data-current-section={moreActive || undefined} className={MOBILE_NAV_CONTROL}>
             <LayoutGrid size={20} aria-hidden="true" /><span className="text-xs font-semibold leading-none">더 보기</span>
