@@ -50,10 +50,17 @@ export function HomeWatchlist() {
     const visible = filter === 'valued' ? valued : filter === 'unscanned' ? unscanned : items;
     const filters = [{ key: 'all', label: t("all"), count: items.length }, { key: 'valued', label: t("valued"), count: valued.length }, { key: 'unscanned', label: t("unscanned"), count: unscanned.length }] as const;
 
-    const alertBenefits = process.env.NEXT_PUBLIC_STRIPE_TEST_CHECKOUT === 'true' && (
-        <Link href="/billing#alert-benefits" className="service-button-quiet inline-flex min-h-11 items-center gap-1 text-sm font-medium text-brand-ink">
-            {t("alertBenefits")}<ArrowRight size={16} aria-hidden="true" />
-        </Link>
+    const alertBenefits = (
+        <div className="flex flex-wrap gap-x-3">
+            <Link href="/mailing" className="service-button-quiet inline-flex min-h-11 items-center gap-1 text-sm font-medium text-brand-ink">
+                {t("memberMailing")}<ArrowRight size={16} aria-hidden="true" />
+            </Link>
+            {process.env.NEXT_PUBLIC_STRIPE_TEST_CHECKOUT === 'true' && (
+                <Link href="/billing#alert-benefits" className="service-button-quiet inline-flex min-h-11 items-center gap-1 text-sm font-medium text-brand-ink">
+                    {t("alertBenefits")}<ArrowRight size={16} aria-hidden="true" />
+                </Link>
+            )}
+        </div>
     );
 
     return <div className="mx-auto w-full max-w-4xl space-y-4 px-2 py-3 text-base text-neutral-900 dark:text-neutral-100 sm:px-6 sm:py-8">
