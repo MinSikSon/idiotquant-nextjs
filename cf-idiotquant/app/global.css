@@ -872,6 +872,84 @@ html:has(.navigation-header [data-page-tabs]) { --navigation-h: 92px; }
 }
 .navigation-header .navigation-main { border-bottom: 1px solid; border-color: inherit; }
 
+/* 스크리너 데스크톱: 탐색 링크와 페이지 도구를 한 줄에서 구분한다. */
+@media (min-width: 768px) {
+  [data-screener-navigation] {
+    --screener-nav-accent: #e89419;
+    --screener-nav-hover: color-mix(in srgb, var(--service-ink) 8%, transparent);
+    background: #f8f8ef;
+    border-bottom: 0;
+    box-shadow: inset 0 -1px var(--service-line);
+  }
+  .dark [data-screener-navigation] { background: #22241f; }
+
+  [data-screener-navigation] .navigation-main {
+    max-width: 1440px;
+    margin-inline: auto;
+    padding-inline: 24px;
+    border-bottom: 0;
+  }
+  [data-screener-navigation] [data-navigation-desktop-context] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  [data-screener-navigation] .navigation-menubar-item {
+    position: relative;
+    background: transparent;
+    box-shadow: none;
+    font-size: .875rem;
+  }
+  [data-screener-navigation] .navigation-menubar-item:hover,
+  [data-screener-navigation] .navigation-menubar-item[aria-expanded="true"] {
+    background: var(--screener-nav-hover);
+  }
+  [data-screener-navigation] .navigation-menubar-item[aria-current="page"] {
+    font-weight: 700;
+  }
+  [data-screener-navigation] .navigation-menubar-item[aria-current="page"]::after {
+    position: absolute;
+    inset-inline: 10px;
+    bottom: 0;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--screener-nav-accent);
+    content: "";
+  }
+  [data-screener-navigation] [data-navigation-actions]:not(:empty) {
+    padding-inline-start: 4px;
+    border-inline-start: 1px solid var(--service-line);
+  }
+  [data-screener-navigation] .navigation-search > button,
+  [data-screener-navigation] [data-screener-refresh],
+  [data-screener-navigation] [data-share-controls] button[aria-label="페이지 도구"] {
+    border: 0;
+    border-radius: 5px;
+    background: transparent;
+    box-shadow: none;
+    color: var(--service-ink);
+    outline-offset: -2px;
+  }
+  [data-screener-navigation] .navigation-search > button {
+    width: auto;
+    min-width: 44px;
+    gap: 6px;
+    padding-inline: 10px;
+    font-size: .875rem;
+  }
+  [data-screener-navigation] .navigation-search > button > span { display: inline; }
+  [data-screener-navigation] [data-screener-refresh] { padding-inline: 0; }
+  [data-screener-navigation] .navigation-search > button:hover,
+  [data-screener-navigation] [data-screener-refresh]:hover:not(:disabled),
+  [data-screener-navigation] [data-share-controls] button[aria-label="페이지 도구"]:hover,
+  [data-screener-navigation] [data-share-controls] button[aria-label="페이지 도구"][aria-expanded="true"] {
+    background: var(--screener-nav-hover);
+  }
+}
+
 [data-page-tabs] :is(.navigation-strategy-tabs, [data-compact-tabs]) button { border-width: 0 0 2px; border-bottom-color: transparent; background: transparent; box-shadow: none; }
 [data-page-tabs] [data-compact-tabs] button { min-width: 96px; }
 [data-page-tabs] [data-compact-tabs][data-balance-tabs] button { min-width: 0; }

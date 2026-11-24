@@ -31,9 +31,8 @@ function Bar({ label, value, scale, color, hint, us }: {
                     className={cn(styles.bar, color)}
                     style={{ width: `${barPct(value, scale)}%` }}
                 />
-                <span className={cn(styles.marker, color)} style={{ left: `${barPct(value, scale)}%` }} />
             </div>
-            <span className="w-[76px] shrink-0 text-right text-sm font-mono font-semibold tabular-nums text-neutral-700 dark:text-neutral-200">
+            <span className="text-right text-sm font-semibold tabular-nums text-neutral-700 dark:text-neutral-200">
                 {money(value, us)}
             </span>
         </div>
@@ -41,15 +40,14 @@ function Bar({ label, value, scale, color, hint, us }: {
 }
 
 const Ratio = ({ label, value, ok, hint }: { label: string; value: number | null; ok: boolean; hint: string }) => (
-    <div className="flex shrink-0 items-baseline gap-1 whitespace-nowrap" title={hint}>
-        <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-300">{label}</p>
-        <p className={cn(
-            "text-sm font-mono font-semibold tabular-nums",
+    <div title={hint}>
+        <dt>{label}</dt>
+        <dd className={cn(
             value === null ? "text-neutral-400" : ok ? "text-brand-ink" : "text-neutral-700 dark:text-neutral-200"
         )}>
             {x(value)}
             {ok && value !== null && <><span aria-hidden="true" title="강조 기준 충족"> ✓</span><span className="sr-only"> 강조 기준 충족</span></>}
-        </p>
+        </dd>
     </div>
 );
 
@@ -69,29 +67,34 @@ export function StockRatioRow({ item, actions, isLiked, onToggleLike, comparison
             name={item.name}
             actions={actions}
             comparison={comparison}
-            className={cn(styles.ratioCard, "cursor-pointer py-2 sm:p-4 hover:bg-neutral-100/50 dark:hover:bg-surface-dark-hover")}
+            className={styles.ratioCard}
         >
-            <div className="flex items-center gap-2 mb-2 sm:mb-3">
+            <div className="flex min-w-0 items-center gap-2">
                 <ComparisonCheckbox choice={comparison} name={item.name} />
                 <div className="min-w-0 flex-1">
                     <div className="flex min-w-0 flex-wrap items-center gap-1.5">
                         <span className="min-w-0 break-words text-base font-semibold text-neutral-900 dark:text-white leading-tight" title={item.name}>{item.name}</span>
                         {item.ticker !== item.name && <span className="shrink-0 text-xs font-mono text-neutral-500">{item.ticker}</span>}
-                        <span className="shrink-0"><LiquidityBadge item={item} /></span>
+                        <LiquidityBadge item={item} />
+                        <FinancialFreshnessNotice compact periods={scanFinancialPeriods(item)} source={item.financial_source} collectionDate={scanCollectionDate(item)} />
                     </div>
-                    <div className="mt-1 min-w-0"><FinancialFreshnessNotice compact periods={scanFinancialPeriods(item)} source={item.financial_source} collectionDate={scanCollectionDate(item)} /></div>
                 </div>
                 <button
                     type="button"
                     aria-label={`${item.name} 관심 종목`}
                     aria-pressed={isLiked}
                     onClick={e => { e.stopPropagation(); onToggleLike(item.ticker, item.name); }}
-                    className={cn("flex h-11 w-11 items-center justify-center rounded shrink-0 transition-colors",
-                        isLiked ? "text-rose-500" : "text-neutral-300 dark:text-neutral-600 hover:text-rose-400")}
+                    className={cn(styles.tableLike, "flex h-11 w-11 items-center justify-center rounded shrink-0 transition-colors",
+                        isLiked ? "text-rose-500" : "text-neutral-500 dark:text-neutral-400 hover:text-rose-500")}
                     title={isLiked ? "관심 해제" : "관심 추가"}
                 >
-                    <Heart size={18} fill={isLiked ? "currentColor" : "none"} />
+                    <Heart size={16} fill={isLiked ? "currentColor" : "none"} />
                 </button>
+                {comparison?.purpose !== "etf" && (
+                    <span className="flex min-h-11 shrink-0 items-center text-brand-ink" aria-hidden="true" title="종목 메뉴">
+                        <Ellipsis size={16} />
+                    </span>
+                )}
             </div>
 
             <div className={styles.ratioRows}>
@@ -103,24 +106,18 @@ export function StockRatioRow({ item, actions, isLiked, onToggleLike, comparison
                      hint="시가총액 — 시장이 이 회사에 매긴 값" />
             </div>
 
-            <div className="mt-2 sm:mt-3 pt-2 border-t border-neutral-100 dark:border-border-subtle-dark flex items-center justify-between gap-3 overflow-x-auto">
+            <dl className={styles.ratioSummary}>
+                <div>
+                    <dt>순유동자산</dt>
+                    <dd>{money(m.netCurrent, us)}</dd>
+                </div>
                 <Ratio label="순유동/시총" value={m.ncavMultiple} ok={(m.ncavMultiple ?? 0) >= 1}
-                       hint="(유동자산 − 부채총계) ÷ 시가총액. 1x 이상이면 청산가치가 시가총액보다 큽니다." />
+                       hint="(유동자산 − 부채총계) ÷ 시가총액. 1x 이상이면 순유동자산이 시가총액보다 큽니다." />
                 <Ratio label="부채/유동자산" value={m.debtToAssets} ok={m.debtToAssets !== null && m.debtToAssets < 1}
-                       hint="부채총계 ÷ 유동자산. 1x 미만이면 유동자산만으로 부채를 덮을 수 있습니다." />
+                       hint="부채총계 ÷ 유동자산. 1x 미만이면 유동자산으로 부채를 덮을 수 있습니다." />
                 <Ratio label="시총/유동자산" value={m.capToAssets} ok={m.capToAssets !== null && m.capToAssets < 1}
-                       hint="시가총액 ÷ 유동자산. 낮을수록 자산 대비 싸게 거래됩니다." />
-            </div>
-
-            <p className="mt-2 overflow-x-auto text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">
-                순유동자산 <span className="font-mono font-bold">{money(m.netCurrent, us)}</span>
-                {m.ncavMultiple !== null && m.ncavMultiple >= 1
-                    ? " — 시가총액보다 큽니다(청산가치 이하 거래)."
-                    : m.netCurrent < 0
-                        ? " — 유동자산으로 부채를 덮지 못합니다."
-                        : " — 시가총액에는 못 미칩니다."}
-            </p>
-            {comparison?.purpose !== "etf" && <span className="mt-2 flex min-h-11 items-center justify-end gap-0.5 text-xs font-semibold text-brand-ink" aria-hidden="true">종목 메뉴 <Ellipsis size={14} /></span>}
+                       hint="시가총액 ÷ 유동자산." />
+            </dl>
         </StockResult>
     );
 }

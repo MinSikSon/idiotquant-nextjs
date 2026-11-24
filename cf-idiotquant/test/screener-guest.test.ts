@@ -27,6 +27,7 @@ function screen(query = '', loggedIn = false, savedFilters = {}) {
       memo: (component: any) => component, Suspense: 'Suspense',
       useMemo: (fn: () => unknown) => fn(), useCallback: (fn: unknown) => fn,
       useEffect: (fn: () => unknown) => effects.push(fn),
+      useRef: (initial: unknown) => ({ current: initial }),
       useState: (initial: any) => {
         const index = cursor++;
         if (!(index in states)) states[index] = typeof initial === 'function' ? initial() : initial;
@@ -84,23 +85,23 @@ function screen(query = '', loggedIn = false, savedFilters = {}) {
 }
 
 test('비로그인도 전체 종목을 필터·정렬한 상위 10개를 보고 현재 조건을 공유한다', () => {
-  const page = screen('maxpbr=1&sort=ncav_ratio&order=asc&view=card');
+  const page = screen('maxpbr=1&sort=ncav_ratio&order=asc&view=card', false, { view: 'ratio' });
   page.effects.slice(0, 4).forEach(effect => effect());
   assert.equal(page.requests.length, 1);
   assert.equal(page.requests[0].scan.limit, undefined);
-  const cards = page.nodes().filter(node => node.type === 'StockGridCard');
-  assert.equal(cards.length, 10);
-  assert.equal(cards[0].props.item.ticker, '000044');
-  assert.equal(cards[9].props.item.ticker, '000035');
+  const rows = page.nodes().filter(node => node.type?.name === 'TableRow');
+  assert.equal(rows.length, 10);
+  assert.equal(rows[0].props.item.ticker, '000044');
+  assert.equal(rows[9].props.item.ticker, '000035');
   const shareUrl = new URL(page.find('PageHeader').props.share.path, 'https://idiotquant.com');
   for (const [key, value] of Object.entries({ maxpbr: '1', order: 'asc', from: 'share' })) {
     assert.equal(shareUrl.searchParams.get(key), value);
   }
   assert.equal(shareUrl.searchParams.get('sort'), null, '기본 정렬은 짧은 주소에서 생략한다');
   const reopened = screen(shareUrl.search.slice(1), false, { country: 'US', view: 'table', maxpbr: 0 });
-  assert.equal(reopened.nodes().filter(node => node.type === 'StockGridCard')[0].props.item.ticker, '000044');
+  assert.equal(reopened.nodes().filter(node => node.type?.name === 'TableRow')[0].props.item.ticker, '000044');
   assert.equal(page.find('FactorWorkbench'), undefined);
-  const filterButton = page.nodes().find(node => node.type === 'button' && node.props.children?.some?.((child: any) => child === '필터'));
+  const filterButton = page.nodes().find(node => node.type === 'button' && node.props.children?.some?.((child: any) => child === '상세 필터'));
   filterButton.props.onClick();
   page.render();
   assert.ok(page.nodes().some(node => node.props?.['aria-label'] === '상세 필터'));
@@ -108,6 +109,16 @@ test('비로그인도 전체 종목을 필터·정렬한 상위 10개를 보고 
   page.nodes().find(node => node.type === 'button' && node.props.children === '결과 해석').props.onClick();
   page.render();
   assert.equal(page.find('ResultSummary').props.list.length, 10);
+});
+
+test('예전 OR 공유 링크도 선택한 전략을 모두 충족하는 종목만 보여준다', () => {
+  const single = screen('strategies=ncav');
+  assert.ok(single.nodes().some(node => node.type?.name === 'TableRow'));
+  const combined = screen('strategies=ncav,low_pbr&mode=OR&from=share');
+  assert.ok(combined.nodes().some(node => node.props?.children === '조건에 맞는 종목이 없습니다'));
+  const shareUrl = new URL(combined.find('PageHeader').props.share.path, 'https://idiotquant.com');
+  assert.equal(shareUrl.searchParams.get('strategies'), 'ncav,low_pbr');
+  assert.equal(shareUrl.searchParams.has('mode'), false);
 });
 
 test('묶어 보기와 저장된 관심 필터로 비로그인 제한을 벗어나거나 빈 목록이 되지 않는다', () => {
@@ -129,21 +140,21 @@ test('비로그인 비교는 4종목까지 선택한다', () => {
   const page = screen();
   const compareControls = () => page.nodes().find(node => node.props?.['aria-label'] === '선택한 종목 비교');
   assert.equal(compareControls(), undefined);
-  const first = page.find('StockGridCard').props;
+  const first = page.nodes().find(node => node.type?.name === 'TableRow').props;
   first.actions.toggleComparison(first.item.ticker);
   page.render();
   assert.ok(compareControls());
-  assert.equal(page.find('StockGridCard').props.comparison.selected, true);
+  assert.equal(page.nodes().find(node => node.type?.name === 'TableRow').props.comparison.selected, true);
   for (let index = 1; index < 4; index++) {
-    page.nodes().filter(node => node.type === 'StockGridCard')[index].props.comparison.toggle();
+    page.nodes().filter(node => node.type?.name === 'TableRow')[index].props.comparison.toggle();
     page.render();
   }
-  const cards = page.nodes().filter(node => node.type === 'StockGridCard');
-  assert.equal(cards[4].props.comparison.disabled, true);
-  assert.equal(cards[0].props.comparison.disabled, false);
-  cards[4].props.comparison.toggle();
+  const rows = page.nodes().filter(node => node.type?.name === 'TableRow');
+  assert.equal(rows[4].props.comparison.disabled, true);
+  assert.equal(rows[0].props.comparison.disabled, false);
+  rows[4].props.comparison.toggle();
   page.render();
-  assert.equal(page.nodes().filter(node => node.type === 'StockGridCard' && node.props.comparison.selected).length, 4);
+  assert.equal(page.nodes().filter(node => node.type?.name === 'TableRow' && node.props.comparison.selected).length, 4);
 });
 
 
@@ -157,7 +168,10 @@ test('짧은 월드컵 링크로 들어오면 선택 결과와 필터를 복원�
   page.render();
   assert.equal(page.find('PageHeader').props.share.path, '/screener?w=kbbbb');
   const applied = screen('w=kaabu&from=share');
-  assert.equal(applied.nodes().find(node => node.props?.['aria-label'] === '필터 설정 방식').props.children[1].props['aria-pressed'], true);
+  assert.equal(applied.nodes().find(node => node.props?.id === 'screener-worldcup').props.hidden, true);
   assert.equal(applied.find('PageHeader').props.share.path, '/screener?w=kaabu&from=share');
-  assert.equal(page.nodes().find(node => node.props?.['aria-label'] === '필터 설정 방식').props.children[0].props['aria-pressed'], true);
+  assert.equal(page.nodes().find(node => node.props?.id === 'screener-worldcup').props.hidden, false);
+  page.nodes().find(node => node.type === 'button' && node.props.children === '직접 필터로 돌아가기').props.onClick();
+  page.render();
+  assert.equal(page.nodes().find(node => node.props?.id === 'screener-worldcup').props.hidden, true);
 });
