@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import BillingCheckout from "./BillingCheckout";
 
-export const metadata: Metadata = { title: "테스트 결제" };
+export const metadata: Metadata = { title: "이용권 관리" };
 export const runtime = "edge";
 
 export default async function BillingPage({ searchParams }: {
