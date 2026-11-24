@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { apiRequest } from "@/lib/features/apiRequest";
 import { billingDate, formatBillingAmount } from "@/lib/utils/billingFormat";
 
@@ -11,7 +11,7 @@ type BillingData = {
     offer: Money;
     payments: Payment[];
     returnStatus: "paid" | "pending" | null;
-    alerts?: { status: "active" | "expired"; expiresAt: string; deliveryEnabled: boolean } | null;
+    alerts?: { status: "active" | "expired"; expiresAt: string; deliveryEnabled: boolean; recipients?: string[] } | null;
 };
 
 export default function BillingCheckout({ returnedSessionId, canceled }: {
@@ -26,6 +26,7 @@ export default function BillingCheckout({ returnedSessionId, canceled }: {
     const [redirecting, setRedirecting] = useState(false);
     const [loadError, setLoadError] = useState("");
     const [checkoutError, setCheckoutError] = useState("");
+    const [recipient, setRecipient] = useState("");
 
     useEffect(() => {
         let current = true;
@@ -54,7 +55,8 @@ export default function BillingCheckout({ returnedSessionId, canceled }: {
         setRefresh(count => count + 1);
     }
 
-    async function openCheckout() {
+    async function openCheckout(event: FormEvent<HTMLFormElement>) {
+        event.preventDefault();
         if (submitting.current) return;
         submitting.current = true;
         setRedirecting(true);
@@ -62,7 +64,7 @@ export default function BillingCheckout({ returnedSessionId, canceled }: {
         attemptId.current ??= crypto.randomUUID();
 
         const result = await apiRequest("/billing/checkout", {
-            method: "POST", body: { attemptId: attemptId.current },
+            method: "POST", body: { attemptId: attemptId.current, recipients: [recipient.trim()] },
         });
         const url = result.data?.url;
         if (result.success && typeof url === "string" && url.startsWith("https://checkout.stripe.com/")) {
@@ -94,12 +96,12 @@ export default function BillingCheckout({ returnedSessionId, canceled }: {
             </div>
 
             <section id="alert-benefits" aria-labelledby="alert-benefits-title" className="scroll-mt-16 rounded-lg border border-neutral-300 bg-white p-4 dark:border-border-subtle-dark dark:bg-surface-dark-card sm:p-5">
-                <h2 id="alert-benefits-title" className="text-lg font-semibold">관심종목 변화 알림 · 30일 이용권</h2>
+                <h2 id="alert-benefits-title" className="text-lg font-semibold">관심종목 목표가 알림 · 30일 이용권</h2>
                 <dl className="mt-3 grid gap-3 break-keep text-sm leading-relaxed sm:grid-cols-[auto_1fr] sm:gap-x-5">
                     <dt className="font-semibold">받는 내용</dt>
-                    <dd className="text-neutral-600 dark:text-neutral-300">관심종목의 최근 두 스캔에서 달라진 가격·PER·PBR과 전략 조건의 충족·이탈을 요약합니다. 이메일에서 종목 분석을 열 수 있습니다.</dd>
+                    <dd className="text-neutral-600 dark:text-neutral-300">좋아요한 종목의 조회 가격과 분석 페이지의 전략별 목표가를 비교해 도달 여부를 알려드립니다. 이메일에서 종목 분석을 열 수 있습니다.</dd>
                     <dt className="font-semibold">받는 조건</dt>
-                    <dd className="text-neutral-600 dark:text-neutral-300">오늘 화면에서 관심종목을 저장하면 됩니다. 비교할 스캔과 새로운 변화가 있는 날, 오전 9시(한국 시간) 발송 작업에서 계정 이메일로 하루 최대 한 통을 보냅니다.</dd>
+                    <dd className="text-neutral-600 dark:text-neutral-300">지정된 테스트 계정은 오전 9시(한국 시간) 발송 작업에서 새 목표가 현황을 받습니다. 등록한 주소로 하루 최대 한 통을 보냅니다.</dd>
                     <dt className="font-semibold">이용 기간</dt>
                     <dd className="text-neutral-600 dark:text-neutral-300">결제 확인 시점부터 30일입니다. 만료되면 발송이 중단되며 자동 갱신은 없습니다.</dd>
                 </dl>
@@ -132,11 +134,33 @@ export default function BillingCheckout({ returnedSessionId, canceled }: {
                         </p>}
                         <p className="mt-2 text-lg font-semibold tabular-nums">{formatBillingAmount(billing.offer)}</p>
                         <p className="mt-1 text-sm leading-relaxed text-neutral-600 dark:text-neutral-300">1회 테스트 결제 · 자동 갱신 없음</p>
-                        <button type="button" onClick={openCheckout} disabled={redirecting || pending || loading || billing.alerts?.status === "active"}
-                            className="service-button mt-4 min-h-11 bg-brand px-4 text-sm font-semibold text-white hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-60 dark:text-surface-dark-canvas">
-                            {redirecting ? "Stripe 결제창 여는 중" : "30일 이용권 테스트 구매"}
-                        </button>
-                        {checkoutError && <p role="alert" className="mt-2 text-sm">{checkoutError}</p>}
+                        {billing.alerts?.status === "active" ? (
+                            billing.alerts.recipients?.[0] && (
+                                <div className="mt-4 text-sm">
+                                    <p className="font-semibold">알림 수신 이메일</p>
+                                    <p className="mt-1 break-all text-neutral-600 dark:text-neutral-300">{billing.alerts.recipients[0]}</p>
+                                </div>
+                            )
+                        ) : (
+                            <form onSubmit={openCheckout} className="mt-4">
+                                <fieldset disabled={redirecting || pending || loading} className="space-y-2">
+                                    <label className="block text-sm font-semibold">
+                                        알림 수신 이메일
+                                        <input type="email" name="recipient" value={recipient} required maxLength={254} autoComplete="email"
+                                            onChange={event => {
+                                                attemptId.current = null;
+                                                setCheckoutError("");
+                                                setRecipient(event.target.value);
+                                            }}
+                                            className="mt-1 block min-h-11 w-full rounded-md border border-neutral-400 bg-transparent px-3 text-base font-normal dark:border-border-subtle-dark" />
+                                    </label>
+                                    <button type="submit" className="service-button mt-2 min-h-11 bg-brand px-4 text-sm font-semibold text-white hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-60 dark:text-surface-dark-canvas">
+                                        {redirecting ? "Stripe 결제창 여는 중" : "30일 이용권 테스트 구매"}
+                                    </button>
+                                </fieldset>
+                                {checkoutError && <p role="alert" className="mt-2 text-sm">{checkoutError}</p>}
+                            </form>
+                        )}
                     </section>
                     <section aria-labelledby="billing-history">
                         <h2 id="billing-history" className="text-lg font-semibold">최근 테스트 결제</h2>

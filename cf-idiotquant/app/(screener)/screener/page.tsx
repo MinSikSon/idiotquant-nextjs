@@ -6,6 +6,7 @@ import { useLocale, useTranslations } from "next-intl";
 import * as Popover from "@radix-ui/react-popover";
 import * as Tabs from "@radix-ui/react-tabs";
 import Link from "next/link";
+import { ToastContainer, useToast } from "@/components/ui/toast";
 
 import { ComparisonCheckbox, type ComparisonChoice } from "@/components/comparison-checkbox";
 import { addEtfHoldings, ETF_HOLDING_LIMIT } from "@/lib/features/communityEtfs/draft";
@@ -21,7 +22,7 @@ import {
 import { getScanDailyDates, getScanWeeklyPeriods } from "@/lib/features/algorithmTrade/algorithmTradeAPI";
 import {
     selectLikedTickers, selectLikedList, selectTogglePending, selectLikesState,
-    reqGetMyLikes, reqToggleLike,
+    reqGetMyLikes, reqToggleLike, WATCHLIST_MARKET_LIMIT,
 } from "@/lib/features/stockLikes/stockLikesSlice";
 import { cn } from "@/lib/utils";
 import { PageHeader, PAGE_ACTION_CLS, PAGE_PRIMARY_ACTION_CLS } from "@/components/pageHeader";
@@ -468,6 +469,7 @@ function ScreenerContent() {
   const locale = useLocale();
   const t = useTranslations("screener");
   const analysis = useTranslations("analysis");
+  const { toasts, addToast, removeToast } = useToast();
   const strategyText = useStrategyText();
     const dispatch = useAppDispatch();
     const router = useRouter();
@@ -1047,14 +1049,22 @@ function ScreenerContent() {
         likedList.find(item => matchesWatchStock(item, { ticker, name, isUs: country === 'US' }))?.ticker
             ?? (country === 'US' ? ticker : name);
 
-    const handleToggleLike = (ticker: string, name: string) => {
+    const handleToggleLike = async (ticker: string, name: string) => {
         if (!isLoggedIn) {
             const stock = { ticker: country === 'US' ? ticker : name, name, isUs: country === 'US', createdAt: Date.now() };
             try { sessionStorage.setItem(PENDING_WATCH_KEY, JSON.stringify(stock)); } catch { /* 로그인 뒤 수동 저장 가능 */ }
             router.push(`/login?callbackUrl=${encodeURIComponent(analysisHref(stock.ticker, returnPath))}`);
             return;
         }
-        dispatch(reqToggleLike({ ticker: watchTickerFor(ticker, name), name, isUs: country === 'US' }));
+        const watchTicker = watchTickerFor(ticker, name);
+        const wasLiked = likedTickers.has(watchTicker);
+        try {
+            await dispatch(reqToggleLike({ ticker: watchTicker, name, isUs: country === 'US' })).unwrap();
+        } catch (error) {
+            if (error !== WATCHLIST_MARKET_LIMIT) await dispatch(reqGetMyLikes());
+            addToast('error', error === WATCHLIST_MARKET_LIMIT
+                ? analysis("watchlistMarketLimit") : analysis(wasLiked ? "removeFailed" : "saveFailed"));
+        }
     };
 
     const scanDate = ncavDailyList.scanDate;
@@ -1244,6 +1254,7 @@ function ScreenerContent() {
     return (
         <Tooltip.Provider delayDuration={300}>
         <div id="screener-page" className={cn(styles.page, "landing-style-page min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas text-neutral-900 dark:text-neutral-100")}>
+            <ToastContainer toasts={toasts} onRemove={removeToast} />
 
             {/* ── 페이지 헤더 (공통 규칙) ── */}
             <PageHeader

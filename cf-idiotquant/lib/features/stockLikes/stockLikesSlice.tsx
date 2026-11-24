@@ -1,6 +1,8 @@
 import { createAppSlice } from "@/lib/createAppSlice";
 import { getMyLikes, toggleLike } from "./stockLikesAPI";
 
+export const WATCHLIST_MARKET_LIMIT = "WATCHLIST_MARKET_LIMIT";
+
 export interface LikedStockItem {
     ticker: string;
     stock_name: string | null;
@@ -72,8 +74,9 @@ export const stockLikesSlice = createAppSlice({
             }
         ),
         reqToggleLike: create.asyncThunk(
-            async (payload: { ticker: string; name?: string; isUs?: boolean }) => {
+            async (payload: { ticker: string; name?: string; isUs?: boolean }, { rejectWithValue }) => {
                 const result = await toggleLike(payload.ticker, payload.name, payload.isUs);
+                if (result?.code === WATCHLIST_MARKET_LIMIT) return rejectWithValue(WATCHLIST_MARKET_LIMIT);
                 if (result?.success === false) throw new Error(result?.error ?? "API error");
                 return { ticker: payload.ticker, liked: result.liked as boolean, name: payload.name, isUs: payload.isUs };
             },
@@ -124,8 +127,9 @@ export const stockLikesSlice = createAppSlice({
                 rejected: (state, action) => {
                     const ticker = action.meta.arg.ticker;
                     state.togglePending = state.togglePending.filter((t) => t !== ticker);
-                    // revert optimistic update by re-fetching
-                    // (slice doesn't revert automatically; caller can dispatch reqGetMyLikes)
+                    if (action.payload === WATCHLIST_MARKET_LIMIT && !state.likedList.some(item => item.ticker === ticker)) {
+                        state.likedTickers = state.likedTickers.filter(t => t !== ticker);
+                    }
                 },
             }
         ),

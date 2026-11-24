@@ -290,6 +290,7 @@
     "removed": "Removed from your watchlist.",
     "saved": "Saved to your watchlist.",
     "removeFailed": "Could not remove the stock from your watchlist. Try again.",
+    "watchlistMarketLimit": "You can save up to 30 stocks per market (Korea and the U.S.).",
     "saveFailed": "Could not save the stock. Select the heart again.",
     "draftFirst": "Added to the draft. Add one more stock from the same market.",
     "draftSaved": "The draft now contains {count} stocks. Open it to review the holdings.",

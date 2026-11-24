@@ -37,6 +37,10 @@ function screen(query = '', loggedIn = false, savedFilters = {}) {
       },
     },
     'next-intl': koreanIntl,
+    '@/components/ui/toast': {
+      ToastContainer: 'ToastContainer',
+      useToast: () => ({ toasts: [], addToast: () => {}, removeToast: () => {} }),
+    },
     '@/i18n/strategy-labels': { useStrategyText: () => (id: string) => id },
     '@/lib/utils/krStockNames': { krStockDisplayName },
     'react/jsx-runtime': { jsx: element, jsxs: element, Fragment: 'Fragment' },
