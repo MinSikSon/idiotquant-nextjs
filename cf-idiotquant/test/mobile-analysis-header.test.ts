@@ -5,7 +5,7 @@ import test from 'node:test';
 import ts from 'typescript';
 import { navigationScroll } from '../lib/navigation-scroll.ts';
 
-function header(initialY = 0, pathname = '/analyze') {
+function header(initialY = 0, pathname = '/analyze', role?: 'user' | 'admin', viewAsUser = false) {
   const states: unknown[] = [];
   let cursor = 0;
   let effects: (() => unknown)[] = [];
@@ -47,10 +47,14 @@ function header(initialY = 0, pathname = '/analyze') {
       };
       if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx };
       if (name === 'next/navigation') return { usePathname: () => pathname };
-      if (name === 'next-auth/react') return { useSession: () => ({ status: 'unauthenticated' }) };
-      if (name === '@/lib/viewAsUser') return { useViewAsUser: () => false };
+      if (name === 'next-auth/react') return { useSession: () => ({
+        status: role ? 'authenticated' : 'unauthenticated',
+        data: role ? { user: { role, name: 'Test user' } } : null,
+      }) };
+      if (name === '@/lib/viewAsUser') return { useViewAsUser: () => viewAsUser };
       if (name === '@/lib/utils') return { cn: (...values: unknown[]) => values.filter(Boolean).join(' ') };
       if (name === '@/lib/navigation-scroll') return { navigationScroll };
+      if (name === '@/components/quick-navigation') return { default: 'QuickNavigation' };
       if (name === '@/components/mobile-page-header') return { useMobilePageHeader: () => ({ active: true }) };
       return {};
     },
@@ -68,6 +72,8 @@ function header(initialY = 0, pathname = '/analyze') {
       header,
       desktopNav: tree.find(node => node.props?.['aria-label'] === '주요 서비스'),
       bottomNav: tree.find(node => node.props?.['aria-label'] === '하단 메뉴'),
+      serviceMenus: tree.filter(node => ['추가 서비스', '전체 서비스'].includes(node.props?.['aria-label'])),
+      quickNavigation: tree.filter(node => node.type === 'QuickNavigation'),
       fixedLogo: nodes(header).find(node => node.props?.['aria-label'] === 'idiotquant 홈'),
       identityLogoRow: identity?.props.children,
       title: tree.find(node => 'data-navigation-scroll-title' in (node.props ?? {})),
@@ -87,6 +93,36 @@ test('주요 메뉴는 발굴과 분석을 순서대로 표시하고 현재 경�
     assert.deepEqual(Array.from(bottomTabs, (node: any) => node.props.label), ['오늘', '발굴', '분석']);
     assert.equal(desktopLinks.find((node: any) => node.props['aria-current'] === 'page')?.props.href, pathname);
     assert.equal(bottomTabs.find((node: any) => node.props.isActive)?.props.href, pathname);
+  }
+});
+
+test('더 보기와 빠른 이동에서 투자 도구와 게임은 관리자에게만 표시한다', () => {
+  const sessions = [
+    { role: undefined, viewAsUser: false },
+    { role: 'user', viewAsUser: false },
+    { role: 'admin', viewAsUser: false },
+    { role: 'admin', viewAsUser: true },
+  ] as const;
+  const toolLinks = ['/etfs', '/calculator', '/ledger', '/games'];
+  for (const { role, viewAsUser } of sessions) {
+    const { serviceMenus, quickNavigation } = header(0, '/', role, viewAsUser).render();
+    const showTools = role === 'admin' && !viewAsUser;
+    assert.equal(serviceMenus.length, 2);
+    assert.equal(quickNavigation.length, 2);
+    for (const menu of serviceMenus) {
+      const section = menu.props.children.find((item: any) => item.props['aria-label'] === '투자 도구 · 게임');
+      if (showTools) {
+        assert.deepEqual(Array.from(section.props.children[1], (link: any) => link.props.href), toolLinks);
+      } else {
+        assert.equal(section, undefined);
+      }
+    }
+    for (const entry of quickNavigation) {
+      const links = Array.from(entry.props.items, (item: any) => item.href);
+      assert.deepEqual(links.filter(href => toolLinks.includes(href)), showTools ? toolLinks : []);
+      assert.ok(links.includes('/compare'));
+      assert.equal(links.includes('/screener?filter=liked'), Boolean(role));
+    }
   }
 });
 
