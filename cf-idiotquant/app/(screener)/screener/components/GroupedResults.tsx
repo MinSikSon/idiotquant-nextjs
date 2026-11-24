@@ -1,5 +1,7 @@
 "use client";
 
+import { ChevronDown } from "lucide-react";
+import styles from "../screener.module.css";
 import { cn } from "@/lib/utils";
 import { STRATEGY_LABEL, STRATEGY_PRESETS_CLIENT } from "@/lib/constants/strategies";
 import { scanRoePercent } from "@/lib/utils/scanFinancials";
@@ -94,10 +96,12 @@ export function GroupedResults({
                 return (
                     <div key={g.key}>
                         <button
+                            type="button"
+                            aria-expanded={isOpen}
                             onClick={() => onToggle(g.key)}
-                            className="w-full flex items-center gap-2.5 px-[18px] py-2.5 bg-[#fbfbf9] dark:bg-surface-dark border-b border-neutral-100 dark:border-border-subtle-dark hover:bg-[#f5f4f1] dark:hover:bg-surface-dark-hover transition-colors text-left"
+                            className={styles.groupToggle}
                         >
-                            <span className={cn("text-xs text-neutral-400 transition-transform shrink-0", !isOpen && "-rotate-90")}>▾</span>
+                            <ChevronDown size={14} aria-hidden="true" className={cn("shrink-0", !isOpen && "-rotate-90")} />
                             {/* 폰에서는 한 줄에 이름·개수까지 들어가야 해서 아이콘을 한 단계 줄인다.
                                 20×14 격자 비율(1.4)은 유지해야 도트가 정수 배로 떨어진다. */}
                             {g.sector && (

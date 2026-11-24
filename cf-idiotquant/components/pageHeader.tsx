@@ -53,8 +53,10 @@ export function PageHeader({
   description,
   meta,
   compactMeta,
+  compactMetaOnScrollOnly = false,
   actions,
   share,
+  captureInMenu,
   primaryAction,
   primaryActionInMenu = false,
   tabs,
@@ -76,8 +78,11 @@ export function PageHeader({
   meta?: React.ReactNode;
   /** 모바일 헤더에 남길 핵심 정보(예: 현재가). */
   compactMeta?: React.ReactNode;
+  /** 모바일에서 요약을 스크롤 후 고정 상단바에만 표시한다. */
+  compactMetaOnScrollOnly?: boolean;
   actions?: React.ReactNode;
   share?: ScreenShare;
+  captureInMenu?: boolean;
   /** 상단 한 줄에 표시할 핵심 작업 하나. */
   primaryAction?: React.ReactNode;
   /** 핵심 작업을 상단 바로가기 대신 페이지 도구 메뉴에 표시할 때 사용한다. */
@@ -119,22 +124,22 @@ export function PageHeader({
     return () => setActive?.(false);
   }, [integrated, setActive]);
 
-  const titleContent = (<div data-page-title className="flex min-w-0 items-center gap-2">
+  const renderTitle = (titleMeta: React.ReactNode) => (<div data-page-title className="flex min-w-0 items-center gap-2">
       {icon && <span className="flex shrink-0 items-center [&>div]:!h-7 [&>div]:!w-7">{icon}</span>}
       <div className="min-w-0 flex-1">
         <h1 className="truncate text-base font-semibold tracking-tight text-neutral-900 dark:text-white md:text-sm">{mobile ? mobileTitle ?? title : title}</h1>
-        {visibleMeta && <div data-page-title-meta className="flex max-h-4 items-center gap-1.5 overflow-hidden whitespace-nowrap text-[11px] leading-4 text-neutral-600 dark:text-neutral-400">{visibleMeta}</div>}
+        {titleMeta && <div data-page-title-meta className="flex max-h-4 items-center gap-1.5 overflow-hidden whitespace-nowrap text-[11px] leading-4 text-neutral-600 dark:text-neutral-400">{titleMeta}</div>}
       </div>
     </div>);
 
   return (
     <>
-    {integrated && createPortal(titleContent, titleTarget!)}
-    {integrated && mobile && mobileTitleOnScroll && slots?.scrollTitleTarget && createPortal(titleContent, slots.scrollTitleTarget)}
+    {integrated && createPortal(renderTitle(mobile && compactMetaOnScrollOnly ? undefined : visibleMeta), titleTarget!)}
+    {integrated && mobile && mobileTitleOnScroll && slots?.scrollTitleTarget && createPortal(renderTitle(visibleMeta), slots.scrollTitleTarget)}
     {integrated && mobilePrimaryActionTarget && inlinePrimaryAction && createPortal(inlinePrimaryAction, mobilePrimaryActionTarget)}
     {integrated && createPortal(<div data-page-actions className="flex flex-nowrap items-center">
       {!mobilePrimaryActionTarget && inlinePrimaryAction}
-      <PageShareTools share={share}>
+      <PageShareTools share={share} captureInMenu={captureInMenu}>
         {(menuPrimaryAction || actions || description || meta) && <div className="mt-2 border-t border-neutral-200 pt-2 dark:border-neutral-700">
           <div data-page-secondary-actions className="flex flex-col gap-2">{menuPrimaryAction}{actions}</div>
           {(description || meta) && <div className="p-3 text-xs leading-6">{description}{meta && <div>{meta}</div>}</div>}

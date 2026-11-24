@@ -66,7 +66,7 @@ const COINS = [
   { lane: 0.87, size: 0.94, phase: 0.30, duration: 8.2, spin: 0.65 },
 ] as const;
 
-export default function HeroArt() {
+export default function HeroCoinRain({ coinScale = 1 }: { coinScale?: number }) {
   const mountRef = useRef<HTMLDivElement>(null);
   const theme = useAppSelector(selectTheme);
 
@@ -115,7 +115,7 @@ export default function HeroArt() {
     let previous: number | null = null;
 
     const draw = () => {
-      const radius = THREE.MathUtils.clamp(width * 0.10, 23, 39);
+      const radius = THREE.MathUtils.clamp(width * 0.10, 23, 39) * coinScale;
       COINS.forEach(({ lane, size, phase, duration, spin }, index) => {
         const progress = (elapsed / duration + phase) % 1;
         const fall = progress * (0.82 + 0.18 * progress);
@@ -185,7 +185,7 @@ export default function HeroArt() {
       renderer.dispose();
       renderer.domElement.remove();
     };
-  }, [theme]);
+  }, [theme, coinScale]);
 
   return <div ref={mountRef} className="h-full w-full" aria-hidden="true" />;
 }

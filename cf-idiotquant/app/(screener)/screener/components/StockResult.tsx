@@ -5,13 +5,14 @@ import { ChartNoAxesColumn, Minus, Plus } from "lucide-react";
 import { useRef, type ReactNode } from "react";
 import type { ComparisonChoice } from "@/components/comparison-checkbox";
 import { cn } from "@/lib/utils";
+import styles from "../screener.module.css";
 
 export type StockResultActions = {
     openDetails: (ticker: string, name: string) => void;
     toggleComparison: (ticker: string) => void;
 };
 
-const actionClass = "flex min-h-11 w-full items-center gap-2 rounded px-2 text-left text-sm font-medium hover:bg-surface-canvas focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-ink disabled:opacity-50 dark:hover:bg-surface-dark-hover";
+const actionClass = cn(styles.actionQuiet, "w-full disabled:opacity-50");
 
 export function StockResult({ ticker, name, actions, comparison, className, children }: {
     ticker: string;
@@ -46,7 +47,7 @@ export function StockResult({ ticker, name, actions, comparison, className, chil
                         onInteractOutside={event => {
                             if (event.target instanceof Node && trigger.current?.parentElement?.contains(event.target)) event.preventDefault();
                         }}
-                        className="z-50 w-56 max-w-[var(--radix-popover-content-available-width)] max-h-[var(--radix-popover-content-available-height)] overflow-y-auto rounded-lg border border-neutral-200 bg-white p-1 shadow-md dark:border-border-subtle-dark dark:bg-surface-dark-card">
+                        className={cn(styles.stockMenu, "z-50 w-56 max-w-[var(--radix-popover-content-available-width)] max-h-[var(--radix-popover-content-available-height)] overflow-y-auto rounded-lg border p-1 shadow-md")}>
                         <div className="px-2 py-1.5 font-semibold [overflow-wrap:anywhere]">{name}</div>
                         <Popover.Close type="button" onClick={() => actions.openDetails(ticker, name)} className={actionClass}>
                             <ChartNoAxesColumn size={16} aria-hidden="true" className="shrink-0" />

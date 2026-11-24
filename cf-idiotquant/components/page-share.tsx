@@ -21,7 +21,12 @@ type ShareContent =
   | { kind: "link"; url?: string }
   | { kind: "image"; capture?: Awaited<ReturnType<typeof captureScreen>>; preview?: string };
 
-export function PageShareTools({ share, children }: { share?: ScreenShare; children?: ReactNode }) {
+export function PageShareTools({ share, children, captureInMenu = false }: {
+  share?: ScreenShare;
+  children?: ReactNode;
+  captureInMenu?: boolean;
+}) {
+  const hasMenu = Boolean(children || captureInMenu);
   const pathname = usePathname();
   const dialog = useRef<HTMLDialogElement>(null);
   const request = useRef<AbortController | null>(null);
@@ -111,21 +116,21 @@ export function PageShareTools({ share, children }: { share?: ScreenShare; child
   }
 
   return <div data-share-controls className="flex shrink-0 items-center">
-    <button type="button" onClick={() => void open("image")} className={TOOL + " service-button hidden justify-center md:inline-flex"} aria-haspopup="dialog">
+    {!captureInMenu && <button type="button" onClick={() => void open("image")} className={TOOL + " service-button hidden justify-center md:inline-flex"} aria-haspopup="dialog">
       <Camera size={17} aria-hidden="true" /> 캡처
-    </button>
+    </button>}
     {!children && <button type="button" onClick={() => void open("link")} className={TOOL + " service-button hidden justify-center md:inline-flex"} aria-label="링크 공유" aria-haspopup="dialog">
       <Link2 size={17} aria-hidden="true" /> 공유
     </button>}
     <NavigationPopover label="페이지 도구" className="page-share-menu" trigger={
-      <button type="button" aria-label="페이지 도구" className={cn(TOOL, "justify-center", !children && "md:hidden")}>
-        <MoreHorizontal size={20} className={children ? "md:hidden" : undefined} aria-hidden="true" />
-        {children && <><span className="hidden md:inline">도구</span><ChevronDown size={14} className="hidden md:block" aria-hidden="true" /></>}
+      <button type="button" aria-label="페이지 도구" className={cn(TOOL, "justify-center", !hasMenu && "md:hidden")}>
+        <MoreHorizontal size={20} className={hasMenu ? "md:hidden" : undefined} aria-hidden="true" />
+        {hasMenu && <><span className="hidden md:inline">도구</span><ChevronDown size={14} className="hidden md:block" aria-hidden="true" /></>}
       </button>
     }>
       <div className="flex flex-col">
         <button type="button" onClick={() => void open("link")} className={MENU_ITEM} aria-haspopup="dialog"><Link2 size={17} aria-hidden="true" /> 링크 공유</button>
-        <button type="button" onClick={() => void open("image")} className={MENU_ITEM + " md:hidden"} aria-haspopup="dialog"><Camera size={17} aria-hidden="true" /> 화면 캡처</button>
+        <button type="button" onClick={() => void open("image")} className={cn(MENU_ITEM, !captureInMenu && "md:hidden")} aria-haspopup="dialog"><Camera size={17} aria-hidden="true" /> 화면 캡처</button>
       </div>
       {children}
     </NavigationPopover>
