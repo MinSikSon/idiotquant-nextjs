@@ -96,8 +96,44 @@
 .page .content { padding-top: 24px; }
 .page .content:has(.desktopResults) { padding-top: 12px; }
 .detailContent { min-width: 0; }
-.verdict { margin-bottom: 12px; padding: 0 12px; border: 1px solid var(--analysis-line); border-radius: var(--radius-panel); background: var(--analysis-panel); }
-.verdictChecks { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); gap: 4px 16px; padding-block: 8px; border-top: 1px solid var(--analysis-line); }
+.verdict { container-type: inline-size; margin-bottom: 12px; padding: 0 12px; border: 1px solid var(--analysis-line); border-radius: var(--radius-panel); background: var(--analysis-panel); }
+.verdictCount, .verdictStatus {
+  border-radius: var(--radius-input);
+  background: var(--analysis-soft);
+  color: var(--analysis-muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.4;
+  padding: 2px 6px;
+}
+.verdictCount, .verdictValue { font-variant-numeric: tabular-nums; }
+.verdictChecks {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 16px;
+  padding-block: 12px;
+  border-top: 1px solid var(--analysis-line);
+}
+.verdictCheck {
+  display: grid;
+  align-content: start;
+  justify-items: start;
+  gap: 4px;
+  min-width: 0;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+.verdictReading { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.verdictValue { font-size: 1.125rem; font-weight: 700; }
+.verdictStatus[data-met="true"] { background: var(--analysis-lilac); color: var(--analysis-lilac-ink); }
+.verdictCriterion { color: var(--analysis-muted); }
+@container (min-width: 40rem) {
+  .verdictChecks { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .verdictCheck + .verdictCheck { padding-inline-start: 16px; border-inline-start: 1px solid var(--analysis-line); }
+}
+@container (max-width: 13rem) {
+  .verdictChecks { grid-template-columns: minmax(0, 1fr); }
+}
 .page .panel { padding: 24px; border: 1px solid var(--analysis-line); border-radius: var(--radius-panel); background: var(--analysis-panel); }
 .segmentButton[aria-pressed="true"] {
   --button-face: var(--service-accent-ink);
@@ -133,7 +169,6 @@
   .page .content { padding-top: 12px; }
   .verdict { margin-bottom: 8px; padding: 0 12px; }
   .verdict > button { min-height: 44px; padding-block: 0; }
-  .verdictChecks { margin-top: 0; padding-block: 12px; }
   .page .searchRow { padding-block: 12px; }
   .page .header h1 { font-size: 1.5rem; }
   .page .tab { min-height: 44px; padding-inline: 10px; font-size: 0.875rem; }
@@ -166,7 +201,6 @@
 .detailContent { scroll-margin-top: calc(var(--navigation-h, 92px) + 16px); }
 .desktopResults { display: flex; flex-direction: column; gap: 8px; height: max(32rem, calc(100dvh - var(--navigation-h, 48px) - 40px)); }
 .desktopResults .verdict { margin: 0; padding: 0 12px; }
-.desktopResults .verdictChecks { padding-bottom: 12px; }
 .desktopResults .detailContent { display: flex; flex: 1; flex-direction: column; gap: 8px; min-height: 0; }
 .analysisColumns { flex: 1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: minmax(0, 1fr); min-height: 16rem; border: 1px solid var(--analysis-line); border-radius: var(--radius-panel); }
 .analysisSection { display: grid; grid-template-rows: auto minmax(0, 1fr); min-width: 0; }
