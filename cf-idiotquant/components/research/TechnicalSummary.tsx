@@ -54,17 +54,17 @@ export default function TechnicalSummary({ bars, currency }: { bars: PriceBar[];
     ];
 
     return (
-        <section aria-label="주가 흐름과 거래량" className={`${ui.surface} ${ui.technicalSummary} p-4 sm:p-6`}>
+        <section aria-label="주가 흐름과 거래량" className={`${ui.surface} p-3`}>
             <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <h2 className="text-base font-semibold">주가 흐름과 거래량</h2>
                 <span className="text-sm text-neutral-600 dark:text-neutral-300">{latest ? `${formatDate(latest.date)} 기준 · ${currency}${formatNumber(latest.close)}` : '표시할 시세가 없습니다'}</span>
             </div>
-            {latest && <dl className="mt-4 space-y-3">
+            {latest && <dl className="mt-2 space-y-2">
                 {groups.map(({ heading, comparisons }) => (
-                    <div key={heading} className="border-t border-[var(--analysis-line)] pt-3 break-keep [overflow-wrap:anywhere]">
+                    <div key={heading} className="border-t border-[var(--analysis-line)] pt-2 break-keep [overflow-wrap:anywhere]">
                         <dt className="text-sm font-medium text-neutral-600 dark:text-neutral-300">{heading}</dt>
                         {comparisons.map(({ basis, conclusion }) => (
-                            <dd key={basis} className="mt-1.5 flex flex-wrap items-baseline gap-x-3 gap-y-0.5 tabular-nums">
+                            <dd key={basis} className="mt-0.5 flex flex-wrap items-baseline gap-x-3 gap-y-0.5 tabular-nums">
                                 <span className="font-semibold">{conclusion ?? '비교할 기록이 부족합니다'}</span>
                                 <span className="text-sm text-neutral-600 dark:text-neutral-300">{basis}</span>
                             </dd>
@@ -72,8 +72,8 @@ export default function TechnicalSummary({ bars, currency }: { bars: PriceBar[];
                     </div>
                 ))}
             </dl>}
-            <details className="mt-3 text-sm text-neutral-600 dark:text-neutral-300">
-                <summary className="min-h-11 cursor-pointer py-3 font-medium">계산 기준과 데이터 범위</summary>
+            <details className="mt-1 text-sm text-neutral-600 dark:text-neutral-300">
+                <summary className="min-h-11 cursor-pointer py-2 font-medium">계산 기준과 데이터 범위</summary>
                 <p className="mt-2 leading-6">조회한 시세 {result.count}개를 사용합니다. 가격은 각 기록의 종가입니다. 등락률은 20개 또는 60개 앞선 시세와 비교합니다. 일별 시세는 거래일, 월별 시세는 월 단위로 셉니다. 가격 평균에는 최신 가격을 포함하고, 거래량 평균에는 최신 거래량을 제외합니다.</p>
                 <p className="mt-2 leading-6">RSI는 14개 시세 간격의 가격 변화를 Wilder 방식으로 계산합니다. 70 초과는 과매수, 30 미만은 과매도, 그 사이는 중립 구간입니다.</p>
                 <p className="mt-2 leading-6">누락된 시세는 보충하지 않으며, 수정주가 반영 여부와 진행 중인 거래일·월의 값은 원본 시세에 따릅니다. 실시간 주문 흐름이나 기관·외국인 수급 지표는 포함하지 않습니다.</p>

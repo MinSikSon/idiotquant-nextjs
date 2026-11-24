@@ -152,7 +152,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true }: ValuationSec
 
       {/* ────── 모델별 적정주가 (모델별 트랙) ────── */}
       {axis && (
-        <div className={cn(styles.chartHeader, "px-0 sm:px-5 pt-1 pb-2 md:pt-2 md:pb-4 border-b border-neutral-100 dark:border-border-subtle-dark")}>
+        <div className={cn(styles.chartHeader, "px-0 sm:px-5 pb-2 border-b border-neutral-100 dark:border-border-subtle-dark")}>
           <p className="mb-1 text-sm font-semibold">모델별 적정주가</p>
           <p className="mb-2 text-[0.8125rem] text-neutral-600 dark:text-neutral-300">
             같은 가격 눈금 · 차이율은 {axis.usedMarketPrice ? "현재가" : "계산 기준가"} 대비
@@ -189,7 +189,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true }: ValuationSec
                   key={r.type}
                   onPointerEnter={event => { if (event.pointerType === "mouse") setHoveredModel(r.type); }}
                   onPointerLeave={event => { if (event.pointerType === "mouse") setHoveredModel(null); }}
-                  className={cn(styles.modelRow, "grid grid-cols-[subgrid] items-center py-2.5 border-t border-neutral-100 dark:border-border-subtle-dark")}
+                  className={cn(styles.modelRow, "grid grid-cols-[subgrid] items-center border-t border-neutral-100 dark:border-border-subtle-dark")}
                   style={{ gridRow: index + 1 }}
                 >
                   <div className={cn(styles.modelLabel, "min-w-0")}>
@@ -260,7 +260,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true }: ValuationSec
         </div>
       )}
 
-      <div role="group" aria-label="세부 계산 모델" className={cn(styles.modelFilters, "flex flex-wrap items-center gap-2 border-b border-neutral-200 py-2 dark:border-border-subtle-dark")}>
+      <div role="group" aria-label="세부 계산 모델" className={cn(styles.modelFilters, "flex flex-wrap items-center gap-1 border-b border-neutral-200 py-1 dark:border-border-subtle-dark")}>
         {([
           { id: "ALL", label: "전체" },
           { id: "ASSET", label: "자산가치" },
@@ -280,7 +280,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true }: ValuationSec
         ))}
       </div>
       {filteredModels.length > 0 ? (
-        <div className={cn(styles.modelCards, "grid grid-cols-1 gap-2 py-3")}>
+        <div className={cn(styles.modelCards, "grid grid-cols-1 gap-1 py-2")}>
           {filteredModels.map(model => (
             <StrategyCard key={model.type} modelType={model.type} result={model.result} currency={currency} showScenarios={isLoggedIn} />
           ))}
@@ -332,7 +332,7 @@ function StrategyCard({ modelType, result, currency, showScenarios }: StrategyCa
         onClick={() => setIsExpanded(open => !open)}
         aria-expanded={isExpanded}
         aria-label={`${config.name} 세부 계산 ${isExpanded ? '접기' : '보기'}`}
-        className="flex min-h-11 w-full items-center justify-between gap-2 border-b border-neutral-100 px-3 py-2 text-left text-sm font-semibold hover:bg-neutral-100 dark:border-border-subtle-dark dark:hover:bg-white/5"
+        className="flex min-h-11 w-full items-center justify-between gap-2 border-b border-neutral-100 px-3 py-1 text-left text-sm font-semibold hover:bg-neutral-100 dark:border-border-subtle-dark dark:hover:bg-white/5"
       >
         <span>{config.name} 세부 계산</span>
         <ChevronDown size={15} aria-hidden="true" className={cn("shrink-0 text-neutral-600 transition-transform dark:text-neutral-300", isExpanded && "rotate-180")} />
