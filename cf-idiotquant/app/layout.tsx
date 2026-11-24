@@ -21,6 +21,9 @@ import { AuthProvider } from "@/components/auth-provider";
 import { MobilePageHeaderProvider } from "@/components/mobile-page-header";
 import { cn } from "@/lib/utils";
 
+// Cloudflare Pages uses the Edge Runtime for pages rendered with a locale cookie.
+export const runtime = "edge";
+
 export const metadata: Metadata = {
   metadataBase: new URL('https://idiotquant.com'),
   title: {
