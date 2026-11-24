@@ -57,10 +57,10 @@ const MAIN_NAV: NavItem[] = [
 ];
 
 const DESKTOP_NAV_CONTROL = cn(
-  "service-button service-nav-tab inline-flex min-h-11 items-center whitespace-nowrap px-2.5 text-sm font-medium lg:px-3",
+  "navigation-menubar-item inline-flex min-h-11 items-center whitespace-nowrap px-2.5 text-base font-medium lg:px-3",
   CONTROL_FOCUS_CLS,
 );
-const MOBILE_NAV_CONTROL = "service-button-quiet service-nav-tab flex h-full min-h-11 min-w-0 flex-1 basis-0 flex-col items-center justify-center gap-[3px] rounded py-1";
+const MOBILE_NAV_CONTROL = "service-button-quiet service-nav-tab navigation-tab flex h-11 min-w-0 flex-1 basis-0 flex-col items-center justify-center gap-[3px] py-1";
 
 // '더 보기'로 숨기는 보조 메뉴
 const MORE_NAV: NavItem[] = [
@@ -380,33 +380,32 @@ export function NavbarWithSimpleLinks() {
       { label: "관리", items: utilityNav.filter(item => !moreNav.includes(item)) },
     ];
     return <div className="navigation-service-menu text-base">
-      <nav aria-label={compact ? "전체 서비스" : "추가 서비스"} className="divide-y divide-neutral-200 dark:divide-neutral-700">
-        {groups.filter(group => group.items.length).map(group => <section key={group.label} aria-label={group.label} className="py-2 first:pt-0">
-          <p className="px-3 pb-1 pt-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400">{group.label}</p>
+      <nav aria-label={compact ? "전체 서비스" : "추가 서비스"}>
+        {groups.filter(group => group.items.length).map(group => <section key={group.label} aria-label={group.label} className="navigation-menu-group py-1.5">
+          <p className="px-2.5 pb-1 pt-1.5 text-xs font-semibold text-[var(--service-muted)]">{group.label}</p>
           {group.items.map(({ icon: Icon, ...item }) => {
             const isActive = active(pathname, item.href, item.exact);
             return <Link key={item.href} href={item.href}
               aria-current={isActive ? "page" : undefined}
-              className={cn("flex min-h-11 items-center gap-3 rounded px-3 py-2 leading-6 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-ink",
-                isActive
-                  ? "bg-brand-light font-semibold text-brand-ink dark:bg-brand-muted/50"
-                  : "font-medium text-neutral-800 hover:bg-neutral-100 dark:text-neutral-100 dark:hover:bg-neutral-800")}>
-              <Icon size={18} aria-hidden="true" className={cn("shrink-0", !isActive && "text-neutral-500 dark:text-neutral-400")} />
+              className="navigation-menu-link flex min-h-11 items-center gap-2.5 px-2.5 py-1.5 leading-6">
+              <span className="navigation-menu-icon grid size-7 shrink-0 place-items-center rounded-md">
+                <Icon size={17} strokeWidth={1.8} aria-hidden="true" />
+              </span>
               <span className="min-w-0 flex-1">{item.label}</span>
               {isActive && <Check size={16} aria-hidden="true" className="shrink-0" />}
             </Link>;
           })}
         </section>)}
       </nav>
-      <div className="flex items-center gap-2 border-t border-neutral-200 px-3 py-2 dark:border-neutral-700"><ThemeChanger compact /><QuickNavigation compact={compact} items={[...MAIN_NAV, ...utilityNav]} /></div>
-      <div className="border-t border-neutral-200 pt-1 dark:border-neutral-700">
+      <div className="navigation-menu-group flex items-center gap-2 px-2.5 pt-2"><ThemeChanger compact /><QuickNavigation compact={compact} items={[...MAIN_NAV, ...utilityNav]} /></div>
+      {(compact || status === "authenticated") && <div className="navigation-menu-group mt-2 pt-1">
         {status === "authenticated" ? <>
-          <Link href="/profile" aria-current={pathname === "/profile" ? "page" : undefined} className="flex min-h-11 items-center gap-3 rounded px-3 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-800">
+          <Link href="/profile" aria-current={pathname === "/profile" ? "page" : undefined} className="navigation-menu-link flex min-h-11 items-center gap-3 px-2.5 py-2">
             <UserRound size={18} aria-hidden="true" className="shrink-0 text-neutral-500 dark:text-neutral-400" /><span className="min-w-0 flex-1 break-words">{session?.user?.name || "내 계정"}<span className="ml-2 text-xs text-neutral-500 dark:text-neutral-400">내 계정</span></span>
           </Link>
-          <button type="button" onClick={() => signOut({ callbackUrl: "/" })} className="flex min-h-11 w-full items-center gap-3 rounded px-3 py-2 text-left text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"><LogOut size={18} aria-hidden="true" className="shrink-0" />로그아웃</button>
-        </> : status === "unauthenticated" ? <Link href="/login" className="flex min-h-11 items-center gap-3 rounded px-3 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-800"><LogIn size={18} aria-hidden="true" className="shrink-0" />로그인</Link> : <span className="block p-3 text-sm text-neutral-500 dark:text-neutral-400">계정 확인 중…</span>}
-      </div>
+          <button type="button" onClick={() => signOut({ callbackUrl: "/" })} className="navigation-menu-link flex min-h-11 w-full items-center gap-3 px-2.5 py-2 text-left"><LogOut size={18} aria-hidden="true" className="shrink-0" />로그아웃</button>
+        </> : status === "unauthenticated" ? <Link href="/login" className="navigation-menu-link flex min-h-11 items-center gap-3 px-2.5 py-2"><LogIn size={18} aria-hidden="true" className="shrink-0" />로그인</Link> : <span className="block p-3 text-sm text-neutral-500 dark:text-neutral-400">계정 확인 중…</span>}
+      </div>}
     </div>;
   };
 
@@ -533,12 +532,12 @@ export function NavbarWithSimpleLinks() {
         </div>
       </aside>}
 
-      {!inGame && <header data-navigation-header className="navigation-header fixed inset-x-0 top-0 z-40 border-b border-neutral-300/50 bg-surface-canvas/95 backdrop-blur-[12px] dark:border-neutral-700/60 dark:bg-surface-dark-canvas/95 md:sticky">
-        <div className="navigation-main flex h-12 items-center gap-2 px-3 md:gap-4 md:px-6">
+      {!inGame && <header data-navigation-header className="navigation-header fixed inset-x-0 top-0 z-40 md:sticky">
+        <div className="navigation-main flex h-12 items-center gap-2 px-3 md:gap-3 md:px-5">
           <Link href="/" aria-label="idiotquant 홈" className={cn(logoClass, "md:inline-flex md:text-lg", inEtfFeed || identityScrolled ? "inline-flex" : "hidden")}>
             {logoText}
           </Link>
-          <nav aria-label="주요 서비스" className="hidden shrink-0 items-center gap-1.5 md:flex">
+          <nav aria-label="주요 서비스" className="hidden shrink-0 items-center gap-1 md:flex">
             {MAIN_NAV.map(item => {
               const isActive = active(pathname, item.href, item.exact);
               return <Link key={item.href} href={item.href} aria-current={isActive ? "page" : undefined}
@@ -546,9 +545,9 @@ export function NavbarWithSimpleLinks() {
                 {item.label}
               </Link>;
             })}
-            <NavigationPopover label="사용자 및 서비스 메뉴" trigger={
-              <button type="button" data-current-section={moreActive || undefined} className={cn(DESKTOP_NAV_CONTROL, "gap-1.5")}>
-                더 보기<ChevronDown size={14} aria-hidden="true" />
+            <NavigationPopover label="사용자 및 서비스 메뉴" align="start" className="navigation-service-popover" trigger={
+              <button type="button" data-current-section={moreActive || undefined} className={DESKTOP_NAV_CONTROL}>
+                더 보기
               </button>
             }>
               {serviceMenu(false)}
@@ -560,14 +559,18 @@ export function NavbarWithSimpleLinks() {
             <div ref={pageHeader?.setInfoTarget} data-navigation-info />
             <div ref={pageHeader?.setScrollTitleTarget} data-navigation-scroll-title hidden={!identityScrolled} />
           </div>
-          <div className="flex shrink-0 items-center gap-2 md:gap-1 lg:min-w-min lg:flex-1">
+          <div className="flex shrink-0 items-center gap-2 md:ml-auto md:gap-1.5">
             <div ref={pageHeader?.setPrimaryActionTarget} className="shrink-0 empty:hidden md:hidden" />
-            <div className="navigation-search flex shrink-0 items-center lg:min-w-32 lg:flex-1"><StockSearchTrigger showDesktopLabel /></div>
+            <div className="navigation-search flex shrink-0 items-center"><StockSearchTrigger showDesktopLabel /></div>
             <div ref={pageHeader?.setActionsTarget} data-navigation-actions className="shrink-0 empty:hidden" />
             {inEtfFeed && <Link href="/etfs/draft" className={cn("service-button-quiet order-first inline-flex min-h-11 shrink-0 items-center gap-1 rounded px-1.5 text-sm font-semibold text-brand-ink sm:px-2", CONTROL_FOCUS_CLS)}>
               <Plus size={16} aria-hidden="true" />ETF 만들기
             </Link>}
             {!pageHeader?.active && !inEtfFeed && <PageShareTools key={pathname} share={pathname.startsWith("/ledger/join/") ? { path: "/ledger" } : undefined} />}
+            {status === "unauthenticated" && pathname !== "/login" && <Link href="/login"
+              className="service-button navigation-login hidden min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap px-3 text-sm font-semibold md:inline-flex">
+              <LogIn size={16} aria-hidden="true" />로그인
+            </Link>}
           </div>
         </div>
         {fixedPageIdentity && (
@@ -610,12 +613,12 @@ export function NavbarWithSimpleLinks() {
       {/* ══ MOBILE BOTTOM TAB BAR ════════════════════════════════════ */}
       <nav ref={bottomNav} aria-label="하단 메뉴" data-bottom-navigation data-hidden={bottomHidden && !moreSheet && !inEtfFeed || undefined}
         onFocusCapture={() => setBottomHidden(false)}
-        className={cn(inGame ? "hidden" : "md:hidden fixed bottom-0 left-0 right-0 z-40 flex items-center gap-1.5 px-3 bg-surface-canvas/95 backdrop-blur-[12px] dark:bg-surface-dark-canvas/95")}>
+        className={cn(inGame ? "hidden" : "md:hidden navigation-bottom fixed bottom-0 left-0 right-0 z-40 flex items-center gap-1.5 px-3")}>
         {MAIN_NAV.map(item => (
           <TabItem key={item.href} href={item.href} label={item.label} icon={item.icon}
             isActive={active(pathname, item.href, item.exact)} />
         ))}
-        <NavigationPopover label="서비스 메뉴" side="top" onOpenChange={open => { setMoreSheet(open); setBottomHidden(false); }} trigger={
+        <NavigationPopover label="서비스 메뉴" side="top" className="navigation-service-popover" onOpenChange={open => { setMoreSheet(open); setBottomHidden(false); }} trigger={
           <button type="button" data-current-section={moreActive || undefined} className={MOBILE_NAV_CONTROL}>
             <LayoutGrid size={20} aria-hidden="true" /><span className="text-xs font-semibold leading-none">더 보기</span>
           </button>

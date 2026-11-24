@@ -2,6 +2,25 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Leave digits to Pretendard, which supports the tabular figures used in market data. */
+@font-face {
+  font-family: "Open Runde";
+  src: url("./fonts/open-runde/open-runde-regular.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  unicode-range: U+0000-002F, U+003A-10FFFF;
+}
+
+@font-face {
+  font-family: "Open Runde";
+  src: url("./fonts/open-runde/open-runde-semibold.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  unicode-range: U+0000-002F, U+003A-10FFFF;
+}
+
 @layer components {
   /* The lower edge gives feedback without moving the hit area. */
   :where(button, input:is([type="button"], [type="submit"], [type="reset"]), summary,
@@ -12,7 +31,8 @@
     --button-inset: var(--button-rest-inset);
     --button-edge: rgb(var(--service-muted-rgb) / 38%);
     --button-face: transparent;
-    --button-pressed: transparent;
+    --button-rest-pressed: transparent;
+    --button-pressed: var(--button-rest-pressed);
     box-shadow: inset 0 0 0 1px var(--button-face),
                 inset 0 -2px 0 var(--button-pressed),
                 inset 0 var(--button-inset) var(--button-inset) var(--button-edge),
@@ -29,7 +49,8 @@
   }
 
   .service-button {
-    border-radius: 6px;
+    --button-rest-pressed: rgb(var(--service-muted-rgb) / 16%);
+    border-radius: 8px;
   }
 
   @media (hover: hover) {
@@ -390,7 +411,11 @@ html.dark {
 
 html { scroll-behavior: smooth; }
 
-/* 타이포그래피: 일반 400, 제목·강조 600. 게임·관리자는 기존 서체와 굵기를 유지한다.
+body:not(:has(.desktop-game-sidebar, [data-admin-screen])) {
+  --font-sans: "Open Runde", "Pretendard Variable", ui-sans-serif, system-ui, -apple-system, sans-serif;
+}
+
+/* 타이포그래피: 일반 400, 제목·강조 600. 게임·관리자는 기존 굵기를 유지한다.
    body에 두어 모바일 헤더 슬롯·포털에도 같은 토큰이 상속되게 한다. */
 body:not(:has(#game-canvas, [data-admin-screen])) {
   --ui-font-regular: 400;
@@ -711,7 +736,111 @@ html:has(.navigation-header [data-page-tabs]) { --navigation-h: 92px; }
 
 [data-compact-tabs] [role="tab"], [data-header-market-switch] button { min-height: 44px; min-width: 44px; flex: 1 1 0; }
 
-.navigation-header { border-bottom-width: 0; }
+.navigation-header,
+.navigation-bottom {
+  background: color-mix(in srgb, var(--service-canvas) 67%, var(--service-accent));
+  border-color: color-mix(in srgb, var(--service-line) 75%, var(--service-accent-ink));
+}
+
+.navigation-bottom { border-top-width: 1px; }
+.navigation-header [data-share-controls] { gap: 4px; }
+
+.navigation-menubar-item {
+  border-radius: 5px;
+  box-shadow: none;
+  color: var(--service-ink);
+}
+
+@media (hover: hover) {
+  .navigation-menubar-item:hover {
+    background: color-mix(in srgb, var(--service-ink) 8%, transparent);
+  }
+}
+
+.navigation-menubar-item:is([aria-current="page"], [aria-expanded="true"], [data-current-section]) {
+  background: color-mix(in srgb, var(--service-ink) 12%, transparent);
+}
+
+.navigation-menubar-item:active {
+  background: color-mix(in srgb, var(--service-ink) 18%, transparent);
+}
+
+.navigation-tab {
+  --button-depth: 0px;
+  --button-face: transparent;
+  --button-edge: rgb(var(--service-accent-ink-rgb) / 24%);
+  border-radius: 8px;
+  color: var(--service-ink);
+}
+
+.navigation-tab:hover,
+.navigation-tab:is([aria-current="page"], [aria-expanded="true"], [data-current-section]) {
+  background: var(--service-accent);
+  color: var(--service-accent-ink);
+}
+
+.navigation-tab:is([aria-current="page"], [aria-expanded="true"], [data-current-section]) {
+  --button-pressed: var(--button-edge);
+}
+
+.navigation-login {
+  --button-edge: rgb(0 0 0 / 32%);
+  background: var(--service-action);
+  color: var(--service-panel);
+}
+
+.navigation-login:hover { background: var(--service-action-hover); }
+
+.navigation-service-popover {
+  color-scheme: light;
+  width: 18.5rem;
+  border: 0;
+  border-radius: 12px;
+  background: var(--service-panel);
+  color: var(--service-ink);
+  box-shadow: 0 10px 28px rgb(0 0 0 / 20%), 0 2px 7px rgb(0 0 0 / 12%);
+}
+
+.dark .navigation-service-popover { color-scheme: dark; }
+
+.navigation-menu-group + .navigation-menu-group,
+.navigation-service-menu > .navigation-menu-group { border-top: 1px solid var(--service-line); }
+
+.navigation-menu-link {
+  border-radius: 7px;
+  transition: background-color 120ms ease-out;
+}
+
+.navigation-menu-link:hover { background: var(--service-soft); }
+.navigation-menu-link[aria-current="page"] {
+  background: var(--service-accent);
+  color: var(--service-accent-ink);
+  font-weight: 600;
+}
+
+.navigation-menu-link:focus-visible {
+  outline: 2px solid var(--service-accent-ink);
+  outline-offset: -2px;
+}
+
+.navigation-menu-icon {
+  background: var(--service-accent);
+  color: var(--service-accent-ink);
+}
+
+.navigation-menu-group:nth-child(2) .navigation-menu-icon {
+  background: light-dark(#f6ebdc, #453425);
+  color: light-dark(#79531e, #f1c68d);
+}
+
+.navigation-menu-group:nth-child(3) .navigation-menu-icon {
+  background: light-dark(#e7edf7, #30394f);
+  color: light-dark(#385480, #b4c9f0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .navigation-menu-link { transition: none; }
+}
 .discovery-filters {
   display: flex;
   flex-wrap: wrap;

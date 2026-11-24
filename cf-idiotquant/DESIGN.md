@@ -13,14 +13,16 @@ Calm financial research. Put the evidence people need to judge a company first; 
 
 ## Type and numbers
 
-- Use Pretendard for Korean and Latin interface text.
+- Use Open Runde for Latin interface text and Pretendard for Korean and digits. Game and admin screens use Pretendard.
 - Use tabular numerals for prices, ratios, dates, and aligned financial values.
 - Body and controls should remain readable at 16px on mobile. Secondary labels should generally be at least 12px.
 - Preserve user zoom and text enlargement; wrap long company names instead of clipping them.
 
 ## Shape and layout
 
-- Controls: 4px radius. Panels: 8px radius. Avoid nested card surfaces and decorative shadows.
+- Default controls use a 4px radius and panels use 8px. Shared action buttons use an 8px radius and a shallow lower edge that compresses on press.
+- Give shared navigation a teal-tinted surface and use a grouped, elevated service menu. Desktop navigation items use plain text and neutral hover and active fills.
+- Avoid nested card surfaces and decorative shadows.
 - Use shared page-width presets and align headers, filters, tables, and chart labels to the same content edge.
 - Mobile watchlist rows prioritize company and current price, then valuation estimate and signed difference.
 - Valuation comparisons use one shared price scale with aligned current-price and model-price marks.
