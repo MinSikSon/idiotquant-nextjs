@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale, useTranslations } from "next-intl";
 import { createPortal } from "react-dom";
 import { useState, useMemo, KeyboardEvent, useRef, useEffect, useId } from "react";
 import { cn } from "@/lib/utils";
@@ -52,6 +53,8 @@ const HighlightText = ({ text, query }: { text: string; query: string }) => {
 };
 
 const SearchAutocomplete = ({ disabled = false, loading = false, selectionRequired = false, resultsTarget, value, onQueryChange, className, validCorpNameArray, stockNames, onSearchButton, placeHolder, onSearchStateChange, autoFocus = false, onEscape }: SearchAutocompleteProps) => {
+    const t = useTranslations("search");
+    const locale = useLocale();
     const [localQuery, setLocalQuery] = useState("");
     const query = value ?? localQuery;
     const setQuery = (next: string) => {
@@ -95,8 +98,9 @@ const SearchAutocomplete = ({ disabled = false, loading = false, selectionRequir
     }, [selectedIndex, suggestions]);
 
     const activeIndex = isFocused && selectedIndex >= 0 && selectedIndex < suggestions.length ? selectedIndex : -1;
-    const exactNames = stockNames?.filter(stock => [stock.name, stock.koreanName].some(name => name?.toLowerCase() === query.trim().toLowerCase())) ?? [];
-    const target = activeIndex >= 0 ? suggestions[activeIndex] : exactNames.length === 1 ? exactNames[0].symbol : query.trim();
+    const exactQuery = query.trim().toLowerCase();
+    const exactNames = exactQuery ? searchIndex.filter(entry => entry.aliases.some(alias => alias.lower === exactQuery)) : [];
+    const target = activeIndex >= 0 ? suggestions[activeIndex] : exactNames.length === 1 ? exactNames[0].text : query.trim();
     const canSearch = !disabled && !!target && (!selectionRequired || validCorpNameArray.some(item => item.toLowerCase() === target.toLowerCase()));
 
     const executeSearch = (raw: string) => {
@@ -149,12 +153,18 @@ const SearchAutocomplete = ({ disabled = false, loading = false, selectionRequir
                     ref={dropdownRef}
                     id={listboxId}
                     role="listbox"
-                    aria-label="종목 검색 결과"
+                    aria-label={t("results")}
                     className="absolute top-full mt-2 left-0 w-full bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark/80 rounded-xl shadow-sm max-h-[min(19rem,40dvh)] overflow-y-auto overscroll-contain touch-pan-y p-1.5 z-[70] animate-in fade-in zoom-in-95 duration-200 origin-top"
                 >
                     {suggestions.map((suggestion: string, index: number) => {
                             const isSelected = activeIndex === index;
                             const company = companyNames.get(suggestion);
+                            const primaryName = company?.market === "KR" && locale !== "ko"
+                                ? (locale === "ja" ? company.japaneseName : undefined) || company.name
+                                : (locale === "ko" ? company?.koreanName : undefined) || company?.name || suggestion;
+                            const secondaryName = company?.market === "KR"
+                                ? (locale === "ko" && company.name !== primaryName ? `${suggestion} · ${company.name}` : suggestion !== primaryName ? suggestion : "")
+                                : company ? `${suggestion} · ${company.name}` : "";
                             return (
                                 <li
                                     key={index}
@@ -172,16 +182,16 @@ const SearchAutocomplete = ({ disabled = false, loading = false, selectionRequir
                                     )}
                                 >
                                     <span className="min-w-0 flex-1">
-                                        <span className="block break-words"><HighlightText text={company?.koreanName || company?.name || suggestion} query={query} /></span>
-                                        {company && <span className={cn("mt-0.5 block break-words text-xs", isSelected ? "text-inherit" : "text-neutral-600 dark:text-neutral-400")}>
-                                            <HighlightText text={`${suggestion} · ${company.name}`} query={query} />
+                                        <span className="block break-words"><HighlightText text={primaryName} query={query} /></span>
+                                        {secondaryName && <span className={cn("mt-0.5 block break-words text-xs", isSelected ? "text-inherit" : "text-neutral-600 dark:text-neutral-400")}>
+                                            <HighlightText text={secondaryName} query={query} />
                                         </span>}
                                     </span>
 
                                     {isSelected && (
                                         <span className="flex items-center gap-0.5 shrink-0 text-xs font-bold opacity-90 font-mono tracking-tight bg-black/10 dark:bg-white/10 px-1.5 py-0.5 rounded-md">
                                             <CornerDownLeft className="w-2.5 h-2.5" />
-                                            선택
+                                            {t("select")}
                                         </span>
                                     )}
                                 </li>
@@ -212,7 +222,7 @@ const SearchAutocomplete = ({ disabled = false, loading = false, selectionRequir
                     ref={inputRef}
                     data-page-input
                     aria-keyshortcuts="/ Escape"
-                    title="/ 검색창으로 이동 · Esc 후보 닫기"
+                    title={t("shortcut")}
                     autoFocus={autoFocus}
                     autoComplete="off"
                     enterKeyHint="search"
@@ -220,7 +230,7 @@ const SearchAutocomplete = ({ disabled = false, loading = false, selectionRequir
                     placeholder={placeHolder}
                     value={query}
                     role="combobox"
-                    aria-label="종목 검색"
+                    aria-label={t("title")}
                     aria-autocomplete="list"
                     aria-expanded={popupOpen}
                     aria-controls={popupOpen ? listboxId : undefined}
@@ -255,7 +265,7 @@ const SearchAutocomplete = ({ disabled = false, loading = false, selectionRequir
                         }}
                         className={cn(CONTROL_ICON_BUTTON_CLS, "p-1 group")}
                         type="button"
-                        aria-label="검색어 초기화"
+                        aria-label={t("clearQuery")}
                         disabled={disabled}
                     >
                         <X className="h-4 w-4 text-neutral-600 dark:text-neutral-400 group-hover:text-neutral-700 dark:group-hover:text-neutral-300 transition-colors" />
@@ -263,23 +273,23 @@ const SearchAutocomplete = ({ disabled = false, loading = false, selectionRequir
                 )}
                 <button
                     type="button"
-                    aria-label="종목 검색 실행"
+                    aria-label={t("submit")}
                     disabled={!canSearch}
                     onMouseDown={event => event.preventDefault()}
                     onClick={submitSearch}
                     className={PAGE_PRIMARY_ACTION_CLS}
                 >
-                    검색
+                    {t("search")}
                 </button>
             </div>
 
             <p id={statusId} role="status" aria-atomic="true" className="mt-2 text-xs text-neutral-600 dark:text-neutral-400">
-                {disabled ? "현재는 종목을 선택할 수 없습니다." : !query.trim()
-                    ? selectionRequired ? "입력 후 검색 결과에서 종목을 선택해 주세요." : "종목명이나 티커를 입력하고 검색하세요. ↓ 키로 후보를 선택할 수 있습니다."
-                    : loading ? "자동완성 목록을 불러오는 중…"
+                {disabled ? t("disabled") : !query.trim()
+                    ? selectionRequired ? t("enterThenSelect") : t("enterQuery")
+                    : loading ? t("loading")
                     : suggestions.length > 0
-                        ? `${suggestions.length}개 후보 표시. ${activeIndex >= 0 ? `${target} 선택 중 · Enter로 검색` : selectionRequired ? "↓ 키 또는 터치로 종목 선택" : "Enter로 입력한 검색어 검색 · ↓ 키로 후보 선택"}`
-                        : selectionRequired ? "일치하는 종목이 없습니다. 종목명이나 티커를 다시 확인해 주세요." : "자동완성 후보가 없습니다. 입력한 검색어로 검색할 수 있습니다."}
+                        ? t("suggestions", { count: suggestions.length, instruction: activeIndex >= 0 ? t("activeSuggestion", { stock: target }) : t(selectionRequired ? "chooseSuggestion" : "freeSearch") })
+                        : selectionRequired ? t("noMatch") : t("noSuggestions")}
             </p>
             {/* 자동완성 드롭다운 오버레이 슬롯 */}
             {resultsTarget ? createPortal(results, resultsTarget) : results}

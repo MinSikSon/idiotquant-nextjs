@@ -1,5 +1,6 @@
 'use client';
 
+import { useLocale, useTranslations } from "next-intl";
 import { PageSearch } from "@/components/page-search";
 import * as Tabs from '@radix-ui/react-tabs';
 import * as Popover from '@radix-ui/react-popover';
@@ -22,7 +23,15 @@ import { useSession } from 'next-auth/react';
 import { useViewAsUser } from '@/lib/viewAsUser';
 import Link from 'next/link';
 import { selectLikedList, selectTogglePending, selectLikesState, reqGetMyLikes, reqToggleLike } from '@/lib/features/stockLikes/stockLikesSlice';
-import dynamic from 'next/dynamic';
+import { StockCard } from '@/app/(search)/search/components/StockCard';
+import { StockMetrics } from '@/app/(search)/search/components/StockMetrics';
+import { ValuationSection } from '@/app/(search)/search/components/ValuationSection';
+import FinancialTables from '@/app/(search)/search/components/FinancialTables';
+import FinnhubTable from '@/app/(search)/search/components/FinnhubTable';
+import { DelistingRisk } from './components/DelistingRisk';
+import { UsDelistingRisk } from './components/UsDelistingRisk';
+import AnalysisIntro from './components/AnalysisIntro';
+import { FinancialBars } from '@/app/(search)/search/components/FinancialBars';
 import { useAppSelector, useAppDispatch } from '@/lib/hooks';
 import { useStockSearch } from '@/app/(search)/search/hooks/useStockSearch';
 import { selectKrMarketHistory } from '@/lib/features/searchHistory/searchHistorySlice';
@@ -51,51 +60,8 @@ const ANALYZE_WIDTH = cn(PAGE_WIDTH.data, styles.container);
 const ANALYZE_ACTION_CLS = "whitespace-nowrap md:px-2.5 md:text-sm";
 const DESKTOP_ANALYZE_ACTION_CLS = "service-button navigation-action";
 
-// =========================================================================
-// Dynamic imports
-// =========================================================================
-const StockCard = dynamic(
-  () => import('@/app/(search)/search/components/StockCard').then(mod => ({ default: mod.StockCard })),
-  { loading: () => <StockCardSkeleton />, ssr: false }
-);
-
-const StockMetrics = dynamic(
-  () => import('@/app/(search)/search/components/StockMetrics').then(mod => ({ default: mod.StockMetrics })),
-  { loading: () => <MetricsSkeleton />, ssr: false }
-);
-
-const ValuationSection = dynamic(
-  () => import('@/app/(search)/search/components/ValuationSection').then(mod => ({ default: mod.ValuationSection })),
-  { loading: () => <ValuationSkeleton /> }
-);
-
-const DelistingRisk = dynamic(
-  () => import('@/app/(analyze)/analyze/components/DelistingRisk').then(mod => ({ default: mod.DelistingRisk })),
-  { ssr: false }
-);
-
-const UsDelistingRisk = dynamic(
-  () => import('@/app/(analyze)/analyze/components/UsDelistingRisk').then(mod => ({ default: mod.UsDelistingRisk })),
-  { ssr: false }
-);
-
-const FinancialTables = dynamic(
-  () => import('@/app/(search)/search/components/FinancialTables'),
-  { ssr: false }
-);
-
-const FinnhubTable = dynamic(
-  () => import('@/app/(search)/search/components/FinnhubTable'),
-  { ssr: false }
-);
-
-const FinancialBars = dynamic(
-  () => import('@/app/(search)/search/components/FinancialBars').then(mod => ({ default: mod.FinancialBars })),
-  { ssr: false }
-);
-
-const AnalysisIntro = dynamic(() => import('./components/AnalysisIntro'));
-
+import { krStockCode, krStockDisplayName } from "@/lib/utils/krStockNames";
+import { useUsStockDirectory, usStockDisplayName } from "@/lib/utils/usStockNames";
 import { loadStaticStockData, type StaticStockData } from '@/lib/utils/stockSearchData';
 
 import {
@@ -150,31 +116,6 @@ const StockCardSkeleton = memo(() => (
 ));
 StockCardSkeleton.displayName = 'StockCardSkeleton';
 
-const MetricsSkeleton = memo(() => (
-  <div className="w-full h-[380px] bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark animate-pulse p-6">
-    <div className="h-5 bg-neutral-200 dark:bg-surface-dark-card rounded w-1/3 mb-5" />
-    <div className="grid grid-cols-2 gap-3">
-      {[...Array(6)].map((_, i) => (
-        <div key={i} className="p-4 bg-surface-canvas dark:bg-surface-dark-card/50 rounded-xl space-y-2">
-          <div className="h-3 bg-neutral-200 dark:bg-surface-dark-elevated rounded w-1/2" />
-          <div className="h-5 bg-neutral-200 dark:bg-surface-dark-elevated rounded w-3/4" />
-        </div>
-      ))}
-    </div>
-  </div>
-));
-MetricsSkeleton.displayName = 'MetricsSkeleton';
-
-const ValuationSkeleton = memo(() => (
-  <div className="w-full h-[280px] bg-white dark:bg-surface-dark-card rounded-2xl animate-pulse p-6">
-    <div className="h-5 bg-neutral-200 dark:bg-surface-dark-card rounded w-1/3 mb-5" />
-    <div className="space-y-3">
-      {[...Array(3)].map((_, i) => <div key={i} className="h-14 bg-neutral-200 dark:bg-surface-dark-card rounded-xl" />)}
-    </div>
-  </div>
-));
-ValuationSkeleton.displayName = 'ValuationSkeleton';
-
 // 실제 화면과 같은 구성·높이로 자리를 잡는다. 모양이 다르면 데이터가 도착할 때 화면이 재배치된다.
 const ResultSkeleton = memo(() => (
   <div className="space-y-5 animate-in fade-in duration-300">
@@ -192,16 +133,8 @@ const ResultSkeleton = memo(() => (
 ResultSkeleton.displayName = 'ResultSkeleton';
 
 // 작은 화면의 탭과 데스크톱 열 제목이 같은 항목을 사용한다.
-const DETAIL_TABS = {
-  strategy: '적정가치',
-  // 카드(시세·등급·차트)와 상세 지표는 둘 다 "지금 이 종목의 숫자"다. 탭을 갈라 두면
-  // PER·PBR 같은 같은 값을 양쪽에서 다시 보게 되고, 어느 탭을 눌러야 할지 매번 판단해야 한다.
-  metrics: '주요 지표',
-  risk: '위험 점검',
-  financials: '재무 흐름',
-};
-type DetailTab = keyof typeof DETAIL_TABS;
-const DETAIL_TAB_KEYS = Object.keys(DETAIL_TABS) as DetailTab[];
+const DETAIL_TAB_KEYS = ['strategy', 'metrics', 'risk', 'financials'] as const;
+type DetailTab = typeof DETAIL_TAB_KEYS[number];
 
 const DESKTOP_ANALYSIS = '(min-width: 1024px)';
 const subscribeToDesktopAnalysis = (onChange: () => void) => {
@@ -217,6 +150,7 @@ function AnalysisSection({ tab, desktop, children }: {
   desktop: boolean;
   children: ReactNode;
 }) {
+  const t = useTranslations("analysis");
   const titleId = `analysis-${tab}-title`;
   return (
     <Tabs.Content value={tab} forceMount asChild
@@ -224,7 +158,7 @@ function AnalysisSection({ tab, desktop, children }: {
       {...(desktop && { role: 'presentation', 'aria-labelledby': undefined, tabIndex: undefined })}
     >
       <div>
-        {desktop && <h2 id={titleId} className={styles.sectionTitle}>{DETAIL_TABS[tab]}</h2>}
+        {desktop && <h2 id={titleId} className={styles.sectionTitle}>{t(tab)}</h2>}
         <div className={desktop ? styles.columnScroll : undefined}
           {...(desktop && { role: 'region', 'aria-labelledby': titleId, tabIndex: 0 })}
         >
@@ -245,33 +179,34 @@ interface VerdictMetrics { ncavMultiple: number | null; pbr: number; per: number
 
 // 판정 항목 = 종목 카드에 표시하는 지표 4개와 같다. 산문으로 늘어놓으면 어느 지표가
 // 걸렸는지 다시 대조해야 하므로, 기준·값·충족 여부를 한 줄씩 세운다.
+const VERDICT_LABELS = { ncav: "NCAV", pbr: "PBR", per: "PER", roe: "ROE" } as const;
 const VERDICT_CHECKS: {
-  label: string;
-  criterion: string;
+  label: keyof typeof VERDICT_LABELS;
+  criterion: "minimumNcav" | "pbrRange" | "perRange" | "minimumRoe";
   test: (m: VerdictMetrics) => boolean;
   value: (m: VerdictMetrics) => string;
 }[] = [
   {
-    label: 'NCAV 배수',
-    criterion: '1배 이상',
+    label: 'ncav',
+    criterion: 'minimumNcav',
     test: m => m.ncavMultiple !== null && m.ncavMultiple >= 1,
     value: m => m.ncavMultiple !== null ? `${m.ncavMultiple.toFixed(2)}x` : '—',
   },
   {
-    label: 'PBR',
-    criterion: '0배 초과 1배 미만',
+    label: 'pbr',
+    criterion: 'pbrRange',
     test: m => m.pbr > 0 && m.pbr < 1,
     value: m => m.pbr > 0 ? `${m.pbr.toFixed(2)}x` : '—',
   },
   {
-    label: 'PER',
-    criterion: '0배 초과 10배 미만',
+    label: 'per',
+    criterion: 'perRange',
     test: m => m.per > 0 && m.per < 10,
     value: m => m.per > 0 ? `${m.per.toFixed(1)}x` : '—',
   },
   {
-    label: 'ROE',
-    criterion: '10% 이상',
+    label: 'roe',
+    criterion: 'minimumRoe',
     test: m => m.roe !== null && m.roe >= 10,
     value: m => m.roe !== null ? `${m.roe.toFixed(1)}%` : '—',
   },
@@ -289,6 +224,7 @@ function buildVerdict(metrics: VerdictMetrics) {
 // 메인 콘텐츠
 // =========================================================================
 function StockName({ name }: { name: string }) {
+  const t = useTranslations("analysis");
   const container = useRef<HTMLSpanElement>(null);
   const label = useRef<HTMLSpanElement>(null);
   const [truncated, setTruncated] = useState(false);
@@ -314,14 +250,14 @@ function StockName({ name }: { name: string }) {
           <span ref={label} className={cn("block truncate", truncated && "mr-5")}>{name}</span>
           {truncated && (
             <Popover.Trigger className="absolute inset-0 flex min-h-11 items-start justify-end rounded-sm pt-1 focus-visible:outline focus-visible:-outline-offset-2 md:min-h-0 md:items-center md:pt-0"
-              aria-label="전체 종목명 보기">
+              aria-label={t("fullStockName")}>
               <ChevronDown size={14} aria-hidden="true" />
             </Popover.Trigger>
           )}
         </span>
       </Popover.Anchor>
       <Popover.Portal>
-        <Popover.Content align="start" sideOffset={10} collisionPadding={12} aria-label="전체 종목명"
+        <Popover.Content align="start" sideOffset={10} collisionPadding={12} aria-label={t("fullStockNameDialog")}
           className="z-50 max-w-[min(28rem,calc(100vw-24px))] break-words rounded-lg border border-neutral-200 bg-surface-card px-3 py-2 text-sm text-neutral-900 shadow-md dark:border-neutral-700 dark:bg-surface-dark-card dark:text-white">
           {name}
         </Popover.Content>
@@ -331,6 +267,8 @@ function StockName({ name }: { name: string }) {
 }
 
 function AnalyzeContent() {
+  const locale = useLocale();
+  const t = useTranslations("analysis");
   const router = useRouter();
   const dispatch = useAppDispatch();
   const searchParams = useSearchParams();
@@ -354,7 +292,7 @@ function AnalyzeContent() {
   const likesState = useAppSelector(selectLikesState);
 
   const [hasMounted, setHasMounted] = useState(false);
-  const [staticStockData, setStaticStockData] = useState<StaticStockData>({ allTickers: [], krTickers: [], usTickers: [], usStocks: [], corpCodeJson: {} });
+  const [staticStockData, setStaticStockData] = useState<StaticStockData>({ allTickers: [], krTickers: [], usTickers: [], usStocks: [], krStocks: [], corpCodeJson: {} });
   // 모바일 종합 판단 — 한 줄 요약을 눌러 지표 4개(기준·값·충족 여부)를 펼친다
   const [verdictOpen, setVerdictOpen] = useState(false);
   // 재무 탭 — 추이 그래프와 기간별 숫자표를 전환한다
@@ -378,20 +316,20 @@ function AnalyzeContent() {
     setHasMounted(true);
     dispatch(reqGetSearchLog('10'));
     loadStaticStockData().then(setStaticStockData).catch(() => {
-      addToast('error', '종목 이름 목록을 불러오지 못했습니다. 종목코드나 티커로 검색하세요.');
+      addToast('error', t("directoryError"));
     });
-  }, [dispatch, addToast]);
+  }, [dispatch, addToast, t]);
 
 
   const handleSearch = useCallback((stockName: string) => {
     if (!stockName.trim()) return;
     const ticker = resolveStockSearchInput(stockName, staticStockData.allTickers);
     if (!ticker) {
-      addToast('error', '국내·미국 종목명으로 검색 결과를 선택하거나 종목코드·티커를 확인해 주세요.');
+      addToast('error', t("invalidStock"));
       return;
     }
     startTransition(() => { router.push(`/analyze?ticker=${encodeURIComponent(ticker)}`); });
-  }, [router, addToast, staticStockData.allTickers]);
+  }, [router, addToast, staticStockData.allTickers, t]);
 
   useEffect(() => {
     const ticker = searchParams.get('ticker');
@@ -453,17 +391,17 @@ function AnalyzeContent() {
     if (!tickerFromUrl || likeBusy) return;
     if (!session?.user) {
       try { sessionStorage.setItem(PENDING_WATCH_KEY, JSON.stringify({ ...watchStock, createdAt: Date.now() })); }
-      catch { addToast('info', '로그인 후 이 종목을 다시 담아주세요.'); }
+      catch { addToast('info', t("saveAfterSignIn")); }
       router.push(loginHref);
       return;
     }
     setWatchSaving(true);
     try {
       await dispatch(reqToggleLike({ ticker: watchStock.isUs ? watchStock.ticker : watchStock.name, name: watchStock.name, isUs: watchStock.isUs })).unwrap();
-      addToast('success', isInWatchlist ? '관심 종목에서 해제했습니다.' : '관심 종목에 저장했습니다.');
+      addToast('success', isInWatchlist ? t("removed") : t("saved"));
     } catch {
       await dispatch(reqGetMyLikes());
-      addToast('error', isInWatchlist ? '관심종목에서 빼지 못했습니다. 다시 눌러 주세요.' : '관심종목에 저장하지 못했습니다. 하트를 다시 눌러 주세요.');
+      addToast('error', isInWatchlist ? t("removeFailed") : t("saveFailed"));
     } finally { setWatchSaving(false); }
   };
 
@@ -484,13 +422,13 @@ function AnalyzeContent() {
           () => sessionStorage.removeItem(PENDING_WATCH_KEY),
           stock => dispatch(reqToggleLike({ ticker: stock.isUs ? stock.ticker : stock.name, name: stock.name, isUs: stock.isUs })).unwrap(),
         );
-        addToast('success', '관심 종목에 저장했습니다.');
+        addToast('success', t("saved"));
       } catch {
         await dispatch(reqGetMyLikes());
-        addToast('error', '관심종목에 저장하지 못했습니다. 하트를 다시 눌러 주세요.');
+        addToast('error', t("saveFailed"));
       } finally { setWatchSaving(false); }
     })();
-  }, [session?.user?.id, isPriceLoaded, watchStock.ticker, dispatch, addToast]);
+  }, [session?.user?.id, isPriceLoaded, watchStock.ticker, dispatch, addToast, t]);
 
 
   const chartConfig = useMemo(() => {
@@ -566,6 +504,15 @@ function AnalyzeContent() {
 
   // 헤더와 카드가 함께 쓰는 표시용 값 (같은 식을 두 곳에 적으면 한쪽만 고쳐진다)
   const tickerLabel = krOrUs === 'US' ? name : (stockData?.stockTicker || tickerFromUrl || '');
+  const usDirectory = useUsStockDirectory(!tickerFromUrl || krOrUs === 'US');
+  const localizedDisplayName = krOrUs === 'KR' ? krStockDisplayName(tickerLabel, displayName, locale)
+    : usStockDisplayName(usDirectory?.get(tickerLabel.toUpperCase()), displayName, locale);
+  const shortcutLabel = (ticker: string, name: string) => {
+    const code = krStockCode(ticker) ?? krStockCode(name);
+    const localized = code ? krStockDisplayName(code, name, locale)
+      : usStockDisplayName(usDirectory?.get(ticker.toUpperCase()), name, locale);
+    return locale !== 'ko' && localized !== (code ?? ticker) ? `${localized} · ${code ?? ticker}` : localized;
+  };
   const etfMarket = krOrUs === 'US' ? 'US' : 'KR';
   const isInEtfDraft = etfDraft?.market === etfMarket && etfDraft.holdings.some(holding => holding.ticker === tickerLabel);
   useEffect(() => {
@@ -578,10 +525,10 @@ function AnalyzeContent() {
       const next = addEtfHoldings({ market: etfMarket, holdings: [{ ticker: tickerLabel, name: displayName }] });
       setEtfDraft(next);
       addToast('success', next.holdings.length === 1
-        ? '초안에 담았어요. 같은 시장의 종목을 1개 더 담아 보세요.'
-        : `초안에 ${next.holdings.length}종목을 담았어요. 초안 보기에서 구성을 확인할 수 있어요.`);
+        ? t("draftFirst")
+        : t("draftSaved", { count: next.holdings.length }));
     } catch (error) {
-      addToast('error', error instanceof Error && !(error instanceof DOMException) ? error.message : '초안을 저장하지 못했어요.');
+      addToast('error', error instanceof Error && !(error instanceof DOMException) ? error.message : t("draftFailed"));
     }
   };
   const marketName = krOrUs === 'US'
@@ -603,14 +550,14 @@ function AnalyzeContent() {
 
   const financialStatus = !waitResponse ? (
                 <div role="alert" className="rounded-xl border border-neutral-200 p-4 text-[15px] dark:border-neutral-700">
-                  <p>재무 데이터를 불러오지 못했습니다.</p>
-                  <button type="button" onClick={() => { if (tickerFromUrl) onSearch(tickerFromUrl); }} className={`${PAGE_ACTION_CLS} mt-3`}>다시 조회</button>
+                  <p>{t("financialError")}</p>
+                  <button type="button" onClick={() => { if (tickerFromUrl) onSearch(tickerFromUrl); }} className={`${PAGE_ACTION_CLS} mt-3`}>{t("retry")}</button>
                 </div>
               ) :
               <div role="status" aria-live="polite" className="rounded-2xl border border-neutral-200 bg-white p-5 dark:border-border-subtle-dark dark:bg-surface-dark-card">
                 <div className="flex items-center gap-2 text-[15px] text-neutral-600 dark:text-neutral-300">
                   <Loader2 size={16} className="animate-spin" aria-hidden="true" />
-                  재무 데이터 조회 중…
+                  {t("financialLoading")}
                 </div>
                 <div aria-hidden="true" className="mt-4 space-y-3 animate-pulse">
                   <div className="h-3 w-2/3 rounded bg-neutral-100 dark:bg-surface-dark-muted" />
@@ -631,13 +578,13 @@ function AnalyzeContent() {
         icon={isPriceLoaded ? <StockLogo key={tickerLabel} ticker={tickerLabel} name={displayName} isUs={krOrUs === 'US'} /> : undefined}
         className={cn(styles.header, !tickerFromUrl && styles.emptyHeader)}
         containerClassName={ANALYZE_WIDTH}
-        title={isPriceLoaded ? <StockName key={tickerFromUrl} name={displayName || tickerLabel} /> : !tickerFromUrl ? '종목 검색' : '종목 분석'}
-        description={!tickerFromUrl ? '국내 종목명·종목코드 또는 미국 티커를 입력하세요.' : undefined}
+        title={isPriceLoaded ? <StockName key={tickerFromUrl} name={localizedDisplayName || tickerLabel} /> : !tickerFromUrl ? t("search") : t("title")}
+        description={!tickerFromUrl ? t("description") : undefined}
         meta={tickerFromUrl ? <>
-          <div className="flex min-w-0 items-center gap-1.5" aria-label="현재 종목 시세">
+          <div className="flex min-w-0 items-center gap-1.5" aria-label={t("quote")}>
             <span className={styles.quoteTicker}>{isPriceLoaded ? tickerLabel : tickerFromUrl}</span>
             {isPriceLoaded && marketName && <span className={styles.quoteAux}>{marketName}</span>}
-            <span className={cn(styles.price, styles.quotePrice)}>{isPriceLoaded ? headerPrice : waitResponse ? '조회 중…' : '시세 미확인'}</span>
+            <span className={cn(styles.price, styles.quotePrice)}>{isPriceLoaded ? headerPrice : waitResponse ? t("loadingQuote") : t("noQuote")}</span>
           </div>
         </> : undefined}
         compactMeta={isPriceLoaded ? <>
@@ -648,27 +595,27 @@ function AnalyzeContent() {
         primaryAction={isPriceLoaded ? <div className="flex flex-col gap-2 lg:mr-1 lg:flex-row lg:items-center">
           {isAdmin && !viewAsUser && (isInEtfDraft
             ? <Link href="/etfs/draft" className={isDesktop ? DESKTOP_ANALYZE_ACTION_CLS : cn(PAGE_ACTION_CLS, ANALYZE_ACTION_CLS)}>
-                {isDesktop && <FileText size={17} aria-hidden="true" />}초안 보기
+                {isDesktop && <FileText size={17} aria-hidden="true" />}{t("viewDraft")}
               </Link>
             : <button type="button" onClick={addToEtfDraft} className={isDesktop ? DESKTOP_ANALYZE_ACTION_CLS : cn(PAGE_ACTION_CLS, ANALYZE_ACTION_CLS)}>
-                {isDesktop && <Plus size={17} aria-hidden="true" />}ETF에 담기
+                {isDesktop && <Plus size={17} aria-hidden="true" />}{t("addEtf")}
               </button>)}
           <Link href={comparisonHref(krOrUs, [tickerLabel], new Date().toLocaleDateString('sv-SE'))}
             className={isDesktop ? DESKTOP_ANALYZE_ACTION_CLS : cn(PAGE_PRIMARY_ACTION_CLS, ANALYZE_ACTION_CLS, "dark:text-neutral-950")}>
-            {isDesktop && <GitCompareArrows size={17} aria-hidden="true" />}비교에 추가
+            {isDesktop && <GitCompareArrows size={17} aria-hidden="true" />}{t("addCompare")}
           </Link>
         </div> : undefined}
         share={{ path: tickerFromUrl ? `/analyze?${shareParams}` : "/analyze" }}
         actions={isPriceLoaded ? <div className="flex min-w-0 flex-col gap-3">
           <button type="button" onClick={() => void handleToggleLike()} disabled={likeBusy}
-            aria-label={isInWatchlist ? '관심 종목에서 빼기' : '관심 종목에 담기'} aria-pressed={isInWatchlist}
+            aria-label={isInWatchlist ? t("removeFromWatchlist") : t("addWatchlistButton")} aria-pressed={isInWatchlist}
             className={cn(PAGE_ACTION_CLS, "justify-start aria-pressed:bg-brand-light aria-pressed:text-brand-ink dark:aria-pressed:bg-brand-muted/50")}>
-            <Heart size={16} fill={isInWatchlist ? 'currentColor' : 'none'} />{likeBusy ? '저장 중…' : isInWatchlist ? '관심 종목 해제' : '관심 종목 담기'}
+            <Heart size={16} fill={isInWatchlist ? 'currentColor' : 'none'} />{likeBusy ? t("saving") : isInWatchlist ? t("removeWatchlist") : t("addWatchlistButton")}
           </button>
           {gradeLabel && <GradeHelp key={tickerLabel} grade={gradeLabel} upside={stockData?.ncavRatio ?? 0} />}
         </div> : undefined}
-        tabs={isPriceLoaded && !isDesktop ? <Tabs.List aria-label="종목 분석" className={styles.analysisTabs}>
-          {DETAIL_TAB_KEYS.map(tab => <Tabs.Trigger key={tab} value={tab} className={cn("service-button-quiet", styles.analysisTab)}>{DETAIL_TABS[tab]}</Tabs.Trigger>)}
+        tabs={isPriceLoaded && !isDesktop ? <Tabs.List aria-label={t("title")} className={styles.analysisTabs}>
+          {DETAIL_TAB_KEYS.map(tab => <Tabs.Trigger key={tab} value={tab} className={cn("service-button-quiet", styles.analysisTab)}>{t(tab)}</Tabs.Trigger>)}
         </Tabs.List> : undefined}
         mobileCompact
         mobileTitleOnScroll={isPriceLoaded}
@@ -683,7 +630,7 @@ function AnalyzeContent() {
               <div className={cn(ANALYZE_WIDTH, "py-2 flex items-center gap-3")}>
                 <div className="flex items-center gap-1.5 shrink-0">
                   <Flame size={11} className="text-amber-500" />
-                  <span className="text-sm font-bold text-neutral-600 dark:text-neutral-300 uppercase tracking-normal" title="최근 7일 검색 기준 · 최근 검색에 더 높은 가중치">인기</span>
+                  <span className="text-sm font-bold text-neutral-600 dark:text-neutral-300 uppercase tracking-normal" title={t("popularHint")}>{t("popular")}</span>
                 </div>
                 <div className={styles.historyList}>
                   {popularStocks.slice(0, 8).map((s: any, i: number) => (
@@ -691,7 +638,7 @@ function AnalyzeContent() {
                       className={cn("service-button", styles.stockShortcut)}
                     >
                       <span className={cn(styles.rank, "w-3.5 h-3.5 flex items-center justify-center rounded-full text-sm shrink-0")}>{i + 1}</span>
-                      {s.name}
+                      {shortcutLabel(s.ticker, s.name)}
                     </button>
                   ))}
                 </div>
@@ -699,13 +646,13 @@ function AnalyzeContent() {
             )}
             {krMarketHistory.length > 0 && (
               <div className={cn(ANALYZE_WIDTH, "py-2 flex items-center gap-3", !isPriceLoaded && popularStocks.length > 0 && "border-t border-neutral-100 dark:border-border-subtle-dark/40")}>
-                <span className="text-sm font-bold text-neutral-600 dark:text-neutral-300 uppercase tracking-normal shrink-0">최근 검색</span>
+                <span className="text-sm font-bold text-neutral-600 dark:text-neutral-300 uppercase tracking-normal shrink-0">{t("recent")}</span>
                 <div className={styles.historyList}>
                   {krMarketHistory.slice().reverse().slice(0, 8).map((s, i) => (
                     <button key={i} type="button" onClick={() => handleSearch(s)}
                       className={cn("service-button", styles.stockShortcut)}
                     >
-                      {s}
+                      {shortcutLabel(s, s)}
                     </button>
                   ))}
                 </div>
@@ -733,15 +680,15 @@ function AnalyzeContent() {
             {waitResponse && !isPriceLoaded && <ResultSkeleton />}
             {!waitResponse && tickerFromUrl === name && krOrUs === 'US' && !isPriceLoaded && (
               <div role="alert" className="rounded-xl border border-neutral-200 p-4 text-[15px] dark:border-neutral-700">
-                <p>시세 정보를 불러오지 못했습니다. 잠시 후 다시 조회해 주세요.</p>
-                <button type="button" onClick={() => onSearch(tickerFromUrl)} className={`${PAGE_ACTION_CLS} mt-3`}>다시 조회</button>
+                <p>{t("quoteError")}</p>
+                <button type="button" onClick={() => onSearch(tickerFromUrl)} className={`${PAGE_ACTION_CLS} mt-3`}>{t("retry")}</button>
               </div>
             )}
 
             <div className={cn(!isPriceLoaded && 'hidden', isPriceLoaded && isDesktop && styles.desktopResults)}>
               {krOrUs === 'US' && data.usSearchInfo.state === 'rejected' && (
                 <p role="status" className="mb-4 text-sm leading-6 text-neutral-600 dark:text-neutral-300">
-                  종목명을 불러오지 못해 티커를 표시합니다.
+                  {t("tickerFallback")}
                 </p>
               )}
               {isLoaded && (
@@ -757,8 +704,8 @@ function AnalyzeContent() {
                     className="flex min-h-11 w-full items-center justify-between gap-2 text-left font-semibold"
                   >
                     <span className="flex flex-wrap items-center gap-x-2">
-                      <span>저평가 기준</span>
-                      <span className={styles.verdictCount}>{verdict.metCount}/{verdict.checks.length} 충족</span>
+                      <span>{t("undervaluation")}</span>
+                      <span className={styles.verdictCount}>{t("metCount", { met: verdict.metCount, total: verdict.checks.length })}</span>
                     </span>
                     <ChevronDown size={15} aria-hidden="true" className={cn("shrink-0 transition-transform", verdictOpen && "rotate-180")} />
                   </button>
@@ -766,16 +713,16 @@ function AnalyzeContent() {
                     <ul className={styles.verdictChecks}>
                       {verdict.checks.map(check => (
                         <li key={check.label} className={styles.verdictCheck}>
-                          <span className="font-semibold">{check.label}</span>
+                          <span className="font-semibold">{check.label === "ncav" ? t("ncavMultiple") : VERDICT_LABELS[check.label]}</span>
                           {check.value === '—' ? (
-                            <span className={styles.verdictStatus}>자료 없음</span>
+                            <span className={styles.verdictStatus}>{t("noData")}</span>
                           ) : (
                             <div className={styles.verdictReading}>
-                              <span className={styles.verdictValue}>{check.value.replace(/x$/, '배')}</span>
-                              <span className={styles.verdictStatus} data-met={check.ok}>{check.ok ? '충족' : '미충족'}</span>
+                              <span className={styles.verdictValue}>{check.value.endsWith("x") ? t("multiple", { value: check.value.slice(0, -1) }) : check.value}</span>
+                              <span className={styles.verdictStatus} data-met={check.ok}>{check.ok ? t("met") : t("unmet")}</span>
                             </div>
                           )}
-                          <span className={styles.verdictCriterion}>기준 {check.criterion}</span>
+                          <span className={styles.verdictCriterion}>{t("criteria", { value: t(check.criterion) })}</span>
                         </li>
                       ))}
                     </ul>
@@ -785,7 +732,7 @@ function AnalyzeContent() {
 
               <div ref={detailStart} className={styles.detailContent} key={tickerFromUrl}>
                 {isLoaded && !isLoggedIn && (
-                  <AnalysisLoginPrompt href={loginHref}>이전 공시와 적정가치 시나리오의 상세 수치는 로그인 후 볼 수 있습니다.</AnalysisLoginPrompt>
+                  <AnalysisLoginPrompt href={loginHref}>{t("detailLogin")}</AnalysisLoginPrompt>
                 )}
                 <div className={isDesktop ? styles.analysisColumns : undefined}>
                 <AnalysisSection tab="strategy" desktop={isDesktop}>
@@ -803,7 +750,7 @@ function AnalyzeContent() {
               <div className="mb-2">
                 <StockCard
                   stock={{
-                    name: displayName,
+                    name: localizedDisplayName,
                     ticker: tickerLabel,
                     isUs: krOrUs === 'US',
                     sector: krOrUs === 'KR' ? data?.kiPrice?.output?.bstp_kor_isnm : undefined,
@@ -826,7 +773,7 @@ function AnalyzeContent() {
                 <AnalysisSection tab="risk" desktop={isDesktop}>
                   {!isLoaded ? financialStatus : (
                     <>
-                      <p className="mb-2 text-sm text-neutral-600 dark:text-neutral-300">재무 수치로 점검한 참고 결과입니다. 공식 상장폐지 결정은 거래소 공시에서 확인하세요.</p>
+                      <p className="mb-2 text-sm text-neutral-600 dark:text-neutral-300">{t("riskNotice")}</p>
                       {krOrUs === 'KR' ? <DelistingRisk kiBS={data.kiBS} kiIS={data.kiIS} showHistory={isLoggedIn} />
                         : <UsDelistingRisk finnhubData={data.finnhubData} usDetail={data.usDetail} showHistory={isLoggedIn} />}
                     </>
@@ -838,10 +785,10 @@ function AnalyzeContent() {
                     <div className={cn(styles.panel, styles.financialPanel, "flex min-w-0 flex-col gap-2")}>
                       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
                         <p className="text-sm sm:text-[15px] text-neutral-600 dark:text-neutral-300">
-                          {krOrUs === 'KR' ? '분기 공시 · 억 원' : '공시 · USD'}
+                          {krOrUs === 'KR' ? t("krFilings") : t("usFilings")}
                         </p>
                         <div className="flex flex-wrap gap-2">
-                          {([['bars', '그래프'], ['table', '표']] as const).map(([mode, label]) => (
+                          {([['bars', t('chart')], ['table', t('table')]] as const).map(([mode, label]) => (
                             <button
                               key={mode}
                               type="button"
@@ -871,9 +818,9 @@ function AnalyzeContent() {
                       <FinancialDataEvidence key={`${krOrUs}:${name}`} market={krOrUs} kiBS={data.kiBS} kiIS={data.kiIS} finnhubData={data.finnhubData} />
 
                       <details className={styles.readingNote}>
-                        <summary className="flex items-center justify-between gap-2">분기·연간 기준<ChevronDown size={16} aria-hidden="true" /></summary>
-                        <p>자산과 부채는 공시 기준일의 잔액입니다. 매출·이익·현금흐름을 비교할 때는 분기·누적·연간 중 같은 기간의 값을 보세요.</p>
-                        <p>NCAV는 최신 재무상태표를, 연간 이익 기반 가치평가와 연속 적자 점검은 연간 자료를 사용합니다.</p>
+                        <summary className="flex items-center justify-between gap-2">{t("period")}<ChevronDown size={16} aria-hidden="true" /></summary>
+                        <p>{t("periodBalances")}</p>
+                        <p>{t("periodModels")}</p>
                       </details>
                     </div>
                   ))}
@@ -890,10 +837,10 @@ function AnalyzeContent() {
       <footer className={cn(ANALYZE_WIDTH, styles.footer, "py-5 border-t")}>
         <div className="flex flex-col items-center gap-3">
           <p className="text-sm text-neutral-500 dark:text-neutral-400 text-center max-w-md leading-relaxed">
-            분석 결과는 투자 참고용입니다. 투자 결정은 이용자 본인의 책임입니다.
+            {t("disclaimer")}
           </p>
-          {krOrUs === 'KR' && <p className="text-sm text-neutral-500">국내 재무정보 출처: <a href="https://opendart.fss.or.kr/" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">금융감독원 OpenDART</a> · 공시자료를 가공하여 제공합니다.</p>}
-          {isAdmin && <Link href="/data-sources" className="text-xs text-neutral-500 underline">데이터 출처 및 이용 조건</Link>}
+          {krOrUs === 'KR' && <p className="text-sm text-neutral-500">{t.rich("krSource", { source: text => <a href="https://opendart.fss.or.kr/" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">{text}</a> })}</p>}
+          {isAdmin && <Link href="/data-sources" className="text-xs text-neutral-500 underline">{t("sourceTerms")}</Link>}
         </div>
       </footer>
     </div>
@@ -905,10 +852,11 @@ function AnalyzeContent() {
 // 페이지 내보내기
 // =========================================================================
 export default function AnalyzePage() {
+  const t = useTranslations("analysis");
   return (
     <Suspense fallback={
       <p role="status" className="flex items-center gap-2 px-4 py-6 text-sm text-neutral-600 dark:text-neutral-300">
-        <Loader2 size={16} className="animate-spin" aria-hidden="true" />종목 분석 화면을 여는 중…
+        <Loader2 size={16} className="animate-spin" aria-hidden="true" />{t("opening")}
       </p>
     }>
       <AnalyzeContent />

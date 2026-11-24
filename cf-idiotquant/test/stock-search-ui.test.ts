@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { koreanIntl } from './intl-mock.ts';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
@@ -23,6 +24,7 @@ function modal(purpose: StockSearchPurpose = 'analyze', reducedMotion = false) {
     module: output, exports: output.exports, Element,
     window: { matchMedia: () => ({ matches: reducedMotion }) },
     require(name: string) {
+      if (name === 'next-intl') return koreanIntl;
       if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx };
       if (name === 'react') return {
         useEffect() {}, useLayoutEffect() {},

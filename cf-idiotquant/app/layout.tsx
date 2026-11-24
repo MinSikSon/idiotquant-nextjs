@@ -1,3 +1,5 @@
+import { NextIntlClientProvider } from 'next-intl';
+import { getLocale } from 'next-intl/server';
 import "@/app/global.css";
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
@@ -18,6 +20,9 @@ import { ThemeProviderClient } from "./ThemeProviderClient";
 import { AuthProvider } from "@/components/auth-provider";
 import { MobilePageHeaderProvider } from "@/components/mobile-page-header";
 import { cn } from "@/lib/utils";
+
+// Cloudflare Pages uses the Edge Runtime for pages rendered with a locale cookie.
+export const runtime = "edge";
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://idiotquant.com'),
@@ -124,13 +129,14 @@ const jsonLdApp = {
   'inLanguage': 'ko',
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const locale = await getLocale();
   return (
-    <html lang="ko" suppressHydrationWarning>
+    <html lang={locale} suppressHydrationWarning>
       <head>
         {/* Pretendard 가변 폰트 — unicode-range에 따라 필요한 서브셋을 내려받는다. */}
         <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="anonymous" />
@@ -164,6 +170,7 @@ export default function RootLayout({
           crossOrigin="anonymous"
           strategy="afterInteractive"
         />
+        <NextIntlClientProvider>
         <StoreProvider>
           <ThemeProviderClient>
             <AuthProvider>
@@ -191,6 +198,7 @@ export default function RootLayout({
             </AuthProvider>
           </ThemeProviderClient>
         </StoreProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

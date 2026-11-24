@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { koreanIntl } from './intl-mock.ts';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import test from 'node:test';
@@ -32,6 +33,7 @@ function header(initialY = 0, pathname = '/analyze', role?: 'user' | 'admin', vi
     ResizeObserver: class { observe() {} disconnect() {} },
     MutationObserver: class { observe() {} disconnect() {} },
     require(name: string) {
+      if (name === 'next-intl') return koreanIntl;
       if (name === 'react') return {
         useState(initial: unknown) {
           const index = cursor++;
@@ -49,12 +51,11 @@ function header(initialY = 0, pathname = '/analyze', role?: 'user' | 'admin', vi
       if (name === 'next/navigation') return { usePathname: () => pathname };
       if (name === 'next-auth/react') return { useSession: () => ({
         status: role ? 'authenticated' : 'unauthenticated',
-        data: role ? { user: { role, name: 'Test user' } } : null,
+        data: role ? { user: { role } } : null,
       }) };
       if (name === '@/lib/viewAsUser') return { useViewAsUser: () => viewAsUser };
       if (name === '@/lib/utils') return { cn: (...values: unknown[]) => values.filter(Boolean).join(' ') };
       if (name === '@/lib/navigation-scroll') return { navigationScroll };
-      if (name === '@/components/quick-navigation') return { default: 'QuickNavigation' };
       if (name === '@/components/mobile-page-header') return { useMobilePageHeader: () => ({ active: true }) };
       return {};
     },
@@ -73,7 +74,6 @@ function header(initialY = 0, pathname = '/analyze', role?: 'user' | 'admin', vi
       desktopNav: tree.find(node => node.props?.['aria-label'] === '주요 서비스'),
       bottomNav: tree.find(node => node.props?.['aria-label'] === '하단 메뉴'),
       serviceMenus: tree.filter(node => ['추가 서비스', '전체 서비스'].includes(node.props?.['aria-label'])),
-      quickNavigation: tree.filter(node => node.type === 'QuickNavigation'),
       fixedLogo: nodes(header).find(node => node.props?.['aria-label'] === 'idiotquant 홈'),
       identityLogoRow: identity?.props.children,
       title: tree.find(node => 'data-navigation-scroll-title' in (node.props ?? {})),
@@ -96,32 +96,26 @@ test('주요 메뉴는 발굴과 분석을 순서대로 표시하고 현재 경�
   }
 });
 
-test('더 보기와 빠른 이동에서 투자 도구와 게임은 관리자에게만 표시한다', () => {
+test('데스크톱과 모바일 더 보기에서 기타 서비스는 관리자에게만 표시한다', () => {
   const sessions = [
     { role: undefined, viewAsUser: false },
     { role: 'user', viewAsUser: false },
     { role: 'admin', viewAsUser: false },
     { role: 'admin', viewAsUser: true },
   ] as const;
-  const toolLinks = ['/etfs', '/calculator', '/ledger', '/games'];
   for (const { role, viewAsUser } of sessions) {
-    const { serviceMenus, quickNavigation } = header(0, '/', role, viewAsUser).render();
-    const showTools = role === 'admin' && !viewAsUser;
+    const { serviceMenus } = header(0, '/', role, viewAsUser).render();
     assert.equal(serviceMenus.length, 2);
-    assert.equal(quickNavigation.length, 2);
     for (const menu of serviceMenus) {
-      const section = menu.props.children.find((item: any) => item.props['aria-label'] === '투자 도구 · 게임');
-      if (showTools) {
-        assert.deepEqual(Array.from(section.props.children[1], (link: any) => link.props.href), toolLinks);
+      const section = (label: string) => menu.props.children.find((item: any) => item.props['aria-label'] === label);
+      const linksIn = (item: any) => Array.from(item.props.children[1], (link: any) => link.props.href);
+      assert.deepEqual(linksIn(section('종목 리서치')), role ? ['/compare', '/screener?filter=liked'] : ['/compare']);
+      const otherServices = section('기타 서비스');
+      if (role === 'admin' && !viewAsUser) {
+        assert.deepEqual(linksIn(otherServices), ['/calculator', '/etfs', '/ledger', '/games']);
       } else {
-        assert.equal(section, undefined);
+        assert.equal(otherServices, undefined);
       }
-    }
-    for (const entry of quickNavigation) {
-      const links = Array.from(entry.props.items, (item: any) => item.href);
-      assert.deepEqual(links.filter(href => toolLinks.includes(href)), showTools ? toolLinks : []);
-      assert.ok(links.includes('/compare'));
-      assert.equal(links.includes('/screener?filter=liked'), Boolean(role));
     }
   }
 });

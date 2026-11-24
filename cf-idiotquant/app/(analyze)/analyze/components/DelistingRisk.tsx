@@ -1,8 +1,9 @@
 "use client";
 
+import { useLocale, useTranslations } from "next-intl";
 import { annualKrIncomeRows, latestFirst } from "@/lib/utils/financialPeriods";
 
-import { useMemo, type ReactNode } from "react";
+import { useCallback, useMemo, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { LockedAnalysisValue } from "@/components/locked-analysis-value";
 import {
@@ -67,15 +68,15 @@ const STATUS_ROW_CLS: Record<CriterionStatus, string> = {
 const OVERALL_CONFIG = {
   "위험": {
     badge: "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400 border-red-200 dark:border-red-900/50",
-    sub: "위험으로 분류한 항목이 있습니다.",
+    sub: "dangerSummary",
   },
   "주의": {
     badge: "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 border-amber-200 dark:border-amber-900/50",
-    sub: "주의로 분류한 항목이 있습니다.",
+    sub: "cautionSummary",
   },
   "양호": {
     badge: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900/50",
-    sub: "확인한 수치에서 주의·위험 신호를 찾지 못했습니다.",
+    sub: "okSummary",
   },
 } as const;
 
@@ -94,6 +95,14 @@ function OpBar({ val, max }: { val: number; max: number }) {
 }
 
 export function DelistingRisk({ kiBS, kiIS, showHistory }: DelistingRiskProps) {
+  const t = useTranslations("risk");
+  const locale = useLocale();
+  const statusLabel = (status: "위험" | "주의" | "양호" | "—") =>
+    t(({ "위험": "danger", "주의": "caution", "양호": "ok", "—": "noData" } as const)[status]);
+  const formatCurrency = useMemo(() => new Intl.NumberFormat(locale, {
+    style: "currency", currency: "KRW", currencyDisplay: "narrowSymbol", notation: "compact", maximumFractionDigits: 2,
+  }), [locale]);
+  const formatEok = useCallback((value: number) => locale === "ko" ? fmtJoEok(value) : formatCurrency.format(value * 100_000_000), [formatCurrency, locale]);
   const result = useMemo(() => {
     const bs = latestFirst<any>(kiBS?.output)[0];
     const rawPeriods: any[] = annualKrIncomeRows<any>(kiIS);
@@ -114,7 +123,7 @@ export function DelistingRisk({ kiBS, kiIS, showHistory }: DelistingRiskProps) {
     const bsopPrti    = Number(is_.bsop_prti    ?? 0);
     const thtrNtin    = Number(is_.thtr_ntin    ?? 0);
 
-    const fmt = (v: number) => `${v >= 0 ? "+" : "-"}${fmtJoEok(Math.abs(v))}`;
+    const fmt = (v: number) => `${v >= 0 ? "+" : "-"}${formatEok(Math.abs(v))}`;
 
     const criteria: Criterion[] = [];
 
@@ -125,37 +134,37 @@ export function DelistingRisk({ kiBS, kiIS, showHistory }: DelistingRiskProps) {
       let note: string;
       if (totalCptl <= 0) {
         status = "위험";
-        note = "완전자본잠식 — 즉시 관리종목 지정, 다음 사업연도에도 지속 시 상장폐지";
+        note = t("capitalComplete");
       } else if (rate >= 50) {
         status = "위험";
-        note = "50% 이상 시 관리종목, 2년 연속 유지 시 상장폐지";
+        note = t("capitalHigh");
       } else if (rate > 0) {
         status = "주의";
-        note = "50% 미만이나 잠식 진행 중";
+        note = t("capitalModerate");
       } else {
         status = "양호";
         note = "";
       }
-      criteria.push({ label: "자본잠식률", value: `${rate.toFixed(1)}%`, status, note, law: "유가증권 제47조 / 코스닥 제38조" });
+      criteria.push({ label: t("capitalImpairment"), value: `${rate.toFixed(1)}%`, status, note, law: t("bothMarkets") });
     } else {
-      criteria.push({ label: "자본잠식률", value: "—", status: "—", note: "자본금 데이터 없음", law: "유가증권 제47조 / 코스닥 제38조" });
+      criteria.push({ label: t("capitalImpairment"), value: "—", status: "—", note: t("capitalMissing"), law: t("bothMarkets") });
     }
 
     // ── 2. 영업이익 (최신 1개년) ─────────────────────────────────────
     criteria.push({
-      label: "영업이익",
+      label: t("operatingIncome"),
       value: fmt(bsopPrti),
       status: bsopPrti >= 0 ? "양호" : "주의",
-      note: bsopPrti < 0 ? "KOSPI: 영업손실 4년 연속 시 관리종목 지정" : "",
-      law: "유가증권 제47조",
+      note: bsopPrti < 0 ? t("operatingLossRule") : "",
+      law: t("kospiRule"),
     });
 
     // ── 3. 당기순이익 ────────────────────────────────────────────────
     criteria.push({
-      label: "당기순이익",
+      label: t("netIncome"),
       value: fmt(thtrNtin),
       status: thtrNtin >= 0 ? "양호" : "주의",
-      note: thtrNtin < 0 ? "자본잠식 가속 요인" : "",
+      note: thtrNtin < 0 ? t("netLossWarning") : "",
       law: "참고지표",
     });
 
@@ -166,27 +175,27 @@ export function DelistingRisk({ kiBS, kiIS, showHistory }: DelistingRiskProps) {
       if (saleAccount <= 0) {
         status = "—"; note = "";
       } else if (saleAccount < 50) {
-        status = "위험"; note = "KOSPI 50억 미만 관리종목 기준";
+        status = "위험"; note = t("revenueRisk");
       } else if (saleAccount < 100) {
-        status = "주의"; note = "100억 미만, 추이 모니터링 권장";
+        status = "주의"; note = t("revenueWatch");
       } else {
         status = "양호"; note = "";
       }
-      criteria.push({ label: "매출액", value: saleAccount > 0 ? fmtJoEok(saleAccount) : "—", status, note, law: "유가증권 제47조 / 코스닥 제38조" });
+      criteria.push({ label: t("revenue"), value: saleAccount > 0 ? formatEok(saleAccount) : "—", status, note, law: t("bothMarkets") });
     }
 
     // ── 5. 유동비율 ─────────────────────────────────────────────────
     if (flowLblt > 0) {
       const ratio = (cras / flowLblt) * 100;
       criteria.push({
-        label: "유동비율",
+        label: t("currentRatio"),
         value: `${ratio.toFixed(0)}%`,
         status: ratio < 100 ? "주의" : "양호",
-        note: ratio < 100 ? "단기 유동성 부족 가능성" : "",
+        note: ratio < 100 ? t("liquidityWarning") : "",
         law: "참고지표",
       });
     } else {
-      criteria.push({ label: "유동비율", value: "—", status: "—", note: "유동부채 없음", law: "참고지표" });
+      criteria.push({ label: t("currentRatio"), value: "—", status: "—", note: t("noCurrentLiabilities"), law: "참고지표" });
     }
 
     // ── 영업이익 연속 이력 + 관리종목 회피 의심 분석 ────────────────
@@ -218,8 +227,8 @@ export function DelistingRisk({ kiBS, kiIS, showHistory }: DelistingRiskProps) {
       // ① 마진이 극미 (영업이익률 < 0.5%)
       if (curOp.rev > 0 && (curOp.op / curOp.rev) * 100 < 0.5) {
         flags.push({
-          label: "극미 영업이익률",
-          desc: `영업이익률 ${((curOp.op / curOp.rev) * 100).toFixed(2)}% — 매출 대비 이익이 0.5% 미만으로 실질적 체질 개선 여부 불확실`,
+          label: t("thinMargin"),
+          desc: t("thinMarginDetail", { margin: ((curOp.op / curOp.rev) * 100).toFixed(2) }),
         });
       }
 
@@ -228,8 +237,12 @@ export function DelistingRisk({ kiBS, kiIS, showHistory }: DelistingRiskProps) {
         const sgnaDrop = (prevOp.sgna - curOp.sgna) / prevOp.sgna;
         if (sgnaDrop >= 0.30) {
           flags.push({
-            label: "판관비 급감",
-            desc: <>판관비 전년 대비 {showHistory ? `${(sgnaDrop * 100).toFixed(0)}%` : <LockedAnalysisValue />} 감소 ({showHistory ? fmtJoEok(prevOp.sgna) : <LockedAnalysisValue />} → {fmtJoEok(curOp.sgna)}) — 비용 절감으로 흑자 조작 가능성</>,
+            label: t("sgaDrop"),
+            desc: t.rich("sgaDropDetail", {
+              drop: () => showHistory ? `${(sgnaDrop * 100).toFixed(0)}%` : <LockedAnalysisValue />,
+              before: () => showHistory ? formatEok(prevOp.sgna) : <LockedAnalysisValue />,
+              after: formatEok(curOp.sgna),
+            }),
           });
         }
       }
@@ -237,16 +250,19 @@ export function DelistingRisk({ kiBS, kiIS, showHistory }: DelistingRiskProps) {
       // ③ 매출 감소 중 흑자전환
       if (prevOp && prevOp.rev > 0 && curOp.rev < prevOp.rev) {
         flags.push({
-          label: "매출 감소 + 흑자전환",
-          desc: <>매출 {showHistory ? fmtJoEok(prevOp.rev) : <LockedAnalysisValue />} → {fmtJoEok(curOp.rev)} 감소세임에도 영업이익 흑자 전환 — 매출 성장이 아닌 비용 조정으로 인한 흑자일 가능성</>,
+          label: t("revenueDownProfit"),
+          desc: t.rich("revenueDownProfitDetail", {
+            before: () => showHistory ? formatEok(prevOp.rev) : <LockedAnalysisValue />,
+            after: formatEok(curOp.rev),
+          }),
         });
       }
 
       // ④ 영업외수익이 영업이익보다 큼 (영업이익의 질 낮음)
       if (curOp.nonOpInc > curOp.op && curOp.nonOpInc > 0) {
         flags.push({
-          label: "영업외수익 > 영업이익",
-          desc: `영업외수익 ${fmtJoEok(curOp.nonOpInc)}이 영업이익 ${fmtJoEok(curOp.op)}을 초과 — 본업 외 수익으로 영업이익 달성, 지속 가능성 낮음`,
+          label: t("nonOperatingHigh"),
+          desc: t("nonOperatingHighDetail", { nonOperating: formatEok(curOp.nonOpInc), operating: formatEok(curOp.op) }),
         });
       }
     }
@@ -268,7 +284,7 @@ export function DelistingRisk({ kiBS, kiIS, showHistory }: DelistingRiskProps) {
     const overall: "위험" | "주의" | "양호" = hasDanger ? "위험" : hasCaution ? "주의" : "양호";
 
     return { criteria, overall, opYears, maxAbsOp, consLossCount, consLossStatus, isAvoidancePattern, flags, prevLossCount };
-  }, [kiBS, kiIS, showHistory]);
+  }, [kiBS, kiIS, showHistory, formatEok, t]);
 
   if (!result) return null;
 
@@ -280,15 +296,15 @@ export function DelistingRisk({ kiBS, kiIS, showHistory }: DelistingRiskProps) {
 
       {/* ── 헤더 ── */}
       <div className={cn(styles.riskHeader, "px-0 sm:px-3 py-2 border-b border-neutral-100 dark:border-border-subtle-dark flex items-center justify-between shrink-0")}>
-        <h3 className="text-sm font-semibold">상장폐지 점검 결과 <span className="font-normal text-neutral-600 dark:text-neutral-300">· KRX 기준</span></h3>
+        <h3 className="text-sm font-semibold">{t("krTitle")} <span className="font-normal text-neutral-600 dark:text-neutral-300">{t("krx")}</span></h3>
         <span className={cn("px-2.5 py-1 rounded-lg text-[15px] font-semibold border shrink-0", cfg.badge)}>
-          {overall}
+          {statusLabel(overall)}
         </span>
       </div>
 
       {/* ── 본문 ── */}
       <div className={cn(styles.riskBody, "pt-2 sm:px-3 sm:pb-2 space-y-1")}>
-        <p className="text-[13px] text-neutral-600 dark:text-neutral-300">{cfg.sub}</p>
+        <p className="text-[13px] text-neutral-600 dark:text-neutral-300">{t(cfg.sub)}</p>
 
         {/* 기준 항목 목록 */}
         {criteria.map(c => {
@@ -304,14 +320,14 @@ export function DelistingRisk({ kiBS, kiIS, showHistory }: DelistingRiskProps) {
                 <span className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
                   <span className="mr-auto break-words text-[0.8125rem] font-bold text-neutral-700 dark:text-neutral-300">{c.label}</span>
                   {c.value !== "—" && <span className={cn("min-w-0 break-words font-mono text-sm font-semibold tabular-nums", STATUS_COLOR[c.status])}>{c.value}</span>}
-                  <span className={cn("whitespace-nowrap text-[0.8125rem] font-semibold", STATUS_COLOR[c.status])}>{c.status === "—" ? "자료 없음" : c.status}</span>
+                  <span className={cn("whitespace-nowrap text-[0.8125rem] font-semibold", STATUS_COLOR[c.status])}>{statusLabel(c.status)}</span>
                 </span>
                 {hasDetails && <ChevronDown size={14} aria-hidden="true" className="shrink-0 text-neutral-500 group-open:rotate-180 dark:text-neutral-400" />}
               </RowBody>
               {hasDetails && (
                 <div className="space-y-1 break-words pb-2 pl-9 pr-3 text-[0.8125rem] leading-relaxed text-neutral-600 dark:text-neutral-400">
                   {c.note && <p>{c.note}</p>}
-                  {hasLaw && <p>판정 기준 · {c.law}</p>}
+                  {hasLaw && <p>{t("criteria")} · {c.law}</p>}
                 </div>
               )}
             </Row>
@@ -335,7 +351,7 @@ export function DelistingRisk({ kiBS, kiIS, showHistory }: DelistingRiskProps) {
                   ? <TrendingDown size={13} className="text-amber-500 shrink-0" />
                   : <TrendingUp size={13} className="text-emerald-500 shrink-0" />
                 }
-                <span className="text-[15px] font-bold text-neutral-700 dark:text-neutral-300">연간 영업이익</span>
+                <span className="text-[15px] font-bold text-neutral-700 dark:text-neutral-300">{t("annualOperating")}</span>
               </div>
               <span className={cn(
                 "text-[13px] font-semibold px-2 py-0.5 rounded font-mono",
@@ -343,7 +359,7 @@ export function DelistingRisk({ kiBS, kiIS, showHistory }: DelistingRiskProps) {
                 : consLossCount >= 2 ? "text-amber-600 bg-amber-100 dark:bg-amber-950/30 dark:text-amber-400"
                 : "text-emerald-600 bg-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-400"
               )}>
-                {consLossCount >= 1 ? <>{showHistory ? consLossCount : <LockedAnalysisValue />}년 연속 영업손실</> : "연속 손실 없음"}
+                {consLossCount >= 1 ? t.rich("lossYears", { count: () => showHistory ? consLossCount : <LockedAnalysisValue /> }) : t("noLossYears")}
               </span>
             </div>
 
@@ -353,13 +369,13 @@ export function DelistingRisk({ kiBS, kiIS, showHistory }: DelistingRiskProps) {
                 <div key={y.year} className={cn(styles.riskYear, "grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 sm:grid-cols-[6rem_minmax(0,1fr)_auto]")}>
                   <span className="flex items-center gap-2 whitespace-nowrap text-[15px] font-mono tabular-nums text-neutral-600 dark:text-neutral-300">
                     {y.year}
-                    {i === 0 && <span className="text-[13px] font-sans text-neutral-500 dark:text-neutral-400">최신</span>}
+                    {i === 0 && <span className="text-[13px] font-sans text-neutral-500 dark:text-neutral-400">{t("latest")}</span>}
                   </span>
                   <span className={cn(
                     "text-right text-[15px] font-bold font-mono tabular-nums whitespace-nowrap sm:order-3",
                     (showHistory || i === 0) && (y.op >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400"),
                   )}>
-                    {!showHistory && i > 0 ? <LockedAnalysisValue /> : <>{y.op >= 0 ? "+" : "-"}{fmtJoEok(Math.abs(y.op))}</>}
+                    {!showHistory && i > 0 ? <LockedAnalysisValue /> : <>{y.op >= 0 ? "+" : "-"}{formatEok(Math.abs(y.op))}</>}
                   </span>
                   <div className="col-span-2 min-w-0 sm:order-2 sm:col-span-1">
                     {showHistory || i === 0
@@ -371,7 +387,7 @@ export function DelistingRisk({ kiBS, kiIS, showHistory }: DelistingRiskProps) {
             </div>
 
             <p className="text-[13px] text-neutral-600 dark:text-neutral-300 mt-2">
-              KOSPI 기준 4년 연속 영업손실 시 관리종목 지정 (유가증권 제47조)
+              {t("lossRule")}
             </p>
           </div>
         )}
@@ -382,10 +398,10 @@ export function DelistingRisk({ kiBS, kiIS, showHistory }: DelistingRiskProps) {
             <div className="flex items-start gap-2 mb-2.5">
               <div>
                 <span className="text-[13px] font-bold text-orange-700 dark:text-orange-400">
-                  연속 영업손실 후 흑자 전환
+                  {t("returnedToProfit")}
                 </span>
                 <p className="text-[13px] text-orange-600/80 dark:text-orange-400/70 mt-0.5 leading-relaxed">
-                  직전 {showHistory ? prevLossCount : <LockedAnalysisValue />}년 연속 영업손실 뒤 최근 연도에 흑자로 전환했습니다.
+                  {t.rich("returnedToProfitDetail", { count: () => showHistory ? prevLossCount : <LockedAnalysisValue /> })}
                 </p>
               </div>
             </div>
@@ -404,20 +420,19 @@ export function DelistingRisk({ kiBS, kiIS, showHistory }: DelistingRiskProps) {
               </div>
             ) : (
               <p className="text-[13px] text-orange-600/70 dark:text-orange-400/60 pl-5">
-                조회한 재무 항목에서 추가 신호를 찾지 못했습니다.
+                {t("noMoreSignals")}
               </p>
             )}
 
             <p className="text-[13px] text-orange-500/60 dark:text-orange-400/50 mt-2 font-mono">
-              흑자 전환의 배경은 공시와 감사보고서에서 확인하세요.
+              {t("readFilings")}
             </p>
           </div>
         )}
 
         {/* ── 푸터 ─────────────────────────────────────────────────── */}
         <p className="text-[13px] text-neutral-600 dark:text-neutral-300 pt-2 leading-relaxed border-t border-neutral-100 dark:border-border-subtle-dark">
-          유가증권시장 상장규정 제47조 · 코스닥시장 상장규정 제38조 기준. 재무데이터는 DART 공시 기준이며
-          실제 관리종목 지정 여부는 KRX 심사 결과에 따릅니다.
+          {t("riskSource")}
         </p>
       </div>
     </div>

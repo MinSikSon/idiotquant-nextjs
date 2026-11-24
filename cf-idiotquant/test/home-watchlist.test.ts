@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import { koreanIntl } from './intl-mock.ts';
+import { krStockCode, krStockDisplayName } from '../lib/utils/krStockNames.ts';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import test from 'node:test';
@@ -15,7 +17,7 @@ const source = transpile('../components/home-watchlist.tsx');
 const stockRowSource = transpile('../components/watchlist-stock-row.tsx');
 
 // 홈 컴포넌트를 실행하고 네트워크와 React 상태 경계만 제어한다.
-function harness(initialBaseline = baseline, sampleRoot = false) {
+function harness(initialBaseline = baseline, sampleRoot = false, locale = "ko") {
     const slots: any[] = [];
     let cursor = 0;
     let tree: any;
@@ -52,14 +54,24 @@ function harness(initialBaseline = baseline, sampleRoot = false) {
     };
     const jsx = (type: any, props: unknown): any => typeof type === 'function' ? type(props) : ({ type, props });
     const output = { exports: {} as { HomeWatchlist: () => any; WatchlistSample: () => any } };
-    runInNewContext(source, { exports: output.exports, module: output,
+    runInNewContext(source, { exports: output.exports, module: output, process: { env: {} },
         window: { addEventListener: (name: string, fn: () => void) => listeners.set(name, fn), removeEventListener: (name: string) => listeners.delete(name) },
         require: function require(name: string) {
+            if (name === 'next-intl') return { ...koreanIntl, useLocale: () => locale };
             if (name === 'react') return react;
             if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx, Fragment: 'fragment' };
             if (name === 'next/link') return { __esModule: true, default: 'a' };
             if (name === 'lucide-react') return {};
             if (name.endsWith('/valuationSummary')) return { scanValuationSummary, valuationComparisonAxis };
+            if (name.endsWith('/krStockNames')) return { krStockCode, krStockDisplayName };
+            if (name.endsWith('/usStockNames')) return {
+                useUsStockDirectory: () => new Map([
+                    ['AAPL', { symbol: 'AAPL', name: 'APPLE INC', koreanName: '애플' }],
+                    ['MU', { symbol: 'MU', name: 'MICRON TECHNOLOGY INC', koreanName: '마이크론 테크놀로지' }],
+                ]),
+                usStockDisplayName: (stock: { name: string; koreanName?: string } | undefined, fallback: string, locale: string) =>
+                    (locale === 'ko' ? stock?.koreanName : stock?.name) || fallback,
+            };
             if (name.endsWith('/stockLogo')) return { StockLogo: 'stock-logo' };
             if (name.endsWith('/watchlist-stock-row')) {
                 const exports = {};
@@ -69,7 +81,7 @@ function harness(initialBaseline = baseline, sampleRoot = false) {
             if (name.endsWith('/sample')) return { getWatchlistSample: () => sample() };
             if (name.endsWith('/changes')) return changes;
             if (name.endsWith('/investmentFlow')) return { analysisHref: (ticker: string) => `/analyze?ticker=${ticker}`, WATCHLIST_HREF: '/screener?filter=liked' };
-            if (name.endsWith('/strategies')) return { STRATEGY_LABEL: {} };
+            if (name.endsWith('/strategy-labels')) return { useStrategyText: () => (id: string) => id };
             if (name.endsWith('/stock-search-provider')) return { useStockSearchModal: () => ({ openSearch() {} }) };
             if (name.endsWith('/review')) return {
                 getWatchReview: () => get(),
@@ -312,4 +324,22 @@ test('백그라운드 조회가 실패해도 기존 목록을 유지한다', asy
     assert.match(h.text(), /일시적인 조회 실패/);
     assert.match(h.text(), /삼성전자/);
     assert.match(h.text(), /다시 불러오기/);
+});
+
+test('홈 관심종목은 한국·미국 이름을 선택 언어로 표시하며 코드로 구분한다', async () => {
+    const stocks = [
+        item,
+        { ...item, ticker: '035420', stock_name: 'NAVER' },
+        { ...item, is_us: 1, ticker: 'AAPL', stock_name: '애플' },
+        { ...item, is_us: 1, ticker: 'MU', stock_name: 'MU' },
+    ];
+    for (const locale of ['en', 'ja']) {
+        const h = harness(baseline, false, locale);
+        h.getWith(async () => ({ success: true, data: { items: stocks, baseline } }));
+        await h.settle();
+        assert.match(h.text(), locale === 'en' ? /SAMSUNG ELECTRONICS.*005930/ : /サムスン電子005930/);
+        assert.match(h.text(), /NAVER Corporation035420/);
+        assert.match(h.text(), /APPLE INCAAPL/);
+        assert.match(h.text(), /MICRON TECHNOLOGY INCMU/);
+    }
 });

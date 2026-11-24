@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+    // Keep the 404 fallback static when the main layout reads a locale cookie.
+    experimental: { globalNotFound: true },
     images: {
         remotePatterns: [
             {
@@ -58,9 +60,12 @@ const nextConfig = {
 };
 
 import bundleAnalyzer from '@next/bundle-analyzer';
+import createNextIntlPlugin from 'next-intl/plugin';
 
 const withBundleAnalyzer = bundleAnalyzer({
     enabled: process.env.ANALYZE === 'true', // 환경변수로 켜고 끄기
 });
 
-export default withBundleAnalyzer(nextConfig);
+const withNextIntl = createNextIntlPlugin();
+
+export default withNextIntl(withBundleAnalyzer(nextConfig));

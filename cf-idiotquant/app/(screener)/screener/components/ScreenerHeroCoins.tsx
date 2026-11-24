@@ -1,9 +1,8 @@
 "use client";
 
-import dynamic from "next/dynamic";
+import HeroCoinRain from '@/components/hero-coin-rain';
 import { useSyncExternalStore } from "react";
 
-const HeroCoinRain = dynamic(() => import("@/components/hero-coin-rain"), { ssr: false });
 const DESKTOP = "(min-width: 768px)";
 
 function subscribe(onChange: () => void) {

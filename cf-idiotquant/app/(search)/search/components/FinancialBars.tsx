@@ -1,10 +1,12 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { useFinancialLabels } from "@/i18n/financial-labels";
 import { cn } from "@/lib/utils";
 import { LockedAnalysisValue } from "@/components/locked-analysis-value";
 import styles from "./FinancialBars.module.css";
 import {
-    barGeometry, periodDelta, fmtEok, usdBlockFormatter,
+    barGeometry, periodDelta, fmtEok, fmtUsd, usdBlockFormatter,
     type BarModel, type BarItem, type StackRow, type Tone,
 } from "./financialBarsData";
 
@@ -25,18 +27,22 @@ const blockFormatter = (unit: Unit, values: (number | null)[]) =>
     unit === "eok" ? fmtEok : usdBlockFormatter(values);
 
 // ── 구성 스택 ────────────────────────────────────────────────────────────
-function Stack({ row }: { row: StackRow }) {
+function Stack({ row, unit }: { row: StackRow; unit: Unit }) {
+    const t = useTranslations("finance");
+    const label = useFinancialLabels();
+    const format = (value: number | null) => unit === "usd" ? fmtUsd(value)
+        : value === null ? "—" : t("krwAmount", { amount: fmtEok(value) });
     return (
         <div className="flex flex-col gap-1.5">
             <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 break-keep">
-                <p className="text-[13px] font-bold text-neutral-800 dark:text-neutral-100">{row.title}</p>
-                {row.note && <span className="text-[13px] font-semibold text-neutral-600 dark:text-neutral-300">{row.note}</span>}
+                <p className="text-[13px] font-bold text-neutral-800 dark:text-neutral-100">{label(row.title)}</p>
+                {row.note && <span className="text-[13px] font-semibold text-neutral-600 dark:text-neutral-300">{t(row.note.label, { value: format(row.note.value) })}</span>}
             </div>
             <div className={cn(styles.stackBar, "flex h-7 rounded-lg overflow-hidden bg-neutral-100 dark:bg-[#322f2a]")}>
                 {row.segs.map(seg => (
                     <div
                         key={seg.label}
-                        title={`${seg.label} ${seg.pct.toFixed(1)}%`}
+                        title={`${label(seg.label)} ${seg.pct.toFixed(1)}%`}
                         style={{ width: `${seg.pct}%` }}
                         className={cn(
                             "relative grid place-items-center min-w-0 overflow-hidden whitespace-nowrap font-mono text-[13px] sm:text-[15px] font-bold",
@@ -45,7 +51,7 @@ function Stack({ row }: { row: StackRow }) {
                         )}
                     >
                         {seg.pale && <span aria-hidden="true" className="absolute inset-0 bg-white/70 dark:bg-black/30" />}
-                        <span className={cn(styles.stackText, "relative")}>{seg.pct >= 20 ? `${seg.label} ${Math.round(seg.pct)}%` : seg.pct >= 6 ? `${Math.round(seg.pct)}%` : ""}</span>
+                        <span className={cn(styles.stackText, "relative")}>{seg.pct >= 20 ? `${label(seg.label)} ${Math.round(seg.pct)}%` : seg.pct >= 6 ? `${Math.round(seg.pct)}%` : ""}</span>
                     </div>
                 ))}
             </div>
@@ -53,7 +59,7 @@ function Stack({ row }: { row: StackRow }) {
                 {row.segs.map(seg => (
                     <span key={seg.label} className="inline-flex items-center gap-1.5">
                         <i aria-hidden="true" className={cn("h-2 w-2 shrink-0 rounded-sm", TONE_BG[seg.tone])} />
-                        {seg.label} {Math.round(seg.pct)}%
+                        {label(seg.label)} {Math.round(seg.pct)}%
                     </span>
                 ))}
             </div>
@@ -62,7 +68,7 @@ function Stack({ row }: { row: StackRow }) {
                     {row.legend.map(l => (
                         <span key={l.label} className="inline-flex items-center gap-1.5">
                             <i className={cn("w-2 h-2 rounded-sm shrink-0", TONE_BG[l.tone])} />
-                            {l.label}
+                            {l.label === "operatingMargin" ? t(l.label, { value: format(l.value), margin: l.margin }) : t(l.label, { value: format(l.value) })}
                         </span>
                     ))}
                 </div>
@@ -73,10 +79,11 @@ function Stack({ row }: { row: StackRow }) {
 
 // ── 증감 배지 ────────────────────────────────────────────────────────────
 function DeltaBadge({ item, showHistory }: { item: BarItem; showHistory: boolean }) {
+    const t = useTranslations("finance");
     if (item.hideDelta) return null;
     const d = periodDelta(item.values);
     if (!showHistory) return d.pct !== null || d.turnedLoss ? <LockedAnalysisValue /> : null;
-    if (d.turnedLoss) return <span className="font-mono text-[15px] font-bold text-rose-700 dark:text-rose-300">적자전환</span>;
+    if (d.turnedLoss) return <span className="font-mono text-[15px] font-bold text-rose-700 dark:text-rose-300">{t("turnedLoss")}</span>;
 
     // 현금흐름처럼 음수가 정상인 항목은 변화율이 오해를 부른다 — 유출이 −4,200 → −5,900 으로
     // 커진 것을 "−40.5%" 로 적으면 줄어든 것처럼 읽힌다. 규모의 방향으로 바꿔 말한다.
@@ -86,7 +93,7 @@ function DeltaBadge({ item, showHistory }: { item: BarItem; showHistory: boolean
         if (latest !== null && oldest !== null && latest < 0 && oldest < 0) {
             return (
                 <span className="font-mono text-[15px] font-bold text-neutral-600 dark:text-neutral-300">
-                    유출 {Math.abs(latest) >= Math.abs(oldest) ? "확대" : "축소"}
+                    {t(Math.abs(latest) >= Math.abs(oldest) ? "outflowUp" : "outflowDown")}
                 </span>
             );
         }
@@ -102,7 +109,7 @@ function DeltaBadge({ item, showHistory }: { item: BarItem; showHistory: boolean
             item.neutral || flat ? "text-neutral-600 dark:text-neutral-300"
                 : good ? "text-emerald-700 dark:text-emerald-300" : "text-rose-700 dark:text-rose-300"
         )}>
-            {d.spanCount}기 {flat ? "±0.0%" : `${d.pct > 0 ? "+" : "−"}${Math.abs(d.pct).toFixed(1)}%`}
+            {t("periodDelta", { count: d.spanCount, change: flat ? "±0.0%" : `${d.pct > 0 ? "+" : "−"}${Math.abs(d.pct).toFixed(1)}%` })}
         </span>
     );
 }
@@ -117,6 +124,8 @@ function compactPeriod(period: string) {
 }
 
 function TrendBlock({ item, periods, unit, showHistory }: { item: BarItem; periods: string[]; unit: Unit; showHistory: boolean }) {
+    const t = useTranslations("finance");
+    const label = useFinancialLabels();
     const visibleValues = showHistory ? item.values : item.values.slice(0, 1);
     const geo = barGeometry(visibleValues);
     const f = blockFormatter(unit, visibleValues);
@@ -125,8 +134,8 @@ function TrendBlock({ item, periods, unit, showHistory }: { item: BarItem; perio
     if (item.values.every(v => v === null)) {
         return (
             <div className="flex min-h-11 items-center justify-between gap-3 border-b border-neutral-100 py-2 text-[13px] dark:border-neutral-800">
-                <span className="font-semibold text-neutral-700 dark:text-neutral-300 break-keep">{item.label}</span>
-                <span className="shrink-0 whitespace-nowrap text-neutral-500 dark:text-neutral-400">제공 자료 없음</span>
+                <span className="font-semibold text-neutral-700 dark:text-neutral-300 break-keep">{label(item.label)}</span>
+                <span className="shrink-0 whitespace-nowrap text-neutral-500 dark:text-neutral-400">{t("noData")}</span>
             </div>
         );
     }
@@ -139,7 +148,7 @@ function TrendBlock({ item, periods, unit, showHistory }: { item: BarItem; perio
                     item.isTotal ? "text-neutral-900 dark:text-white" : "text-neutral-700 dark:text-neutral-300"
                 )}>
                     {item.isTotal && <i className={cn("w-[3px] h-3 rounded-full shrink-0", TONE_BG[item.tone])} />}
-                    {item.label}
+                    {label(item.label)}
                 </span>
                 <DeltaBadge item={item} showHistory={showHistory} />
                 <span className={cn(
@@ -156,14 +165,16 @@ function TrendBlock({ item, periods, unit, showHistory }: { item: BarItem; perio
                 const locked = !showHistory && !isLatest && v !== null;
                 const period = periods[i] ?? "";
                 const { date, basis } = compactPeriod(period);
+                const basisLabel = basis === "분기" ? t("quarter") : basis === "연간" ? t("annual") : basis;
+                const periodLabel = basisLabel ? `${date} · ${basisLabel}` : date;
                 return (
                     <div key={periods[i] ?? i} className={cn(styles.periodRow, "grid min-h-7 sm:min-h-8 grid-cols-[4rem_minmax(0,1fr)_4.25rem] sm:grid-cols-[4.5rem_minmax(0,1fr)_4rem] items-center gap-1.5")}>
                         <span className={cn(
                             "flex flex-col whitespace-nowrap font-mono text-[13px] leading-4 tabular-nums",
                             isLatest ? "font-bold text-neutral-700 dark:text-neutral-200" : "text-neutral-500 dark:text-neutral-400"
-                        )} title={period} aria-label={period}>
+                        )} title={periodLabel} aria-label={periodLabel}>
                             <span aria-hidden="true">{date}</span>
-                            {basis && <span aria-hidden="true" className="text-[13px] font-normal leading-3 text-neutral-500 dark:text-neutral-400">{basis}</span>}
+                            {basis && <span aria-hidden="true" className="text-[13px] font-normal leading-3 text-neutral-500 dark:text-neutral-400">{basisLabel}</span>}
                         </span>
 
                         <div className={cn(
@@ -204,35 +215,37 @@ function TrendBlock({ item, periods, unit, showHistory }: { item: BarItem; perio
 
 // ── 명세서 한 장 ─────────────────────────────────────────────────────────
 function StatementCard({ model, unit, showHistory }: { model: BarModel; unit: Unit; showHistory: boolean }) {
+    const t = useTranslations("finance");
+    const label = useFinancialLabels();
     return (
         <div className="bg-transparent sm:bg-white dark:sm:bg-surface-dark-card rounded-none border-0 sm:rounded-xl sm:border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
             <div className={cn(styles.statementHeader, "px-0 sm:px-5 py-2 sm:py-3.5 border-b border-neutral-100 dark:border-border-subtle-dark flex flex-wrap items-baseline gap-x-3 gap-y-1")}>
-                <h4 className="text-[15px] font-semibold text-neutral-800 dark:text-neutral-100">{model.title}</h4>
+                <h4 className="text-[15px] font-semibold text-neutral-800 dark:text-neutral-100">{label(model.title)}</h4>
                 <span className="font-mono text-[13px] text-neutral-600 dark:text-neutral-300">
                     {compactPeriod(model.periods[0] ?? "").date} → {compactPeriod(model.periods[model.periods.length - 1] ?? "").date}
-                    {unit === "eok" ? " · 억 원" : " · USD"}
+                     · {unit === "eok" ? t("krwUnit") : "USD"}
                 </span>
             </div>
 
             {model.stacks.length > 0 && (
                 <div className={cn(styles.statementStacks, "px-3 sm:px-5 py-3 sm:py-4 bg-surface-canvas dark:bg-surface-dark border-b border-neutral-100 dark:border-border-subtle-dark flex flex-col gap-2 sm:gap-3.5")}>
                     <span className="text-sm font-semibold text-neutral-600 dark:text-neutral-300">
-                        재무 구성 · {compactPeriod(model.periods[0] ?? "").date}
+                        {t("composition", { date: compactPeriod(model.periods[0] ?? "").date })}
                     </span>
-                    {model.stacks.map(s => <Stack key={s.title} row={s} />)}
+                    {model.stacks.map(s => <Stack key={s.title} row={s} unit={unit} />)}
                 </div>
             )}
 
             <div className={cn(styles.statementBody, "px-0 sm:px-5 pb-3 sm:pb-5")}>
                 {model.groups.map(g => (
-                    <div key={g.labelEn}>
+                    <div key={label(g.labelEn)}>
                         <div className={cn(styles.groupTitle, "flex items-center gap-1.5 mt-3 sm:mt-5 mb-1.5 sm:mb-2 text-sm font-semibold text-neutral-600 dark:text-neutral-300")}>
                             <i className={cn("w-[7px] h-[7px] rounded-full shrink-0", TONE_BG[g.tone])} />
-                            {g.labelEn}
+                            {label(g.labelEn)}
                         </div>
                         <div className={cn(styles.groupItems, "grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 sm:gap-y-4")}>
                             {g.items.map(item => (
-                                <TrendBlock key={item.label} item={item} periods={model.periods} unit={unit} showHistory={showHistory} />
+                                <TrendBlock key={label(item.label)} item={item} periods={model.periods} unit={unit} showHistory={showHistory} />
                             ))}
                         </div>
                     </div>
@@ -243,18 +256,19 @@ function StatementCard({ model, unit, showHistory }: { model: BarModel; unit: Un
 }
 
 export function FinancialBars({ bs, is, unit, showHistory = true }: { bs: BarModel | null; is: BarModel | null; unit: Unit; showHistory?: boolean }) {
+    const t = useTranslations("finance");
     if (!bs && !is) return null;
     return (
         <div className={cn(styles.statements, "flex min-w-0 flex-col gap-3 sm:gap-4")}>
             {bs && <StatementCard model={bs} unit={unit} showHistory={showHistory} />}
             {is && <StatementCard model={is} unit={unit} showHistory={showHistory} />}
             <details className="text-[13px] leading-relaxed text-neutral-600 dark:text-neutral-400">
-                <summary className="flex min-h-11 cursor-pointer items-center font-medium">그래프 읽는 법</summary>
-                <p>각 항목의 첫 줄이 최신 자료입니다. {showHistory ? "막대 길이는 같은 항목의 기간별 변화만 비교하세요. 증감률은 표시된 자료 중 가장 오래된 값과 최신 값을 비교합니다." : "이전 막대와 증감률은 로그인 후 볼 수 있습니다."}</p>
-                <p className="mt-2">{showHistory && "항목별 최댓값을 100%로 표시하며, 항목끼리 막대 길이를 비교할 수 없습니다. "}구성 막대는 한 줄의 합계가 100%입니다.</p>
-                {unit === "eok" && <p className="mt-2">세전손익(계산)은 경상이익 + 특별이익 − 특별손실, 법인세 등(차액)은 여기에서 당기순이익을 뺀 값입니다. 법인세 외 조정이 포함될 수 있으며, 필요한 값이 없으면 제공 자료 없음 또는 —로 표시합니다.</p>}
-                {unit === "usd" && <p className="mt-2">법인세비용(혜택)은 공시된 비용이며 현금 납부액과 다릅니다. 음수는 세금 혜택입니다. 세전이익은 계속영업 기준입니다.</p>}
-                {unit === "usd" && <p className="mt-2">USD · K = 천 달러 · M = 백만 달러 · B = 십억 달러. —는 공시 자료에 값이 없다는 뜻이며 0과 다릅니다.</p>}
+                <summary className="flex min-h-11 cursor-pointer items-center font-medium">{t("readChart")}</summary>
+                <p>{t("latest")} {showHistory ? t("comparePeriods") : t("loginHistory")}</p>
+                <p className="mt-2">{showHistory && t("scales")} {t("stackTotal")}</p>
+                {unit === "eok" && <p className="mt-2">{t("krTax")}</p>}
+                {unit === "usd" && <p className="mt-2">{t("usTax")}</p>}
+                {unit === "usd" && <p className="mt-2">{t("usdUnits")}</p>}
             </details>
         </div>
     );

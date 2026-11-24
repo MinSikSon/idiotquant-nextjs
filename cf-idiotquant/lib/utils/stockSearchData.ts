@@ -1,3 +1,4 @@
+import { krStockEnglishName, krStockJapaneseName } from './krStockNames';
 import type { StockSearchName } from './stockSuggestions';
 
 export interface StaticStockData {
@@ -5,7 +6,21 @@ export interface StaticStockData {
   krTickers: string[];
   usTickers: string[];
   usStocks: StockSearchName[];
+  krStocks: StockSearchName[];
   corpCodeJson: Record<string, any>;
+}
+
+let usNamesPromise: Promise<StockSearchName[]> | undefined;
+
+export function loadUsStockNames(): Promise<StockSearchName[]> {
+  return usNamesPromise ??= Promise.all([
+    import('@/public/data/usStockSymbols/nasdaq_full_tickers.json'),
+    import('@/public/data/usStockSymbols/nyse_full_tickers.json'),
+    import('@/public/data/usStockSymbols/amex_full_tickers.json'),
+  ]).then(lists => lists.flatMap(list => list.default)).catch(error => {
+    usNamesPromise = undefined;
+    throw error;
+  });
 }
 
 let cachedStaticData: StaticStockData | null = null;
@@ -16,32 +31,43 @@ export const loadStaticStockData = (): Promise<StaticStockData> => {
   if (staticDataPromise) return staticDataPromise;
 
   staticDataPromise = Promise.all([
-    import('@/public/data/usStockSymbols/nasdaq_full_tickers.json'),
-    import('@/public/data/usStockSymbols/nyse_full_tickers.json'),
-    import('@/public/data/usStockSymbols/amex_full_tickers.json'),
+    loadUsStockNames(),
     import('@/public/data/validCorpCodeArray.json'),
     import('@/public/data/validCorpNameArray.json'),
     import('@/public/data/validCorpCode.json'),
     fetch('/api/proxy/ticker-map?source=overrides&country=all&limit=500')
       .then(r => r.json())
       .catch(() => ({ success: false, data: [] })),
-  ]).then(([nasdaq, nyse, amex, corpCode, corpName, corpCodeData, overrides]) => {
+  ]).then(([usNames, corpCode, corpName, corpCodeData, overrides]) => {
     // override 항목: KR은 코드+이름 모두, US는 코드만 추가 (검색 유효성 검사 + 자동완성 확장)
     const overrideEntries: string[] = (overrides.data ?? []).flatMap((o: any) =>
       o.country === 'KR' ? [o.ticker, o.name].filter(Boolean) : [o.ticker].filter(Boolean)
     );
-    const usStocks: StockSearchName[] = [
-      ...nasdaq.default, ...nyse.default, ...amex.default,
-    ];
+    const usStocks = [...usNames];
     // 같은 티커의 관리자 이름도 검색 별칭으로 남긴다.
     for (const entry of overrides.data ?? []) {
       if (entry.country === 'US' && entry.ticker && entry.name) {
         usStocks.push({ symbol: entry.ticker.toUpperCase(), name: entry.name });
       }
     }
-    const krOverrides = (overrides.data ?? []).filter((entry: any) => entry.country === 'KR').flatMap((entry: any) => [entry.ticker, entry.name].filter(Boolean));
+    const krOverrides = (overrides.data ?? []).filter((entry: any) => entry.country === 'KR');
+    const listedNames = new Set(corpName.default);
+    const krNames = new Map<string, string>();
+    for (const [name, { stock_code }] of Object.entries(corpCodeData.default)) {
+      if (listedNames.has(name) && !krNames.has(stock_code)) krNames.set(stock_code, name);
+    }
+    for (const { ticker, name } of krOverrides) {
+      if (ticker && name) krNames.set(ticker, name);
+    }
+    const krStocks: StockSearchName[] = [...new Set([...corpCode.default, ...krNames.keys()])].map(symbol => ({
+      symbol,
+      market: 'KR',
+      koreanName: krNames.get(symbol),
+      japaneseName: krStockJapaneseName(symbol),
+      name: krStockEnglishName(symbol) ?? krNames.get(symbol) ?? symbol,
+    }));
     cachedStaticData = {
-      krTickers: [...new Set([...corpCode.default, ...corpName.default, ...krOverrides])],
+      krTickers: [...new Set([...corpCode.default, ...corpName.default, ...krOverrides.flatMap((entry: any) => [entry.ticker, entry.name].filter(Boolean))])],
       usTickers: [...new Set(usStocks.map(stock => stock.symbol))],
       allTickers: [...new Set([
         ...usStocks.map(stock => stock.symbol),
@@ -49,6 +75,7 @@ export const loadStaticStockData = (): Promise<StaticStockData> => {
         ...overrideEntries,
       ])],
       usStocks,
+      krStocks,
       corpCodeJson: corpCodeData.default,
     };
     return cachedStaticData;

@@ -1,16 +1,20 @@
+import { useLocale, useTranslations } from "next-intl";
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { StockLogo } from '@/components/stockLogo';
 import { scanDateLabel } from '@/lib/features/stockLikes/changes';
 import { analysisHref } from '@/lib/investmentFlow';
+import { krStockCode, krStockDisplayName } from '@/lib/utils/krStockNames';
+import { useUsStockDirectory, usStockDisplayName } from '@/lib/utils/usStockNames';
 import { valuationComparisonAxis } from '@/lib/utils/valuationSummary';
 
 const secondary = 'text-neutral-600 dark:text-neutral-300';
 
 export function WatchlistPriceLegend() {
+    const t = useTranslations("watchlist");
     return <p className={`flex flex-wrap gap-x-3 gap-y-1 text-xs ${secondary}`}>
-        <span className="inline-flex items-center gap-1.5"><span aria-hidden="true" className="h-3 w-px bg-brand-ink" />비교 기준가</span>
-        <span className="inline-flex items-center gap-1.5"><span aria-hidden="true" className="size-1.5 rounded-full bg-brand-ink" />전략별 적정주가</span>
+        <span className="inline-flex items-center gap-1.5"><span aria-hidden="true" className="h-3 w-px bg-brand-ink" />{t("reference")}</span>
+        <span className="inline-flex items-center gap-1.5"><span aria-hidden="true" className="size-1.5 rounded-full bg-brand-ink" />{t("targets")}</span>
     </p>;
 }
 
@@ -25,7 +29,15 @@ type WatchlistStockRowProps = {
 };
 
 export function WatchlistStockRow({ ticker, name, isUs, scanDate, reference, models, emptyMessage }: WatchlistStockRowProps) {
-    const formatPrice = (value: number) => `${isUs ? '$' : '₩'}${value.toLocaleString('ko-KR', {
+    const t = useTranslations("watchlist");
+    const locale = useLocale();
+    const usDirectory = useUsStockDirectory(isUs);
+    const code = isUs ? ticker : krStockCode(ticker) ?? krStockCode(name);
+    const displayName = isUs
+        ? usStockDisplayName(usDirectory?.get(ticker.toUpperCase()), name, locale)
+        : krStockDisplayName(code ?? ticker, name, locale);
+    const showCode = code && (isUs || locale !== "ko") && code !== displayName;
+    const formatPrice = (value: number) => `${isUs ? '$' : '₩'}${value.toLocaleString(locale, {
         minimumFractionDigits: isUs ? 2 : 0,
         maximumFractionDigits: isUs ? 4 : 0,
     })}`;
@@ -33,7 +45,7 @@ export function WatchlistStockRow({ ticker, name, isUs, scanDate, reference, mod
     const axis = valuationComparisonAxis(price ?? 0, models.map(model => model.targetPrice));
     const referencePosition = price === null ? null : axis.position(price);
 
-    return <Link href={analysisHref(ticker)} aria-label={`${name}${isUs && name !== ticker ? ` ${ticker}` : ''} 분석`}
+    return <Link href={analysisHref(ticker)} aria-label={t("analysis", { stock: showCode ? `${displayName} ${code}` : displayName })}
         className="block min-h-11 rounded px-1 py-1.5 hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-ink dark:hover:bg-white/5">
         <div className="flex min-h-8 items-center gap-2">
             <span className="shrink-0 rounded-lg bg-white ring-1 ring-neutral-200 dark:ring-transparent">
@@ -41,22 +53,22 @@ export function WatchlistStockRow({ ticker, name, isUs, scanDate, reference, mod
             </span>
             <div className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-x-2">
                 <div className="min-w-0 flex-1 basis-24 [overflow-wrap:anywhere]">
-                    <p className="font-semibold leading-5">{name}{isUs && name !== ticker && <span className={`ml-1 text-xs font-normal ${secondary}`}>{ticker}</span>}</p>
-                    {scanDate && <p className={`text-xs ${secondary}`}>스캔 {scanDateLabel(scanDate)}</p>}
+                    <p className="font-semibold leading-5">{displayName}{showCode && <span className={`ml-1 text-xs font-normal ${secondary}`}>{code}</span>}</p>
+                    {scanDate && <p className={`text-xs ${secondary}`}>{t("scanDate", { date: scanDateLabel(scanDate) })}</p>}
                 </div>
                 {reference && <div className="ml-auto min-w-0 max-w-full text-right tabular-nums [overflow-wrap:anywhere]">
-                    <p className={`text-xs ${secondary}`}>{reference.label}</p>
-                    <p className="font-semibold leading-5">{price !== null ? formatPrice(price) : reference.pending ? '조회 중' : '조회 불가'}</p>
+                    <p className={`text-xs ${secondary}`}>{t(reference.label === "현재가" ? "currentPrice" : "scanPrice")}</p>
+                    <p className="font-semibold leading-5">{price !== null ? formatPrice(price) : reference.pending ? t("loading") : t("unavailable")}</p>
                 </div>}
             </div>
             <ArrowRight size={15} aria-hidden="true" className="shrink-0 text-brand-ink" />
         </div>
-        {models.length > 0 ? <dl aria-label="전략별 적정주가" className="mt-1.5 grid grid-cols-[auto_minmax(1.25rem,1fr)_minmax(0,max-content)] gap-x-2 text-sm leading-5">
+        {models.length > 0 ? <dl aria-label={t("targets")} className="mt-1.5 grid grid-cols-[auto_minmax(1.25rem,1fr)_minmax(0,max-content)] gap-x-2 text-sm leading-5">
             {models.map(({ label, basis, targetPrice }) => {
                 const targetPosition = targetPrice === null ? null : axis.position(targetPrice);
                 const difference = axis.difference(targetPrice);
                 return <div key={label} className="col-span-3 grid grid-cols-subgrid items-center">
-                    <dt className="font-medium">{label} <span className={`text-xs font-normal ${secondary}`}>{basis}</span></dt>
+                    <dt className="font-medium">{label} <span className={`text-xs font-normal ${secondary}`}>{locale === "en" ? basis.replace(/배$/, "×") : locale === "ja" ? basis.replace(/배$/, "倍") : basis}</span></dt>
                     <dd className="col-span-2 grid grid-cols-subgrid items-center self-stretch">
                         <span aria-hidden="true" className="relative self-stretch">
                             <span className="absolute inset-x-0 top-1/2 h-px bg-neutral-200 dark:bg-neutral-700" />
@@ -70,7 +82,7 @@ export function WatchlistStockRow({ ticker, name, isUs, scanDate, reference, mod
                             </>}
                         </span>
                         <span className="flex min-w-0 flex-wrap items-baseline justify-end gap-x-2 text-right tabular-nums [overflow-wrap:anywhere]">
-                            <span>{targetPrice === null ? '계산 불가' : formatPrice(targetPrice)}</span>
+                            <span>{targetPrice === null ? t("cannotCalculate") : formatPrice(targetPrice)}</span>
                             {difference !== null && <span className={`text-xs ${secondary}`}>{difference > 0 ? '+' : ''}{difference.toFixed(1)}%</span>}
                         </span>
                     </dd>

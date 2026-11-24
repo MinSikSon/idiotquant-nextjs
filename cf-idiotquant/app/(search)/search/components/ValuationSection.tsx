@@ -1,16 +1,17 @@
 "use client";
 
+import { useLocale, useTranslations } from "next-intl";
+import { useFinancialLabels } from "@/i18n/financial-labels";
 import { useMemo, useState } from "react";
 import styles from "./ValuationSection.module.css";
 import { ChevronDown } from "lucide-react";
 import { LockedAnalysisValue } from "@/components/locked-analysis-value";
 import { cn } from "@/lib/utils";
-import { VALUATION_MODEL_DESCRIPTIONS, type ValuationModelDescription } from "./valuationModelDescriptions";
 import type { ValuationResult } from "@/lib/utils/financeCalc";
 import { valuationModels } from "@/lib/utils/valuationModels";
 import { valuationSummary, valuationComparisonAxis } from "@/lib/utils/valuationSummary";
 
-type ValuationModelType = "NCAV" | "SRIM" | "DCF" | "PER" | "PEG" | "PBR" | string;
+
 type FilterTabType = "ALL" | "ASSET" | "EARNING";
 
 // =========================================================================
@@ -19,16 +20,13 @@ type FilterTabType = "ALL" | "ASSET" | "EARNING";
 interface ModelConfig {
   name: string;
   category: "ASSET" | "EARNING";
-  description: ValuationModelDescription;
-
   extendMetrics?: (baseMetrics: any[], rows: any[]) => any[];
 }
 
-const MODEL_CONFIG: Record<string, ModelConfig> = {
+const MODEL_CONFIG = {
   NCAV: {
     name: "NCAV",
     category: "ASSET",
-    description: VALUATION_MODEL_DESCRIPTIONS.NCAV,
     extendMetrics: (base, rows) => {
       const priceMetric = base.find((m: any) => /현재가|주가|price/i.test(m.label));
       const curPrice = priceMetric ? parseFloat(priceMetric.value.replace(/[^0-9.-]/g, "")) : 0;
@@ -46,40 +44,48 @@ const MODEL_CONFIG: Record<string, ModelConfig> = {
   PBR: {
     name: "PBR",
     category: "ASSET",
-    description: VALUATION_MODEL_DESCRIPTIONS.PBR,
   },
   SRIM: {
     name: "S-RIM",
     category: "EARNING",
-    description: VALUATION_MODEL_DESCRIPTIONS.SRIM,
   },
   DCF: {
     name: "DCF",
     category: "EARNING",
-    description: VALUATION_MODEL_DESCRIPTIONS.DCF,
   },
   PER: {
     name: "PER",
     category: "EARNING",
-    description: VALUATION_MODEL_DESCRIPTIONS.PER,
   },
   PEG: {
     name: "PEG",
     category: "EARNING",
-    description: VALUATION_MODEL_DESCRIPTIONS.PEG,
   },
-};
+} satisfies Record<string, ModelConfig>;
+type ModelType = keyof typeof MODEL_CONFIG;
 
-const DEFAULT_CONFIG: ModelConfig = {
-  name: "기타",
-  category: "ASSET",
-  description: { short: "추가 설명이 없는 모델입니다.", detail: "계산 방식은 아래 모델 표를 확인하세요.", caution: "" },
-};
+const DEFAULT_CONFIG: ModelConfig = { name: "", category: "ASSET" };
 
-function formatValuationPrice(value: number | null, currency: string) {
+function modelConfig(type: string): ModelConfig {
+  return Object.hasOwn(MODEL_CONFIG, type) ? MODEL_CONFIG[type as ModelType] : DEFAULT_CONFIG;
+}
+
+function formatValuationPrice(value: number | null, currency: string, locale: string) {
   return value !== null && Number.isFinite(value)
-    ? `${value < 0 ? "−" : ""}${currency}${Math.abs(value).toLocaleString()}`
-    : "산출 불가";
+    ? `${value < 0 ? "−" : ""}${currency}${Math.abs(value).toLocaleString(locale)}`
+    : null;
+}
+
+function formatValuationTextValue(value: string, locale: string) {
+  if (locale === "ko") return value;
+  const won = /^(-?)(?:([\d,]+)조 ?)?(?:([\d,]+)억 ?)?([\d,]+)?원$/.exec(value);
+  if (won) {
+    const amount = (part: string | undefined) => Number(part?.replaceAll(",", "") ?? 0);
+    const [, sign, trillions, hundredMillions, units] = won;
+    const total = (sign === "-" ? -1 : 1) * (amount(trillions) * 1e12 + amount(hundredMillions) * 1e8 + amount(units));
+    return new Intl.NumberFormat(locale, { style: "currency", currency: "KRW", currencyDisplay: "narrowSymbol", notation: trillions || hundredMillions ? "compact" : "standard", maximumFractionDigits: 2 }).format(total);
+  }
+  return locale === "en" ? value.replace(/배$/, "×") : value.replace(/배$/, "倍");
 }
 
 // =========================================================================
@@ -92,6 +98,8 @@ interface ValuationSectionProps {
 }
 
 export const ValuationSection = ({ data, isUs, isLoggedIn = true }: ValuationSectionProps) => {
+  const t = useTranslations("valuation");
+  const locale = useLocale();
   const [activeTab, setActiveTab] = useState<FilterTabType>("ALL");
   const [selectedModel, setSelectedModel] = useState<string | null>(null);
   const [hoveredModel, setHoveredModel] = useState<string | null>(null);
@@ -109,7 +117,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true }: ValuationSec
   const axis = useMemo(() => {
     const rows = valuationSummary(models).map(row => ({
       ...row,
-      config: MODEL_CONFIG[row.type] ?? DEFAULT_CONFIG,
+      config: modelConfig(row.type),
     }));
 
     // 모델이 계산에 쓴 기준가 — returnPct = targetPrice / 기준가 − 1 이므로 역산할 수 있다.
@@ -136,15 +144,17 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true }: ValuationSec
     : 0;
   const showBaseNote = baseGap > 0.005;
 
+  const axisPrice = formatValuationPrice(axis.curPrice, currency, locale) ?? t("unavailable");
+  const axisReference = t(axis.usedMarketPrice ? "currentLegend" : "baseLegend", { price: axisPrice });
   const curLabelPos = axis ? axis.pos(axis.curPrice) : 0;
 
   const filteredModels = useMemo(() => {
     if (activeTab === "ALL") return models;
-    return models.filter(m => (MODEL_CONFIG[m.type] ?? DEFAULT_CONFIG).category === activeTab);
+    return models.filter(m => modelConfig(m.type).category === activeTab);
   }, [models, activeTab]);
 
   if (models.length === 0) {
-    return <p className="py-4 text-sm text-neutral-600 dark:text-neutral-300">적정주가를 계산할 재무 자료가 없습니다.</p>;
+    return <p className="py-4 text-sm text-neutral-600 dark:text-neutral-300">{t("noData")}</p>;
   }
 
   return (
@@ -153,19 +163,19 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true }: ValuationSec
       {/* ────── 모델별 적정주가 (모델별 트랙) ────── */}
       {axis && (
         <div className={cn(styles.chartHeader, "px-0 sm:px-5 pb-2 border-b border-neutral-100 dark:border-border-subtle-dark")}>
-          <p className="mb-1 text-sm font-semibold">모델별 적정주가</p>
+          <p className="mb-1 text-sm font-semibold">{t("title")}</p>
           <p className="mb-2 text-[0.8125rem] text-neutral-600 dark:text-neutral-300">
-            같은 가격 눈금 · 차이율은 {axis.usedMarketPrice ? "현재가" : "계산 기준가"} 대비
+            {t("sameAxis", { reference: t(axis.usedMarketPrice ? "currentPrice" : "calculationPrice") })}
           </p>
           {showBaseNote && (
             <p className="mb-2.5 text-[0.9375rem] leading-relaxed text-neutral-600 dark:text-neutral-300 break-keep">
-              세부 계산의 차이율은 {currency}{axis.modelBase.toLocaleString(undefined, { maximumFractionDigits: isUs ? 2 : 0 })} 기준입니다.
+              {t("baseNotice", { price: `${currency}${axis.modelBase.toLocaleString(locale, { maximumFractionDigits: isUs ? 2 : 0 })}` })}
             </p>
           )}
 
           <div className={styles.legend}>
-            <span><i className={styles.currentKey} aria-hidden="true" />{axis.usedMarketPrice ? "현재가" : "계산 기준가"} {currency}{axis.curPrice.toLocaleString(undefined, { maximumFractionDigits: isUs ? 2 : 0 })}</span>
-            <span><i className={styles.targetKey} aria-hidden="true" />적정가</span>
+            <span><i className={styles.currentKey} aria-hidden="true" />{axisReference}</span>
+            <span><i className={styles.targetKey} aria-hidden="true" />{t("fairPrice")}</span>
           </div>
           {/* 모델별 트랙 — 축과 목록을 한 줄에 합친다. 점과 이름이 같은 행에 있으면
               "이 점이 어느 모델인지" 를 색으로 되짚을 필요가 없다.
@@ -182,7 +192,9 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true }: ValuationSec
               const difference = axis.difference(r.targetPrice);
               const isPositive = difference !== null && difference >= 0;
               const target = r.targetPrice !== null ? axis.pos(r.targetPrice) : null;
-              const priceLabel = formatValuationPrice(r.targetPrice, currency);
+              const priceLabel = formatValuationPrice(r.targetPrice, currency, locale) ?? t("unavailable");
+              const modelName = r.config.name || t("other");
+              const modelType = r.type as ModelType;
               const isExplained = (hoveredModel ?? selectedModel) === r.type;
               return (
                 <div
@@ -201,19 +213,19 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true }: ValuationSec
                       }}
                       onFocus={event => { if (event.currentTarget.matches(":focus-visible")) setHoveredModel(r.type); }}
                       onBlur={() => setHoveredModel(null)}
-                      aria-label={`${r.config.name} 모델 설명`}
+                      aria-label={t("modelDescription", { model: modelName })}
                       aria-expanded={isExplained}
                       aria-controls={isExplained ? `model-explanation-${r.type}` : undefined}
                       className="inline-flex min-h-11 w-full items-center gap-1 text-left text-[0.8125rem] font-medium text-neutral-900 dark:text-neutral-100 hover:text-neutral-600 dark:hover:text-neutral-300 focus-visible:outline-2 focus-visible:outline-brand rounded-sm"
                     >
-                      <span>{r.config.name}</span><ChevronDown size={12} aria-hidden="true" className={cn("shrink-0 text-neutral-600 dark:text-neutral-300 transition-transform", isExplained && "rotate-180")} />
+                      <span>{modelName}</span><ChevronDown size={12} aria-hidden="true" className={cn("shrink-0 text-neutral-600 dark:text-neutral-300 transition-transform", isExplained && "rotate-180")} />
                     </button>
                   </div>
 
                   <div
                     className={styles.track}
                     role="img"
-                    aria-label={`${r.config.name}: ${axis.usedMarketPrice ? "현재가" : "계산 기준가"} ${currency}${axis.curPrice.toLocaleString()}, 평가액 ${priceLabel}${difference !== null ? `, 차이 ${difference.toFixed(1)}%` : ""}`}
+                    aria-label={t("chartLabel", { model: modelName, reference: axisReference, target: priceLabel, difference: difference === null ? "" : t("chartDifference", { value: difference.toFixed(1) }) })}
                   >
                     <div className={styles.baseline} />
                     {target !== null && difference !== null && <div
@@ -239,7 +251,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true }: ValuationSec
                   </span>
                   {r.notice && (
                     <p className={cn(styles.notice, "col-span-4 text-[0.9375rem] leading-normal text-neutral-600 dark:text-neutral-300 break-keep")}>
-                      {r.notice}
+                      {t("unavailableEstimate")}
                     </p>
                   )}
                   {isExplained && (
@@ -247,9 +259,9 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true }: ValuationSec
                       id={`model-explanation-${r.type}`}
                       className={cn(styles.explanation, "col-span-4 rounded-lg bg-surface-canvas dark:bg-surface-dark-canvas p-3 text-[0.9375rem] leading-relaxed text-neutral-700 dark:text-neutral-300 break-keep")}
                     >
-                      <p><strong className="text-neutral-900 dark:text-white">계산 방식</strong> · {r.config.description.detail}</p>
-                      {r.config.description.caution && (
-                        <p className="mt-1.5"><strong className="text-neutral-900 dark:text-white">주의할 점</strong> · {r.config.description.caution}</p>
+                      <p><strong className="text-neutral-900 dark:text-white">{t("how")}</strong> · {r.config.name ? t(`${modelType}Detail`) : t("otherDetail")}</p>
+                      {r.config.name && (
+                        <p className="mt-1.5"><strong className="text-neutral-900 dark:text-white">{t("caution")}</strong> · {t(`${modelType}Caution`)}</p>
                       )}
                     </div>
                   )}
@@ -260,11 +272,11 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true }: ValuationSec
         </div>
       )}
 
-      <div role="group" aria-label="세부 계산 모델" className={cn(styles.modelFilters, "flex flex-wrap items-center gap-1 border-b border-neutral-200 py-1 dark:border-border-subtle-dark")}>
+      <div role="group" aria-label={t("modelFilters")} className={cn(styles.modelFilters, "flex flex-wrap items-center gap-1 border-b border-neutral-200 py-1 dark:border-border-subtle-dark")}>
         {([
-          { id: "ALL", label: "전체" },
-          { id: "ASSET", label: "자산가치" },
-          { id: "EARNING", label: "수익가치" },
+          { id: "ALL", label: t("all") },
+          { id: "ASSET", label: t("asset") },
+          { id: "EARNING", label: t("earnings") },
         ] as const).map(tab => (
           <button
             key={tab.id}
@@ -286,7 +298,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true }: ValuationSec
           ))}
         </div>
       ) : (
-        <p className="py-3 text-sm text-neutral-600 dark:text-neutral-300">이 분류에서 계산할 수 있는 모델이 없습니다.</p>
+        <p className="py-3 text-sm text-neutral-600 dark:text-neutral-300">{t("noCategory")}</p>
       )}
     </div>
   );
@@ -296,16 +308,20 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true }: ValuationSec
 // StrategyCard
 // =========================================================================
 interface StrategyCardProps {
-  modelType: ValuationModelType;
+  modelType: string;
   result: ValuationResult;
   currency: string;
   showScenarios: boolean;
 }
 
 function StrategyCard({ modelType, result, currency, showScenarios }: StrategyCardProps) {
+  const t = useTranslations("valuation");
+  const locale = useLocale();
+  const label = useFinancialLabels();
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const config = MODEL_CONFIG[modelType] ?? DEFAULT_CONFIG;
+  const config = modelConfig(modelType);
+  const heading = t("calculation", { model: config.name || t("other") });
 
   const extendedMetrics = useMemo(() => {
     if (config.extendMetrics) {
@@ -331,10 +347,10 @@ function StrategyCard({ modelType, result, currency, showScenarios }: StrategyCa
         type="button"
         onClick={() => setIsExpanded(open => !open)}
         aria-expanded={isExpanded}
-        aria-label={`${config.name} 세부 계산 ${isExpanded ? '접기' : '보기'}`}
+        aria-label={heading}
         className="flex min-h-11 w-full items-center justify-between gap-2 border-b border-neutral-100 px-3 py-1 text-left text-sm font-semibold hover:bg-neutral-100 dark:border-border-subtle-dark dark:hover:bg-white/5"
       >
-        <span>{config.name} 세부 계산</span>
+        <span>{heading}</span>
         <ChevronDown size={15} aria-hidden="true" className={cn("shrink-0 text-neutral-600 transition-transform dark:text-neutral-300", isExpanded && "rotate-180")} />
       </button>
 
@@ -344,9 +360,9 @@ function StrategyCard({ modelType, result, currency, showScenarios }: StrategyCa
           {/* 모델 설명 */}
           <div className="px-0 sm:px-5 py-3.5 border-b border-neutral-50 dark:border-border-subtle-dark/60 bg-surface-canvas/30 dark:bg-surface-dark-card/10">
             <p className="text-[0.9375rem] text-neutral-500 dark:text-neutral-400 leading-relaxed break-keep">
-              {config.description.detail}
+              {config.name ? t(`${modelType as ModelType}Detail`) : t("otherDetail")}
             </p>
-            <p className="mt-2 text-[0.8125rem] leading-relaxed font-mono text-neutral-500 dark:text-neutral-400 break-words">계산식 · {result.formula}</p>
+            <p className="mt-2 text-[0.8125rem] leading-relaxed font-mono text-neutral-500 dark:text-neutral-400 break-words">{t("formula", { formula: label(result.formula) })}</p>
           </div>
 
           {/* 핵심 지표 그리드 */}
@@ -358,10 +374,10 @@ function StrategyCard({ modelType, result, currency, showScenarios }: StrategyCa
                   className="min-w-0 py-2"
                 >
                   <p className="text-[0.8125rem] text-neutral-600 dark:text-neutral-300 mb-1 font-medium break-words">
-                    {m.label}
+                    {label(m.label)}
                   </p>
                   <p className="text-[0.8125rem] font-semibold font-mono text-neutral-900 dark:text-white tabular-nums break-words">
-                    {m.value}
+                    {formatValuationTextValue(m.value, locale)}
                   </p>
                 </div>
               ))}
@@ -381,7 +397,7 @@ function StrategyCard({ modelType, result, currency, showScenarios }: StrategyCa
                         i > 0 && "text-right"
                       )}
                     >
-                      {h}
+                      {label(h)}
                     </th>
                   ))}
                 </tr>
@@ -409,11 +425,13 @@ function StrategyCard({ modelType, result, currency, showScenarios }: StrategyCa
                             "text-[0.8125rem] font-bold font-mono tracking-tight",
                             isBase ? "text-neutral-900 dark:text-white" : "text-neutral-600 dark:text-neutral-400"
                           )}>
-                            {displayMultiplier}
+                            {displayMultiplier.startsWith("영구성장 ") ? t("perpetualGrowth", { value: displayMultiplier.slice(5, -1) })
+                              : /^PEG [\d.]+배 기준$/.test(displayMultiplier) ? t("pegScenario", { value: displayMultiplier.split(" ")[1].slice(0, -1) })
+                              : formatValuationTextValue(displayMultiplier, locale)}
                           </span>
                           {isBase && (
                             <span className="text-[0.8125rem] font-semibold text-neutral-600 dark:text-neutral-300 font-mono uppercase tracking-normal">
-                              기본 가정
+                              {t("assumption")}
                             </span>
                           )}
                         </div>
@@ -432,7 +450,7 @@ function StrategyCard({ modelType, result, currency, showScenarios }: StrategyCa
                         "px-2 sm:px-5 py-3 text-[0.8125rem] font-semibold font-mono text-right tabular-nums whitespace-nowrap",
                         isBase ? "text-neutral-900 dark:text-white" : "text-neutral-700 dark:text-neutral-300"
                       )}>
-                        {locked ? <LockedAnalysisValue /> : formatValuationPrice(row.targetPrice, currency)}
+                        {locked ? <LockedAnalysisValue /> : (formatValuationPrice(row.targetPrice, currency, locale) ?? t("unavailable"))}
                       </td>
                     </tr>
                   );
@@ -444,7 +462,7 @@ function StrategyCard({ modelType, result, currency, showScenarios }: StrategyCa
           {/* 푸터 노트 */}
           <div className="px-0 sm:px-5 py-3 border-t border-neutral-100 dark:border-border-subtle-dark bg-surface-canvas/30 dark:bg-surface-dark-card/10 flex items-start gap-2">
             <p className="text-[0.9375rem] text-neutral-600 dark:text-neutral-300 leading-relaxed">
-              {result.footerNotice}
+              {label(result.footerNotice)}
             </p>
           </div>
         </>

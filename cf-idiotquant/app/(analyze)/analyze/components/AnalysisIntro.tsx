@@ -1,29 +1,42 @@
+'use client';
+
+import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
+import { krStockCode, krStockDisplayName } from '@/lib/utils/krStockNames';
+import { useUsStockDirectory, usStockDisplayName } from '@/lib/utils/usStockNames';
 import { ChevronDown } from 'lucide-react';
-import { VALUATION_MODEL_DESCRIPTIONS } from '@/app/(search)/search/components/valuationModelDescriptions';
 import styles from '../analyze.module.css';
 
 const examples = [
   ['005930', '삼성전자'], ['000660', 'SK하이닉스'], ['035420', 'NAVER'],
   ['AAPL', 'AAPL'], ['NVDA', 'NVDA'], ['MSFT', 'MSFT'],
 ];
+const models = ["NCAV", "PBR", "SRIM", "DCF", "PER", "PEG"] as const;
 
 export default function AnalysisIntro() {
+  const t = useTranslations("analysisIntro");
+  const valuation = useTranslations("valuation");
+  const locale = useLocale();
+  const usDirectory = useUsStockDirectory();
   return (
-    <section aria-label="예시 종목과 계산 방법">
+    <section aria-label={t("section")}>
       <div className={styles.quickSearches}>
-        <span>예시 종목</span>
-        {examples.map(([ticker, name]) => (
-          <Link key={ticker} className={`service-button ${styles.stockShortcut}`} href={`/analyze?ticker=${ticker}`}>{name}</Link>
-        ))}
+        <span>{t("examples")}</span>
+        {examples.map(([ticker, name]) => {
+          const displayName = krStockCode(ticker) ? krStockDisplayName(ticker, name, locale)
+            : usStockDisplayName(usDirectory?.get(ticker), name, locale);
+          return <Link key={ticker} className={`service-button ${styles.stockShortcut}`} href={`/analyze?ticker=${ticker}`}>
+            {displayName}{locale !== "ko" && displayName !== ticker && ` · ${ticker}`}
+          </Link>;
+        })}
       </div>
       <details className={styles.methods}>
-        <summary>적정주가 계산 방법<ChevronDown size={15} aria-hidden="true" /></summary>
+        <summary>{t("method")}<ChevronDown size={15} aria-hidden="true" /></summary>
         <div className={styles.models}>
-          {Object.entries(VALUATION_MODEL_DESCRIPTIONS).map(([name, model]) => (
+          {models.map(name => (
             <article key={name} className={styles.model}>
               <h3>{name === 'SRIM' ? 'S-RIM' : name}</h3>
-              <p>{model.detail}</p><p className={styles.caution}>{model.caution}</p>
+              <p>{valuation(`${name}Detail`)}</p><p className={styles.caution}>{valuation(`${name}Caution`)}</p>
             </article>
           ))}
         </div>

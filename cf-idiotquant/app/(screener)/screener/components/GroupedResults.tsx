@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { useStrategyText } from "@/i18n/strategy-labels";
 import { ChevronDown } from "lucide-react";
 import styles from "../screener.module.css";
 import { cn } from "@/lib/utils";
@@ -87,6 +89,8 @@ export function GroupedResults({
     /** 그룹 본문 감싸개. 카드·비율 뷰는 격자라 그 격자 클래스를 그대로 넘긴다. */
     bodyClassName?: string;
 }) {
+    const t = useTranslations("screener");
+    const strategyText = useStrategyText();
     const hiddenCount = groups.filter(g => !open.has(g.key)).length;
 
     return (
@@ -109,16 +113,16 @@ export function GroupedResults({
                                     <SectorSprite sector={g.sector} color={sectorAccent(g.sector)} />
                                 </span>
                             )}
-                            <span className="text-[12.5px] font-extrabold text-neutral-900 dark:text-neutral-100 shrink-0">{g.label}</span>
+                            <span className="text-[12.5px] font-extrabold text-neutral-900 dark:text-neutral-100 shrink-0">{g.sector ? g.label : g.key === "미분류" ? t("unclassified") : strategyText(g.key)}</span>
                             <span className="px-1.5 py-0.5 rounded-full bg-brand-light dark:bg-brand-muted/40 text-brand-ink text-xs font-mono font-bold shrink-0">
-                                {g.rows.length}개
+                                {t("groupCount", { count: g.rows.length })}
                             </span>
                             {hint && (
                                 <span className="text-xs text-neutral-400 truncate min-w-0">{hint(g)}</span>
                             )}
                             <span className="flex-1" />
-                            <Stat label="PBR 중위" value={g.medPbr > 0 ? g.medPbr.toFixed(2) : "—"} />
-                            <Stat label="ROE 중위" value={g.medRoe > 0 ? `${g.medRoe.toFixed(1)}%` : "—"} />
+                            <Stat label={t("medianPbr")} value={g.medPbr > 0 ? g.medPbr.toFixed(2) : "—"} />
+                            <Stat label={t("medianRoe")} value={g.medRoe > 0 ? `${g.medRoe.toFixed(1)}%` : "—"} />
                         </button>
                         {isOpen && <div className={bodyClassName}>{g.rows.map(renderRow)}</div>}
                     </div>
@@ -126,7 +130,7 @@ export function GroupedResults({
             })}
             {hiddenCount > 0 && (
                 <p className="px-[18px] py-3 bg-surface-canvas dark:bg-surface-dark text-center text-xs font-bold text-neutral-500 dark:text-neutral-400">
-                    접힌 {hiddenCount}개 그룹은 헤더를 눌러 펼칠 수 있습니다
+                    {t("hiddenGroups", { count: hiddenCount })}
                 </p>
             )}
         </div>

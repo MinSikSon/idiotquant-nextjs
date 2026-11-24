@@ -27,7 +27,10 @@ export interface BarItem {
 
 export interface BarGroup { labelEn: string; tone: Tone; items: BarItem[] }
 export interface StackSeg { label: string; pct: number; tone: Tone; pale?: boolean }
-export interface StackRow { title: string; note?: string; segs: StackSeg[]; legend?: { label: string; tone: Tone }[] }
+type StackNote = { label: "total" | "revenue"; value: number };
+type StackLegend = { label: "liability" | "equity"; value: number | null; tone: Tone }
+    | { label: "operatingMargin"; value: number; margin: string; tone: Tone };
+export interface StackRow { title: string; note?: StackNote; segs: StackSeg[]; legend?: StackLegend[] }
 
 export interface BarModel {
     title: string;
@@ -127,8 +130,8 @@ function makeStack(
     title: string,
     total: number | null,
     parts: { label: string; value: number | null; tone: Tone; pale?: boolean }[],
-    legend?: { label: string; tone: Tone }[],
-    note?: string,
+    legend?: StackLegend[],
+    note?: StackNote,
     requireBalance = false,
 ): StackRow | null {
     if (total === null || total <= 0) return null;
@@ -195,13 +198,13 @@ export function buildKrBars(kiBS: any, kiIS: any): { bs: BarModel | null; is: Ba
             makeStack("자산 구성", asset, [
                 { label: "유동자산", value: at("cras"), tone: "green" },
                 { label: "고정자산", value: at("fxas"), tone: "green", pale: true },
-            ], undefined, asset === null ? undefined : `총 ${fmtEok(asset)}억`),
+            ], undefined, asset === null ? undefined : { label: "total", value: asset }),
             makeStack("부채와 자본 비중", asset, [
                 { label: "부채", value: at("total_lblt"), tone: "rose" },
                 { label: "자본", value: at("total_cptl"), tone: "emerald" },
             ], [
-                { label: `갚아야 할 돈 ${fmtEok(at("total_lblt"))}억`, tone: "rose" },
-                { label: `주주 몫 ${fmtEok(at("total_cptl"))}억`, tone: "emerald" },
+                { label: "liability", value: at("total_lblt"), tone: "rose" },
+                { label: "equity", value: at("total_cptl"), tone: "emerald" },
             ]),
         ].filter((s): s is StackRow => s !== null);
         return { title: "재무상태표", periods: bsRows.map(r => krPeriodLabel(r?.stac_yymm)), groups: toGroups(KR_BS_GROUPS, bsRows), stacks };
@@ -216,8 +219,8 @@ export function buildKrBars(kiBS: any, kiIS: any): { bs: BarModel | null; is: Ba
                 { label: "매출원가", value: at("sale_cost"), tone: "indigo", pale: true },
                 { label: "판관비", value: at("sell_mang"), tone: "violet", pale: true },
                 { label: "영업이익", value: op, tone: "violet" },
-            ], op !== null && sale ? [{ label: `영업이익 ${fmtEok(op)}억 · 영업이익률 ${((op / sale) * 100).toFixed(1)}%`, tone: "violet" }] : undefined,
-                sale === null ? undefined : `매출액 ${fmtEok(sale)}억`),
+            ], op !== null && sale ? [{ label: "operatingMargin", value: op, margin: ((op / sale) * 100).toFixed(1), tone: "violet" }] : undefined,
+                sale === null ? undefined : { label: "revenue", value: sale }),
         ].filter((s): s is StackRow => s !== null);
         return { title: "손익계산서", periods: isRows.map(r => krPeriodLabel(r?.stac_yymm)), groups: toGroups(KR_IS_GROUPS, isRows), stacks };
     })() : null;
@@ -291,13 +294,13 @@ export function buildUsBars(reports: any[]): { bs: BarModel | null; is: BarModel
         makeStack("자산 구성", assets, [
             { label: "유동자산", value: currentAssets, tone: "green" },
             { label: "비유동", value: assets !== null && currentAssets !== null ? assets - currentAssets : null, tone: "green", pale: true },
-        ], undefined, assets === null ? undefined : `총 ${fmtUsd(assets)}`),
+        ], undefined, assets === null ? undefined : { label: "total", value: assets }),
         makeStack("부채와 자본 비중", assets, [
             { label: "부채", value: latest("liabilities"), tone: "rose" },
             { label: "자본", value: latest("equity"), tone: "emerald" },
         ], [
-            { label: `갚아야 할 돈 ${fmtUsd(latest("liabilities"))}`, tone: "rose" },
-            { label: `주주 몫 ${fmtUsd(latest("equity"))}`, tone: "emerald" },
+            { label: "liability", value: latest("liabilities"), tone: "rose" },
+            { label: "equity", value: latest("equity"), tone: "emerald" },
         ], undefined, true),
     ].filter((s): s is StackRow => s !== null);
 
@@ -330,8 +333,8 @@ export function buildUsBars(reports: any[]): { bs: BarModel | null; is: BarModel
         makeStack("매출 대비 비용과 이익", revenue, [
             { label: "비용", value: revenue !== null && operating !== null ? revenue - operating : null, tone: "indigo", pale: true },
             { label: "영업이익", value: operating, tone: "violet" },
-        ], operating !== null && revenue ? [{ label: `영업이익 ${fmtUsd(operating)} · 영업이익률 ${((operating / revenue) * 100).toFixed(1)}%`, tone: "violet" }] : undefined,
-            revenue === null ? undefined : `매출액 ${fmtUsd(revenue)}`),
+        ], operating !== null && revenue ? [{ label: "operatingMargin", value: operating, margin: ((operating / revenue) * 100).toFixed(1), tone: "violet" }] : undefined,
+            revenue === null ? undefined : { label: "revenue", value: revenue }),
     ].filter((s): s is StackRow => s !== null);
 
     const is: BarModel = {

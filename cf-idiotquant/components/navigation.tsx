@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useState, useRef, Fragment } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -37,9 +38,13 @@ import {
   Plus,
 } from "lucide-react";
 
+import { LanguageSelect } from "@/components/language-select";
+import type { NavMessage } from "@/i18n/messages";
+
 /* ─── NAV CONFIG ──────────────────────────────────────────────────── */
 type NavItem = {
   label: string;
+  message?: NavMessage;
   href: string;
   icon: any;
   emoji?: string;   // 홈 온보딩 3D 모티브(돛단배·금화·젬)를 활용한 아이콘
@@ -51,9 +56,9 @@ type NavItem = {
 
 // 홈 온보딩 순서에 맞춰 발굴 다음에 분석을 표시한다.
 const MAIN_NAV: NavItem[] = [
-  { label: "오늘", href: "/", icon: Home, exact: true },
-  { label: "발굴", href: "/screener", icon: Filter, emoji: "🥇", badge: "Pro" },
-  { label: "분석", href: "/analyze", icon: ChartLine },
+  { label: "오늘", message: "today", href: "/", icon: Home, exact: true },
+  { label: "발굴", message: "discover", href: "/screener", icon: Filter, emoji: "🥇", badge: "Pro" },
+  { label: "분석", message: "analyze", href: "/analyze", icon: ChartLine },
 ];
 
 const DESKTOP_NAV_CONTROL = cn(
@@ -62,43 +67,46 @@ const DESKTOP_NAV_CONTROL = cn(
 );
 const MOBILE_NAV_CONTROL = "service-button-quiet service-nav-tab navigation-tab flex h-11 min-w-0 flex-1 basis-0 flex-col items-center justify-center gap-[3px] py-1";
 
-// '더 보기'로 숨기는 보조 메뉴
-const MORE_NAV: NavItem[] = [
-  { label: "가상 ETF", href: "/etfs", icon: Layers, adminOnly: true },
-  { label: "종목 비교", href: "/compare", icon: GitCompareArrows },
-  { label: "내 관심종목", href: "/screener?filter=liked", icon: Heart, authOnly: true },
-  { label: "수익 계산", href: "/calculator", icon: Calculator, adminOnly: true },
-  { label: "가계부", href: "/ledger", icon: NotebookText, adminOnly: true },
-  { label: "게임", href: "/games", icon: Swords, adminOnly: true },
+const RESEARCH_NAV: NavItem[] = [
+  { label: "종목 비교", message: "compare", href: "/compare", icon: GitCompareArrows },
+  { label: "내 관심종목", message: "watchlist", href: "/screener?filter=liked", icon: Heart, authOnly: true },
+];
+
+const OTHER_SERVICES_NAV: NavItem[] = [
+  { label: "수익 계산", message: "calculator", href: "/calculator", icon: Calculator },
+  { label: "가상 ETF", message: "etf", href: "/etfs", icon: Layers },
+  { label: "가계부", message: "ledger", href: "/ledger", icon: NotebookText },
+  { label: "게임", message: "games", href: "/games", icon: Swords },
 ];
 
 // 한 화면(/balance)으로 가는 항목이라 하나만 둔다. 국가 선택은 그 화면 안의 🇰🇷/🇺🇸 토글이 맡는다.
 // 예전엔 KR/US 두 항목이 각각 /balance-kr · /balance-us 로 갔다가 클라이언트 리다이렉트로
 // 같은 화면에 도착했다 — 누를 때마다 "이동 중…" 이 한 번 스쳤다.
-const PORTFOLIO_NAV = [
-  { label: "포트폴리오", href: "/balance", icon: Eye },
+const PORTFOLIO_NAV: NavItem[] = [
+  { label: "포트폴리오", message: "portfolio", href: "/balance", icon: Eye },
 ];
 
-const MOBILE_PAGE_TITLES: Pick<NavItem, "href" | "label" | "exact">[] = [
+const MOBILE_PAGE_TITLES: Pick<NavItem, "href" | "label" | "exact" | "message">[] = [
   { href: "/admin/ticker-map", label: "종목 매핑" },
   { href: "/ledger/join", label: "가계부 초대" },
   { href: "/games/crafting-prototype", label: "제작 게임" },
-  { href: "/screener", label: "종목 발굴" },
-  { href: "/analyze", label: "종목 분석" },
+  { href: "/screener", label: "종목 발굴", message: "discoverStocks" },
+  { href: "/analyze", label: "종목 분석", message: "analyzeStocks" },
   ...MAIN_NAV,
-  ...MORE_NAV,
+  ...RESEARCH_NAV,
+  ...OTHER_SERVICES_NAV,
   ...PORTFOLIO_NAV,
   { href: "/admin", label: "회원 관리" },
-  { href: "/profile", label: "내 계정" },
-  { href: "/login", label: "로그인" },
-  { href: "/search", label: "종목 검색" },
+  { href: "/profile", label: "내 계정", message: "account" },
+  { href: "/login", label: "로그인", message: "signIn" },
+  { href: "/search", label: "종목 검색", message: "search" },
   { href: "/backtest", label: "백테스트" },
   { href: "/algorithm-trade", label: "자동매매" },
-  { href: "/quant", label: "퀀트 투자" },
-  { href: "/share", label: "공유 결과" },
+  { href: "/quant", label: "퀀트 투자", message: "quant" },
+  { href: "/share", label: "공유 결과", message: "share" },
   { href: "/data-sources", label: "데이터 출처" },
-  { href: "/terms", label: "이용약관" },
-  { href: "/privacy", label: "개인정보 처리방침" },
+  { href: "/terms", label: "이용약관", message: "terms" },
+  { href: "/privacy", label: "개인정보 처리방침", message: "privacy" },
 ];
 
 /* ─── HELPERS ─────────────────────────────────────────────────────── */
@@ -167,6 +175,7 @@ function TabItem({
 
 /* ─── SIDEBAR USER SECTION ────────────────────────────────────────── */
 function SidebarUser({ session, status }: { session: any; status: string }) {
+  const t = useTranslations("nav");
   if (status === "loading") {
     return (
       <div className="mx-3 mb-4 h-10 bg-neutral-200 dark:bg-surface-dark-elevated rounded-xl animate-pulse" />
@@ -191,7 +200,7 @@ function SidebarUser({ session, status }: { session: any; status: string }) {
           <button
             onClick={() => signOut({ callbackUrl: "/" })}
             className="p-1.5 rounded-lg text-neutral-600 dark:text-neutral-400 hover:text-red-700 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors shrink-0"
-            title="로그아웃"
+            title={t("signOut")}
           >
             <LogOut size={14} />
           </button>
@@ -207,7 +216,7 @@ function SidebarUser({ session, status }: { session: any; status: string }) {
         className="flex items-center justify-center gap-2 service-button w-full py-2.5 bg-brand hover:bg-brand-hover text-white text-xs font-bold"
       >
         <LogIn size={14} />
-        로그인
+        {t("signIn")}
       </Link>
     </div>
   );
@@ -215,6 +224,7 @@ function SidebarUser({ session, status }: { session: any; status: string }) {
 
 /* ─── MOBILE MINI SESSION ─────────────────────────────────────────── */
 function MiniSession({ session, status }: { session: any; status: string }) {
+  const t = useTranslations("nav");
   if (status === "loading") {
     return <div className="w-7 h-7 rounded-full bg-stone-200 dark:bg-neutral-800 animate-pulse" />;
   }
@@ -223,7 +233,7 @@ function MiniSession({ session, status }: { session: any; status: string }) {
     return (
       <Link
         href="/profile"
-        aria-label="내 계정"
+        aria-label={t("account")}
         className="w-7 h-7 rounded-xl bg-neutral-200 dark:bg-surface-dark-elevated flex items-center justify-center text-neutral-700 dark:text-neutral-200 text-[10px] font-black shrink-0 hover:ring-2 hover:ring-brand/50 transition-all"
       >
         {session?.user?.name?.[0] ?? "U"}
@@ -234,17 +244,18 @@ function MiniSession({ session, status }: { session: any; status: string }) {
   return (
     <Link
       href="/login"
-      aria-label="로그인"
+      aria-label={t("signIn")}
       className="service-button px-3 py-1.5 bg-brand hover:bg-brand-hover text-white text-xs font-semibold"
     >
       <LogIn size={16} className="navigation-login-icon hidden" aria-hidden="true" />
-      <span className="navigation-login-label">로그인</span>
+      <span className="navigation-login-label">{t("signIn")}</span>
     </Link>
   );
 }
 
 /* ─── MAIN EXPORT ─────────────────────────────────────────────────── */
 export function NavbarWithSimpleLinks() {
+  const t = useTranslations("nav");
   const { data: session, status } = useSession();
   const pathname = usePathname();
   const pageHeader = useMobilePageHeader();
@@ -266,14 +277,14 @@ export function NavbarWithSimpleLinks() {
   const isMasterUser = realAdmin && session?.user?.name === process.env.NEXT_PUBLIC_MASTER && !viewAsUser;
   const isAdmin = realAdmin && !viewAsUser;
 
-  // '더 보기' — 보조 메뉴(계산기·가계부) 접기/펼치기. 해당 경로에 있으면 자동 노출.
-  // 필터는 한 번만 만들어 데스크톱·모바일이 같은 목록을 본다 — 따로 걸면 둘이 어긋난다.
-  const moreNav = MORE_NAV.filter(item => {
-    if (item.adminOnly) return status === "authenticated" && isAdmin;
-    return !item.authOnly || status === "authenticated";
-  });
-  const utilityNav: NavItem[] = [...moreNav, ...(isMasterUser ? PORTFOLIO_NAV : []),
-    ...(isMasterUser ? [{ label: "회원 관리", href: "/admin", icon: ShieldCheck }] : [])];
+  const labelFor = (item: Pick<NavItem, "label" | "message">) => item.message ? t(item.message) : item.label;
+  const mainNav = MAIN_NAV.map(item => ({ ...item, label: labelFor(item) }));
+  const canShow = (item: NavItem) => !item.authOnly || status === "authenticated";
+  const researchNav = RESEARCH_NAV.filter(canShow).map(item => ({ ...item, label: labelFor(item) }));
+  const otherServicesNav = status === "authenticated" && isAdmin ? OTHER_SERVICES_NAV.map(item => ({ ...item, label: labelFor(item) })) : [];
+  const moreNav = [...researchNav, ...otherServicesNav];
+  const adminNav: NavItem[] = isMasterUser ? [...PORTFOLIO_NAV, { label: "회원 관리", href: "/admin", icon: ShieldCheck }] : [];
+  const utilityNav = [...moreNav, ...adminNav];
   const moreActive = moreNav.some(i => active(pathname, i.href, i.exact)) ||
     (isMasterUser && (active(pathname, "/balance") || active(pathname, "/admin")));
 
@@ -308,7 +319,8 @@ export function NavbarWithSimpleLinks() {
   const identity = useRef<HTMLDivElement>(null);
   const [identityScrolled, setIdentityScrolled] = useState(false);
   const [identityOffset, setIdentityOffset] = useState(0);
-  const mobilePageTitle = MOBILE_PAGE_TITLES.find(item => active(pathname, item.href, item.exact))?.label;
+  const mobilePage = MOBILE_PAGE_TITLES.find(item => active(pathname, item.href, item.exact));
+  const mobilePageTitle = mobilePage && labelFor(mobilePage);
   const showMore = moreOpen || moreActive;
 
   useEffect(() => {
@@ -366,21 +378,19 @@ export function NavbarWithSimpleLinks() {
   }, []);
 
   const serviceMenu = (compact: boolean) => {
-    const research = [...(compact ? MAIN_NAV : []), ...moreNav.filter(item =>
-      ["/compare", "/screener?filter=liked"].includes(item.href))];
     const groups = [
-      { label: "종목 리서치", items: research },
-      { label: "투자 도구 · 게임", items: moreNav.filter(item => !research.includes(item)) },
-      { label: "관리", items: utilityNav.filter(item => !moreNav.includes(item)) },
+      { label: t("research"), items: researchNav },
+      { label: t("other"), items: otherServicesNav },
+      { label: "관리", items: adminNav },
     ];
     return <div className="navigation-service-menu text-base md:text-sm">
-      {!inEtfFeed && <section aria-label="페이지 도구" className="navigation-menu-group py-1.5">
-        <p className="px-2.5 pb-1 pt-1.5 text-xs font-semibold text-[var(--service-muted)]">페이지 도구</p>
+      {!inEtfFeed && <section aria-label={t("tools")} className="navigation-menu-group py-1.5">
+        <p className="px-2.5 pb-1 pt-1.5 text-xs font-semibold text-[var(--service-muted)]">{t("tools")}</p>
         <div ref={mobile === compact ? pageHeader?.setToolsTarget : undefined}>
           {mobile === compact && !pageHeader?.active && <PageShareTools key={pathname} inMenu share={pathname.startsWith("/ledger/join/") ? { path: "/ledger" } : undefined} />}
         </div>
       </section>}
-      <nav aria-label={compact ? "전체 서비스" : "추가 서비스"}>
+      <nav aria-label={compact ? t("allServices") : t("extraServices")}>
         {groups.filter(group => group.items.length).map(group => <section key={group.label} aria-label={group.label} className="navigation-menu-group py-1.5">
           <p className="px-2.5 pb-1 pt-1.5 text-xs font-semibold text-[var(--service-muted)]">{group.label}</p>
           {group.items.map(({ icon: Icon, ...item }) => {
@@ -397,14 +407,15 @@ export function NavbarWithSimpleLinks() {
           })}
         </section>)}
       </nav>
-      <div className="navigation-menu-group flex items-center gap-2 px-2.5 pt-2"><ThemeChanger compact /><QuickNavigation compact={compact} items={[...MAIN_NAV, ...utilityNav]} /></div>
+      <div className="navigation-menu-group flex flex-wrap items-center gap-2 px-2.5 pt-2"><ThemeChanger compact /><QuickNavigation compact={compact} items={[...mainNav, ...utilityNav]} /></div>
+      <LanguageSelect />
       {(compact || status === "authenticated") && <div className="navigation-menu-group mt-2 pt-1">
         {status === "authenticated" ? <>
           <Link href="/profile" aria-current={pathname === "/profile" ? "page" : undefined} className="navigation-menu-link flex min-h-11 items-center gap-3 px-2.5 py-2">
-            <UserRound size={18} aria-hidden="true" className="shrink-0 text-neutral-500 dark:text-neutral-400" /><span className="min-w-0 flex-1 break-words">{session?.user?.name || "내 계정"}<span className="ml-2 text-xs text-neutral-500 dark:text-neutral-400">내 계정</span></span>
+            <UserRound size={18} aria-hidden="true" className="shrink-0 text-neutral-500 dark:text-neutral-400" /><span className="min-w-0 flex-1 break-words">{session?.user?.name || t("account")}<span className="ml-2 text-xs text-neutral-500 dark:text-neutral-400">{t("account")}</span></span>
           </Link>
-          <button type="button" onClick={() => signOut({ callbackUrl: "/" })} className="navigation-menu-link flex min-h-11 w-full items-center gap-3 px-2.5 py-2 text-left"><LogOut size={18} aria-hidden="true" className="shrink-0" />로그아웃</button>
-        </> : status === "unauthenticated" ? <Link href="/login" className="navigation-menu-link flex min-h-11 items-center gap-3 px-2.5 py-2"><LogIn size={18} aria-hidden="true" className="shrink-0" />로그인</Link> : <span className="block p-3 text-sm text-neutral-500 dark:text-neutral-400">계정 확인 중…</span>}
+          <button type="button" onClick={() => signOut({ callbackUrl: "/" })} className="navigation-menu-link flex min-h-11 w-full items-center gap-3 px-2.5 py-2 text-left"><LogOut size={18} aria-hidden="true" className="shrink-0" />{t("signOut")}</button>
+        </> : status === "unauthenticated" ? <Link href="/login" className="navigation-menu-link flex min-h-11 items-center gap-3 px-2.5 py-2"><LogIn size={18} aria-hidden="true" className="shrink-0" />{t("signIn")}</Link> : <span className="block p-3 text-sm text-neutral-500 dark:text-neutral-400">{t("checkingAccount")}</span>}
       </div>}
     </div>;
   };
@@ -417,7 +428,7 @@ export function NavbarWithSimpleLinks() {
       style={fixedPageIdentity ? { transform: `translateY(-${identityOffset}px)` } : undefined}
       aria-hidden={identityScrolled || undefined}
     >
-      <Link href="/" aria-label="idiotquant 홈" className={cn(logoClass, "inline-flex")}>
+      <Link href="/" aria-label={t("homeLink")} className={cn(logoClass, "inline-flex")}>
         {logoText}
       </Link>
       <div ref={mobile ? pageHeader?.setTitleTarget : undefined} className={cn("min-w-0 flex-1", !pageHeader?.active && "hidden")} />
@@ -477,7 +488,7 @@ export function NavbarWithSimpleLinks() {
             )}
           >
             <MoreHorizontal size={16} strokeWidth={1.8} className="shrink-0" />
-            <span className="flex-1 truncate text-left">더 보기</span>
+            <span className="flex-1 truncate text-left">{t("more")}</span>
             <ChevronDown size={14} className={cn("shrink-0 text-neutral-600 dark:text-neutral-400 transition-transform", showMore && "rotate-180")} />
           </button>
           {showMore && moreNav.map(item => (
@@ -534,20 +545,20 @@ export function NavbarWithSimpleLinks() {
 
       {!inGame && <header data-navigation-header data-screener-navigation={inScreener || undefined} className="navigation-header fixed inset-x-0 top-0 z-40 md:sticky">
         <div className="navigation-main flex items-center gap-2 px-3 md:gap-3 md:px-4 lg:px-6">
-          <Link href="/" aria-label="idiotquant 홈" className={cn(logoClass, "navigation-brand md:inline-flex md:min-h-7", inEtfFeed || identityScrolled ? "inline-flex" : "hidden")}>
+          <Link href="/" aria-label={t("homeLink")} className={cn(logoClass, "navigation-brand md:inline-flex md:min-h-7", inEtfFeed || identityScrolled ? "inline-flex" : "hidden")}>
             {logoText}
           </Link>
-          <nav aria-label="주요 서비스" className="hidden shrink-0 items-center gap-1 md:flex">
-            {MAIN_NAV.map(item => {
+          <nav aria-label={t("mainMenu")} className="hidden shrink-0 items-center gap-1 md:flex">
+            {mainNav.map(item => {
               const isActive = active(pathname, item.href, item.exact);
               return <Link key={item.href} href={item.href} aria-current={isActive ? "page" : undefined}
                 className={DESKTOP_NAV_CONTROL}>
                 {item.label}
               </Link>;
             })}
-            <NavigationPopover label="사용자 및 서비스 메뉴" align="start" className="navigation-service-popover" trigger={
+            <NavigationPopover label={t("userMenu")} align="start" className="navigation-service-popover" trigger={
               <button type="button" data-current-section={(!inScreener && moreActive) || undefined} className={DESKTOP_NAV_CONTROL}>
-                더 보기
+                {t("more")}
               </button>
             }>
               {serviceMenu(false)}
@@ -563,11 +574,11 @@ export function NavbarWithSimpleLinks() {
             <div ref={pageHeader?.setPrimaryActionTarget} className="shrink-0 empty:hidden md:hidden" />
             <div ref={pageHeader?.setActionsTarget} data-navigation-actions className="shrink-0 empty:hidden" />
             {inEtfFeed && <Link href="/etfs/draft" className={cn("service-button-quiet order-first inline-flex min-h-11 shrink-0 items-center gap-1 rounded px-1.5 text-sm font-semibold text-brand-ink sm:px-2 md:min-h-7", CONTROL_FOCUS_CLS)}>
-              <Plus size={16} aria-hidden="true" />ETF 만들기
+              <Plus size={16} aria-hidden="true" />{t("createEtf")}
             </Link>}
             {status === "unauthenticated" && pathname !== "/login" && <Link href="/login"
               className="service-button navigation-login hidden min-h-7 shrink-0 items-center gap-1.5 whitespace-nowrap px-3 font-semibold md:inline-flex">
-              <LogIn size={16} aria-hidden="true" />로그인
+              <LogIn size={16} aria-hidden="true" />{t("signIn")}
             </Link>}
             <StockSearchTrigger showDesktopLabel />
           </div>
@@ -590,7 +601,7 @@ export function NavbarWithSimpleLinks() {
         style={barStyle}>
         <div className="navigation-main flex min-h-12 items-center justify-between gap-2 px-3">
           <div className="flex min-w-0 flex-1 items-center gap-1.5">
-            <Link href="/" aria-label="idiotquant 홈" className={cn(logoClass, "inline-flex")}>
+            <Link href="/" aria-label={t("homeLink")} className={cn(logoClass, "inline-flex")}>
               {logoText}
             </Link>
             <div ref={pageHeader?.setTitleTarget} className={cn("min-w-0 flex-1", !pageHeader?.active && "hidden")} />
@@ -600,7 +611,7 @@ export function NavbarWithSimpleLinks() {
           </div>
           <div className="navigation-service-actions flex shrink-0 items-center gap-1">
             <StockSearchTrigger />
-            {!pageHeader?.active && <QuickNavigation compact items={[...MAIN_NAV, ...utilityNav]} />}
+            {!pageHeader?.active && <QuickNavigation compact items={[...mainNav, ...utilityNav]} />}
             <ThemeChanger compact />
             <MiniSession session={session} status={status} />
             <PageShareTools key={pathname} />
@@ -610,16 +621,16 @@ export function NavbarWithSimpleLinks() {
       </header>}
 
       {/* ══ MOBILE BOTTOM TAB BAR ════════════════════════════════════ */}
-      <nav ref={bottomNav} aria-label="하단 메뉴" data-bottom-navigation data-hidden={bottomHidden && !moreSheet && !inEtfFeed || undefined}
+      <nav ref={bottomNav} aria-label={t("bottomMenu")} data-bottom-navigation data-hidden={bottomHidden && !moreSheet && !inEtfFeed || undefined}
         onFocusCapture={() => setBottomHidden(false)}
         className={cn(inGame ? "hidden" : "md:hidden navigation-bottom fixed bottom-0 left-0 right-0 z-40 flex items-center gap-1.5 px-3")}>
-        {MAIN_NAV.map(item => (
+        {mainNav.map(item => (
           <TabItem key={item.href} href={item.href} label={item.label} icon={item.icon}
             isActive={active(pathname, item.href, item.exact)} />
         ))}
-        <NavigationPopover label="서비스 메뉴" side="top" className="navigation-service-popover" onOpenChange={open => { setMoreSheet(open); setBottomHidden(false); }} trigger={
+        <NavigationPopover label={t("serviceMenu")} side="top" className="navigation-service-popover" onOpenChange={open => { setMoreSheet(open); setBottomHidden(false); }} trigger={
           <button type="button" data-current-section={moreActive || undefined} className={MOBILE_NAV_CONTROL}>
-            <LayoutGrid size={20} aria-hidden="true" /><span className="text-xs font-semibold leading-none">더 보기</span>
+            <LayoutGrid size={20} aria-hidden="true" /><span className="text-xs font-semibold leading-none">{t("more")}</span>
           </button>
         }>{!inGame && serviceMenu(true)}</NavigationPopover>
       </nav>

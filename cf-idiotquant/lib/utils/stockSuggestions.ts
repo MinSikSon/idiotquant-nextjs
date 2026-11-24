@@ -36,6 +36,8 @@ export type StockSearchName = {
     symbol: string;
     name: string;
     koreanName?: string;
+    japaneseName?: string;
+    market?: "KR";
     searchAliases?: string[];
 };
 
@@ -54,11 +56,12 @@ function searchTerm(text: string): SearchTerm {
 
 /** 목록이 바뀔 때만 한글 검색용 문자열을 준비한다. */
 export function buildStockSearchIndex(names: readonly string[], stocks: readonly StockSearchName[] = []): SearchEntry[] {
-    const entries = new Map(names.map(text => [text, { text, ...searchTerm(text), aliases: [] as SearchTerm[] }]));
+    const listedKoreanNames = new Set(stocks.flatMap(stock => stock.market === "KR" && stock.koreanName ? [stock.koreanName] : []));
+    const entries = new Map(names.filter(name => !listedKoreanNames.has(name)).map(text => [text, { text, ...searchTerm(text), aliases: [] as SearchTerm[] }]));
     for (const stock of stocks) {
         const entry: SearchEntry = entries.get(stock.symbol) ?? { text: stock.symbol, ...searchTerm(stock.symbol), aliases: [] };
-        const companyName = stock.name.replace(/\s+(?:INC|CORP|CORPORATION|LTD|LIMITED|PLC)\.?$/i, '');
-        for (const name of new Set([stock.name, stock.koreanName, companyName, ...(stock.searchAliases ?? [])])) {
+        const companyName = stock.name.replace(/(?:,?\s+(?:CO[.,]*\s*LTD|INC|CORP|CORPORATION|LTD|LIMITED|PLC)\.?)+$/i, '');
+        for (const name of new Set([stock.name, stock.koreanName, stock.japaneseName, companyName, ...(stock.searchAliases ?? [])])) {
             if (name) entry.aliases.push(searchTerm(name));
         }
         entries.set(stock.symbol, entry);

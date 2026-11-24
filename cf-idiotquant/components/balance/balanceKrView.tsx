@@ -65,13 +65,7 @@ import TradingProgressHeader from "@/components/balance/tradingProgressHeader";
 import TradingCyclePanel from "@/components/balance/tradingCyclePanel";
 import TradingFlowSummary from "@/components/balance/tradingFlowSummary";
 import TradingActivityPanel from "@/components/balance/tradingActivityPanel";
-import dynamic from "next/dynamic";
-import { ChartSectionSkeleton } from "@/components/balance/shared";
-// recharts(무거움)를 초기 번들에서 제외 — 차트 섹션 표시 시점에 로드
-const PortfolioChartSection = dynamic(
-  () => import("@/components/balance/portfolioChart").then(m => ({ default: m.PortfolioChartSection })),
-  { ssr: false, loading: () => <ChartSectionSkeleton /> }
-);
+import { PortfolioChartSection } from "@/components/balance/portfolioChart";
 import { type NavSection } from "@/components/balance/sectionNav";
 import { MobileOrderList } from "./mobileOrderList";
 import { BalanceShell } from "@/components/balance/balanceShell";

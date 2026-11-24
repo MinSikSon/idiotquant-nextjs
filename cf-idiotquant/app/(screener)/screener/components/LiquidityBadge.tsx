@@ -7,6 +7,7 @@
 // 판정 함수 자체는 lib/utils/stockRisk 에 있다 — 프로필 관심 목록과 탄탄함 지수도 같은
 // 기준을 쓰기 때문이다. 기존 사용처가 여기서 가져다 쓰고 있으므로 그대로 재수출한다.
 
+import { useTranslations } from "next-intl";
 import {
     trAmtEok, isHalted, isManaged, isDelisting,
     isCautionAdvised, isOverheated, marketWarn, w52Position, LOW_TR_AMT_EOK,
@@ -25,39 +26,40 @@ const ROSE = "px-1.5 py-0.5 rounded text-xs font-black bg-rose-50 text-rose-600 
 const AMBER = "px-1.5 py-0.5 rounded text-xs font-black bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 whitespace-nowrap";
 
 export function LiquidityBadge({ item }: { item: any }) {
+  const t = useTranslations("liquidity");
     // 심각한 것 하나만 보여준다. 배지를 여러 개 달면 좁은 화면에서 종목명을 밀어낸다.
     // 순서 = 심각도. 정리매매가 맨 앞인 이유는 되돌릴 수 없는 유일한 상태이기 때문이다.
-    if (isDelisting(item)) return <span className={ROSE} title="상장폐지가 확정되어 정리매매 중입니다">정리매매</span>;
-    if (isHalted(item)) return <span className={ROSE}>거래정지</span>;
-    if (isManaged(item)) return <span className={ROSE}>관리종목</span>;
+    if (isDelisting(item)) return <span className={ROSE} title={t("delistingDescription")}>{t("delisting")}</span>;
+    if (isHalted(item)) return <span className={ROSE}>{t("halted")}</span>;
+    if (isManaged(item)) return <span className={ROSE}>{t("managed")}</span>;
 
     const warn = marketWarn(item);
     // 투자주의(01)는 흔해서 배지로 달면 목록 절반에 붙는다 — 경고·위험만 드러낸다.
     if (warn === "투자경고" || warn === "투자위험") {
-        return <span className={ROSE}>{warn}</span>;
+        return <span className={ROSE}>{t(warn === "투자경고" ? "warning" : "danger")}</span>;
     }
 
-    if (isCautionAdvised(item)) return <span className={AMBER}>투자유의</span>;
-    if (isOverheated(item)) return <span className={AMBER} title="단기과열 지정 — 주가가 단기간에 급등한 상태입니다">단기과열</span>;
+    if (isCautionAdvised(item)) return <span className={AMBER}>{t("caution")}</span>;
+    if (isOverheated(item)) return <span className={AMBER} title={t("overheatedDescription")}>{t("overheated")}</span>;
 
     const risk = screenerRisks(item);
     const labels = [
-        risk.chinaSmall === true && "중국 소재 소형주",
-        risk.lowLiquidity === true && "저유동성",
-        risk.cashBurn === true && "지속 현금 소진",
+        risk.chinaSmall === true && t("chinaSmall"),
+        risk.lowLiquidity === true && t("lowLiquidity"),
+        risk.cashBurn === true && t("cashBurn"),
     ].filter(Boolean) as string[];
     const unknown = [
-        risk.chinaSmall === null && "본사 소재지·시총",
-        risk.lowLiquidity === null && "거래대금",
-        risk.cashBurn === null && "최근 3개 연도 영업현금흐름",
+        risk.chinaSmall === null && t("locationSize"),
+        risk.lowLiquidity === null && t("tradingValue"),
+        risk.cashBurn === null && t("cashHistory"),
     ].filter(Boolean);
     const title = [
         ...labels,
-        unknown.length > 0 && `미확인: ${unknown.join(", ")}`,
-        "중국 소재 소형주: 미국 상장·본사 중국·시총 3억 달러 미만. 저유동성: 일 거래대금 국내 3억원·미국 10만 달러 미만. 현금 소진: 최근 3개 연도 영업현금흐름 연속 음수.",
+        unknown.length > 0 && t("unknown", { fields: unknown.join(", ") }),
+        t("description"),
     ].filter(Boolean).join(" · ");
     if (!labels.length && !unknown.length) return null;
     return <span className={labels.length ? AMBER : "px-1.5 py-0.5 rounded text-xs text-neutral-500 dark:text-neutral-400 whitespace-nowrap"} title={title} aria-label={title}>
-        {labels.length ? `${labels[0]}${labels.length > 1 ? ` +${labels.length - 1}` : ""}` : "위험정보 미확인"}
+        {labels.length ? `${labels[0]}${labels.length > 1 ? ` +${labels.length - 1}` : ""}` : t("unverified")}
     </span>;
 }
