@@ -32,7 +32,7 @@ function Stack({ row }: { row: StackRow }) {
                 <p className="text-[13px] font-bold text-neutral-800 dark:text-neutral-100">{row.title}</p>
                 {row.note && <span className="text-[13px] font-semibold text-neutral-600 dark:text-neutral-300">{row.note}</span>}
             </div>
-            <div className="flex h-7 rounded-lg overflow-hidden bg-neutral-100 dark:bg-[#322f2a]">
+            <div className={cn(styles.stackBar, "flex h-7 rounded-lg overflow-hidden bg-neutral-100 dark:bg-[#322f2a]")}>
                 {row.segs.map(seg => (
                     <div
                         key={seg.label}
@@ -157,7 +157,7 @@ function TrendBlock({ item, periods, unit, showHistory }: { item: BarItem; perio
                 const period = periods[i] ?? "";
                 const { date, basis } = compactPeriod(period);
                 return (
-                    <div key={periods[i] ?? i} className="grid min-h-7 sm:min-h-8 grid-cols-[4rem_minmax(0,1fr)_4.25rem] sm:grid-cols-[4.5rem_minmax(0,1fr)_4rem] items-center gap-1.5">
+                    <div key={periods[i] ?? i} className={cn(styles.periodRow, "grid min-h-7 sm:min-h-8 grid-cols-[4rem_minmax(0,1fr)_4.25rem] sm:grid-cols-[4.5rem_minmax(0,1fr)_4rem] items-center gap-1.5")}>
                         <span className={cn(
                             "flex flex-col whitespace-nowrap font-mono text-[13px] leading-4 tabular-nums",
                             isLatest ? "font-bold text-neutral-700 dark:text-neutral-200" : "text-neutral-500 dark:text-neutral-400"
@@ -206,7 +206,7 @@ function TrendBlock({ item, periods, unit, showHistory }: { item: BarItem; perio
 function StatementCard({ model, unit, showHistory }: { model: BarModel; unit: Unit; showHistory: boolean }) {
     return (
         <div className="bg-transparent sm:bg-white dark:sm:bg-surface-dark-card rounded-none border-0 sm:rounded-xl sm:border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
-            <div className="px-0 sm:px-5 py-2 sm:py-3.5 border-b border-neutral-100 dark:border-border-subtle-dark flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <div className={cn(styles.statementHeader, "px-0 sm:px-5 py-2 sm:py-3.5 border-b border-neutral-100 dark:border-border-subtle-dark flex flex-wrap items-baseline gap-x-3 gap-y-1")}>
                 <h4 className="text-[15px] font-semibold text-neutral-800 dark:text-neutral-100">{model.title}</h4>
                 <span className="font-mono text-[13px] text-neutral-600 dark:text-neutral-300">
                     {compactPeriod(model.periods[0] ?? "").date} → {compactPeriod(model.periods[model.periods.length - 1] ?? "").date}
@@ -215,7 +215,7 @@ function StatementCard({ model, unit, showHistory }: { model: BarModel; unit: Un
             </div>
 
             {model.stacks.length > 0 && (
-                <div className="px-3 sm:px-5 py-3 sm:py-4 bg-surface-canvas dark:bg-surface-dark border-b border-neutral-100 dark:border-border-subtle-dark flex flex-col gap-2 sm:gap-3.5">
+                <div className={cn(styles.statementStacks, "px-3 sm:px-5 py-3 sm:py-4 bg-surface-canvas dark:bg-surface-dark border-b border-neutral-100 dark:border-border-subtle-dark flex flex-col gap-2 sm:gap-3.5")}>
                     <span className="text-sm font-semibold text-neutral-600 dark:text-neutral-300">
                         재무 구성 · {compactPeriod(model.periods[0] ?? "").date}
                     </span>
@@ -226,7 +226,7 @@ function StatementCard({ model, unit, showHistory }: { model: BarModel; unit: Un
             <div className={cn(styles.statementBody, "px-0 sm:px-5 pb-3 sm:pb-5")}>
                 {model.groups.map(g => (
                     <div key={g.labelEn}>
-                        <div className="flex items-center gap-1.5 mt-3 sm:mt-5 mb-1.5 sm:mb-2 text-sm font-semibold text-neutral-600 dark:text-neutral-300">
+                        <div className={cn(styles.groupTitle, "flex items-center gap-1.5 mt-3 sm:mt-5 mb-1.5 sm:mb-2 text-sm font-semibold text-neutral-600 dark:text-neutral-300")}>
                             <i className={cn("w-[7px] h-[7px] rounded-full shrink-0", TONE_BG[g.tone])} />
                             {g.labelEn}
                         </div>
@@ -245,7 +245,7 @@ function StatementCard({ model, unit, showHistory }: { model: BarModel; unit: Un
 export function FinancialBars({ bs, is, unit, showHistory = true }: { bs: BarModel | null; is: BarModel | null; unit: Unit; showHistory?: boolean }) {
     if (!bs && !is) return null;
     return (
-        <div className="flex min-w-0 flex-col gap-3 sm:gap-4">
+        <div className={cn(styles.statements, "flex min-w-0 flex-col gap-3 sm:gap-4")}>
             {bs && <StatementCard model={bs} unit={unit} showHistory={showHistory} />}
             {is && <StatementCard model={is} unit={unit} showHistory={showHistory} />}
             <details className="text-[13px] leading-relaxed text-neutral-600 dark:text-neutral-400">

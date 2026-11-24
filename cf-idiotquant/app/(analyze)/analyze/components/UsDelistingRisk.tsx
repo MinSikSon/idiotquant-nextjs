@@ -292,14 +292,14 @@ export function UsDelistingRisk({ finnhubData, usDetail, showHistory }: Props) {
   return (
     <div data-share-risk data-share-overall={overallGrade} className="w-full bg-transparent sm:bg-white dark:sm:bg-surface-dark-card rounded-none border-0 sm:rounded-xl sm:border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
       {/* 헤더 */}
-      <div className={cn(styles.riskHeader, "flex items-center justify-between px-0 sm:px-5 py-4 border-b border-neutral-100 dark:border-border-subtle-dark")}>
+      <div className={cn(styles.riskHeader, "flex items-center justify-between px-0 sm:px-3 py-2 border-b border-neutral-100 dark:border-border-subtle-dark")}>
         <h3 className="text-sm font-semibold">미국 상장유지 점검 결과</h3>
         <span className={cn("px-2.5 py-0.5 rounded-lg text-[15px] font-semibold border", cfg.badge)}>
           {overallGrade}
         </span>
       </div>
 
-      <div className={cn(styles.riskBody, "p-0 sm:p-5 space-y-5")}>
+      <div className={cn(styles.riskBody, "pt-2 sm:px-3 sm:pb-2 space-y-2")}>
         <p className="text-[15px] text-neutral-500 dark:text-neutral-400">{cfg.sub}</p>
 
         {/* 기준 목록 */}
@@ -307,7 +307,7 @@ export function UsDelistingRisk({ finnhubData, usDetail, showHistory }: Props) {
           {criteria.map(c => {
             const Icon = STATUS_ICON[c.status];
             return (
-              <div key={c.label} data-share-risk-row data-share-label={c.label} data-share-status={c.status} data-share-value={c.value} data-share-note={c.note} data-share-law={c.law} className={cn("p-3 rounded-xl border break-keep", STATUS_ROW_CLS[c.status])}>
+              <div key={c.label} data-share-risk-row data-share-label={c.label} data-share-status={c.status} data-share-value={c.value} data-share-note={c.note} data-share-law={c.law} className={cn("p-2 rounded-xl border break-keep", STATUS_ROW_CLS[c.status])}>
 
                 <div className="flex-1 min-w-0">
                   <div className={cn(styles.riskCheck, "grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]")}>
@@ -331,7 +331,7 @@ export function UsDelistingRisk({ finnhubData, usDetail, showHistory }: Props) {
             <p className="text-[13px] font-bold text-neutral-600 dark:text-neutral-300 uppercase tracking-wide mb-2.5">
               연간 공시 기준 영업이익 추이
             </p>
-            <div className="space-y-4 sm:space-y-3">
+            <div className="space-y-2">
               {opYears.map((y, i) => (
                 <div key={y.year} className={cn(styles.riskYear, "grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 sm:grid-cols-[3rem_minmax(0,1fr)_auto]")}>
                   <span className="whitespace-nowrap text-[15px] font-mono tabular-nums text-neutral-600 dark:text-neutral-300">{y.year}</span>

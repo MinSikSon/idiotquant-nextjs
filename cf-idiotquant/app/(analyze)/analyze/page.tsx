@@ -789,7 +789,7 @@ function AnalyzeContent() {
 
                 <AnalysisSection tab="metrics" desktop={isDesktop}>
                   {((isDesktop && isPriceLoaded) || visitedTabs.includes('metrics')) && <>
-              <div className="mb-4">
+              <div className="mb-2">
                 <StockCard
                   stock={{
                     name: displayName,
@@ -805,7 +805,7 @@ function AnalyzeContent() {
                 />
               </div>
 
-                    {isLoaded ? <div className="space-y-5">
+                    {isLoaded ? <div className="space-y-2">
                       <TechnicalSummary bars={technicalBars} currency={currency} />
                       <StockMetrics data={data} isUs={krOrUs === 'US'} />
                     </div> : financialStatus}
@@ -824,12 +824,12 @@ function AnalyzeContent() {
 
                 <AnalysisSection tab="financials" desktop={isDesktop}>
                   {((isDesktop && isPriceLoaded) || visitedTabs.includes('financials')) && (!isLoaded ? financialStatus : (
-                    <div className={cn(styles.panel, styles.financialPanel, "flex min-w-0 flex-col gap-3 sm:gap-4")}>
-                      <div className={cn(styles.financialControls, "flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3")}>
+                    <div className={cn(styles.panel, styles.financialPanel, "flex min-w-0 flex-col gap-2")}>
+                      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
                         <p className="text-sm sm:text-[15px] text-neutral-600 dark:text-neutral-300">
                           {krOrUs === 'KR' ? '분기 공시 · 억 원' : '공시 · USD'}
                         </p>
-                        <div className={cn(styles.segmented, "grid grid-cols-2 gap-2 sm:ml-auto sm:flex sm:shrink-0")}>
+                        <div className="flex flex-wrap gap-2">
                           {([['bars', '그래프'], ['table', '표']] as const).map(([mode, label]) => (
                             <button
                               key={mode}

@@ -9,3 +9,14 @@
   .stackText { display: none; }
   .stackLabels { display: flex; }
 }
+
+@container financial-flow (min-width: 0px) {
+  .statements { gap: 8px; }
+  .statementHeader { padding-block: 6px; }
+  .statementStacks { padding-block: 8px; gap: 8px; }
+  .stackBar { height: 20px; }
+  .statementBody { padding-bottom: 8px; }
+  .groupTitle { margin-block: 8px 4px; }
+  .groupItems { row-gap: 8px; }
+  .periodRow { min-height: 24px; }
+}

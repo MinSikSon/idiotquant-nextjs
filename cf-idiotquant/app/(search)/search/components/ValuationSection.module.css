@@ -24,7 +24,6 @@
 :global(.dark) .lower { background: #fb7185; }
 @media (max-width: 767px) {
   .axis { grid-template-columns: minmax(3rem, 4.5rem) minmax(40px, 1fr) max-content max-content; column-gap: 6px; }
-  .modelRow { padding-block: 6px; }
   .modelLabel button { font-size: 0.8125rem; line-height: 1.4; }
   .price { text-align: right; font-size: 0.875rem; }
   .returnPct { font-size: 0.8125rem; }

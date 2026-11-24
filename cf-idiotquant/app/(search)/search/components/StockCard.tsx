@@ -32,7 +32,7 @@ export function StockCard({ stock, chartConfig, chartNotice }: StockCardProps) {
 
   return (
     <div className={ui.surface}>
-      {stock.sector && stock.sector !== "DEFAULT" && <p className="px-3 py-2 text-sm text-neutral-600 dark:text-neutral-300">업종 {stock.sector}</p>}
+      {stock.sector && stock.sector !== "DEFAULT" && <p className="px-3 py-1 text-sm text-neutral-600 dark:text-neutral-300">업종 {stock.sector}</p>}
       <dl className={ui.stats}>
         {metrics.map(({ label, value, basis }) => (
           <div key={label} className={ui.stat}>
@@ -43,7 +43,7 @@ export function StockCard({ stock, chartConfig, chartNotice }: StockCardProps) {
         ))}
       </dl>
       {chartConfig.data.length > 0 ? (
-        <SecondarySection title="주가 추이" className="mx-3 mt-3">
+        <SecondarySection title="주가 추이" className="mx-3 mb-2">
           <LineChart
             key={stock.ticker}
             data_array={[{ name: "주가", data: chartConfig.data, color: chartConfig.color }]}

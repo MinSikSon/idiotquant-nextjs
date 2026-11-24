@@ -94,6 +94,7 @@
 .rank { font-variant-numeric: tabular-nums; }
 .page .rank { color: var(--analysis-lilac-ink); background: var(--analysis-lilac); font-size: 0.75rem; }
 .page .content { padding-top: 24px; }
+.page .content:has(.desktopResults) { padding-top: 12px; }
 .detailContent { min-width: 0; }
 .verdict { margin-bottom: 12px; padding: 0 12px; border: 1px solid var(--analysis-line); border-radius: var(--radius-panel); background: var(--analysis-panel); }
 .verdictChecks { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); gap: 4px 16px; padding-block: 8px; border-top: 1px solid var(--analysis-line); }
@@ -105,12 +106,13 @@
 }
 .page .footer { border-color: var(--analysis-line); }
 .page :is(button, a, summary):focus-visible { outline: 2px solid rgb(var(--brand-ink)); outline-offset: 2px; }
+.page .financialPanel { padding: 8px; container: financial-flow / inline-size; }
 .readingNote > summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px; cursor: pointer; list-style: none; font-size: 0.875rem; font-weight: 600; color: var(--analysis-ink); }
 .readingNote summary::-webkit-details-marker { display: none; }
 .readingNote summary svg { flex-shrink: 0; }
 .readingNote[open] > summary svg { transform: rotate(180deg); }
 .readingNote p { margin-top: 8px; font-size: 0.875rem; line-height: 1.8; }
-.readingNote { border-top: 1px solid var(--analysis-line); padding-top: 12px; color: var(--analysis-muted); }
+.readingNote { border-top: 1px solid var(--analysis-line); color: var(--analysis-muted); }
 .quickSearches { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-block: 16px; }
 .quickSearches > span { margin-right: 8px; color: var(--analysis-muted); font-size: 0.875rem; }
 .methods { border-top: 1px solid var(--analysis-line); }
@@ -136,7 +138,7 @@
   .page .header h1 { font-size: 1.5rem; }
   .page .tab { min-height: 44px; padding-inline: 10px; font-size: 0.875rem; }
   .page .panel { padding: 16px; }
-  .page .financialPanel { padding: 16px 0; border-inline: 0; border-radius: 0; background: transparent; }
+  .page .financialPanel { padding: 8px 0; border-inline: 0; border-radius: 0; background: transparent; }
   .models { grid-template-columns: 1fr; gap: 12px; }
   .model { padding: 12px 0; }
 }
@@ -162,19 +164,16 @@
 .analysisTab:active { background: var(--service-accent); }
 .analysisTab:focus-visible, .tabPanel:focus-visible, .columnScroll:focus-visible { outline: 2px solid rgb(var(--brand-ink)); outline-offset: -2px; }
 .detailContent { scroll-margin-top: calc(var(--navigation-h, 92px) + 16px); }
-.desktopResults { display: flex; flex-direction: column; gap: 12px; height: max(32rem, calc(100dvh - var(--navigation-h, 48px) - 40px)); }
+.desktopResults { display: flex; flex-direction: column; gap: 8px; height: max(32rem, calc(100dvh - var(--navigation-h, 48px) - 40px)); }
 .desktopResults .verdict { margin: 0; padding: 0 12px; }
 .desktopResults .verdictChecks { padding-bottom: 12px; }
-.desktopResults .detailContent { display: flex; flex: 1; flex-direction: column; gap: 12px; min-height: 0; }
+.desktopResults .detailContent { display: flex; flex: 1; flex-direction: column; gap: 8px; min-height: 0; }
 .analysisColumns { flex: 1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: minmax(0, 1fr); min-height: 16rem; border: 1px solid var(--analysis-line); border-radius: var(--radius-panel); }
 .analysisSection { display: grid; grid-template-rows: auto minmax(0, 1fr); min-width: 0; }
 .analysisSection + .analysisSection { border-inline-start: 1px solid var(--analysis-line); }
 .sectionTitle { display: grid; place-items: center; min-height: 44px; padding: 8px; border-bottom: 1px solid var(--analysis-line); background: var(--analysis-soft); font-size: 0.9375rem; font-weight: 600; text-align: center; }
-.columnScroll { min-width: 0; overflow: auto; overscroll-behavior-y: contain; scrollbar-gutter: stable; padding: 12px 8px 16px; container: analysis-column / inline-size; }
+.columnScroll { min-width: 0; overflow: auto; overscroll-behavior-y: contain; scrollbar-gutter: stable; padding: 8px; container: analysis-column / inline-size; }
 @container analysis-column (max-width: 380px) {
-  .page .financialPanel { padding: 8px; }
-  .financialControls { flex-direction: column; align-items: stretch; }
-  .financialControls .segmented { display: grid; margin-inline-start: 0; }
   .riskHeader { flex-wrap: wrap; gap: 8px; }
   .riskHeader, .riskBody { padding-inline: 8px; }
   .riskCheck { grid-template-columns: minmax(0, 1fr) auto; }

@@ -56,7 +56,7 @@ function MetricCard({ m }: { m: MetricItem }) {
 // 섹션 레이블
 function SectionLabel({ icon, label }: { icon: React.ReactNode; label: string }) {
   return (
-    <div className="flex items-center gap-2 mb-1 md:mb-2.5">
+    <div className="flex items-center gap-2 mb-1">
       <span className="text-neutral-600 dark:text-neutral-300">{icon}</span>
       <span className="text-[15px] font-semibold text-neutral-600 dark:text-neutral-300">{label}</span>
       <div className="flex-1 h-px bg-neutral-100 dark:bg-surface-dark-muted" />
@@ -214,7 +214,7 @@ export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
       )}
 
       {/* ── 콘텐츠 ── */}
-      <div className="flex-1 p-4 md:p-6 space-y-3 md:space-y-6">
+      <div className="flex-1 p-3 space-y-2">
 
         {/* 밸류에이션 지표 */}
         {valuationMetrics.length > 0 && (
