@@ -86,6 +86,14 @@ export default function ProfilePage() {
     const likedList = useAppSelector(selectLikedList);
     const likesState = useAppSelector(selectLikesState);
     const [watchlistMarket, setWatchlistMarket] = useState<WatchlistMarket>("all");
+    const [mobileViewport, setMobileViewport] = useState(false);
+    useEffect(() => {
+        const media = window.matchMedia("(max-width: 767px)");
+        const update = () => setMobileViewport(media.matches);
+        update();
+        media.addEventListener("change", update);
+        return () => media.removeEventListener("change", update);
+    }, []);
     const [nickname, setNickname] = useState("");
     const [nicknameInput, setNicknameInput] = useState("");
     const [nicknameMessage, setNicknameMessage] = useState("");
@@ -211,7 +219,7 @@ export default function ProfilePage() {
     if (status === "loading") {
         return (
             <div className="min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas flex items-center justify-center">
-                <div className="w-8 h-8 rounded-full border-2 border-neutral-300 border-t-brand animate-spin" />
+                <div className="w-8 h-8 rounded-full border-2 border-neutral-300 border-t-brand motion-safe:animate-spin" />
             </div>
         );
     }
@@ -223,6 +231,23 @@ export default function ProfilePage() {
         ? null
         : new Intl.DateTimeFormat("ko-KR", { dateStyle: "long", timeZone: "Asia/Seoul" }).format(new Date(nicknameNextChangeAt * 1000));
 
+    const marketControls = (
+        <div role="group" aria-label="관심 종목 시장·거래소 필터" className="flex overflow-x-auto px-3">
+            {WATCHLIST_MARKETS.map(market => {
+                const count = likedList.filter(item => matchesWatchlistMarket(item, market.value)).length;
+                if (market.value === "unknown" && count === 0) return null;
+                return (
+                    <button key={market.value} type="button" aria-pressed={watchlistMarket === market.value}
+                        onClick={() => setWatchlistMarket(market.value)}
+                        className={cn("min-h-11 shrink-0 border-b-2 px-3 text-xs font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand",
+                            watchlistMarket === market.value ? "border-brand text-brand-ink" : "border-transparent text-neutral-600 hover:bg-neutral-200 dark:text-neutral-300 dark:hover:bg-surface-dark-hover")}>
+                        {market.label} <span className="font-mono tabular-nums">{count}</span>
+                    </button>
+                );
+            })}
+        </div>
+    );
+
     return (
         <div className="landing-style-page min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas">
             <PageHeader
@@ -230,14 +255,37 @@ export default function ProfilePage() {
                 icon={<UserRound size={18} />}
                 title={isNewUser ? "시작하기" : "내 계정"}
                 mobileTitleInNavigation={!isNewUser}
+                mobileTitleOnScroll
+                compactMeta={likesState === "fulfilled" && likedList.length > 0 ? `관심 ${filteredLikedList.length}종목` : undefined}
+                tabs={mobileViewport && likesState === "fulfilled" && likedList.length > 0 ? marketControls : undefined}
             />
-            <div className={cn(PROFILE_CONTAINER, "desktop-panel-grid py-6 md:py-10 space-y-4 lg:space-y-0")}>
-
+            <div className={cn(PROFILE_CONTAINER, "py-4 sm:py-6")}>
+                <div className="overflow-hidden rounded-lg border border-neutral-300 bg-white dark:border-border-subtle-dark dark:bg-surface-dark-card md:grid md:grid-cols-[minmax(0,1fr)_minmax(280px,360px)]">
+                    <section aria-label="관심종목 요약" className="border-b border-neutral-300 dark:border-border-subtle-dark md:col-span-2">
+                        <div className="flex flex-wrap items-end justify-between gap-3 bg-white px-4 py-5 dark:bg-surface-dark-card sm:px-6 md:py-8">
+                            <div>
+                                <h2 className="text-2xl font-semibold leading-[1.1] tracking-tight text-neutral-900 dark:text-neutral-50 md:text-4xl">내 관심종목</h2>
+                                <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300">관심 목록과 점수를 한곳에서 확인하세요.</p>
+                            </div>
+                            <Link href="/screener" className="inline-flex min-h-11 items-center gap-2 rounded border border-neutral-500 px-3 text-sm font-semibold text-neutral-800 hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand dark:border-neutral-500 dark:text-neutral-100 dark:hover:bg-surface-dark-hover">종목 발굴 <ChevronRight size={16} aria-hidden="true" /></Link>
+                        </div>
+                        <div className="grid grid-cols-2 border-t border-neutral-300 bg-surface-canvas dark:border-border-subtle-dark dark:bg-surface-dark-muted">
+                            <div className="border-r border-neutral-300 px-4 py-3 dark:border-border-subtle-dark sm:px-6 md:py-5">
+                                <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-300 sm:text-sm">관심 종목</p>
+                                <p className="mt-1 text-2xl font-semibold leading-tight tracking-tight tabular-nums text-neutral-900 dark:text-neutral-50 md:text-4xl">{likesState === "fulfilled" ? likedList.length : "—"}<span className="ml-2 text-xs font-normal text-neutral-600 dark:text-neutral-300 sm:text-sm">{likesState === "fulfilled" ? "종목" : likesState === "rejected" ? "조회 실패" : "불러오는 중"}</span></p>
+                            </div>
+                            <div className="px-4 py-3 sm:px-6 md:py-5">
+                                <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-300 sm:text-sm">조정 점수</p>
+                                <p className="mt-1 text-2xl font-semibold leading-tight tracking-tight tabular-nums text-neutral-900 dark:text-neutral-50 md:text-4xl">{likesState === "fulfilled" && !isNewUser ? solidity : "—"}<span className="ml-2 text-xs font-normal text-neutral-600 dark:text-neutral-300 sm:text-sm">{likesState === "fulfilled" && !isNewUser ? `/ 100 · ${solidityLabel}` : "확인 불가"}</span></p>
+                            </div>
+                        </div>
+                    </section>
+                    <main className="min-w-0 divide-y divide-neutral-200 dark:divide-border-subtle-dark">
                 {/* 아직 담은 종목이 없을 때만 — 다음에 할 일을 맨 위에 둔다.
                     지금까지 이 자리는 이름과 이메일이었는데, 사용자가 이미 아는 정보다. */}
                 {isNewUser && (
-                    <div className="bg-white dark:bg-surface-dark-card rounded-[var(--radius-panel)] border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
-                        <div className="px-5 pt-4 pb-2 flex items-center justify-between">
+                    <div className="overflow-hidden">
+                        <div className="px-5 flex min-h-11 items-center justify-between gap-3">
                             <span className="text-xs font-medium text-neutral-600 dark:text-neutral-300">진행 상황</span>
                             <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-200 font-mono tabular-nums">1 / 3 완료</span>
                         </div>
@@ -288,28 +336,292 @@ export default function ProfilePage() {
                     </div>
                 )}
 
+                {/* 관심 종목 — 비었을 때는 위의 시작하기 카드가 같은 말을 더 잘 하므로 띄우지 않는다.
+                    "종목이 없습니다 / 발굴 페이지에서 추가해보세요"를 두 번 보여줄 이유가 없다. */}
+                {!isNewUser && (
+                <div className="overflow-hidden">
+                    <div className="px-4 sm:px-5 flex min-h-14 items-center justify-between gap-3 border-b border-neutral-300 bg-neutral-100 dark:border-border-subtle-dark dark:bg-surface-dark-muted">
+                        <div className="flex items-center gap-1.5">
+                            <Heart size={11} className="text-rose-500" fill="currentColor" />
+                            <span className="text-base font-semibold text-neutral-900 dark:text-neutral-100 tracking-tight leading-tight">
+                                관심 종목
+                            </span>
+                            {likedList.length > 0 && (
+                                <span className="text-xs font-semibold text-neutral-400 bg-neutral-100 dark:bg-surface-dark-muted px-1.5 py-0.5 rounded-full">
+                                    {likedList.length}
+                                </span>
+                            )}
+                        </div>
+                        <Link
+                            href="/screener?filter=liked"
+                            className="inline-flex min-h-11 items-center text-xs font-semibold text-brand-ink hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+                        >
+                            발굴 페이지에서 보기
+                        </Link>
+                    </div>
+
+                    {likesState === "fulfilled" && likedList.length > 0 && (
+                        <div className="border-y border-neutral-200 bg-surface-canvas dark:border-border-subtle-dark dark:bg-surface-dark-muted">
+                            <div className="md:block hidden">{marketControls}</div>
+                            <div className="px-5 pb-2">
+                                <span role="status" className="text-xs text-neutral-600 dark:text-neutral-300 tabular-nums">전체 {likedList.length}개 중 {filteredLikedList.length}개</span>
+                            </div>
+                        </div>
+                    )}
+
+                    {likesState === "pending" || likesState === "init" ? (
+                        <div className="px-5 py-5 flex justify-center">
+                            <div className="w-5 h-5 rounded-full border-2 border-neutral-200 border-t-brand motion-safe:animate-spin" />
+                        </div>
+                    ) : likesState === "rejected" ? (
+                        <div role="alert" className="px-5 py-6 text-sm text-neutral-600 dark:text-neutral-300">
+                            관심 종목을 불러오지 못했습니다.
+                            <button type="button" onClick={() => dispatch(reqGetMyLikes())} className="ml-2 min-h-11 font-semibold text-brand-ink underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand">다시 불러오기</button>
+                        </div>
+                    ) : likedList.length === 0 ? (
+                        <div className="px-5 py-6 text-center">
+                            <Heart size={22} className="text-neutral-300 dark:text-neutral-600 mx-auto mb-2" />
+                            <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400">관심 종목이 없습니다</p>
+                            <p className="text-xs text-neutral-400 mt-1">
+                                <Link href="/screener" className="text-brand-ink hover:underline font-semibold">발굴 페이지</Link>에서 종목을 추가해보세요
+                            </p>
+                        </div>
+                    ) : filteredLikedList.length === 0 ? (
+                        <div className="px-5 py-6 text-center">
+                            <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400">선택한 시장의 관심 종목이 없습니다</p>
+                            <button type="button" onClick={() => setWatchlistMarket("all")} className="mt-2 min-h-11 text-xs font-semibold text-brand-ink hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand">
+                                전체보기
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="divide-y divide-neutral-100 dark:divide-border-subtle-dark">
+                            {filteredLikedList.map(item => (
+                                <div key={item.ticker} className="flex items-center gap-1 px-4 py-3 hover:bg-surface-canvas dark:hover:bg-surface-dark-hover sm:px-5">
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                            <span className="text-sm font-semibold leading-tight tracking-tight text-neutral-800 dark:text-neutral-200 break-words">
+                                                {item.stock_name ?? item.ticker}
+                                            </span>
+                                            {!!item.is_us && (
+                                                <span className="text-xs font-semibold px-1 py-0.5 rounded bg-brand-light text-brand-ink shrink-0">
+                                                    US
+                                                </span>
+                                            )}
+                                            {/* 담아두고 잊은 사이 상태가 바뀐 종목을 여기서 알린다.
+                                                정상 종목에는 아무것도 붙지 않는다. */}
+                                            <LiquidityBadge item={item} />
+                                        </div>
+                                        {/* 지표 요약 — 항목이 늘어 좁은 화면에서는 줄바꿈시킨다 */}
+                                        <div className="flex items-center gap-x-2.5 gap-y-0.5 flex-wrap mt-0.5">
+                                            {item.ncav_ratio != null && item.ncav_ratio > 0 && (
+                                                <span className={cn(
+                                                    "text-xs font-mono tabular-nums font-semibold",
+                                                    item.ncav_ratio >= 1 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-500"
+                                                )}>
+                                                    NCAV {item.ncav_ratio.toFixed(2)}x
+                                                </span>
+                                            )}
+                                            {item.pbr != null && item.pbr > 0 && (
+                                                <span className="text-xs font-mono text-neutral-600 dark:text-neutral-400 tabular-nums">PBR {item.pbr.toFixed(2)}</span>
+                                            )}
+                                            {item.per != null && item.per > 0 && (
+                                                <span className="text-xs font-mono text-neutral-600 dark:text-neutral-400 tabular-nums">PER {item.per.toFixed(1)}</span>
+                                            )}
+                                            {/* 52주 구간에서 현재가가 선 위치. 0=저점, 100=고점.
+                                                "싸다"의 근거는 아니지만, 담아둔 뒤 얼마나 움직였는지가 한눈에 보인다. */}
+                                            {(() => {
+                                                const pos = w52Position(item);
+                                                if (pos === null) return null;
+                                                return (
+                                                    <span
+                                                        className="text-xs font-mono text-neutral-600 dark:text-neutral-400 tabular-nums"
+                                                        title={`52주 저점~고점 구간에서 ${pos.toFixed(0)}% 지점 (0=저점, 100=고점)`}
+                                                    >
+                                                        52주 {pos.toFixed(0)}%
+                                                    </span>
+                                                );
+                                            })()}
+                                            {item.sector && (
+                                                <span className="text-xs text-neutral-400">{item.sector}</span>
+                                            )}
+                                        </div>
+                                        {item.strategies.length > 0 && (
+                                            <div className="flex flex-wrap gap-1 mt-1">
+                                                {item.strategies.map(s => (
+                                                    <span
+                                                        key={s}
+                                                        className={cn(
+                                                            "text-xs font-semibold px-1.5 py-0.5 rounded-md",
+                                                            STRATEGY_BADGE[s] ?? "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400"
+                                                        )}
+                                                    >
+                                                        {STRATEGY_LABEL[s] ?? s}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <Link
+                                        href={`/analyze?ticker=${encodeURIComponent(item.stock_name ?? item.ticker)}&from=screener`}
+                                        className="inline-flex min-h-11 min-w-11 items-center justify-center shrink-0 rounded text-neutral-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand hover:text-brand-ink hover:bg-brand-light dark:hover:bg-brand-muted/30 motion-safe:transition-colors"
+                                        aria-label={`${item.stock_name ?? item.ticker} 분석 보기`}
+                                        title="분석 보기"
+                                    >
+                                        <ChevronRight size={14} />
+                                    </Link>
+                                    <button
+                                        onClick={() => dispatch(reqToggleLike({
+                                            ticker: item.ticker,
+                                            name: item.stock_name ?? undefined,
+                                            isUs: !!item.is_us,
+                                        }))}
+                                        className="inline-flex min-h-11 min-w-11 items-center justify-center shrink-0 rounded text-rose-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand hover:bg-rose-50 dark:hover:bg-rose-950/20 motion-safe:transition-colors"
+                                        aria-label={`${item.stock_name ?? item.ticker} 관심 해제`}
+                                        title="관심 해제"
+                                    >
+                                        <Heart size={14} fill="currentColor" />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+                )}
+
+                {/* 시각화 예시는 시작하기와 관심종목 확인 다음에 선택해서 본다. */}
+                {isNewUser && (
+                    <SecondarySection title="관심종목 점수 예시" className="rounded-none border-0">
+                    <div className="overflow-hidden">
+                        <div className="px-5 pt-4 pb-1 flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                                <Blocks size={12} className="text-brand-ink" />
+                                <span className="text-xs font-semibold text-neutral-400 dark:text-neutral-500 tracking-tight leading-tight">
+                                    저평가 점수와 거래 상태
+                                </span>
+                            </div>
+                            <span className="text-xs font-semibold px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-surface-dark-muted text-neutral-500 dark:text-neutral-400">
+                                예시
+                            </span>
+                        </div>
+                        <SolidityPlane points={SAMPLE_POINTS} value={72} safety={78} trapCount={2} sample />
+                    </div>
+                    </SecondarySection>
+                )}
+
+                {/* 포트폴리오 탄탄함 (관심 종목 기반 3D 레고 타워) */}
+                {likedList.length > 0 && (
+                    <SecondarySection title="관심종목 점수" className="rounded-none border-0">
+                    <div className="overflow-hidden">
+                        <div className="px-5 pt-4 pb-2 flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                                <Blocks size={12} className="text-brand-ink" />
+                                <span className="text-xs font-semibold text-neutral-400 dark:text-neutral-500 tracking-tight leading-tight">
+                                    저평가 점수에 거래 상태와 업종 쏠림을 반영
+                                </span>
+                            </div>
+                            <span className="text-xs text-neutral-400">관심 {likedList.length}종목 기반</span>
+                        </div>
+
+                        {/* 3D 레고 타워 */}
+                        <div className="h-60 sm:h-72 bg-surface-canvas dark:bg-surface-dark-card">
+                            <PortfolioLegoTower items={likedList} />
+                        </div>
+
+                        {/* 탄탄함 지수 */}
+                        <div className="px-5 py-4 flex items-end gap-4 border-t border-neutral-100 dark:border-border-subtle-dark">
+                            <div className="shrink-0">
+                                <p className="text-xs font-semibold text-neutral-400 tracking-wide">조정 점수</p>
+                                <p className="text-3xl font-semibold text-neutral-900 dark:text-neutral-50 tabular-nums tracking-tight leading-[1.1] mt-1">
+                                    {solidity}<span className="text-base text-neutral-400 font-semibold">/100</span>
+                                </p>
+                            </div>
+                            <div className="flex-1 min-w-0 pb-0.5">
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-200">{solidityLabel}</span>
+                                    <span className="text-xs text-neutral-400">
+                                        블록 {Math.min(likedList.length, 18)}{likedList.length > 18 ? ` / ${likedList.length}` : ""}
+                                    </span>
+                                </div>
+                                <div className="h-2 rounded-full bg-neutral-100 dark:bg-surface-dark-muted overflow-hidden">
+                                    <div className="h-full rounded-full bg-brand" style={{ width: `${solidity}%` }} />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 지수를 두 축으로 편 좌표평면 — 같은 72점이라도 "싸지만 위험"과
+                            "안 싸지만 안전"은 전혀 다른 상태다. 막대 하나로는 구분되지 않는다. */}
+                        <SolidityPlane
+                            points={solid.points}
+                            value={solid.base}
+                            safety={solid.safety}
+                            trapCount={solid.trapCount}
+                        />
+
+                        {/* 왜 깎였는지 — 근거 없이 낮은 숫자만 보여주면 예전보다 못하다.
+                            깎일 이유가 없으면 이 줄 자체가 뜨지 않는다. */}
+                        {solidity < solid.base && (
+                            <div className="px-5 -mt-1 pb-3 flex items-center gap-1.5 flex-wrap">
+                                <span className="text-xs text-neutral-400">
+                                    저평가 <span className="font-mono font-semibold">{solid.base}</span>
+                                    <span className="mx-1">→</span>
+                                    조정 점수 <span className="font-mono font-semibold">{solidity}</span>
+                                </span>
+                                {solid.riskCount > 0 && (
+                                    <span
+                                        className="text-xs font-semibold px-1.5 py-0.5 rounded bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400"
+                                        title="정리매매·거래정지·관리종목·시장경고·저유동성에 해당하는 종목의 점수를 낮춥니다."
+                                    >
+                                        거래 위험 {solid.riskCount}종목
+                                    </span>
+                                )}
+                                {solid.concentrationPenalty > 0 && solid.topSector && (
+                                    <span
+                                        className="text-xs font-semibold px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400"
+                                        title="업종을 확인할 수 있는 종목 중 절반을 넘는 종목이 한 업종에 몰리면 점수를 낮춥니다."
+                                    >
+                                        {solid.topSector.name} {Math.round(solid.topSector.ratio * 100)}% 쏠림
+                                    </span>
+                                )}
+                            </div>
+                        )}
+
+                        {/* 등급 분포 */}
+                        <div className="px-5 pb-4 flex flex-wrap gap-1.5">
+                            {TONE_ORDER.filter(t => toneCounts[t]).map(t => (
+                                <span key={t} className={cn("inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full", TONE_CSS[t])}>
+                                    <span aria-hidden>{TONE_MEDAL[t]}</span>{TONE_LABEL[t]} {toneCounts[t]}
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+                    </SecondarySection>
+                )}
+
+                    </main>
+                    <aside aria-label="계정 설정" className="min-w-0 divide-y divide-neutral-200 border-t border-neutral-200 bg-surface-canvas dark:divide-border-subtle-dark dark:border-border-subtle-dark dark:bg-surface-dark-muted md:border-l md:border-t-0">
                 {/* Profile card */}
-                <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
-                    <div className="flex items-center gap-4 px-5 py-5">
-                        <div className="w-12 h-12 rounded-full bg-neutral-200 dark:bg-surface-dark-elevated flex items-center justify-center text-neutral-700 dark:text-neutral-200 text-base font-black shrink-0">
+                <div className="overflow-hidden">
+                    <div className="border-b border-neutral-300 bg-neutral-100 px-5 py-3 text-base font-semibold tracking-tight text-neutral-900 dark:border-border-subtle-dark dark:bg-surface-dark-elevated dark:text-neutral-50">계정 정보</div>
+                    <div className="flex items-center gap-3 px-5 py-5">
+                        <div className="w-12 h-12 rounded bg-neutral-200 dark:bg-surface-dark-elevated flex items-center justify-center text-neutral-700 dark:text-neutral-200 text-base font-semibold shrink-0">
                             {initial}
                         </div>
                         <div className="min-w-0">
-                            <p className="text-sm font-bold text-neutral-900 dark:text-neutral-50 truncate">
+                            <p className="text-sm font-semibold leading-tight tracking-tight text-neutral-900 dark:text-neutral-50 break-words">
                                 {nickname || session.user?.name}
                             </p>
                             {nickname && session.user?.name && (
-                                <p className="mt-0.5 truncate text-xs text-neutral-500 dark:text-neutral-400">
+                                <p className="mt-0.5 break-all text-xs text-neutral-500 dark:text-neutral-400">
                                     원래 이름: {session.user.name}
                                 </p>
                             )}
                             {session.user?.email && (
-                                <p className="text-xs text-neutral-400 dark:text-neutral-500 truncate mt-0.5">
+                                <p className="text-xs text-neutral-400 dark:text-neutral-400 break-all mt-0.5">
                                     {session.user.email}
                                 </p>
                             )}
                             {isMasterUser && (
-                                <span className="inline-block mt-1 text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-brand-light dark:bg-brand-muted/50 text-brand-ink dark:text-brand-ink uppercase tracking-tight">
+                                <span className="inline-block mt-1 text-xs font-semibold px-1.5 py-0.5 rounded bg-brand-light dark:bg-brand-muted/50 text-brand-ink dark:text-brand-ink uppercase tracking-tight">
                                     Admin
                                 </span>
                             )}
@@ -325,7 +637,7 @@ export default function ProfilePage() {
                                 maxLength={20}
                                 minLength={2}
                                 autoComplete="nickname"
-                                className="min-h-11 min-w-0 flex-1 rounded-lg border border-neutral-300 bg-white px-3 text-base text-neutral-900 outline-none focus:border-brand dark:border-border-subtle-dark dark:bg-surface-dark-muted dark:text-neutral-50"
+                                className="min-h-11 min-w-0 flex-1 rounded border border-neutral-300 bg-white px-3 text-base text-neutral-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand dark:border-border-subtle-dark dark:bg-surface-dark-muted dark:text-neutral-50"
                                 placeholder="2~20자"
                             />
                             <button
@@ -358,16 +670,16 @@ export default function ProfilePage() {
 
                 {/* Admin: Portfolio section */}
                 {isMasterUser && (
-                    <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
+                    <div className="overflow-hidden">
                         <div className="px-5 pt-4 pb-1">
-                            <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
+                            <span className="text-xs font-semibold text-neutral-400 dark:text-neutral-500 tracking-tight leading-tight">
                                 Portfolio
                             </span>
                         </div>
                         <div className="divide-y divide-neutral-100 dark:divide-border-subtle-dark">
                             <Link
                                 href="/balance-kr"
-                                className="flex items-center gap-3 px-5 py-3.5 hover:bg-[#f5f1eb] dark:hover:bg-surface-dark-hover transition-colors group"
+                                className="flex items-center gap-3 px-5 py-3.5 hover:bg-neutral-100 dark:hover:bg-surface-dark-hover motion-safe:transition-colors group"
                             >
                                 <div className="w-8 h-8 rounded-xl bg-surface-canvas dark:bg-surface-dark-muted flex items-center justify-center shrink-0">
                                     <Eye size={15} className="text-neutral-500 dark:text-neutral-400" />
@@ -375,11 +687,11 @@ export default function ProfilePage() {
                                 <span className="flex-1 text-sm font-semibold text-neutral-700 dark:text-neutral-300">
                                     KR 포트폴리오
                                 </span>
-                                <ChevronRight size={14} className="text-neutral-300 dark:text-neutral-600 group-hover:text-neutral-500 dark:group-hover:text-neutral-400 transition-colors" />
+                                <ChevronRight size={14} className="text-neutral-300 dark:text-neutral-600 group-hover:text-neutral-500 dark:group-hover:text-neutral-400 motion-safe:transition-colors" />
                             </Link>
                             <Link
                                 href="/balance-us"
-                                className="flex items-center gap-3 px-5 py-3.5 hover:bg-[#f5f1eb] dark:hover:bg-surface-dark-hover transition-colors group"
+                                className="flex items-center gap-3 px-5 py-3.5 hover:bg-neutral-100 dark:hover:bg-surface-dark-hover motion-safe:transition-colors group"
                             >
                                 <div className="w-8 h-8 rounded-xl bg-surface-canvas dark:bg-surface-dark-muted flex items-center justify-center shrink-0">
                                     <DollarSign size={15} className="text-neutral-500 dark:text-neutral-400" />
@@ -387,7 +699,7 @@ export default function ProfilePage() {
                                 <span className="flex-1 text-sm font-semibold text-neutral-700 dark:text-neutral-300">
                                     US 포트폴리오
                                 </span>
-                                <ChevronRight size={14} className="text-neutral-300 dark:text-neutral-600 group-hover:text-neutral-500 dark:group-hover:text-neutral-400 transition-colors" />
+                                <ChevronRight size={14} className="text-neutral-300 dark:text-neutral-600 group-hover:text-neutral-500 dark:group-hover:text-neutral-400 motion-safe:transition-colors" />
                             </Link>
                         </div>
                     </div>
@@ -399,9 +711,9 @@ export default function ProfilePage() {
 
                 {/* Admin section — 미리보기 중에도 이 칸만은 남는다(끌 자리가 필요하다) */}
                 {realAdmin && (
-                    <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
+                    <div className="overflow-hidden">
                         <div className="px-5 pt-4 pb-1">
-                            <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
+                            <span className="text-xs font-semibold text-neutral-400 dark:text-neutral-500 tracking-tight leading-tight">
                                 Admin
                             </span>
                         </div>
@@ -409,7 +721,7 @@ export default function ProfilePage() {
                             {isAdmin && (
                                 <Link
                                     href="/admin"
-                                    className="flex items-center gap-3 px-5 py-3.5 hover:bg-[#f5f1eb] dark:hover:bg-surface-dark-hover transition-colors group"
+                                    className="flex items-center gap-3 px-5 py-3.5 hover:bg-neutral-100 dark:hover:bg-surface-dark-hover motion-safe:transition-colors group"
                                 >
                                     <div className="w-8 h-8 rounded-xl bg-brand-light dark:bg-brand-muted/50 flex items-center justify-center shrink-0">
                                         <ShieldCheck size={15} className="text-brand-ink" />
@@ -417,7 +729,7 @@ export default function ProfilePage() {
                                     <span className="flex-1 text-sm font-semibold text-neutral-700 dark:text-neutral-300">
                                         회원 관리
                                     </span>
-                                    <ChevronRight size={14} className="text-neutral-300 dark:text-neutral-600 group-hover:text-neutral-500 dark:group-hover:text-neutral-400 transition-colors" />
+                                    <ChevronRight size={14} className="text-neutral-300 dark:text-neutral-600 group-hover:text-neutral-500 dark:group-hover:text-neutral-400 motion-safe:transition-colors" />
                                 </Link>
                             )}
 
@@ -427,7 +739,7 @@ export default function ProfilePage() {
                                 type="button"
                                 onClick={() => setViewAsUser(!viewAsUser)}
                                 aria-pressed={viewAsUser}
-                                className="flex w-full items-center gap-3 px-5 py-3.5 text-left hover:bg-[#f5f1eb] dark:hover:bg-surface-dark-hover transition-colors"
+                                className="flex w-full items-center gap-3 px-5 py-3.5 text-left hover:bg-neutral-100 dark:hover:bg-surface-dark-hover motion-safe:transition-colors"
                             >
                                 <div className={cn(
                                     "w-8 h-8 rounded-xl flex items-center justify-center shrink-0",
@@ -441,18 +753,18 @@ export default function ProfilePage() {
                                     <span className="block text-sm font-semibold text-neutral-700 dark:text-neutral-300">
                                         일반 사용자 화면으로 보기
                                     </span>
-                                    <span className="block text-[11px] text-neutral-400 dark:text-neutral-500">
+                                    <span className="block text-xs text-neutral-400 dark:text-neutral-500">
                                         {viewAsUser
                                             ? "일반 사용자 화면을 보는 중입니다 · 종목 발굴은 최신 데이터만 조회합니다"
                                             : "관리자 전용 메뉴와 과거 일자·주간 조회를 숨겨 봅니다"}
                                     </span>
                                 </span>
                                 <span className={cn(
-                                    "relative h-6 w-11 shrink-0 rounded-full transition-colors",
+                                    "relative h-6 w-11 shrink-0 rounded-full motion-safe:transition-colors",
                                     viewAsUser ? "bg-brand" : "bg-neutral-200 dark:bg-surface-dark-border",
                                 )}>
                                     <span className={cn(
-                                        "absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all",
+                                        "absolute top-0.5 h-5 w-5 rounded-full bg-white shadow motion-safe:transition-all",
                                         viewAsUser ? "left-[22px]" : "left-0.5",
                                     )} />
                                 </span>
@@ -461,296 +773,21 @@ export default function ProfilePage() {
                     </div>
                 )}
 
-                {/* 관심 종목 — 비었을 때는 위의 시작하기 카드가 같은 말을 더 잘 하므로 띄우지 않는다.
-                    "종목이 없습니다 / 발굴 페이지에서 추가해보세요"를 두 번 보여줄 이유가 없다. */}
-                {!isNewUser && (
-                <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
-                    <div className="px-5 pt-4 pb-2 flex items-center justify-between">
-                        <div className="flex items-center gap-1.5">
-                            <Heart size={11} className="text-rose-500" fill="currentColor" />
-                            <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
-                                관심 종목
-                            </span>
-                            {likedList.length > 0 && (
-                                <span className="text-[10px] font-bold text-neutral-400 bg-neutral-100 dark:bg-surface-dark-muted px-1.5 py-0.5 rounded-full">
-                                    {likedList.length}
-                                </span>
-                            )}
-                        </div>
-                        <Link
-                            href="/screener?filter=liked"
-                            className="text-[10px] font-bold text-brand-ink hover:underline"
-                        >
-                            발굴 페이지에서 보기
-                        </Link>
-                    </div>
-
-                    {likedList.length > 0 && (
-                        <div className="px-5 pb-3">
-                            <div role="group" aria-label="관심 종목 시장·거래소 필터" className="grid grid-cols-3 gap-1.5 py-2">
-                                {WATCHLIST_MARKETS.map(market => {
-                                    const count = likedList.filter(item => matchesWatchlistMarket(item, market.value)).length;
-                                    if (market.value === "unknown" && count === 0) return null;
-                                    return (
-                                        <button
-                                            key={market.value}
-                                            type="button"
-                                            aria-pressed={watchlistMarket === market.value}
-                                            onClick={() => setWatchlistMarket(market.value)}
-                                            className={cn(
-                                                "rounded-lg px-1 py-2 text-[11px] font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand",
-                                                watchlistMarket === market.value
-                                                    ? "bg-brand-light text-brand-ink dark:bg-brand-muted/30"
-                                                    : "bg-neutral-100 text-neutral-500 hover:bg-neutral-200 dark:bg-surface-dark-muted dark:text-neutral-400 dark:hover:bg-surface-dark-hover"
-                                            )}
-                                        >
-                                            {market.label} <span className="tabular-nums">{count}</span>
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                            <div className="flex items-center justify-between gap-2 pt-1">
-                                <span role="status" className="text-[10px] text-neutral-400 font-medium">전체 {likedList.length}개 중 {filteredLikedList.length}개</span>
-                            </div>
-                        </div>
-                    )}
-
-                    {likesState === "pending" || likesState === "init" ? (
-                        <div className="px-5 py-5 flex justify-center">
-                            <div className="w-5 h-5 rounded-full border-2 border-neutral-200 border-t-brand animate-spin" />
-                        </div>
-                    ) : likedList.length === 0 ? (
-                        <div className="px-5 py-6 text-center">
-                            <Heart size={22} className="text-neutral-300 dark:text-neutral-600 mx-auto mb-2" />
-                            <p className="text-xs font-bold text-neutral-500 dark:text-neutral-400">관심 종목이 없습니다</p>
-                            <p className="text-[11px] text-neutral-400 mt-1">
-                                <Link href="/screener" className="text-brand-ink hover:underline font-bold">발굴 페이지</Link>에서 종목을 추가해보세요
-                            </p>
-                        </div>
-                    ) : filteredLikedList.length === 0 ? (
-                        <div className="px-5 py-6 text-center">
-                            <p className="text-xs font-bold text-neutral-500 dark:text-neutral-400">선택한 시장의 관심 종목이 없습니다</p>
-                            <button type="button" onClick={() => setWatchlistMarket("all")} className="mt-2 text-[11px] font-bold text-brand-ink hover:underline">
-                                전체보기
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="divide-y divide-neutral-100 dark:divide-border-subtle-dark">
-                            {filteredLikedList.map(item => (
-                                <div key={item.ticker} className="flex items-center gap-2 px-5 py-3">
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-1.5 flex-wrap">
-                                            <span className="text-sm font-bold text-neutral-800 dark:text-neutral-200 truncate max-w-[160px]">
-                                                {item.stock_name ?? item.ticker}
-                                            </span>
-                                            {!!item.is_us && (
-                                                <span className="text-[9px] font-black px-1 py-0.5 rounded bg-brand-light text-brand-ink shrink-0">
-                                                    US
-                                                </span>
-                                            )}
-                                            {/* 담아두고 잊은 사이 상태가 바뀐 종목을 여기서 알린다.
-                                                정상 종목에는 아무것도 붙지 않는다. */}
-                                            <LiquidityBadge item={item} />
-                                        </div>
-                                        {/* 지표 요약 — 항목이 늘어 좁은 화면에서는 줄바꿈시킨다 */}
-                                        <div className="flex items-center gap-x-2.5 gap-y-0.5 flex-wrap mt-0.5">
-                                            {item.ncav_ratio != null && item.ncav_ratio > 0 && (
-                                                <span className={cn(
-                                                    "text-[10px] font-mono font-bold",
-                                                    item.ncav_ratio >= 1 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-500"
-                                                )}>
-                                                    NCAV {item.ncav_ratio.toFixed(2)}x
-                                                </span>
-                                            )}
-                                            {item.pbr != null && item.pbr > 0 && (
-                                                <span className="text-[10px] text-neutral-400 font-mono">PBR {item.pbr.toFixed(2)}</span>
-                                            )}
-                                            {item.per != null && item.per > 0 && (
-                                                <span className="text-[10px] text-neutral-400 font-mono">PER {item.per.toFixed(1)}</span>
-                                            )}
-                                            {/* 52주 구간에서 현재가가 선 위치. 0=저점, 100=고점.
-                                                "싸다"의 근거는 아니지만, 담아둔 뒤 얼마나 움직였는지가 한눈에 보인다. */}
-                                            {(() => {
-                                                const pos = w52Position(item);
-                                                if (pos === null) return null;
-                                                return (
-                                                    <span
-                                                        className="text-[10px] text-neutral-400 font-mono"
-                                                        title={`52주 저점~고점 구간에서 ${pos.toFixed(0)}% 지점 (0=저점, 100=고점)`}
-                                                    >
-                                                        52주 {pos.toFixed(0)}%
-                                                    </span>
-                                                );
-                                            })()}
-                                            {item.sector && (
-                                                <span className="text-[10px] text-neutral-400">{item.sector}</span>
-                                            )}
-                                        </div>
-                                        {item.strategies.length > 0 && (
-                                            <div className="flex flex-wrap gap-1 mt-1">
-                                                {item.strategies.map(s => (
-                                                    <span
-                                                        key={s}
-                                                        className={cn(
-                                                            "text-[9px] font-bold px-1.5 py-0.5 rounded-md",
-                                                            STRATEGY_BADGE[s] ?? "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400"
-                                                        )}
-                                                    >
-                                                        {STRATEGY_LABEL[s] ?? s}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                    <Link
-                                        href={`/analyze?ticker=${encodeURIComponent(item.stock_name ?? item.ticker)}&from=screener`}
-                                        className="shrink-0 p-1.5 rounded-lg text-neutral-400 hover:text-brand-ink hover:bg-brand-light dark:hover:bg-brand-muted/30 transition-colors"
-                                        title="분석 보기"
-                                    >
-                                        <ChevronRight size={14} />
-                                    </Link>
-                                    <button
-                                        onClick={() => dispatch(reqToggleLike({
-                                            ticker: item.ticker,
-                                            name: item.stock_name ?? undefined,
-                                            isUs: !!item.is_us,
-                                        }))}
-                                        className="shrink-0 p-1.5 rounded-lg text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-colors"
-                                        title="관심 해제"
-                                    >
-                                        <Heart size={14} fill="currentColor" />
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-                )}
-
-                {/* 시각화 예시는 시작하기와 관심종목 확인 다음에 선택해서 본다. */}
-                {isNewUser && (
-                    <SecondarySection title="관심종목 점수 예시">
-                    <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
-                        <div className="px-5 pt-4 pb-1 flex items-center justify-between">
-                            <div className="flex items-center gap-1.5">
-                                <Blocks size={12} className="text-brand-ink" />
-                                <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
-                                    저평가 점수와 거래 상태
-                                </span>
-                            </div>
-                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-surface-dark-muted text-neutral-500 dark:text-neutral-400">
-                                예시
-                            </span>
-                        </div>
-                        <SolidityPlane points={SAMPLE_POINTS} value={72} safety={78} trapCount={2} sample />
-                    </div>
-                    </SecondarySection>
-                )}
-
-                {/* 포트폴리오 탄탄함 (관심 종목 기반 3D 레고 타워) */}
-                {likedList.length > 0 && (
-                    <SecondarySection title="관심종목 점수">
-                    <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
-                        <div className="px-5 pt-4 pb-2 flex items-center justify-between">
-                            <div className="flex items-center gap-1.5">
-                                <Blocks size={12} className="text-brand-ink" />
-                                <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
-                                    저평가 점수에 거래 상태와 업종 쏠림을 반영
-                                </span>
-                            </div>
-                            <span className="text-[10px] text-neutral-400">관심 {likedList.length}종목 기반</span>
-                        </div>
-
-                        {/* 3D 레고 타워 */}
-                        <div className="h-60 sm:h-72 bg-gradient-to-b from-[#f4faf6] to-white dark:from-[#12241c] dark:to-surface-dark-card">
-                            <PortfolioLegoTower items={likedList} />
-                        </div>
-
-                        {/* 탄탄함 지수 */}
-                        <div className="px-5 py-4 flex items-end gap-4 border-t border-neutral-100 dark:border-border-subtle-dark">
-                            <div className="shrink-0">
-                                <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">조정 점수</p>
-                                <p className="text-3xl font-black text-brand-ink tabular-nums leading-none mt-1">
-                                    {solidity}<span className="text-base text-neutral-400 font-bold">/100</span>
-                                </p>
-                            </div>
-                            <div className="flex-1 min-w-0 pb-0.5">
-                                <div className="flex items-center justify-between mb-1.5">
-                                    <span className="text-xs font-black text-neutral-700 dark:text-neutral-200">{solidityLabel}</span>
-                                    <span className="text-[10px] text-neutral-400">
-                                        블록 {Math.min(likedList.length, 18)}{likedList.length > 18 ? ` / ${likedList.length}` : ""}
-                                    </span>
-                                </div>
-                                <div className="h-2 rounded-full bg-neutral-100 dark:bg-surface-dark-muted overflow-hidden">
-                                    <div className="h-full rounded-full bg-gradient-to-r from-brand to-emerald-400 transition-all" style={{ width: `${solidity}%` }} />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* 지수를 두 축으로 편 좌표평면 — 같은 72점이라도 "싸지만 위험"과
-                            "안 싸지만 안전"은 전혀 다른 상태다. 막대 하나로는 구분되지 않는다. */}
-                        <SolidityPlane
-                            points={solid.points}
-                            value={solid.base}
-                            safety={solid.safety}
-                            trapCount={solid.trapCount}
-                        />
-
-                        {/* 왜 깎였는지 — 근거 없이 낮은 숫자만 보여주면 예전보다 못하다.
-                            깎일 이유가 없으면 이 줄 자체가 뜨지 않는다. */}
-                        {solidity < solid.base && (
-                            <div className="px-5 -mt-1 pb-3 flex items-center gap-1.5 flex-wrap">
-                                <span className="text-[10px] text-neutral-400">
-                                    저평가 <span className="font-mono font-bold">{solid.base}</span>
-                                    <span className="mx-1">→</span>
-                                    조정 점수 <span className="font-mono font-bold">{solidity}</span>
-                                </span>
-                                {solid.riskCount > 0 && (
-                                    <span
-                                        className="text-[9.5px] font-black px-1.5 py-0.5 rounded bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400"
-                                        title="정리매매·거래정지·관리종목·시장경고·저유동성에 해당하는 종목의 점수를 낮춥니다."
-                                    >
-                                        거래 위험 {solid.riskCount}종목
-                                    </span>
-                                )}
-                                {solid.concentrationPenalty > 0 && solid.topSector && (
-                                    <span
-                                        className="text-[9.5px] font-black px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400"
-                                        title="업종을 확인할 수 있는 종목 중 절반을 넘는 종목이 한 업종에 몰리면 점수를 낮춥니다."
-                                    >
-                                        {solid.topSector.name} {Math.round(solid.topSector.ratio * 100)}% 쏠림
-                                    </span>
-                                )}
-                            </div>
-                        )}
-
-                        {/* 등급 분포 */}
-                        <div className="px-5 pb-4 flex flex-wrap gap-1.5">
-                            {TONE_ORDER.filter(t => toneCounts[t]).map(t => (
-                                <span key={t} className={cn("inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full", TONE_CSS[t])}>
-                                    <span aria-hidden>{TONE_MEDAL[t]}</span>{TONE_LABEL[t]} {toneCounts[t]}
-                                </span>
-                            ))}
-                        </div>
-                    </div>
-                    </SecondarySection>
-                )}
-
                 {/* Account actions */}
-                <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
+                <div className="overflow-hidden">
                     <div className="px-5 pt-4 pb-1">
-                        <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
+                        <span className="text-xs font-semibold text-neutral-400 dark:text-neutral-500 tracking-tight leading-tight">
                             계정
                         </span>
                     </div>
                     <button
                         onClick={() => signOut({ callbackUrl: "/" })}
-                        className="flex items-center gap-3 w-full px-5 py-3.5 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors group text-left"
+                        className="flex items-center gap-3 w-full px-5 py-3.5 hover:bg-red-50 dark:hover:bg-red-950/20 motion-safe:transition-colors group text-left"
                     >
-                        <div className="w-8 h-8 rounded-xl bg-surface-canvas dark:bg-surface-dark-muted flex items-center justify-center shrink-0 group-hover:bg-red-100 dark:group-hover:bg-red-950/30 transition-colors">
-                            <LogOut size={15} className="text-neutral-500 dark:text-neutral-400 group-hover:text-red-500 dark:group-hover:text-red-400 transition-colors" />
+                        <div className="w-8 h-8 rounded-xl bg-surface-canvas dark:bg-surface-dark-muted flex items-center justify-center shrink-0 group-hover:bg-red-100 dark:group-hover:bg-red-950/30 motion-safe:transition-colors">
+                            <LogOut size={15} className="text-neutral-500 dark:text-neutral-400 group-hover:text-red-500 dark:group-hover:text-red-400 motion-safe:transition-colors" />
                         </div>
-                        <span className="flex-1 text-sm font-semibold text-neutral-700 dark:text-neutral-300 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
+                        <span className="flex-1 text-sm font-semibold text-neutral-700 dark:text-neutral-300 group-hover:text-red-600 dark:group-hover:text-red-400 motion-safe:transition-colors">
                             로그아웃
                         </span>
                     </button>
@@ -762,7 +799,7 @@ export default function ProfilePage() {
                     {!showDanger && !confirmingDelete ? (
                         <button
                             onClick={() => setShowDanger(true)}
-                            className="w-full px-5 py-3 text-left text-[11px] font-semibold text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
+                            className="min-h-11 w-full px-5 py-3 text-left text-xs font-semibold text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 motion-safe:transition-colors"
                         >
                             계정 설정 더 보기
                         </button>
@@ -772,16 +809,16 @@ export default function ProfilePage() {
                         <button
                             onClick={() => setConfirmingDelete(true)}
                             disabled={realAdmin}
-                            className="flex items-center gap-3 w-full px-5 py-3.5 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors group text-left disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                            className="flex items-center gap-3 w-full px-5 py-3.5 hover:bg-red-50 dark:hover:bg-red-950/20 motion-safe:transition-colors group text-left disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                         >
-                            <div className="w-8 h-8 rounded-xl bg-surface-canvas dark:bg-surface-dark-muted flex items-center justify-center shrink-0 group-hover:bg-red-100 dark:group-hover:bg-red-950/30 transition-colors">
-                                <Trash2 size={15} className="text-red-400 group-hover:text-red-500 dark:group-hover:text-red-400 transition-colors" />
+                            <div className="w-8 h-8 rounded-xl bg-surface-canvas dark:bg-surface-dark-muted flex items-center justify-center shrink-0 group-hover:bg-red-100 dark:group-hover:bg-red-950/30 motion-safe:transition-colors">
+                                <Trash2 size={15} className="text-red-400 group-hover:text-red-500 dark:group-hover:text-red-400 motion-safe:transition-colors" />
                             </div>
                             <div className="flex-1">
                                 <span className="block text-sm font-semibold text-red-600 dark:text-red-400">
                                     회원 탈퇴
                                 </span>
-                                <span className="block text-[11px] text-neutral-400 dark:text-neutral-500 mt-0.5">
+                                <span className="block text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">
                                     {realAdmin ? "관리자 계정은 탈퇴할 수 없습니다" : "계정과 모든 데이터가 영구 삭제됩니다"}
                                 </span>
                             </div>
@@ -791,14 +828,14 @@ export default function ProfilePage() {
                             <p className="text-sm font-semibold text-red-600 dark:text-red-400 mb-1">
                                 정말 탈퇴하시겠어요?
                             </p>
-                            <p className="text-[12px] leading-relaxed text-neutral-600 dark:text-neutral-400 mb-3">
+                            <p className="text-xs leading-relaxed text-neutral-600 dark:text-neutral-400 mb-3">
                                 <b>카카오 로그인 정보 등 회원님의 개인정보</b>가 영구 삭제되며 복구할 수 없습니다.
                                 {cooldownDays > 0 && (
                                     <><br />탈퇴 후 <b>{cooldownDays}일간</b> 같은 카카오 계정으로 재가입할 수 없습니다.</>
                                 )}
                             </p>
-                            <label className="block text-[12px] text-neutral-500 dark:text-neutral-400 mb-1.5">
-                                계속하려면 <span className="font-bold text-red-600 dark:text-red-400">{DELETE_CONFIRM_PHRASE}</span> 을(를) 입력하세요
+                            <label className="block text-xs text-neutral-500 dark:text-neutral-400 mb-1.5">
+                                계속하려면 <span className="font-semibold text-red-600 dark:text-red-400">{DELETE_CONFIRM_PHRASE}</span> 을(를) 입력하세요
                             </label>
                             <input
                                 type="text"
@@ -807,20 +844,20 @@ export default function ProfilePage() {
                                 disabled={deleting}
                                 placeholder={DELETE_CONFIRM_PHRASE}
                                 autoFocus
-                                className="w-full px-3 py-2 rounded-xl border border-red-200 dark:border-red-900/50 bg-white dark:bg-[#1c1b19] text-sm text-neutral-800 dark:text-neutral-200 outline-none focus:border-red-400 dark:focus:border-red-600 mb-3"
+                                className="min-h-11 w-full px-3 py-2 rounded border border-red-200 dark:border-red-900/50 bg-white dark:bg-surface-dark-muted text-base text-neutral-800 dark:text-neutral-200 outline-none focus:border-red-400 dark:focus:border-red-600 mb-3"
                             />
                             <div className="flex gap-2">
                                 <button
                                     onClick={cancelDelete}
                                     disabled={deleting}
-                                    className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-neutral-700 dark:text-neutral-300 bg-neutral-100 dark:bg-surface-dark-muted hover:bg-neutral-200 dark:hover:bg-[#403d37] transition-colors disabled:opacity-50"
+                                    className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-neutral-700 dark:text-neutral-300 bg-neutral-100 dark:bg-surface-dark-muted hover:bg-neutral-200 dark:hover:bg-surface-dark-hover motion-safe:transition-colors disabled:opacity-50"
                                 >
                                     취소
                                 </button>
                                 <button
                                     onClick={handleDeleteAccount}
                                     disabled={deleting || deleteConfirmText.trim() !== DELETE_CONFIRM_PHRASE}
-                                    className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-red-600 hover:bg-red-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                    className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-red-600 hover:bg-red-700 motion-safe:transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                                 >
                                     {deleting ? "탈퇴 처리 중…" : "영구 삭제"}
                                 </button>
@@ -828,7 +865,8 @@ export default function ProfilePage() {
                         </div>
                     )}
                 </div>
-
+                    </aside>
+                </div>
             </div>
         </div>
     );
