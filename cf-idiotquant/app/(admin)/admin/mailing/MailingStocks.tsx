@@ -21,6 +21,10 @@ export default function MailingStocks() {
     const [refresh, setRefresh] = useState(0);
     const [error, setError] = useState("");
     const [notice, setNotice] = useState("");
+    const [format, setFormat] = useState<{ title: string; note: string } | null>(null);
+    const [preview, setPreview] = useState<{ subject: string; html: string } | null>(null);
+    const [formatBusy, setFormatBusy] = useState(false);
+    const [formatMessage, setFormatMessage] = useState("");
 
     useEffect(() => {
         let current = true;
@@ -28,6 +32,11 @@ export default function MailingStocks() {
             if (!current) return;
             if (result.success) setStocks(result.data);
             else setError(result.error);
+        });
+        void apiRequest("/billing/mailing/stocks?format=1").then(result => {
+            if (!current) return;
+            if (result.success) setFormat(result.data);
+            else setFormatMessage(result.error);
         });
         void loadStaticStockData().then(result => {
             if (current) setDirectory(result);
@@ -52,6 +61,17 @@ export default function MailingStocks() {
         setStocks(result.data);
         setQuery("");
         setNotice(action === "add" ? `${stock.name} 종목을 추가했습니다.` : `${stock.name} 종목을 제외했습니다.`);
+    }
+
+    async function updateFormat(action: "format" | "preview") {
+        if (!format || formatBusy) return;
+        setFormatBusy(true);
+        setFormatMessage("");
+        const result = await apiRequest("/billing/mailing/stocks", { method: "POST", body: { action, ...format } });
+        setFormatBusy(false);
+        if (!result.success) { setFormatMessage(result.error); return; }
+        if (action === "preview") setPreview(result.data);
+        else { setFormat(result.data); setFormatMessage("메일 포맷을 저장했습니다."); }
     }
 
     function add(ticker: string) {
@@ -99,6 +119,31 @@ export default function MailingStocks() {
                 ) : stocks
                     ? <p className="text-sm text-neutral-600 dark:text-neutral-300">등록된 발송 종목이 없습니다.</p>
                     : !error && <p role="status" className="text-sm">발송 종목을 불러오는 중입니다.</p>}
+            </section>
+            <section aria-labelledby="mailing-format" className="space-y-3 rounded-lg border border-neutral-300 bg-white p-4 dark:border-border-subtle-dark dark:bg-surface-dark-card">
+                <h2 id="mailing-format" className="text-lg font-semibold">메일 포맷</h2>
+                <p className="text-sm text-neutral-600 dark:text-neutral-300">제목과 안내 문구는 저장 후 다음 발송부터 적용됩니다. 미리보기는 현재 입력 내용과 발송 종목을 사용합니다.</p>
+                {format ? <>
+                    <label htmlFor="mailing-title" className="block text-sm font-semibold">제목</label>
+                    <input id="mailing-title" value={format.title} maxLength={100} onChange={event => setFormat({ ...format, title: event.target.value })}
+                        className="min-h-11 w-full rounded-md border border-neutral-400 bg-transparent px-3 text-base dark:border-border-subtle-dark" />
+                    <label htmlFor="mailing-note" className="block text-sm font-semibold">안내 문구</label>
+                    <textarea id="mailing-note" value={format.note} maxLength={2000} rows={3} onChange={event => setFormat({ ...format, note: event.target.value })}
+                        className="w-full rounded-md border border-neutral-400 bg-transparent p-3 text-base dark:border-border-subtle-dark" />
+                    <div className="flex flex-wrap gap-2">
+                        <button type="button" disabled={formatBusy || !format.title.trim() || !format.note.trim()} onClick={() => void updateFormat("format")}
+                            className="min-h-11 rounded-md bg-brand px-4 text-sm font-semibold text-white disabled:opacity-50">저장</button>
+                        <button type="button" disabled={formatBusy || !format.title.trim() || !format.note.trim()} onClick={() => void updateFormat("preview")}
+                            className="min-h-11 rounded-md border border-neutral-400 px-4 text-sm font-semibold disabled:opacity-50">{formatBusy ? "처리 중…" : "메일 미리보기"}</button>
+                    </div>
+                </> : <p className="text-sm">{formatMessage || "메일 포맷을 불러오는 중입니다."}</p>}
+                {format && formatMessage && <p role="status" className="text-sm">{formatMessage}</p>}
+                {preview && <div className="space-y-2">
+                    <h3 className="font-semibold">메일 미리보기</h3>
+                    <p className="break-words text-sm"><strong>제목:</strong> {preview.subject}</p>
+                    <p className="text-sm text-neutral-600 dark:text-neutral-300">조회 시점의 가격과 목표가입니다. 발송 시 다시 조회합니다.</p>
+                    <iframe title="실제 메일 본문 미리보기" sandbox="" srcDoc={preview.html} className="h-[600px] w-full rounded-md border border-neutral-300 bg-white" />
+                </div>}
             </section>
             {error && <p role="alert" className="text-sm">{error}</p>}
             {(directoryError || (error && !stocks)) && (
