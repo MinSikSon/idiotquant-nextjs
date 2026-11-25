@@ -91,7 +91,7 @@ export default function SolidityPlane({
 
     return (
         <div className="px-5 pt-1 pb-3">
-            <div className="flex items-start gap-3">
+            <div className="flex flex-col items-start gap-3 min-[420px]:flex-row">
                 {/* ── 평면 ─────────────────────────────────────────── */}
                 <div className="relative shrink-0 w-[9.5rem] sm:w-[11rem]">
                     <svg
@@ -120,18 +120,18 @@ export default function SolidityPlane({
                         {/* 사분면 이름 — 위쪽 두 칸은 경계선 바로 위에 붙인다.
                             정상 종목은 회수 100에 몰려 위 모서리를 채우므로, 거기 두면 점에 가린다. */}
                         <text x={px(97)} y={py(SAFETY_LINE) - 2.5} textAnchor="end"
-                              className="fill-neutral-300 dark:fill-[#57534a] text-[7px] font-black">탄탄</text>
+                              className="fill-neutral-300 dark:fill-[#57534a] text-[7px] font-semibold">탄탄</text>
                         <text x={px(3)} y={py(SAFETY_LINE) - 2.5}
-                              className="fill-neutral-300 dark:fill-[#57534a] text-[7px] font-black">무난</text>
+                              className="fill-neutral-300 dark:fill-[#57534a] text-[7px] font-semibold">무난</text>
                         <text x={px(3)} y={py(3)}
-                              className="fill-neutral-300 dark:fill-[#57534a] text-[7px] font-black">취약</text>
+                              className="fill-neutral-300 dark:fill-[#57534a] text-[7px] font-semibold">취약</text>
                         <text x={px(97)} y={py(3)} textAnchor="end"
-                              className="fill-rose-400 dark:fill-rose-500/80 text-[7px] font-black">함정</text>
+                              className="fill-rose-400 dark:fill-rose-500/80 text-[7px] font-semibold">함정</text>
 
                         {/* Y축 이름 — CSS 로 겹쳐 놓으면 축선과 붙으므로 SVG 안에서 회전시킨다 */}
                         <text x={PAD.l - 2.5} y={py(50)} textAnchor="middle"
                               transform={`rotate(-90 ${PAD.l - 2.5} ${py(50)})`}
-                              className="fill-neutral-400 dark:fill-neutral-500 text-[6.5px] font-bold">
+                              className="fill-neutral-400 dark:fill-neutral-500 text-[6.5px] font-semibold">
                             회수 가능성 →
                         </text>
 
@@ -142,7 +142,7 @@ export default function SolidityPlane({
                                 key={`${uid}-${p.ticker}-${i}`}
                                 cx={p.cx} cy={p.cy} r={active?.ticker === p.ticker ? 3.6 : 2.4}
                                 className={cn(
-                                    "pointer-events-none transition-all",
+                                    "pointer-events-none motion-safe:transition-all",
                                     p.quadrant === "trap"
                                         ? "fill-rose-500 dark:fill-rose-400"
                                         : p.quadrant === "solid"
@@ -178,7 +178,7 @@ export default function SolidityPlane({
                     </svg>
 
                     {/* X축 이름 */}
-                    <div className="flex items-center justify-between mt-0.5 pl-3 text-[9px] font-bold text-neutral-400 dark:text-neutral-500">
+                    <div className="flex items-center justify-between mt-0.5 pl-3 text-xs font-semibold text-neutral-400 dark:text-neutral-500">
                         <span>← 비쌈</span>
                         <span>저평가 →</span>
                     </div>
@@ -188,14 +188,14 @@ export default function SolidityPlane({
                 <div className="flex-1 min-w-0 pt-1">
                     {active ? (
                         <div>
-                            <p className="text-[11px] font-black text-neutral-800 dark:text-neutral-200 truncate">
+                            <p className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 break-words">
                                 {active.name}
                             </p>
-                            <p className="text-[10px] font-mono text-neutral-400 mt-0.5 tabular-nums">
+                            <p className="text-xs font-mono text-neutral-400 mt-0.5 tabular-nums">
                                 저평가 {active.value} · 회수 {active.safety}
                             </p>
                             <p className={cn(
-                                "text-[10px] font-bold mt-1",
+                                "text-xs font-semibold mt-1",
                                 active.quadrant === "trap"
                                     ? "text-rose-600 dark:text-rose-400"
                                     : "text-neutral-500 dark:text-neutral-400"
@@ -205,34 +205,34 @@ export default function SolidityPlane({
                         </div>
                     ) : sample ? (
                         <div>
-                            <p className="text-[11px] leading-relaxed text-neutral-600 dark:text-neutral-300">
-                                가로는 <b className="font-black text-brand-ink dark:text-brand-ink">얼마나 싼가</b>,
-                                세로는 <b className="font-black text-brand-ink dark:text-brand-ink">지금 팔 수 있는가</b>입니다.
+                            <p className="text-xs leading-relaxed text-neutral-600 dark:text-neutral-300">
+                                가로는 <b className="font-semibold text-brand-ink dark:text-brand-ink">얼마나 싼가</b>,
+                                세로는 <b className="font-semibold text-brand-ink dark:text-brand-ink">지금 팔 수 있는가</b>입니다.
                             </p>
-                            <p className="text-[10px] leading-relaxed text-neutral-500 dark:text-neutral-400 mt-1.5">
-                                오른쪽 아래 <b className="font-bold text-rose-600 dark:text-rose-400">함정</b>은
+                            <p className="text-xs leading-relaxed text-neutral-500 dark:text-neutral-400 mt-1.5">
+                                오른쪽 아래 <b className="font-semibold text-rose-600 dark:text-rose-400">함정</b>은
                                 싼 이유가 상장폐지인 종목입니다. 관심 종목을 담으면 여기 들어온 것을 알려드립니다.
                             </p>
                         </div>
                     ) : trapCount > 0 ? (
                         <div>
-                            <p className="text-[11px] font-black text-rose-600 dark:text-rose-400">
+                            <p className="text-xs font-semibold text-rose-600 dark:text-rose-400">
                                 함정 구역 {trapCount}종목
                             </p>
-                            <p className="text-[10px] leading-relaxed text-neutral-500 dark:text-neutral-400 mt-1">
+                            <p className="text-xs leading-relaxed text-neutral-500 dark:text-neutral-400 mt-1">
                                 싼데 지금 팔기 어려운 종목입니다. 폐지가 확정되면 주가가 먼저
-                                무너져 <b className="font-bold">더 싸 보이게</b> 됩니다.
+                                무너져 <b className="font-semibold">더 싸 보이게</b> 됩니다.
                             </p>
-                            <p className="text-[10px] text-neutral-400 dark:text-neutral-500 mt-1.5">
+                            <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1.5">
                                 점을 눌러 종목을 확인하세요.
                             </p>
                         </div>
                     ) : (
                         <div>
-                            <p className="text-[11px] font-black text-brand-ink dark:text-brand-ink">
+                            <p className="text-xs font-semibold text-brand-ink dark:text-brand-ink">
                                 함정 구역 없음
                             </p>
-                            <p className="text-[10px] leading-relaxed text-neutral-500 dark:text-neutral-400 mt-1">
+                            <p className="text-xs leading-relaxed text-neutral-500 dark:text-neutral-400 mt-1">
                                 오른쪽 위로 갈수록 싸면서 팔 수 있는 종목입니다.
                                 십자는 관심 목록 전체의 평균입니다.
                             </p>

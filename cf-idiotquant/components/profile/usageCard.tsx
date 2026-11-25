@@ -62,26 +62,26 @@ export default function UsageCard() {
     }, []);
 
     return (
-        <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
+        <div className="overflow-hidden">
             <div className="flex items-center gap-2 px-5 pt-4 pb-3">
                 <Gauge size={13} className="text-neutral-400" />
-                <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
+                <span className="text-xs font-semibold text-neutral-400 dark:text-neutral-500 tracking-tight leading-tight">
                     오늘 사용량
                 </span>
-                <span className="ml-auto text-[10px] text-neutral-400 dark:text-neutral-500">
+                <span className="ml-auto text-xs text-neutral-400 dark:text-neutral-500">
                     한국시간 오전 9시 리셋
                 </span>
             </div>
 
             <div className="px-5 pb-5">
-                {loading && <div className="h-20 rounded-xl bg-neutral-200 dark:bg-surface-dark-elevated animate-pulse" />}
+                {loading && <div className="h-20 rounded-xl bg-neutral-200 dark:bg-surface-dark-elevated motion-safe:animate-pulse" />}
 
                 {/* 못 읽었을 때 0 으로 그리지 않는다 — "한 방울도 안 썼다" 로 읽혀 정확히
                     반대로 안심하게 된다. 왜 못 읽었는지를 그대로 적는다. */}
                 {!loading && (!usage || !usage.available) && (
                     <p className="text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">
                         사용량을 읽지 못했습니다.
-                        <span className="block mt-1 text-[11px] text-neutral-400 dark:text-neutral-500 break-words">
+                        <span className="block mt-1 text-xs text-neutral-400 dark:text-neutral-500 break-words">
                             {reason ?? "서버가 이유를 주지 않았습니다."}
                         </span>
                     </p>
@@ -98,13 +98,13 @@ export default function UsageCard() {
                                 <div key={key}>
                                     <div className="flex items-baseline justify-between gap-2 mb-1">
                                         <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">{label}</span>
-                                        <span className={cn("text-[11px] tabular-nums", tone.text)}>
+                                        <span className={cn("text-xs tabular-nums", tone.text)}>
                                             {used.toLocaleString()} / {limit.toLocaleString()}{unit}
                                             <b className="ml-1.5">{Math.round(pct)}%</b>
                                         </span>
                                     </div>
                                     <div className="h-1.5 rounded-full bg-neutral-100 dark:bg-surface-dark-hover overflow-hidden">
-                                        <div className={cn("h-full rounded-full transition-all", tone.bar)}
+                                        <div className={cn("h-full rounded-full motion-safe:transition-all", tone.bar)}
                                             style={{ width: `${Math.min(100, pct)}%` }} />
                                     </div>
                                 </div>
