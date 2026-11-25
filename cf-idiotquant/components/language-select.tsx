@@ -1,6 +1,6 @@
 'use client';
 
-import { Globe } from 'lucide-react';
+import { ChevronDown, Globe } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useTransition } from 'react';
@@ -14,7 +14,7 @@ export function LanguageSelect() {
 
     return <div className="relative">
         <Globe size={18} aria-hidden="true" className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2" />
-        <select aria-label={t('language')} value={locale} disabled={pending} className="navigation-menu-link min-h-11 w-full cursor-pointer border border-[var(--service-line)] bg-transparent pl-10 pr-2.5 text-base disabled:cursor-wait md:text-sm"
+        <select aria-label={t('language')} value={locale} disabled={pending} className="navigation-menu-link min-h-11 w-full cursor-pointer appearance-none border border-[var(--service-line)] bg-transparent pl-10 pr-10 text-base disabled:cursor-wait md:text-sm"
             onChange={event => {
                 const nextLocale = event.currentTarget.value;
                 if (!isLocale(nextLocale) || nextLocale === locale) return;
@@ -24,5 +24,6 @@ export function LanguageSelect() {
             }}>
             {Object.entries(localeNames).map(([value, label]) => <option key={value} value={value} lang={value}>{label}</option>)}
         </select>
+        <ChevronDown size={18} aria-hidden="true" className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2" />
     </div>;
 }
