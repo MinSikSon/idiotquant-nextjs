@@ -16,8 +16,12 @@ async function handleProxy(req: Request, { params }: { params: Promise<{ path: s
         const isTradingOperations = pathArray[0] === 'admin' && pathArray[1] === 'trading';
         const isWatchReview = path === 'user/likes/review';
         const isBilling = pathArray[0] === 'billing';
-        const isBillingAdmin = path === 'billing/admin' || path === 'billing/mailing/stocks';
-        if (isBilling && !['billing', 'billing/checkout', 'billing/admin', 'billing/mailing', 'billing/mailing/stocks'].includes(path)) {
+        const isBillingAdmin = (isBilling && pathArray[1] === 'admin') || path === 'billing/mailing/stocks';
+        if (isBilling && ![
+            'billing', 'billing/checkout', 'billing/cancellation',
+            'billing/admin', 'billing/admin/subscriptions', 'billing/admin/cancellation',
+            'billing/mailing', 'billing/mailing/stocks',
+        ].includes(path)) {
             return NextResponse.json({ success: false, error: "요청한 결제 경로가 없습니다." }, { status: 404 });
         }
         if (isBilling && !session?.user?.id) {

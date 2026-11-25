@@ -7,6 +7,8 @@ import { PAGE_ACTION_CLS, PAGE_PRIMARY_ACTION_CLS, PAGE_WIDTH, PageHeader } from
 import { apiRequest } from "@/lib/features/apiRequest";
 import { formatBillingAmount, billingDate } from "@/lib/utils/billingFormat";
 
+import BillingSubscriptions from "./BillingSubscriptions";
+
 type History = {
     account: { id: string; email: string | null };
     payments: {
@@ -16,7 +18,7 @@ type History = {
         currency: string;
         created_at: string;
         paid_at: string | null;
-        pass: { status: "active" | "expired"; expiresAt: string } | null;
+        pass: { status: "active" | "expired" | "canceled"; expiresAt: string } | null;
         stripeUrl: string | null;
     }[];
     deliveries: { delivery_day: string; claimed_at: string; sent_at: string | null }[];
@@ -61,11 +63,13 @@ export default function BillingHistory() {
 
     return (
         <>
-            <PageHeader icon={<CreditCard size={18} />} title="이용권 관리" meta="Stripe 테스트 모드" mobileTitleInNavigation />
+            <PageHeader icon={<CreditCard size={18} />} title="구독관리" meta="Stripe 테스트 모드" mobileTitleInNavigation />
             <main className={`${PAGE_WIDTH.data} service-content flex flex-col gap-5`}>
                 <Link href="/admin" className="inline-flex min-h-11 w-fit items-center text-sm font-semibold text-brand-ink hover:underline">어드민 대시보드</Link>
+                <BillingSubscriptions />
                 <form onSubmit={search} className={`${panel} space-y-2 p-4`}>
-                    <label htmlFor="billing-account" className="block text-sm font-semibold">로그인 이메일 또는 계정 ID</label>
+                    <h2 className="font-semibold">계정별 결제·발송 이력</h2>
+                    <label htmlFor="billing-account" className="block text-sm">로그인 이메일 또는 계정 ID</label>
                     <div className="flex flex-wrap gap-2">
                         <input id="billing-account" type="search" name="account" required maxLength={254} autoComplete="off"
                             value={query} onChange={event => setQuery(event.target.value)}
@@ -102,7 +106,7 @@ export default function BillingHistory() {
                                                     <td className={cell}>
                                                         {payment.paid_at ? <Timestamp value={payment.paid_at} /> : <><span className="mr-1">생성</span><Timestamp value={payment.created_at} /></>}
                                                     </td>
-                                                    <td className={`${cell} whitespace-nowrap`}>{payment.pass?.status === "active" ? "활성" : payment.pass?.status === "expired" ? "만료" : "미부여"}</td>
+                                                    <td className={`${cell} whitespace-nowrap`}>{payment.pass?.status === "active" ? "활성" : payment.pass?.status === "expired" ? "만료" : payment.pass?.status === "canceled" ? "취소" : "미부여"}</td>
                                                     <td className={cell}>{payment.pass ? <Timestamp value={payment.pass.expiresAt} /> : "—"}</td>
                                                     <td className={cell}>{payment.stripeUrl ? (
                                                         <a href={payment.stripeUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center gap-1 whitespace-nowrap font-semibold text-brand-ink hover:underline">
