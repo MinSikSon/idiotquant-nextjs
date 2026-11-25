@@ -24,6 +24,7 @@ export default function MailingStocks() {
     const [format, setFormat] = useState<{ title: string; note: string } | null>(null);
     const [preview, setPreview] = useState<{ subject: string; html: string } | null>(null);
     const [formatBusy, setFormatBusy] = useState(false);
+    const [testEmail, setTestEmail] = useState("");
     const [formatMessage, setFormatMessage] = useState("");
 
     useEffect(() => {
@@ -63,14 +64,15 @@ export default function MailingStocks() {
         setNotice(action === "add" ? `${stock.name} 종목을 추가했습니다.` : `${stock.name} 종목을 제외했습니다.`);
     }
 
-    async function updateFormat(action: "format" | "preview") {
+    async function updateFormat(action: "format" | "preview" | "test") {
         if (!format || formatBusy) return;
         setFormatBusy(true);
         setFormatMessage("");
-        const result = await apiRequest("/billing/mailing/stocks", { method: "POST", body: { action, ...format } });
+        const result = await apiRequest("/billing/mailing/stocks", { method: "POST", body: { action, ...format, ...(action === "test" ? { email: testEmail } : {}) } });
         setFormatBusy(false);
         if (!result.success) { setFormatMessage(result.error); return; }
         if (action === "preview") setPreview(result.data);
+        else if (action === "test") setFormatMessage(`${result.data.recipient}에 테스트 메일 발송을 요청했습니다.`);
         else { setFormat(result.data); setFormatMessage("메일 포맷을 저장했습니다."); }
     }
 
@@ -136,6 +138,16 @@ export default function MailingStocks() {
                         <button type="button" disabled={formatBusy || !format.title.trim() || !format.note.trim()} onClick={() => void updateFormat("preview")}
                             className="min-h-11 rounded-md border border-neutral-400 px-4 text-sm font-semibold disabled:opacity-50">{formatBusy ? "처리 중…" : "메일 미리보기"}</button>
                     </div>
+                    <form onSubmit={event => { event.preventDefault(); void updateFormat("test"); }} className="space-y-2 border-t border-neutral-200 pt-3 dark:border-border-subtle-dark">
+                        <label htmlFor="mailing-test-email" className="block text-sm font-semibold">테스트 수신 이메일</label>
+                        <p className="text-sm text-neutral-600 dark:text-neutral-300">현재 입력 내용과 발송 종목으로 테스트 메일 한 통을 보냅니다. 저장하지 않은 문구도 적용됩니다.</p>
+                        <div className="flex flex-wrap gap-2">
+                            <input id="mailing-test-email" type="email" required value={testEmail} onChange={event => setTestEmail(event.target.value)}
+                                className="min-h-11 min-w-0 flex-1 basis-52 rounded-md border border-neutral-400 bg-transparent px-3 text-base dark:border-border-subtle-dark" />
+                            <button type="submit" disabled={formatBusy || !format.title.trim() || !format.note.trim() || !testEmail.trim()}
+                                className="min-h-11 rounded-md border border-neutral-400 px-4 text-sm font-semibold disabled:opacity-50">테스트 메일 보내기</button>
+                        </div>
+                    </form>
                 </> : <p className="text-sm">{formatMessage || "메일 포맷을 불러오는 중입니다."}</p>}
                 {format && formatMessage && <p role="status" className="text-sm">{formatMessage}</p>}
                 {preview && <div className="space-y-2">
