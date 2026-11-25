@@ -6,7 +6,7 @@
 
 기존 Worker 저장소의 `idiotquant-backend/billing/wrangler.jsonc`는 결제 전용 `idiotquant-billing` Worker 구성입니다. 기존 시세·자동매매 Worker와 배포 및 시크릿을 분리합니다.
 
-1. 테스트용 Supabase 프로젝트에 Worker 저장소의 `supabase/migrations/20261124172000_stripe_test_orders.sql`, `20261124230000_watchlist_digest.sql`, `20261125090000_watchlist_recipients.sql`, `20261125120000_watchlist_cancellations.sql`을 순서대로 적용합니다.
+1. 테스트용 Supabase 프로젝트에 Worker 저장소의 `supabase/migrations/20261124172000_stripe_test_orders.sql`, `20261124230000_watchlist_digest.sql`, `20261125090000_watchlist_recipients.sql`, `20261125120000_watchlist_cancellations.sql`, `20261125150000_stripe_test_billing_member_summaries.sql`을 순서대로 적용합니다.
 2. Stripe Sandbox에서 단건 고정가 Price를 만듭니다.
 3. `idiotquant-backend/billing/.dev.vars.example`을 같은 폴더의 `.dev.vars`로 복사하고 결제 Worker의 설정을 입력합니다.
 
@@ -37,15 +37,15 @@
 
 ## 관리자 구독관리
 
-`/admin`에서 **구독관리**를 열면 30일 이용권의 서비스 흐름과 가입 계정을 확인할 수 있습니다. 목록에는 로그인 이메일, 계정 ID, 알림 수신 이메일, 결제·만료 시각과 이용권 상태가 표시됩니다. Worker는 현재 관리자 권한을 D1에서 확인합니다.
+`/admin`의 **구독관리 → 회원별 구독**에서 카카오·구글 로그인 수단과 30일 이용권 상태로 회원을 조회할 수 있습니다. 로그인 이메일 또는 계정 ID로 검색하고, 회원을 선택해 결제·발송 이력과 수신 설정을 확인합니다. **이용권·취소 요청**에서는 결제 건별 상태와 취소 요청을 확인합니다. Worker는 현재 관리자 권한을 D1에서 확인합니다.
 
 활성 이용권의 사용자는 **내 계정 → 이용권 관리**에서 취소를 요청할 수 있습니다. 관리자 목록에서 대기 중인 요청을 선택해 사유를 확인하고 승인하거나 반려합니다. 승인된 이용권은 즉시 취소 상태로 바뀌고 이후 예약 발송 대상에서 제외됩니다. 이미 발송 서비스로 전송된 메일은 소급 취소할 수 없습니다. 반려된 이용권은 기존 만료 시각까지 유지됩니다. 취소 요청은 결제 건당 한 번 접수하며, Stripe 환불은 Stripe 대시보드에서 별도로 처리합니다.
 
-**계정별 결제·발송 이력**에 로그인 이메일 또는 계정 ID를 입력하면 해당 계정의 테스트 결제·이용권·메일 이력을 조회할 수 있습니다. Stripe 결제 상세는 결제 확인 후 저장된 PaymentIntent로 연결합니다. 메일의 **발송 수락**은 Cloudflare가 발송 요청을 수락한 시각입니다. 수락 기록 없이 처리 시작 시각만 있으면 **발송 결과 미확인**으로 표시합니다.
+탈퇴한 계정의 이력은 회원 목록에서 계정 ID를 검색한 뒤 **이 ID의 이전 결제·발송 이력 조회**를 선택하면 확인할 수 있습니다. Stripe 결제 상세는 결제 확인 후 저장된 PaymentIntent로 연결합니다. 메일의 **발송 수락**은 Cloudflare가 발송 요청을 수락한 시각입니다. 수락 기록 없이 처리 시작 시각만 있으면 **발송 결과 미확인**으로 표시합니다.
 
 ## 별도 Worker 배포
 
-취소 요청 기능을 올릴 때는 Supabase 마이그레이션 → 결제 Worker → 프론트 순서로 반영합니다.
+회원별 구독 조회는 Supabase 요약 함수 마이그레이션 → 결제 Worker → 프론트 순서로 반영합니다. 회원과 주문의 기존 계정 ID는 유지합니다.
 
 `idiotquant-backend/`에서 `npm run deploy:billing`으로 결제 Worker를 배포합니다. Cloudflare의 해당 Worker에만 위 결제 설정을 등록하고, Stripe Sandbox 웹훅은 결제 Worker URL의 `/billing/webhook`으로 등록합니다. 프론트 서버의 `BILLING_WORKER_URL`을 배포된 결제 Worker URL로 지정하고 `BILLING_INTERNAL_JWT_SECRET`을 맞춥니다.
 

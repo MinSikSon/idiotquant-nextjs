@@ -19,7 +19,7 @@ async function handleProxy(req: Request, { params }: { params: Promise<{ path: s
         const isBillingAdmin = (isBilling && pathArray[1] === 'admin') || path === 'billing/mailing/stocks';
         if (isBilling && ![
             'billing', 'billing/checkout', 'billing/cancellation',
-            'billing/admin', 'billing/admin/subscriptions', 'billing/admin/cancellation',
+            'billing/admin', 'billing/admin/members', 'billing/admin/subscriptions', 'billing/admin/cancellation',
             'billing/mailing', 'billing/mailing/stocks',
         ].includes(path)) {
             return NextResponse.json({ success: false, error: "요청한 결제 경로가 없습니다." }, { status: 404 });

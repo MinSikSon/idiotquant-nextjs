@@ -28,8 +28,8 @@ function Time({ value }: { value: string }) {
     return <time dateTime={value} className="tabular-nums">{billingDate.format(new Date(value))}</time>;
 }
 
-export default function BillingSubscriptions() {
-    const [filter, setFilter] = useState<Filter>("subscriptions");
+export default function BillingSubscriptions({ accountId, onDecision }: { accountId: string | null; onDecision: () => void }) {
+    const [filter, setFilter] = useState<Filter>("pending");
     const [pageOffsets, setPageOffsets] = useState([0]);
     const [page, setPage] = useState<SubscriptionPage | null>(null);
     const [refresh, setRefresh] = useState(0);
@@ -45,7 +45,7 @@ export default function BillingSubscriptions() {
         let current = true;
         void apiRequest("/billing/admin/subscriptions", {
             method: "POST",
-            body: { offset, requestStatus: filter === "subscriptions" ? null : filter },
+            body: { offset, accountId, requestStatus: filter === "subscriptions" ? null : filter },
         }).then(result => {
             if (!current) return;
             setPage(result.success ? result.data : null);
@@ -53,7 +53,7 @@ export default function BillingSubscriptions() {
             setLoading(false);
         });
         return () => { current = false; };
-    }, [filter, offset, refresh]);
+    }, [accountId, filter, offset, refresh]);
 
     function refreshList() {
         setLoading(true);
@@ -76,6 +76,7 @@ export default function BillingSubscriptions() {
             refreshList();
         }
         if (result.success) {
+            onDecision();
             setNotice(confirmation.decision === "approved" ? "취소 요청을 승인했습니다." : "취소 요청을 반려했습니다.");
         } else {
             setActionError(result.error);
@@ -94,7 +95,10 @@ export default function BillingSubscriptions() {
             </section>
             <section aria-labelledby="subscription-list" className={panel}>
                 <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
-                    <h2 id="subscription-list" className="font-semibold">가입 계정과 취소 요청</h2>
+                    <div className="min-w-0">
+                        <h2 id="subscription-list" className="font-semibold">이용권과 취소 요청</h2>
+                        {accountId && <p className="text-sm [overflow-wrap:anywhere]">계정 ID {accountId}</p>}
+                    </div>
                     <label className="flex flex-wrap items-center gap-2 text-sm">
                         목록 보기
                         <select value={filter} disabled={saving} className={input} onChange={event => {
