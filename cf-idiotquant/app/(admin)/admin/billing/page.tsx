@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 import BillingHistory from "./BillingHistory";
 
 export const runtime = "edge";
-export const metadata: Metadata = { title: "이용권 관리 | Admin" };
+export const metadata: Metadata = { title: "구독관리 | Admin" };
 
 export default async function AdminBillingPage() {
     const session = await auth();
