@@ -67,6 +67,8 @@
     "all": "전체",
     "valued": "평가 가능",
     "unscanned": "스캔 없음",
+    "newsletter": "관심종목 뉴스레터",
+    "newsletterHint": "내 종목의 적정가를 무료로 미리 보기",
     "memberMailing": "무료 종목 메일",
     "alertBenefits": "알림 혜택 보기",
     "loadingWatchlist": "관심종목을 불러오는 중…",

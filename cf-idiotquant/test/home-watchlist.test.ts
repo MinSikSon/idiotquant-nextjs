@@ -62,6 +62,7 @@ function harness(initialBaseline = baseline, sampleRoot = false, locale = "ko") 
             if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx, Fragment: 'fragment' };
             if (name === 'next/link') return { __esModule: true, default: 'a' };
             if (name === 'lucide-react') return {};
+            if (name === '@/components/newsletter-entry') return { NewsletterEntry: 'newsletter-entry' };
             if (name.endsWith('/valuationSummary')) return { scanValuationSummary, valuationComparisonAxis };
             if (name.endsWith('/krStockNames')) return { krStockCode, krStockDisplayName };
             if (name.endsWith('/usStockNames')) return {

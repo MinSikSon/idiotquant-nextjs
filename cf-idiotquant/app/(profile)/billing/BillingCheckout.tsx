@@ -1,13 +1,27 @@
 "use client";
 
 import Link from "next/link";
+import Script from "next/script";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { apiRequest } from "@/lib/features/apiRequest";
+import { newsletterUrl, parseStockKey } from "@/lib/utils/newsletterValuation";
 import { billingDate, formatBillingAmount } from "@/lib/utils/billingFormat";
 
 import { cancellationLabel, type Cancellation } from "@/lib/utils/billingCancellation";
 
 type Money = { amount: number; currency: string };
+type TossPaymentRequest = {
+    method: "CARD";
+    amount: { currency: "KRW"; value: number };
+    orderId: string;
+    orderName: string;
+    successUrl: string;
+    failUrl: string;
+};
+type TossPayments = (clientKey: string) => {
+    payment(options: { customerKey: string }): { requestPayment(options: TossPaymentRequest): Promise<void> };
+};
+
 type Payment = Money & { stripe_session_id: string; paid_at: string };
 type BillingData = {
     offer: Money;
@@ -23,13 +37,16 @@ type BillingData = {
     } | null;
 };
 
-export default function BillingCheckout({ returnedSessionId, canceled }: {
+export default function BillingCheckout({ returnedSessionId, canceled, failed, newsletterStock }: {
     returnedSessionId: string | null;
     canceled: boolean;
+    failed: boolean;
+    newsletterStock?: string;
 }) {
     const attemptId = useRef<string | null>(null);
     const submitting = useRef(false);
     const [billing, setBilling] = useState<BillingData | null>(null);
+    const [sdkReady, setSdkReady] = useState(false);
     const [loading, setLoading] = useState(true);
     const [refresh, setRefresh] = useState(0);
     const [redirecting, setRedirecting] = useState(false);
@@ -69,24 +86,43 @@ export default function BillingCheckout({ returnedSessionId, canceled }: {
 
     async function openCheckout(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
-        if (submitting.current) return;
+        const sdk = (window as Window & { TossPayments?: TossPayments }).TossPayments;
+        if (submitting.current || !sdk) return;
         submitting.current = true;
         setRedirecting(true);
         setCheckoutError("");
         attemptId.current ??= crypto.randomUUID();
 
         const result = await apiRequest("/billing/checkout", {
-            method: "POST", body: { attemptId: attemptId.current, recipients: [recipient.trim()] },
+            method: "POST",
+            body: { provider: "toss", attemptId: attemptId.current, recipients: [recipient.trim()] },
         });
-        const url = result.data?.url;
-        if (result.success && typeof url === "string" && url.startsWith("https://checkout.stripe.com/")) {
-            window.location.assign(url);
-            return;
+        const checkout = result.data;
+        if (result.success && typeof checkout?.clientKey === "string" && checkout.clientKey.startsWith("test_ck")) {
+            try {
+                const successUrl = new URL(checkout.successUrl);
+                const failUrl = new URL(checkout.failUrl);
+                if (newsletterStock) {
+                    successUrl.searchParams.set("newsletter", newsletterStock);
+                    failUrl.searchParams.set("newsletter", newsletterStock);
+                }
+                await sdk(checkout.clientKey).payment({ customerKey: crypto.randomUUID() }).requestPayment({
+                    method: "CARD",
+                    amount: { currency: "KRW", value: checkout.amount },
+                    orderId: checkout.orderId,
+                    orderName: checkout.orderName,
+                    successUrl: successUrl.href,
+                    failUrl: failUrl.href,
+                });
+            } catch {
+                attemptId.current = null;
+                setCheckoutError("토스페이먼츠 결제창이 닫혔거나 열리지 않았습니다. 다시 시도해 주세요.");
+            }
+        } else {
+            setCheckoutError(result.error || "토스페이먼츠 테스트 결제 설정을 확인해 주세요.");
         }
-
         submitting.current = false;
         setRedirecting(false);
-        setCheckoutError(result.error || "Stripe 결제창을 열지 못했습니다. 다시 시도해 주세요.");
     }
 
     async function submitCancellation(event: FormEvent<HTMLFormElement>) {
@@ -114,31 +150,38 @@ export default function BillingCheckout({ returnedSessionId, canceled }: {
         setRequestingCancellation(false);
     }
 
+    const newsletter = parseStockKey(newsletterStock);
     const pending = billing?.returnStatus === "pending";
     const status = billing?.returnStatus === "paid" ? "테스트 결제가 확인되었습니다."
-        : pending ? "Stripe 결제를 확인 중입니다. 확인되면 이용권이 자동으로 활성화됩니다."
+        : pending ? "결제를 확인 중입니다. 확인되면 이용권이 자동으로 활성화됩니다."
         : returnedSessionId ? "이 계정에서 해당 결제 내역을 찾을 수 없습니다."
-        : canceled ? "테스트 결제를 취소했습니다." : "";
+        : canceled ? "테스트 결제를 취소했습니다."
+        : failed ? "결제 인증에 실패했습니다. 다시 시도해 주세요." : "";
 
     return (
         <main className="mx-auto w-full max-w-2xl space-y-6 px-4 py-6 text-neutral-900 dark:text-neutral-100 sm:px-6 sm:py-10">
+            <Script
+                src="https://js.tosspayments.com/v2/standard"
+                onReady={() => setSdkReady(true)}
+                onError={() => setCheckoutError("토스페이먼츠를 불러오지 못했습니다. 페이지를 새로고침해 주세요.")}
+            />
             <div>
                 <Link href="/profile" className="inline-flex min-h-11 items-center text-sm font-medium text-brand-ink hover:underline">
                     내 계정
                 </Link>
-                <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">이용권 관리</h1>
+                <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{newsletter ? "과거 적정가 이용권" : "이용권 관리"}</h1>
                 <p className="mt-2 break-keep text-sm leading-relaxed text-neutral-600 dark:text-neutral-300">
                     테스트 결제 · 실제 청구 없음 · 이메일은 지정된 테스트 계정에만 발송
                 </p>
             </div>
 
             <section id="alert-benefits" aria-labelledby="alert-benefits-title" className="scroll-mt-16 rounded-lg border border-neutral-300 bg-white p-4 dark:border-border-subtle-dark dark:bg-surface-dark-card sm:p-5">
-                <h2 id="alert-benefits-title" className="text-lg font-semibold">관심종목 목표가 알림 · 30일 이용권</h2>
+                <h2 id="alert-benefits-title" className="text-lg font-semibold">관심종목 분석 메일 · 30일 이용권</h2>
                 <dl className="mt-3 grid gap-3 break-keep text-sm leading-relaxed sm:grid-cols-[auto_1fr] sm:gap-x-5">
                     <dt className="font-semibold">받는 내용</dt>
-                    <dd className="text-neutral-600 dark:text-neutral-300">좋아요한 종목의 조회 가격과 분석 페이지의 전략별 목표가를 비교해 도달 여부를 알려드립니다. 이메일에서 종목 분석을 열 수 있습니다.</dd>
+                    <dd className="text-neutral-600 dark:text-neutral-300">좋아요한 종목의 조회 가격과 전략별 적정가를 이메일에서 비교할 수 있습니다. 이용권으로 종목의 과거 비교 화면도 열 수 있습니다.</dd>
                     <dt className="font-semibold">받는 조건</dt>
-                    <dd className="text-neutral-600 dark:text-neutral-300">지정된 테스트 계정은 오전 9시(한국 시간) 발송 작업에서 새 목표가 현황을 받습니다. 등록한 주소로 하루 최대 한 통을 보냅니다.</dd>
+                    <dd className="text-neutral-600 dark:text-neutral-300">지정된 테스트 계정은 오전 9시(한국 시간) 발송 작업에서 관심종목 분석을 받습니다. 등록한 주소로 하루 최대 한 통을 보냅니다.</dd>
                     <dt className="font-semibold">이용 기간</dt>
                     <dd className="text-neutral-600 dark:text-neutral-300">결제 확인 시점부터 30일입니다. 만료되면 발송이 중단되며 자동 갱신은 없습니다.</dd>
                 </dl>
@@ -154,6 +197,11 @@ export default function BillingCheckout({ returnedSessionId, canceled }: {
             )}
             {billing && (
                 <>
+                    {newsletter && <Link
+                        href={newsletterUrl(billing.alerts?.status === "active" ? "history" : "result", newsletter)}
+                        className="service-button inline-flex min-h-11 items-center px-3 font-semibold">
+                        {billing.alerts?.status === "active" ? "선택한 종목 과거 적정가 보기" : "현재 적정가로 돌아가기"}
+                    </Link>}
                     {status && (
                         <div className="flex flex-wrap items-center justify-between gap-x-4 text-sm">
                             <p role="status">{status}</p>
@@ -191,8 +239,8 @@ export default function BillingCheckout({ returnedSessionId, canceled }: {
                                             }}
                                             className="mt-1 block min-h-11 w-full rounded-md border border-neutral-400 bg-transparent px-3 text-base font-normal dark:border-border-subtle-dark" />
                                     </label>
-                                    <button type="submit" className="service-button mt-2 min-h-11 bg-brand px-4 text-sm font-semibold text-white hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-60 dark:text-surface-dark-canvas">
-                                        {redirecting ? "Stripe 결제창 여는 중" : "30일 이용권 테스트 구매"}
+                                    <button type="submit" disabled={!sdkReady} className="service-button mt-2 min-h-11 bg-brand px-4 text-sm font-semibold text-white hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-60 dark:text-surface-dark-canvas">
+                                        {redirecting ? "토스페이먼츠 결제창 여는 중" : "30일 이용권 테스트 구매"}
                                     </button>
                                 </fieldset>
                                 {checkoutError && <p role="alert" className="mt-2 text-sm">{checkoutError}</p>}

@@ -51,6 +51,7 @@ export default auth((req: any) => {
         path === "/ads.txt" ||
         path === "/" ||
         path === "/search" ||
+        path === "/newsletter" ||
         // 검색엔진이 들어오는 문이다. 로그인으로 돌려보내면 색인 자체가 안 된다.
         path === "/quant" ||
         path === "/analyze" ||

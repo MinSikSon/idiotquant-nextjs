@@ -6,6 +6,7 @@ import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import { ChevronDown } from 'lucide-react';
 import GuestWatchlist from './GuestWatchlist';
+import { NewsletterEntry } from '@/components/newsletter-entry';
 import { useStockSearchModal } from '@/components/stock-search-provider';
 
 const HeroCoinRain = dynamic(() => import('@/components/hero-coin-rain'), { ssr: false });
@@ -17,6 +18,7 @@ export default function GuestLanding() {
   const t = useTranslations("home");
   const { openSearch } = useStockSearchModal();
   return <div className="mx-auto w-full max-w-5xl space-y-5 px-4 py-3 text-neutral-900 dark:text-neutral-100 sm:space-y-8 sm:px-6 sm:py-8">
+    <NewsletterEntry label={t("newsletter")} description={t("newsletterHint")} />
     <section aria-labelledby="home-title" className="relative isolate rounded-2xl bg-[#faf4e9] p-4 dark:bg-[#26221f] md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.65fr)] md:items-center md:gap-5 md:p-5">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-2xl [mask-image:linear-gradient(to_bottom,transparent_2.25rem,black_4rem,black_90%,transparent)]">
         <HeroCoinRain />

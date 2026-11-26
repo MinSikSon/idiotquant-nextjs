@@ -1,0 +1,20 @@
+.entry {
+    display: grid;
+    grid-template-columns: 3.75rem minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.6rem;
+    min-height: 5rem;
+    padding: 0.25rem 0.8rem 0.35rem 0.45rem;
+    border: 1px solid #221d17;
+    border-radius: 0.7rem;
+    background: #ffcb58 url("/images/onboarding/newsletter-paper.webp") repeat;
+    color: #221d17;
+    box-shadow: inset 0 -3px #221d17;
+}
+.entry:hover { background-color: #ffd678; }
+.entry:active { transform: translateY(1px); box-shadow: inset 0 -1px #221d17; }
+.entry:focus-visible { outline: 2px solid #126557; outline-offset: 3px; }
+.coyote { width: 100%; height: 4.2rem; object-fit: contain; }
+.copy { display: grid; gap: 0.12rem; overflow-wrap: anywhere; }
+.copy strong { font-size: clamp(1rem, 4.4vw, 1.3rem); font-weight: 850; line-height: 1.2; letter-spacing: -0.025em; }
+.copy span { font-size: 0.8125rem; line-height: 1.35; color: #493516; }

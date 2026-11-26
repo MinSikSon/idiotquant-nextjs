@@ -88,7 +88,7 @@ export default function BillingSubscriptions({ accountId, onDecision }: { accoun
             <section aria-labelledby="subscription-flow" className={`${panel} p-4`}>
                 <h2 id="subscription-flow" className="font-semibold">서비스 흐름</h2>
                 <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm leading-relaxed text-neutral-700 dark:text-neutral-300">
-                    <li>사용자가 수신 이메일을 등록하고 Stripe에서 30일 이용권을 테스트 결제합니다.</li>
+                    <li>사용자가 수신 이메일을 등록하고 토스페이먼츠에서 30일 이용권을 테스트 결제합니다.</li>
                     <li>결제가 확인되면 이용권이 활성화됩니다. 지정된 테스트 계정은 매일 오전 9시(KST) 발송 작업에서 새 목표가 현황을 받습니다.</li>
                     <li>이용권은 30일 후 만료됩니다. 이용 중인 사용자가 취소를 요청하면 관리자가 승인하거나 반려합니다.</li>
                 </ol>
@@ -154,7 +154,7 @@ export default function BillingSubscriptions({ accountId, onDecision }: { accoun
                                             confirmation?.sessionId === row.sessionId ? (
                                                 <div className="mt-2 space-y-2">
                                                     <p>{confirmation.decision === "approved"
-                                                        ? "승인하면 이용권과 알림 발송이 종료됩니다. Stripe 환불은 별도로 처리합니다."
+                                                        ? "승인하면 이용권과 알림 발송이 종료됩니다. 환불은 해당 결제 서비스에서 별도로 처리합니다."
                                                         : "이 취소 요청을 반려합니다."}</p>
                                                     <div className="flex flex-wrap gap-2">
                                                         <button type="button" className={PAGE_PRIMARY_ACTION_CLS} disabled={saving} onClick={() => void decide()}>{saving ? "처리 중" : `${cancellationLabel[confirmation.decision]} 확정`}</button>
