@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import { createBackendHeaders } from "@/lib/server/proxyIdentity";
-import { mergeValuationSnapshots, parseStockKey, scanPath, scanSnapshot, type ValuationSnapshot } from "@/lib/utils/newsletterValuation";
+import { mergeValuationSnapshots, parseStockKey, scanPath, scanSnapshot, seoulDate, valuationQuarters, type ValuationSnapshot } from "@/lib/utils/newsletterValuation";
 
 export const runtime = "edge";
 const headers = { "Cache-Control": "private, no-store" };
@@ -54,7 +54,8 @@ export async function GET(request: Request) {
         }
         return Response.json({
             success: true,
-            data: mergeValuationSnapshots(groups),
+            data: valuationQuarters(mergeValuationSnapshots(groups), seoulDate())
+                .flatMap(({ snapshot }) => snapshot ? [snapshot] : []),
             partial: groups.length < sources.length,
         }, { headers });
     } catch {

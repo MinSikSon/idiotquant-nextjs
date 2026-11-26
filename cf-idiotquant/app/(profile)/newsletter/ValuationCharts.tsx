@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarDays } from "lucide-react";
 import { Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, usePlotArea, XAxis, YAxis } from "recharts";
-import { newsletterNumber, type Market, type ValuationSnapshot } from "@/lib/utils/newsletterValuation";
+import { newsletterNumber, quarterNumber, valuationQuarters, type Market, type ValuationSnapshot } from "@/lib/utils/newsletterValuation";
 import styles from "./newsletter.module.css";
 
 const strategyDescriptions: Partial<Record<string, string>> = {
@@ -105,85 +104,68 @@ function TrendDateSelector({ onSelect }: { onSelect: (fraction: number) => void 
         }} />;
 }
 
-export function HistoricalComparison({ snapshots, market, sampleDate }: {
-    snapshots: ValuationSnapshot[]; market: Market; sampleDate?: string;
+export function HistoricalComparison({ snapshots, market, through, sample = false }: {
+    snapshots: ValuationSnapshot[]; market: Market; through: string; sample?: boolean;
 }) {
-    const [date, setDate] = useState(sampleDate ?? "");
+    const [end, setEnd] = useState("");
     const [strategy, setStrategy] = useState("");
-    const index = snapshots.findIndex(item => item.date === date);
-    const selectedIndex = index < 0 ? snapshots.length - 1 : index;
-    const snapshot = snapshots[selectedIndex];
-    const selectedYear = snapshot.date.slice(0, 4);
-    const sampleYears = sampleDate ? [...new Set(snapshots.map(item => item.date.slice(0, 4)))] : [];
-    const firstVisible = Math.max(0, Math.min(selectedIndex - 1, snapshots.length - 3));
-    const dateButtons = sampleDate
-        ? snapshots.filter(item => item.date.startsWith(selectedYear))
-        : snapshots.slice(firstVisible, firstVisible + 3);
-    const monthIndex = (day: string) => Number(day.slice(0, 4)) * 12 + Number(day.slice(5, 7));
-    const firstMonth = monthIndex(snapshots[0].date);
-    const lastMonth = monthIndex(snapshots.at(-1)!.date);
-    const endMonth = Math.min(lastMonth, Math.max(firstMonth + 2, monthIndex(snapshot.date) + 1));
-    const trendSnapshots = sampleDate ? snapshots : snapshots.filter(item => {
-        const month = monthIndex(item.date);
-        return month >= endMonth - 2 && month <= endMonth;
-    });
-    const available = new Set(trendSnapshots.flatMap(item => item.models
-        .filter(model => model.targetPrice !== null).map(model => model.label)));
+    const quarters = valuationQuarters(snapshots, through);
+    const selected = quarters.find(item => item.end === end)
+        ?? quarters.findLast(item => item.snapshot)
+        ?? quarters[quarters.length - 1];
+    const selectedYear = selected.end.slice(0, 4);
+    const years = [...new Set(quarters.map(item => item.end.slice(0, 4)))];
+    const dateButtons = quarters.filter(item => item.end.startsWith(selectedYear));
+    const available = new Set(quarters.flatMap(item => item.snapshot?.models
+        .filter(model => model.targetPrice !== null).map(model => model.label) ?? []));
     const strategies = [...new Set(["SRIM", "PER", "PBR", "NCAV", ...available])].filter(label => available.has(label));
     const activeStrategy = strategies.includes(strategy) ? strategy : strategies[0];
     const strategyDescription = strategyDescriptions[activeStrategy];
-    const data = trendSnapshots.map(item => ({
-        time: Date.parse(item.date), price: item.price,
-        target: item.models.find(model => model.label === activeStrategy)?.targetPrice ?? null,
+    const data = quarters.map(item => ({
+        end: item.end,
+        time: Date.parse(item.end),
+        price: item.snapshot?.price ?? null,
+        target: item.snapshot?.models.find(model => model.label === activeStrategy)?.targetPrice ?? null,
+        scanDate: item.snapshot?.date,
     }));
     const firstTime = data[0].time;
     const lastTime = data[data.length - 1].time;
-    const monthLabel = new Intl.DateTimeFormat("ko-KR", { month: "numeric", timeZone: "UTC" });
-    const spansYears = new Date(firstTime).getUTCFullYear() !== new Date(lastTime).getUTCFullYear();
-    const months = [...new Set(trendSnapshots.map(item => item.date.slice(0, 7)))];
-    const timeTicks = sampleDate
-        ? sampleYears.map(year => {
-            const yearSnapshots = trendSnapshots.filter(item => item.date.startsWith(year));
-            return Date.parse(yearSnapshots[Math.floor(yearSnapshots.length / 2)].date);
-        })
-        : months.map(month => Math.min(lastTime, Math.max(firstTime, Date.parse(`${month}-15`))));
+    const timeTicks = years.map(year => {
+        const yearPoints = data.filter(item => item.end.startsWith(year));
+        return yearPoints[Math.floor(yearPoints.length / 2)].time;
+    });
     const selectTrendDate = (fraction: number) => {
         const time = firstTime + fraction * (lastTime - firstTime);
         const nearest = data.reduce((closest, point) =>
             Math.abs(point.time - time) < Math.abs(closest.time - time) ? point : closest);
-        setDate(new Date(nearest.time).toISOString().slice(0, 10));
+        setEnd(nearest.end);
     };
 
     return <div className={styles.historyComparison}>
-        {sampleDate && <div className={styles.yearControls} role="group" aria-label="비교 연도">
-            {sampleYears.map(year => <button key={year} type="button" aria-pressed={year === selectedYear}
+        <div className={styles.yearControls} role="group" aria-label="비교 연도">
+            {years.map(year => <button key={year} type="button" aria-pressed={year === selectedYear}
                 onClick={() => {
-                    const sameQuarter = year + snapshot.date.slice(4);
-                    const latestInYear = snapshots.findLast(item => item.date.startsWith(year));
-                    setDate(snapshots.some(item => item.date === sameQuarter) ? sameQuarter : latestInYear!.date);
+                    const inYear = quarters.filter(item => item.end.startsWith(year));
+                    const sameQuarter = inYear.find(item => item.end.slice(4) === selected.end.slice(4));
+                    const latestWithRecord = inYear.findLast(item => item.snapshot);
+                    setEnd((sameQuarter?.snapshot ? sameQuarter : latestWithRecord ?? sameQuarter ?? inYear[inYear.length - 1]).end);
                 }}>{year}년</button>)}
-        </div>}
-        <div className={sampleDate ? styles.quarterControls : styles.dateControls} role="group" aria-label="비교 기준일">
+        </div>
+        <div className={styles.quarterControls} role="group" aria-label="비교 분기">
             {dateButtons.map(item => {
-                const quarter = Math.ceil(Number(item.date.slice(5, 7)) / 3);
-                const dateLabel = item.date.replaceAll("-", ".");
-                return <button key={item.date} type="button" aria-pressed={item.date === snapshot.date}
-                    aria-label={sampleDate ? `${quarter}분기, ${dateLabel}` : dateLabel} onClick={() => setDate(item.date)}>
-                    {sampleDate
-                        ? <span className={styles.quarterLabel}>{quarter}분기</span>
-                        : <span className={styles.dateYear}>{item.date.slice(0, 4)}<span>.</span></span>}
-                    <span>{item.date.slice(5).replace("-", ".")}</span>
+                const quarter = quarterNumber(item.end);
+                const label = item.snapshot?.date.slice(5).replace("-", ".") ?? "기록 없음";
+                return <button key={item.end} type="button" aria-pressed={item.end === selected.end}
+                    aria-label={`${quarter}분기, ${item.snapshot?.date.replaceAll("-", ".") ?? label}`}
+                    onClick={() => setEnd(item.end)}>
+                    <span className={styles.quarterLabel}>{quarter}분기</span>
+                    <span>{label}</span>
                 </button>;
             })}
-            {!sampleDate && snapshots.length > 3 && <label className={styles.datePicker}>
-                <CalendarDays size={19} aria-hidden="true" />
-                <select aria-label="전체 비교 날짜" value={snapshot.date} onChange={event => setDate(event.target.value)}>
-                    {[...snapshots].reverse().map(item => <option key={item.date} value={item.date}>{item.date.replaceAll("-", ".")}</option>)}
-                </select>
-            </label>}
         </div>
-        <PriceAxis snapshot={snapshot} market={market} historical />
-        <section className={`${styles.chartCard} ${styles.trendCard}`} aria-labelledby="newsletter-trend">
+        {selected.snapshot ? <PriceAxis snapshot={selected.snapshot} market={market} historical />
+            : <p role="status">이 분기에 저장된 스캔 기록이 없습니다.</p>}
+        {snapshots.length > 0 && <section className={`${styles.chartCard} ${styles.trendCard}`} aria-labelledby="newsletter-trend">
             <div className={styles.trendHeading}>
                 <h2 id="newsletter-trend" className={styles.marker}>
                     {activeStrategy ? `주가와 ${activeStrategy} 적정가 추이` : "주가 추이"}
@@ -193,23 +175,20 @@ export function HistoricalComparison({ snapshots, market, sampleDate }: {
             <div className={styles.trend} data-no-swipe>
                 <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                     <LineChart data={data} margin={{ top: 8, right: 2, bottom: 0, left: 0 }} accessibilityLayer>
-                        <XAxis type="number" dataKey="time" domain={["dataMin", "dataMax"]} ticks={timeTicks} minTickGap={sampleDate ? 4 : 18}
+                        <XAxis type="number" dataKey="time" domain={["dataMin", "dataMax"]} ticks={timeTicks} minTickGap={4}
                             interval="preserveStartEnd" axisLine={{ stroke: "var(--newsletter-ink)" }}
-                            tickFormatter={value => {
-                                if (sampleDate) return `${new Date(value).getUTCFullYear()}년`;
-                                return spansYears ? new Date(value).toISOString().slice(2, 7).replace("-", ".") : monthLabel.format(value);
-                            }} />
+                            tickFormatter={value => `${new Date(value).getUTCFullYear() % 100}년`} />
                         <YAxis width={3} domain={["auto", "auto"]} tick={false} tickLine={false}
                             axisLine={{ stroke: "var(--newsletter-ink)" }} />
-                        <Tooltip labelFormatter={value => new Date(Number(value)).toISOString().slice(0, 10)}
+                        <Tooltip labelFormatter={value => data.find(point => point.time === Number(value))?.scanDate ?? ""}
                             formatter={(value, name) => [formatPrice(Number(value), market), name]}
                             contentStyle={{ color: "var(--newsletter-ink)", background: "var(--newsletter-card)", borderColor: "var(--newsletter-line)" }} />
-                        <ReferenceLine x={Date.parse(snapshot.date)} stroke="var(--newsletter-line)" strokeDasharray="4 3" />
+                        <ReferenceLine x={Date.parse(selected.end)} stroke="var(--newsletter-line)" strokeDasharray="4 3" />
                         <Line dataKey="price" name="주가" stroke="var(--newsletter-price)" strokeWidth={2.5}
-                            strokeLinecap="round" strokeLinejoin="round" dot={data.length === 1} isAnimationActive={false} />
+                            strokeLinecap="round" strokeLinejoin="round" dot={{ r: 2 }} isAnimationActive={false} />
                         {activeStrategy && <Line dataKey="target" name={`${activeStrategy} 적정가`} type="stepAfter"
                             stroke="var(--newsletter-teal)" strokeWidth={3} strokeLinecap="round"
-                            dot={data.length === 1} isAnimationActive={false} />}
+                            dot={{ r: 2 }} isAnimationActive={false} />}
                         <TrendDateSelector onSelect={selectTrendDate} />
                     </LineChart>
                 </ResponsiveContainer>
@@ -222,10 +201,10 @@ export function HistoricalComparison({ snapshots, market, sampleDate }: {
                 <h3>{activeStrategy} 전략</h3>
                 <p>{strategyDescription}</p>
             </aside>}
-        </section>
-        {!sampleDate && <details className={styles.note}>
+        </section>}
+        {!sample && <details className={styles.note}>
             <summary className={styles.method}>스캔 및 전략 계산 기준</summary>
-            <p>선택한 날짜 전후 최대 3개월의 저장된 스캔을 표시합니다. 차이율은 해당 날짜의 스캔 주가 기준입니다. NCAV는 저장된 비율을 주당 가격으로 환산합니다. PER은 EPS의 10배, PBR은 BPS의 1배, SRIM은 스캔의 EPS와 BPS에 요구수익률 8%를 적용합니다.</p>
+            <p>진행 중인 분기를 포함해 최근 20개 분기를 표시합니다. 각 분기에서 가장 최근에 저장된 스캔을 사용합니다. 차이율은 해당 날짜의 스캔 주가 기준입니다. NCAV는 저장된 비율을 주당 가격으로 환산합니다. PER은 EPS의 10배, PBR은 BPS의 1배, SRIM은 스캔의 EPS와 BPS에 요구수익률 8%를 적용합니다.</p>
         </details>}
     </div>;
 }
