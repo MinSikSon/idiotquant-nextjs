@@ -37,7 +37,10 @@ export async function GET(request: Request) {
             return failure("과거 비교에는 활성 이용권이 필요합니다.", 403, "PASS_REQUIRED");
         }
 
-        const through = seoulDate();
+        const now = Date.now();
+        const through = seoulDate(now);
+        // The quote API can include a still-trading candle on the current calendar day.
+        const closedThrough = seoulDate(now - 86_400_000);
         const marketData = async (path: string) => {
             const response = await fetch(marketBase + path, {
                 cache: "no-store", redirect: "manual", signal: AbortSignal.timeout(8000),
@@ -46,9 +49,9 @@ export async function GET(request: Request) {
             return response.json();
         };
         const quotes = async (adjusted = false) => {
-            const payload = await marketData(historyPricePath(stock, through, adjusted));
+            const payload = await marketData(historyPricePath(stock, closedThrough, adjusted));
             if (payload.rt_cd !== "0" || !Array.isArray(payload.output2)) throw new Error("invalid quotes");
-            return historyQuotes(payload.output2, stock.market, through);
+            return historyQuotes(payload.output2, stock.market, closedThrough);
         };
         const filings = async () => {
             const query = new URLSearchParams({ PDNO: stock.ticker, history: "valuation" });
