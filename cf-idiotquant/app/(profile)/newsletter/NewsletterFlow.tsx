@@ -52,7 +52,9 @@ function fromLikes(data: LikedStockItem[]): NewsletterStock[] {
     });
 }
 
-export default function NewsletterFlow({ checkoutEnabled, sampleEndDate }: { checkoutEnabled: boolean; sampleEndDate: string }) {
+export default function NewsletterFlow({ checkoutEnabled, sampleEndDate, historyThrough }: {
+    checkoutEnabled: boolean; sampleEndDate: string; historyThrough: string;
+}) {
     const params = useSearchParams();
     const requestedStage = params.get("step") ?? "";
     const stage = stages.includes(requestedStage) ? requestedStage : "intro";
@@ -288,7 +290,7 @@ export default function NewsletterFlow({ checkoutEnabled, sampleEndDate }: { che
                         checkoutEnabled={checkoutEnabled} />}
                     {stage === "paywall" && stock && <Paywall key={`${owner}:${selectedKey}`} checkoutEnabled={checkoutEnabled}
                         endDate={sampleEndDate} stock={stock} />}
-                    {stage === "history" && stock && <History key={`${owner}:${selectedKey}`} stock={stock}
+                    {stage === "history" && stock && <History key={`${owner}:${selectedKey}`} stock={stock} through={historyThrough}
                         onPaywall={() => go("paywall", stock)} />}
                     {["result", "paywall", "history"].includes(stage) && !stock && <>
                         {heading("비교할 종목을 골라주세요")}
@@ -366,12 +368,12 @@ function SampleComparison({ endDate }: { endDate: string }) {
     const [selected, setSelected] = useState(sampleStocks[0]);
     const snapshots = sampleSnapshots(selected, endDate);
     return <div className={styles.historyComparison}>
-        <ComparisonHeading name={selected.name} detail="가상 예시 데이터 · 최근 12개 분기" />
+        <ComparisonHeading name={selected.name} detail="가상 예시 데이터 · 최근 완료 분기까지 5년" />
         <div className={styles.sampleStocks} role="group" aria-label="예시 종목">
             {sampleStocks.map(stock => <button key={stock.ticker} type="button" aria-pressed={stock === selected}
                 onClick={() => setSelected(stock)}>{stock.name}</button>)}
         </div>
-        <HistoricalComparison snapshots={snapshots} market={selected.market} sampleDate={endDate} />
+        <HistoricalComparison snapshots={snapshots} market={selected.market} through={endDate} sample />
     </div>;
 }
 
@@ -385,7 +387,7 @@ function Paywall({ checkoutEnabled, endDate, stock }: {
     return <div className={`${styles.stack} ${styles.actionStep}`}>
         <SampleComparison endDate={endDate} />
         <ul className={styles.benefits}>
-            <li><Lock size={17} aria-hidden /> 저장된 날짜별 주가와 전략별 적정가 기록</li>
+            <li><Lock size={17} aria-hidden /> 최근 5년 분기별 주가와 전략별 적정가 기록</li>
             <li><Mail size={17} aria-hidden /> 지정된 테스트 계정에 매일 아침 관심종목 분석 이메일</li>
         </ul>
         {access.loading && <p role="status">이용권을 확인하는 중입니다.</p>}
@@ -400,13 +402,13 @@ function Paywall({ checkoutEnabled, endDate, stock }: {
     </div>;
 }
 
-function History({ stock, onPaywall }: {
-    stock: StockKey; onPaywall: () => void;
+function History({ stock, through, onPaywall }: {
+    stock: StockKey; through: string; onPaywall: () => void;
 }) {
     const history = useRequest(`/newsletter-history?stock=${encodeURIComponent(stockKey(stock))}`, historyRows);
     const snapshots = history.data ?? [];
     return <>
-        <ComparisonHeading name={snapshots.at(-1)?.name || stock.ticker} detail="저장된 스캔 기록" />
+        <ComparisonHeading name={snapshots.at(-1)?.name || stock.ticker} detail="최근 5년 · 분기별 스캔 기록" />
         <div className={styles.stack}>
             {history.loading && <p role="status">이용권과 과거 기록을 확인하는 중입니다.</p>}
             {history.forbidden ? <>
@@ -414,8 +416,7 @@ function History({ stock, onPaywall }: {
                 <button type="button" className={styles.button} onClick={onPaywall}>이용권 보기<ArrowRight size={17} aria-hidden /></button>
             </> : history.error && <RequestError message={history.error} retry={history.retry} />}
             {history.partial && <RequestError message="일부 기간의 기록만 불러왔습니다." retry={history.retry} />}
-            {history.data && !snapshots.length && <p>이 종목에 저장된 비교 기록이 없습니다.</p>}
-            {snapshots.length > 0 && <HistoricalComparison snapshots={snapshots} market={stock.market} />}
+            {history.data && <HistoricalComparison snapshots={snapshots} market={stock.market} through={through} />}
         </div>
     </>;
 }

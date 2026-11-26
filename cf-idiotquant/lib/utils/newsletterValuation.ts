@@ -64,6 +64,42 @@ export function mergeValuationSnapshots(groups: ValuationSnapshot[][]) {
     return [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
 }
 
+const HISTORY_QUARTERS = 20;
+
+export function seoulDate(now = Date.now()) {
+    return new Date(now + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
+export function quarterNumber(date: string) {
+    return Math.ceil(Number(date.slice(5, 7)) / 3);
+}
+
+function quarterEnd(year: number, quarter: number) {
+    return new Date(Date.UTC(year, quarter * 3, 0)).toISOString().slice(0, 10);
+}
+
+export function latestCompletedQuarter(date: string) {
+    return quarterEnd(Number(date.slice(0, 4)), quarterNumber(date) - 1);
+}
+
+export function historyQuarterEnds(date: string) {
+    const year = Number(date.slice(0, 4));
+    const quarter = quarterNumber(date);
+    return Array.from({ length: HISTORY_QUARTERS }, (_, index) =>
+        quarterEnd(year, quarter - HISTORY_QUARTERS + 1 + index));
+}
+
+export function valuationQuarters(snapshots: ValuationSnapshot[], through: string) {
+    const latestByQuarter = new Map<string, ValuationSnapshot>();
+    for (const snapshot of snapshots) {
+        if (snapshot.date > through) continue;
+        const end = quarterEnd(Number(snapshot.date.slice(0, 4)), quarterNumber(snapshot.date));
+        const saved = latestByQuarter.get(end);
+        if (!saved || snapshot.date >= saved.date) latestByQuarter.set(end, snapshot);
+    }
+    return historyQuarterEnds(through).map(end => ({ end, snapshot: latestByQuarter.get(end) }));
+}
+
 export function scanPath(stock: Pick<NewsletterStock, "market" | "ticker">, source: "latest" | "daily" | "weekly" | "monthly" | "preview") {
     const ticker = encodeURIComponent(stock.ticker);
     const query = new URLSearchParams({ country: stock.market });
