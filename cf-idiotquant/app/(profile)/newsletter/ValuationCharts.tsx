@@ -85,6 +85,9 @@ export function PriceAxis({ snapshot, market, historical = false }: {
                     {ticks.map((price, i) => <span key={i} style={{ top: `${y(price) / height * 100}%` }}>{newsletterNumber(price, market)}</span>)}
                 </div>
             </div>
+            {snapshot.source === "kis" && <p className={styles.note}>
+                한국투자증권 종가{snapshot.filedDate && ` · SEC 공시 ${snapshot.filedDate.replaceAll("-", ".")} 기준`}
+            </p>}
             {points.length === 1 && <p className={styles.note}>이 날짜에 계산할 수 있는 적정가가 없습니다.</p>}
         </section>
         {points.length > 1 && <p className={historical ? `${styles.highlight} ${styles.historyHighlight}` : styles.highlight}>
@@ -164,7 +167,7 @@ export function HistoricalComparison({ snapshots, market, through, sample = fals
             })}
         </div>
         {selected.snapshot ? <PriceAxis snapshot={selected.snapshot} market={market} historical />
-            : <p role="status">이 분기에 저장된 스캔 기록이 없습니다.</p>}
+            : <p role="status">이 분기에 조회 가능한 주가와 적정가 기록이 없습니다.</p>}
         {snapshots.length > 0 && <section className={`${styles.chartCard} ${styles.trendCard}`} aria-labelledby="newsletter-trend">
             <div className={styles.trendHeading}>
                 <h2 id="newsletter-trend" className={styles.marker}>
@@ -203,8 +206,8 @@ export function HistoricalComparison({ snapshots, market, through, sample = fals
             </aside>}
         </section>}
         {!sample && <details className={styles.note}>
-            <summary className={styles.method}>스캔 및 전략 계산 기준</summary>
-            <p>진행 중인 분기를 포함해 최근 20개 분기를 표시합니다. 각 분기에서 가장 최근에 저장된 스캔을 사용합니다. 차이율은 해당 날짜의 스캔 주가 기준입니다. NCAV는 저장된 비율을 주당 가격으로 환산합니다. PER은 EPS의 10배, PBR은 BPS의 1배, SRIM은 스캔의 EPS와 BPS에 요구수익률 8%를 적용합니다.</p>
+            <summary className={styles.method}>데이터 출처 및 계산 기준</summary>
+            <p>진행 중인 분기를 포함해 최근 20개 분기를 표시합니다. 분기별 최신 스캔을 우선 사용합니다. 스캔이 없는 분기의 주가는 한국투자증권에서 조회합니다. 미국 종목은 주가 기준일 전에 공개된 SEC 재무와 주식 수를 확인해 적정가를 계산합니다. 차이율은 비교 기준일의 주가를 기준으로 합니다. NCAV는 저장된 비율을 주당 가격으로 환산합니다. PER은 EPS의 10배, PBR은 BPS의 1배, SRIM은 EPS와 BPS에 요구수익률 8%를 적용합니다.</p>
         </details>}
     </div>;
 }

@@ -65,3 +65,50 @@ test("live history uses only the latest saved scan in each of 20 quarters, inclu
     assert.equal(quarters[1].snapshot, undefined);
     assert.equal(valuationQuarters([], through).length, 20);
 });
+
+test("registered price API fills missing quarters without replacing saved scans", async () => {
+    const { fillHistoryQuarters, historyPricePath, historyQuotes } = await import("../lib/utils/newsletterHistory.ts");
+    const through = "2026-11-27";
+    assert.match(historyPricePath(stock, through), /FID_INPUT_DATE_1=20220101/);
+    assert.match(historyPricePath({ market: "US", ticker: "LGCL" }, through, true), /adjusted=true/);
+    const prices = historyQuotes([
+        { xymd: "20260930", clos: "2.36" },
+        { xymd: "20260929", clos: "2.11" },
+        { xymd: "20261128", clos: "2.15" },
+        { xymd: "20260230", clos: "5.09" },
+        { xymd: "20240328", clos: "2.92" },
+    ], "US", through);
+    const scan = scanSnapshot({ ...archived, scan_date: "2026-09-20" }, stock)!;
+    assert.deepEqual(fillHistoryQuarters([scan], prices, through, "LGCL"), [
+        { date: "2024-03-28", price: 2.92, name: "LGCL", source: "kis", models: [] },
+        scan,
+    ]);
+});
+
+test("SEC estimates use only earlier filings and matching share-price units across corporate actions", async () => {
+    const { fillHistoryQuarters } = await import("../lib/utils/newsletterHistory.ts");
+    const quotes = [
+        { date: "2024-08-30", price: 3 },
+        { date: "2024-09-30", price: 4 },
+        { date: "2024-12-31", price: 5 },
+    ];
+    const usd = (concept: string, value: number) => ({ concept, value, unit: "USD" });
+    const filing = {
+        endDate: "2023-12-31", filedDate: "2024-09-20", sharesDate: "2024-09-15",
+        periodType: "annual", shares: 100,
+        report: { bs: [usd("StockholdersEquity", 600), usd("AssetsCurrent", 300), usd("Liabilities", 100)],
+            ic: [usd("NetIncomeLoss", 50)] },
+    };
+    const points = fillHistoryQuarters([], quotes, "2024-12-31", "Example",
+        [...quotes.slice(0, 2), { date: "2024-12-31", price: 0.5 }],
+        [filing, { ...filing, endDate: "2024-09-30", filedDate: "2024-09-30", shares: 10 }]);
+    assert.equal(points[0].filedDate, "2024-09-20");
+    assert.equal(points[0].models.find(item => item.label === "PER")?.targetPrice, 5);
+    assert.equal(points[0].models.find(item => item.label === "PBR")?.targetPrice, 6);
+    assert.equal(points[1].models.length, 0);
+    const acrossSplit = fillHistoryQuarters([], quotes, "2024-12-31", "Example",
+        [...quotes.slice(0, 2), { date: "2024-12-31", price: 0.5 }], [filing]);
+    assert.equal(acrossSplit[1].models.length, 0);
+    const sameBasis = fillHistoryQuarters([], quotes, "2024-12-31", "Example", quotes, [filing]);
+    assert.equal(sameBasis[1].models.find(item => item.label === "PER")?.targetPrice, 5);
+});
