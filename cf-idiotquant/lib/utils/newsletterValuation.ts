@@ -3,7 +3,10 @@ import { scanValuationSummary } from "./valuationSummary.ts";
 export type Market = "KR" | "US";
 export type NewsletterStock = { market: Market; ticker: string; name: string };
 export type Model = { label: string; basis: string; targetPrice: number | null; gapPercent: number | null };
-export type ValuationSnapshot = { date: string; name: string; price: number; models: Model[] };
+export type ValuationSnapshot = {
+    date: string; name: string; price: number; models: Model[];
+    source?: "kis"; filedDate?: string;
+};
 
 export function stockKey(stock: Pick<NewsletterStock, "market" | "ticker">) {
     return `${stock.market}:${stock.ticker}`;
@@ -25,26 +28,34 @@ export function newsletterUrl(step: string, stock?: Pick<NewsletterStock, "marke
 
 export function scanSnapshot(row: Record<string, unknown>, stock: Pick<NewsletterStock, "market" | "ticker">): ValuationSnapshot | null {
     if (!row || row.ticker !== stock.ticker || (row.country && row.country !== stock.market)) return null;
-    const rawDate = row.scan_date ?? row.period_end_date;
-    const date = typeof rawDate === "string" ? rawDate.replace(/^(\d{4})(\d{2})(\d{2})$/, "$1-$2-$3") : "";
-    const timestamp = Date.parse(date);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(timestamp) ||
-        new Date(timestamp).toISOString().slice(0, 10) !== date) return null;
+    const date = valuationDate(row.scan_date ?? row.period_end_date);
+    if (!date) return null;
     const number = (value: unknown) => typeof value === "number" && Number.isFinite(value) ? value : null;
     const price = number(row.last_price);
     if (price === null || price <= 0) return null;
-    const isUs = Number(stock.market === "US");
-    const eps = number(row.eps);
-    const bps = number(row.bps);
-    const netIncome = number(row.net_income);
-    // The archive endpoint omits share count. Prefer the stored scan ratio across both sources
-    // so a switch between archive and daily records doesn't change the NCAV methodology.
+    // Daily and archive rows use the stored NCAV ratio so the strategies compare consistently.
+    const models = snapshotModels(price, stock.market, number(row.eps), number(row.bps),
+        number(row.ncav_ratio), number(row.net_income));
+    return { date, name: typeof row.name === "string" && row.name ? row.name : stock.ticker, price, models };
+}
+
+export function valuationDate(raw: unknown) {
+    const date = typeof raw === "string" ? raw.replace(/^(\d{4})(\d{2})(\d{2})$/, "$1-$2-$3") : "";
+    const timestamp = Date.parse(date);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(timestamp) ||
+        new Date(timestamp).toISOString().slice(0, 10) !== date) return null;
+    return date;
+}
+
+export function snapshotModels(price: number, market: Market, eps: number | null, bps: number | null,
+    ncavRatio: number | null, netIncome: number | null) {
+    const isUs = Number(market === "US");
     const models = scanValuationSummary({
         last_price: price, is_us: isUs, eps, bps,
         current_assets: null, total_liabilities: null,
-        ncav_ratio: number(row.ncav_ratio), net_income: netIncome,
+        ncav_ratio: ncavRatio, net_income: netIncome,
     });
-    // Same residual income formula as Analyze, using the EPS/BPS available in the stored scan.
+    // Same residual income formula as Analyze, using the available EPS and BPS.
     const costOfEquity = 0.08;
     if (eps !== null && eps > 0 && bps !== null && bps > 0 && !(isUs && netIncome !== null && netIncome <= 0)) {
         const scale = isUs ? 100 : 1;
@@ -53,7 +64,7 @@ export function scanSnapshot(row: Record<string, unknown>, stock: Pick<Newslette
             label: "SRIM", basis: "Ke 8%", targetPrice, gapPercent: (targetPrice / price - 1) * 100,
         });
     }
-    return { date, name: typeof row.name === "string" && row.name ? row.name : stock.ticker, price, models };
+    return models;
 }
 
 export function mergeValuationSnapshots(groups: ValuationSnapshot[][]) {

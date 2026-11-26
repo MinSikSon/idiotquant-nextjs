@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { createBackendHeaders } from "@/lib/server/proxyIdentity";
-import { mergeValuationSnapshots, parseStockKey, scanPath, scanSnapshot, seoulDate, valuationQuarters, type ValuationSnapshot } from "@/lib/utils/newsletterValuation";
+import { fillHistoryQuarters, historyPricePath, historyQuotes } from "@/lib/utils/newsletterHistory";
+import { mergeValuationSnapshots, parseStockKey, scanPath, scanSnapshot, seoulDate, type ValuationSnapshot } from "@/lib/utils/newsletterValuation";
 
 export const runtime = "edge";
 const headers = { "Cache-Control": "private, no-store" };
@@ -36,27 +37,55 @@ export async function GET(request: Request) {
             return failure("과거 비교에는 활성 이용권이 필요합니다.", 403, "PASS_REQUIRED");
         }
 
-        const sources = await Promise.allSettled((["monthly", "weekly", "daily"] as const).map(async source => {
-            const response = await fetch(marketBase + scanPath(stock, source), {
+        const now = Date.now();
+        const through = seoulDate(now);
+        // The quote API can include a still-trading candle on the current calendar day.
+        const closedThrough = seoulDate(now - 86_400_000);
+        const marketData = async (path: string) => {
+            const response = await fetch(marketBase + path, {
                 cache: "no-store", redirect: "manual", signal: AbortSignal.timeout(8000),
             });
-            if (!response.ok) throw new Error("scan source failed");
-            const payload = await response.json();
-            if (payload.success !== true || !Array.isArray(payload.data)) throw new Error("invalid scan data");
-            return payload.data.flatMap((row: Record<string, unknown> | null) => {
-                const snapshot = row && scanSnapshot(row, stock);
-                return snapshot ? [snapshot] : [];
-            }) as ValuationSnapshot[];
-        }));
+            if (!response.ok) throw new Error("market source failed");
+            return response.json();
+        };
+        const quotes = async (adjusted = false) => {
+            const payload = await marketData(historyPricePath(stock, closedThrough, adjusted));
+            if (payload.rt_cd !== "0" || !Array.isArray(payload.output2)) throw new Error("invalid quotes");
+            return historyQuotes(payload.output2, stock.market, closedThrough);
+        };
+        const filings = async () => {
+            const query = new URLSearchParams({ PDNO: stock.ticker, history: "valuation" });
+            const payload = await marketData(`/finnhub/api/v1/stock/financials-reported?${query}`);
+            if (!Array.isArray(payload.data)) throw new Error("invalid filings");
+            return payload.data;
+        };
+        const [sources, market] = await Promise.all([
+            Promise.allSettled((["monthly", "weekly", "daily"] as const).map(async source => {
+                const payload = await marketData(scanPath(stock, source));
+                if (payload.success !== true || !Array.isArray(payload.data)) throw new Error("invalid scan data");
+                return payload.data.flatMap((row: Record<string, unknown> | null) => {
+                    const snapshot = row && scanSnapshot(row, stock);
+                    return snapshot ? [snapshot] : [];
+                }) as ValuationSnapshot[];
+            })),
+            Promise.allSettled([quotes(), stock.market === "US" ? quotes(true) : [],
+                stock.market === "US" ? filings() : []] as const),
+        ]);
         const groups = sources.flatMap(source => source.status === "fulfilled" ? [source.value] : []);
-        if (!groups.length || (!groups.some(group => group.length) && groups.length < sources.length)) {
+        const scans = mergeValuationSnapshots(groups);
+        const [rawPrices, adjustedPrices, reports] = market;
+        const data = fillHistoryQuarters(scans, rawPrices.status === "fulfilled" ? rawPrices.value : [],
+            through, scans.at(-1)?.name ?? stock.ticker,
+            adjustedPrices.status === "fulfilled" ? adjustedPrices.value : [],
+            reports.status === "fulfilled" ? reports.value : []);
+        const partial = groups.length < sources.length || market.some(source => source.status === "rejected");
+        if (!data.length && partial) {
             return failure("과거 비교 기록을 불러오지 못했습니다.", 502);
         }
         return Response.json({
             success: true,
-            data: valuationQuarters(mergeValuationSnapshots(groups), seoulDate())
-                .flatMap(({ snapshot }) => snapshot ? [snapshot] : []),
-            partial: groups.length < sources.length,
+            data,
+            partial,
         }, { headers });
     } catch {
         return failure("과거 비교를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.", 502);

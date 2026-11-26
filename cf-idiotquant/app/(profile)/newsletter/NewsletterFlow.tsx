@@ -408,7 +408,7 @@ function History({ stock, through, onPaywall }: {
     const history = useRequest(`/newsletter-history?stock=${encodeURIComponent(stockKey(stock))}`, historyRows);
     const snapshots = history.data ?? [];
     return <>
-        <ComparisonHeading name={snapshots.at(-1)?.name || stock.ticker} detail="최근 5년 · 분기별 스캔 기록" />
+        <ComparisonHeading name={snapshots.at(-1)?.name || stock.ticker} detail="최근 5년 · 분기별 주가와 적정가" />
         <div className={styles.stack}>
             {history.loading && <p role="status">이용권과 과거 기록을 확인하는 중입니다.</p>}
             {history.forbidden ? <>
