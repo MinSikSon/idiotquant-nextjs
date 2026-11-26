@@ -24,8 +24,9 @@ export async function GET(request: Request) {
 
     try {
         const identity = await createBackendHeaders(new Headers(), { id: user.id }, secret, true);
+        // Pages rejects redirect: "error". A manual redirect fails the response.ok check below.
         const billingResponse = await fetch(`${billingBase}/billing`, {
-            headers: identity, cache: "no-store", redirect: "error", signal: AbortSignal.timeout(8000),
+            headers: identity, cache: "no-store", redirect: "manual", signal: AbortSignal.timeout(8000),
         });
         if (!billingResponse.ok) return failure("이용권 정보를 불러오지 못했습니다.", 502);
         const billing = await billingResponse.json();
@@ -37,7 +38,7 @@ export async function GET(request: Request) {
 
         const sources = await Promise.allSettled((["monthly", "weekly", "daily"] as const).map(async source => {
             const response = await fetch(marketBase + scanPath(stock, source), {
-                cache: "no-store", redirect: "error", signal: AbortSignal.timeout(8000),
+                cache: "no-store", redirect: "manual", signal: AbortSignal.timeout(8000),
             });
             if (!response.ok) throw new Error("scan source failed");
             const payload = await response.json();
