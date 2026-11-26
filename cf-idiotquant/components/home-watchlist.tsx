@@ -11,6 +11,7 @@ import { getWatchlistSample, type WatchlistSampleData } from '@/lib/features/sto
 import type { LikedStockItem } from '@/lib/features/stockLikes/stockLikesSlice';
 import { useStrategyText } from '@/i18n/strategy-labels';
 import { useStockSearchModal } from '@/components/stock-search-provider';
+import { NewsletterEntry } from '@/components/newsletter-entry';
 
 import { WatchlistPriceLegend, WatchlistStockRow } from '@/components/watchlist-stock-row';
 const panel = 'rounded-lg border border-neutral-200 bg-white p-3 dark:border-surface-dark-border dark:bg-surface-dark-card sm:p-5';
@@ -55,15 +56,11 @@ export function HomeWatchlist() {
             <Link href="/mailing" className="service-button-quiet inline-flex min-h-11 items-center gap-1 text-sm font-medium text-brand-ink">
                 {t("memberMailing")}<ArrowRight size={16} aria-hidden="true" />
             </Link>
-            {process.env.NEXT_PUBLIC_STRIPE_TEST_CHECKOUT === 'true' && (
-                <Link href="/billing#alert-benefits" className="service-button-quiet inline-flex min-h-11 items-center gap-1 text-sm font-medium text-brand-ink">
-                    {t("alertBenefits")}<ArrowRight size={16} aria-hidden="true" />
-                </Link>
-            )}
         </div>
     );
 
     return <div className="mx-auto w-full max-w-4xl space-y-4 px-2 py-3 text-base text-neutral-900 dark:text-neutral-100 sm:px-6 sm:py-8">
+        <NewsletterEntry label={t("newsletter")} description={t("newsletterHint")} />
         {error && <div role="alert" className={`${panel} text-sm`}><p>{error}</p><button type="button" onClick={() => void load()} disabled={loading} className="service-button mt-2 min-h-11 px-3">{t("retry")}</button></div>}
         {!review && !loading && alertBenefits}
         {!review ? loading && <p role="status" className={panel}>{t("loadingWatchlist")}</p> : <>

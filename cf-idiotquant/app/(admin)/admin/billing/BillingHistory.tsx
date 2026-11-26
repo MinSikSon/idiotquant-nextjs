@@ -19,6 +19,7 @@ type History = {
         paid_at: string | null;
         pass: { status: "active" | "expired" | "canceled"; expiresAt: string } | null;
         stripeUrl: string | null;
+        provider?: "toss";
     }[];
     deliveries: { delivery_day: string; claimed_at: string; sent_at: string | null }[];
     nextOffset: number | null;
@@ -78,13 +79,13 @@ export default function BillingHistory({ accountId, member }: { accountId: strin
                     </div>
                     <section className={panel} aria-labelledby="admin-payments">
                         <h3 id="admin-payments" className="px-4 py-3 font-semibold">결제·이용권 이력 <span className="text-sm font-normal">(KST)</span></h3>
-                        <p className="px-4 pb-3 text-sm">환불 상태는 Stripe 결제 상세에서 확인할 수 있습니다.</p>
+                        <p className="px-4 pb-3 text-sm">환불 상태는 각 결제 서비스에서 확인할 수 있습니다.</p>
                         {history.payments.length ? (
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left text-sm">
                                     <thead className="bg-surface-canvas dark:bg-surface-dark-hover">
                                         <tr>
-                                            {["결제 상태", "금액", "결제 시각", "이용권 상태", "만료 시각", "Stripe"].map(label =>
+                                            {["결제 상태", "금액", "결제 시각", "이용권 상태", "만료 시각", "결제 서비스"].map(label =>
                                                 <th key={label} scope="col" className={`${cell} whitespace-nowrap`}>{label}</th>
                                             )}
                                         </tr>
@@ -103,7 +104,7 @@ export default function BillingHistory({ accountId, member }: { accountId: strin
                                                     <a href={payment.stripeUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center gap-1 whitespace-nowrap font-semibold text-brand-ink hover:underline">
                                                         결제 상세 <ExternalLink size={14} aria-hidden="true" />
                                                     </a>
-                                                ) : "—"}</td>
+                                                ) : payment.provider === "toss" ? "토스페이먼츠" : "—"}</td>
                                             </tr>
                                         ))}
                                     </tbody>
