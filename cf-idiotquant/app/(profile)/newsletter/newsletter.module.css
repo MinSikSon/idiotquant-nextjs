@@ -136,13 +136,15 @@
 .historyHeading p { margin-top: 0.22rem; color: var(--newsletter-muted); font-size: clamp(0.8rem, 3.5vw, 1rem); font-weight: 680; }
 .historyCoyote { grid-column: 2; grid-row: 1; width: 100%; height: auto; aspect-ratio: 1; object-fit: contain; object-position: bottom; }
 .historyHeading > div { grid-column: 1; grid-row: 1; }
-.historyComparison, .sampleComparison, .comparisonDetail { display: grid; gap: 0.55rem; min-width: 0; }
+.historyComparison, .sampleComparison { display: grid; gap: 0.55rem; min-width: 0; }
 .sampleStocks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.35rem; }
 .sampleStocks button { min-height: 2.75rem; padding: 0.25rem; border: 1px solid var(--newsletter-line); border-radius: 0.45rem; background: var(--newsletter-card); font-weight: 730; }
 .sampleStocks button[aria-pressed="true"] { border-color: var(--newsletter-ink); background: var(--newsletter-gold); font-weight: 850; }
 .loginRequired { display: inline-flex; align-items: center; gap: 0.2rem; font-size: 0.75rem; font-weight: 700; }
 .historyAxisCard, .trendCard { padding: clamp(0.65rem, 3.3vw, 1.25rem); }
 .trendCard { background: var(--newsletter-card); }
+.historyAxisCard { display: grid; grid-template-rows: minmax(2rem, auto) minmax(11.25rem, auto); }
+.comparisonEmpty { align-content: center; }
 .periodHeading { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.12rem 0.5rem; }
 .periodHeading strong { color: var(--newsletter-ink); font-size: clamp(1.05rem, 4.5vw, 1.35rem); font-weight: 850; }
 .periodHeading time { color: var(--newsletter-muted); font-size: 0.8125rem; font-weight: 650; }
@@ -171,7 +173,8 @@
     .trendTooltip { display: none; }
 }
 .trendFooter { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.2rem 0.6rem; padding-block: 0.35rem; color: var(--newsletter-muted); font-size: 0.8125rem; }
-.trendFooter strong { color: var(--newsletter-ink); }
+.trendFooter p { min-block-size: 1.5em; }
+.latestScan:disabled { visibility: hidden; }
 .latestScan { min-height: 2.75rem; color: var(--newsletter-teal); font-weight: 750; text-decoration: underline; text-underline-offset: 0.18em; }
 .trend :global(.recharts-cartesian-axis-tick-value) { fill: var(--newsletter-price); font-size: 0.85rem; font-weight: 650; }
 .legend { display: flex; flex-wrap: wrap; gap: 0.25rem 0.75rem; color: var(--newsletter-price); font-size: clamp(0.75rem, 3.2vw, 1rem); font-weight: 650; }

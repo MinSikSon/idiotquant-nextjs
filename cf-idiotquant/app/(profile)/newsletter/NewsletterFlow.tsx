@@ -351,16 +351,18 @@ function ValuationResult({ stock, name, checkoutEnabled, through, openHistory = 
     openHistory?: boolean; onPaywall?: () => void;
 }) {
     const request = useRequest(scanPath(stock, "latest"), scanRows);
-    const access = useRequest("/billing", billingData);
+    const access = useRequest(openHistory ? null : "/billing", billingData);
     const snapshot = (request.data?.[0] && scanSnapshot(request.data[0], stock)) || undefined;
-    const active = access.data?.alerts?.status === "active";
-    const showHistory = active || openHistory;
     if (!openHistory && access.loading) return <p role="status">이용권을 확인하는 중입니다.</p>;
+    if (!openHistory && access.error) return <RequestError message={access.error} retry={access.retry} />;
+    if (openHistory || access.data?.alerts?.status === "active") return <>
+        <ComparisonHeading name={snapshot?.name || name || stock.ticker} />
+        {request.error && <RequestError message={request.error} retry={request.retry} />}
+        <History stock={stock} through={through} current={snapshot} currentLoading={request.loading} onPaywall={onPaywall} />
+    </>;
+
     return <>
-        {showHistory ? <>
-            <ComparisonHeading name={snapshot?.name || name || stock.ticker} />
-            <History stock={stock} through={through} current={snapshot} onPaywall={onPaywall} />
-        </> : <div className={styles.stepContent}>
+        <div className={styles.stepContent}>
             <div>
                 <h1 id="newsletter-heading" tabIndex={-1}>{snapshot?.name || name || stock.ticker} 현재 적정가</h1>
                 <p className={styles.lede}>최근 저장된 스캔 기준</p>
@@ -369,13 +371,13 @@ function ValuationResult({ stock, name, checkoutEnabled, through, openHistory = 
                 {snapshot && <PriceAxis snapshot={snapshot} market={stock.market} />}
                 {request.data && !snapshot && <p>이 종목에 저장된 스캔 가격이 없습니다.</p>}
             </div>
-        </div>}
+        </div>
         {request.loading && <p role="status">분석 결과를 불러오는 중입니다.</p>}
         {request.error && <RequestError message={request.error} retry={request.retry} />}
-        {!showHistory && !request.loading && !request.error && <div className={styles.actions}>
+        {!request.loading && !request.error && <div className={styles.actions}>
             {checkoutEnabled ? <Link className={styles.button} href={checkoutUrl(stock)}>
-                    적정가 비교 보기<ArrowRight size={17} aria-hidden />
-                </Link> : <p role="status">현재 새 이용권 구매를 받지 않고 있습니다.</p>}
+                적정가 비교 보기<ArrowRight size={17} aria-hidden />
+            </Link> : <p role="status">현재 새 이용권 구매를 받지 않고 있습니다.</p>}
         </div>}
     </>;
 }
@@ -429,19 +431,19 @@ function Paywall({ checkoutEnabled, endDate, stock }: {
     </div>;
 }
 
-function History({ stock, through, current, onPaywall }: {
-    stock: StockKey; through: string; current?: ValuationSnapshot; onPaywall?: () => void;
+function History({ stock, through, current, currentLoading, onPaywall }: {
+    stock: StockKey; through: string; current?: ValuationSnapshot; currentLoading: boolean; onPaywall?: () => void;
 }) {
     const history = useRequest(`/newsletter-history?stock=${encodeURIComponent(stockKey(stock))}`, historyRows);
+    const loading = history.loading || (history.data !== undefined && currentLoading);
     return <>
         <section id="newsletter-history" className={styles.stack} aria-labelledby="newsletter-heading">
-            {history.loading && <p role="status">이용권과 비교 기록을 확인하는 중입니다.</p>}
+            {loading && <p role="status">비교 기록을 불러오는 중입니다.</p>}
             {history.forbidden ? <p>분기별 적정가를 비교하려면 활성 이용권이 필요합니다.</p>
                 : history.error && <RequestError message={history.error} retry={history.retry} />}
-            {history.partial && <RequestError message="일부 기간의 기록만 불러왔습니다." retry={history.retry} />}
-            {history.data
-                ? <HistoricalComparison snapshots={history.data} current={current} market={stock.market} through={through} />
-                : current && <PriceAxis snapshot={current} market={stock.market} />}
+            {!loading && history.partial && <RequestError message="일부 기간의 기록만 불러왔습니다." retry={history.retry} />}
+            {!loading && history.data &&
+                <HistoricalComparison snapshots={history.data} current={current} market={stock.market} through={through} />}
         </section>
         {history.forbidden && onPaywall && <div className={styles.actions}>
             <button type="button" className={styles.button} onClick={onPaywall}>이용권 보기<ArrowRight size={17} aria-hidden /></button>
