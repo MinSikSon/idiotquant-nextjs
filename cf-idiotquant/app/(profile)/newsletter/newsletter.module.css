@@ -128,20 +128,17 @@
 .historyAxisCard .ticks { min-width: 0; font-size: clamp(0.74rem, 3.3vw, 1.05rem); }
 .historyHighlight { font-size: clamp(0.94rem, 4.2vw, 1.25rem); font-weight: 850; word-break: keep-all; text-wrap: pretty; }
 .controls { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.4rem; }
-.controls button, .quarterControls button { min-height: 2.75rem; border: 1px solid var(--newsletter-ink); background: var(--newsletter-card); border-radius: 0.45rem; }
-.controls button { padding-inline: 0.65rem; }
-.controls button[aria-pressed="true"], .quarterControls button[aria-pressed="true"] { background: var(--newsletter-gold); font-weight: 850; }
-.yearControls, .quarterControls { display: grid; gap: 0.35rem; }
-.yearControls { grid-template-columns: repeat(auto-fit, minmax(min(100%, 4.5rem), 1fr)); border-bottom: 1px solid var(--newsletter-line); }
-@media (max-width: 28rem) {
-    .yearControls { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-}
-.yearControls button { min-height: 2.75rem; color: var(--newsletter-muted); font-weight: 750; }
-.yearControls button[aria-pressed="true"] { color: var(--newsletter-ink); font-weight: 850; box-shadow: inset 0 -3px var(--newsletter-ink); }
-.quarterControls { grid-template-columns: repeat(4, minmax(0, 1fr)); font-variant-numeric: tabular-nums; }
-.quarterControls button { padding: 0.25rem; line-height: 1.2; font-weight: 750; }
-.quarterControls button span + span { font-size: 0.875rem; }
-.quarterLabel { display: block; font-size: 0.75rem; font-weight: 650; }
+.controls button { min-height: 2.75rem; padding-inline: 0.65rem; border: 1px solid var(--newsletter-ink); background: var(--newsletter-card); border-radius: 0.45rem; }
+.controls button[aria-pressed="true"] { background: var(--newsletter-gold); font-weight: 850; }
+.dateControls { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 0.4rem; }
+.dateControls select { width: 100%; min-height: 2.75rem; padding-inline: 0.5rem; border: 1px solid var(--newsletter-line); border-radius: 0.45rem; background: var(--newsletter-card); font-size: 1rem; }
+.resultNav, .priceOnly, .financials > div { display: flex; justify-content: space-between; gap: 0.5rem; align-items: center; }
+.resultNav { flex-wrap: wrap; margin-top: 0.5rem; }
+.resultNav a { display: inline-flex; min-height: 2.75rem; align-items: center; color: var(--newsletter-teal); text-decoration: underline; }
+.resultHistory { scroll-margin-top: calc(var(--navigation-h) + 0.5rem); margin-top: 1.25rem; }
+.resultHistory small { color: var(--newsletter-muted); font-size: 0.8em; font-weight: 500; }
+.priceOnly { padding-block: 0.45rem; }
+.financials { margin-top: 0.3rem; }
 .trendHeading { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 0.45rem; }
 .trendHeading h2 { font-size: clamp(1.12rem, 4.8vw, 1.5rem); font-weight: 850; word-break: keep-all; text-wrap: balance; }
 .trend { width: 100%; height: clamp(9.1rem, 35vw, 13rem); margin-top: 0.65rem; }
