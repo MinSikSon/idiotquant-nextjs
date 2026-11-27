@@ -60,11 +60,16 @@ export default function BillingCheckout({ returnedSessionId, canceled, failed, n
     useEffect(() => {
         let current = true;
         let timer: ReturnType<typeof setTimeout> | undefined;
+        const stock = parseStockKey(newsletterStock);
         const query = returnedSessionId ? `?session_id=${encodeURIComponent(returnedSessionId)}` : "";
         async function load(remaining: number) {
             const result = await apiRequest(`/billing${query}`);
             if (!current) return;
             if (result.success) {
+                if (stock && result.data.alerts?.status === "active") {
+                    window.location.replace(newsletterUrl("history", stock));
+                    return;
+                }
                 setBilling(result.data);
                 if (result.data.returnStatus === "pending" && remaining > 0) {
                     timer = setTimeout(() => void load(remaining - 1), 3000);
@@ -76,7 +81,7 @@ export default function BillingCheckout({ returnedSessionId, canceled, failed, n
         }
         void load(10);
         return () => { current = false; clearTimeout(timer); };
-    }, [refresh, returnedSessionId]);
+    }, [newsletterStock, refresh, returnedSessionId]);
 
     function reload() {
         setLoading(true);
@@ -197,10 +202,10 @@ export default function BillingCheckout({ returnedSessionId, canceled, failed, n
             )}
             {billing && (
                 <>
-                    {newsletter && <Link
-                        href={newsletterUrl(billing.alerts?.status === "active" ? "history" : "result", newsletter)}
+                    {newsletter && !pending && !redirecting && <Link
+                        href={newsletterUrl("result", newsletter)}
                         className="service-button inline-flex min-h-11 items-center px-3 font-semibold">
-                        {billing.alerts?.status === "active" ? "선택한 종목 적정가 비교 보기" : "현재 적정가로 돌아가기"}
+                        현재 적정가로 돌아가기
                     </Link>}
                     {status && (
                         <div className="flex flex-wrap items-center justify-between gap-x-4 text-sm">

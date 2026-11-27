@@ -46,12 +46,6 @@ export function PriceAxis({ snapshot, market, historical = false, compact = hist
     labelYs[0] = Math.max(17, labelYs[0]);
     for (let i = 1; i < labelYs.length; i++) labelYs[i] = Math.max(labelYs[i], labelYs[i - 1] + separation);
 
-    const summary = historical
-        ? above > 0
-            ? `당시 ${points.length - 1}개 전략 중 ${above}개가 주가보다 높았어요.`
-            : "당시 주가보다 높은 전략 적정가가 없었어요."
-        : `${points.length - 1}개 전략 중 ${above}개의 적정가가 스캔 기준가보다 높아요.`;
-
     return <>
         <section className={compact ? `${styles.chartCard} ${styles.historyAxisCard}` : styles.chartCard} aria-label="전략별 적정가 비교">
             <div className={styles.chartHeader}>
@@ -93,8 +87,8 @@ export function PriceAxis({ snapshot, market, historical = false, compact = hist
             </p>}
             {points.length === 1 && <p className={styles.note}>이 날짜에 계산할 수 있는 적정가가 없습니다.</p>}
         </section>
-        {points.length > 1 && <p className={compact ? `${styles.highlight} ${styles.historyHighlight}` : styles.highlight}>
-            {summary}
+        {!compact && points.length > 1 && <p className={styles.highlight}>
+            {points.length - 1}개 전략 중 {above}개의 적정가가 스캔 기준가보다 높아요.
         </p>}
     </>;
 }
@@ -204,8 +198,8 @@ export function HistoricalComparison({ snapshots, current, market, through, samp
             </details>}
         </div>
         {data.some(point => point.price !== null) && <section className={`${styles.chartCard} ${styles.trendCard}`} aria-labelledby="newsletter-trend">
-            <div className={styles.trendHeading}>
-                <h2 id="newsletter-trend">
+            <div>
+                <h2 id="newsletter-trend" className="sr-only">
                     {activeStrategy ? "주가와 적정가 추이" : "주가 추이"}
                 </h2>
                 <div className={styles.legend}>
@@ -249,14 +243,11 @@ export function HistoricalComparison({ snapshots, current, market, through, samp
                 {current && latestIndex < 0 && !latestSelected && <button type="button" className={styles.latestScan}
                     onClick={() => setEnd("latest")}>최신 스캔 보기</button>}
             </div>
-            {strategyDescription && <details className={styles.strategyNote}>
-                <summary className={styles.method}>{activeStrategy} 전략 설명</summary>
-                <p>{strategyDescription}</p>
-            </details>}
         </section>}
-        {!sample && <details className={styles.note}>
-            <summary className={styles.method}>데이터 출처 및 계산 기준</summary>
-            <p>진행 중인 분기를 포함해 최근 20개 분기를 표시합니다. 분기별 최신 스캔을 우선 사용합니다. 스캔이 없는 분기의 주가는 한국투자증권에서 조회합니다. 기준일 전에 공개된 SEC 또는 OpenDART 재무를 확인할 수 있습니다. 공시 추정 적정가는 당시 주식 수와 주가의 기준이 일치할 때 계산합니다. 필요한 자료가 빠진 분기는 기준일 전에 공개된 가까운 공시를 사용합니다. 국내 종목은 공시된 보통주 발행 수와 최신 공시 연간 순이익을 사용합니다. 차이율은 비교 기준일의 주가를 기준으로 합니다. NCAV는 저장된 비율을 주당 가격으로 환산합니다. PER은 EPS의 10배, PBR은 BPS의 1배, SRIM은 EPS와 BPS에 요구수익률 8%를 적용합니다.</p>
+        {(!sample || strategyDescription) && <details className={styles.note}>
+            <summary className={styles.method}>{sample ? "전략 설명" : "전략 및 데이터 기준"}</summary>
+            {strategyDescription && <p><strong>{activeStrategy}</strong> · {strategyDescription}</p>}
+            {!sample && <p>진행 중인 분기를 포함해 최근 20개 분기를 표시합니다. 분기별 최신 스캔을 우선 사용합니다. 스캔이 없는 분기의 주가는 한국투자증권에서 조회합니다. 기준일 전에 공개된 SEC 또는 OpenDART 재무를 확인할 수 있습니다. 공시 추정 적정가는 당시 주식 수와 주가의 기준이 일치할 때 계산합니다. 필요한 자료가 빠진 분기는 기준일 전에 공개된 가까운 공시를 사용합니다. 국내 종목은 공시된 보통주 발행 수와 최신 공시 연간 순이익을 사용합니다. 차이율은 비교 기준일의 주가를 기준으로 합니다. NCAV는 저장된 비율을 주당 가격으로 환산합니다. PER은 EPS의 10배, PBR은 BPS의 1배, SRIM은 EPS와 BPS에 요구수익률 8%를 적용합니다.</p>}
         </details>}
     </div>;
 }
