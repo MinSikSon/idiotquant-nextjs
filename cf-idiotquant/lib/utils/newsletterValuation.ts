@@ -5,7 +5,7 @@ export type NewsletterStock = { market: Market; ticker: string; name: string };
 export type Model = { label: string; basis: string; targetPrice: number | null; gapPercent: number | null };
 export type ValuationSnapshot = {
     date: string; name: string; price: number; models: Model[];
-    source?: "kis"; filedDate?: string;
+    source?: "kis"; filedDate?: string; sharesEndDate?: string;
     financials?: { source: "SEC" | "OpenDART"; endDate: string; filedDate: string;
         equity: number | null; currentAssets: number | null; liabilities: number | null };
 };

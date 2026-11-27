@@ -16,8 +16,8 @@ function formatPrice(price: number, market: Market) {
     return market === "US" ? `$${newsletterNumber(price, market)}` : `${newsletterNumber(price, market)}원`;
 }
 
-export function PriceAxis({ snapshot, market, historical = false, compact = historical }: {
-    snapshot: ValuationSnapshot; market: Market; historical?: boolean; compact?: boolean;
+export function PriceAxis({ snapshot, market, historical = false, compact = historical, period }: {
+    snapshot: ValuationSnapshot; market: Market; historical?: boolean; compact?: boolean; period?: string;
 }) {
     const points = snapshot.models.flatMap(model => model.targetPrice === null ? [] : [{
         label: model.label, basis: model.basis, price: model.targetPrice, gap: model.gapPercent, reference: false,
@@ -55,9 +55,12 @@ export function PriceAxis({ snapshot, market, historical = false, compact = hist
     return <>
         <section className={compact ? `${styles.chartCard} ${styles.historyAxisCard}` : styles.chartCard} aria-label="전략별 적정가 비교">
             <div className={styles.chartHeader}>
-                <time className={styles.marker} dateTime={snapshot.date} aria-live={historical ? "polite" : undefined}>
+                {period ? <div className={styles.periodHeading} aria-live="polite">
+                    <strong>{period}</strong>
+                    <time dateTime={snapshot.date}>{(historical ? snapshot.date.slice(5) : snapshot.date).replaceAll("-", ".")} 기준</time>
+                </div> : <time className={styles.marker} dateTime={snapshot.date}>
                     {snapshot.date.replaceAll("-", ".")} 기준
-                </time>
+                </time>}
                 <span>가격 ({market === "US" ? "USD" : "원"})</span>
             </div>
             {(!compact || points.length > 1) ? <div className={styles.axis} style={{ minHeight: `${height / 16}rem` }}>
@@ -86,7 +89,7 @@ export function PriceAxis({ snapshot, market, historical = false, compact = hist
                 </div>
             </div> : <p className={styles.priceOnly}>{points[0].label} <strong>{formatPrice(snapshot.price, market)}</strong></p>}
             {snapshot.source === "kis" && <p className={styles.note}>
-                한국투자증권 종가{snapshot.filedDate && ` · ${snapshot.financials?.source ?? "SEC"} 공시 ${snapshot.filedDate.replaceAll("-", ".")} 기준`}
+                한국투자증권 종가
             </p>}
             {points.length === 1 && <p className={styles.note}>이 날짜에 계산할 수 있는 적정가가 없습니다.</p>}
         </section>
@@ -167,13 +170,13 @@ export function HistoricalComparison({ snapshots, current, market, through, samp
     const period = latestSelected ? "최신 스캔" : `${selected.end.slice(0, 4)}년 ${quarterNumber(selected.end)}분기`;
 
     return <div className={styles.historyComparison}>
-        <div className={styles.comparisonDetail} aria-label={period}>
-            <p className={styles.selectedPeriod} aria-live="polite">{period}</p>
-            {snapshot ? <PriceAxis snapshot={snapshot} market={market} historical={!latestSelected} compact />
-                : <p role="status">이 분기에 조회 가능한 주가와 적정가 기록이 없습니다.</p>}
+        <div className={styles.comparisonDetail}>
+            {snapshot ? <PriceAxis snapshot={snapshot} market={market} historical={!latestSelected} compact period={period} />
+                : <p className={styles.chartCard} role="status"><strong>{period}</strong> · 주가와 적정가 기록이 없습니다.</p>}
             {financials && <details className={styles.note}>
                 <summary className={styles.method}>당시 재무정보 · {financials.source} {financials.filedDate} 공시</summary>
                 <p>재무제표 기준일 {financials.endDate}</p>
+                {snapshot?.sharesEndDate && <p>주식 수 기준일 {snapshot.sharesEndDate}</p>}
                 <dl className={styles.financials}>
                     {([["자본총계", "equity"], ["유동자산", "currentAssets"], ["부채총계", "liabilities"]] as const).map(([label, key]) => {
                         const value = financials[key];
@@ -229,7 +232,7 @@ export function HistoricalComparison({ snapshots, current, market, through, samp
         </section>}
         {!sample && <details className={styles.note}>
             <summary className={styles.method}>데이터 출처 및 계산 기준</summary>
-            <p>진행 중인 분기를 포함해 최근 20개 분기를 표시합니다. 분기별 최신 스캔을 우선 사용합니다. 스캔이 없는 분기의 주가는 한국투자증권에서 조회합니다. 기준일 전에 공개된 SEC 또는 OpenDART 재무를 확인할 수 있습니다. 공시 추정 적정가는 당시 주식 수와 주가의 기준이 일치할 때 계산합니다. 국내 종목의 공시 추정에는 해당 공시의 보통주 발행 수와 최신 공시 연간 순이익을 사용합니다. 차이율은 비교 기준일의 주가를 기준으로 합니다. NCAV는 저장된 비율을 주당 가격으로 환산합니다. PER은 EPS의 10배, PBR은 BPS의 1배, SRIM은 EPS와 BPS에 요구수익률 8%를 적용합니다.</p>
+            <p>진행 중인 분기를 포함해 최근 20개 분기를 표시합니다. 분기별 최신 스캔을 우선 사용합니다. 스캔이 없는 분기의 주가는 한국투자증권에서 조회합니다. 기준일 전에 공개된 SEC 또는 OpenDART 재무를 확인할 수 있습니다. 공시 추정 적정가는 당시 주식 수와 주가의 기준이 일치할 때 계산합니다. 필요한 자료가 빠진 분기는 기준일 전에 공개된 가까운 공시를 사용합니다. 국내 종목은 공시된 보통주 발행 수와 최신 공시 연간 순이익을 사용합니다. 차이율은 비교 기준일의 주가를 기준으로 합니다. NCAV는 저장된 비율을 주당 가격으로 환산합니다. PER은 EPS의 10배, PBR은 BPS의 1배, SRIM은 EPS와 BPS에 요구수익률 8%를 적용합니다.</p>
         </details>}
     </div>;
 }
