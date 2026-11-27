@@ -280,13 +280,13 @@ export default function NewsletterFlow({ checkoutEnabled, sampleEndDate, history
                         </div>
                         {actions(back, button("다음 (2/2)", () => picked && go("result", picked), !picked))}
                     </>}
-                    {stage === "result" && stock && <FreeResult key={selectedKey} stock={stock}
+                    {stage === "result" && stock && <ValuationResult key={`${owner}:${selectedKey}`} stock={stock} through={historyThrough}
                         name={items.find(item => stockKey(item) === selectedKey)?.name}
-                        checkoutEnabled={checkoutEnabled} />}
+                        checkoutEnabled={checkoutEnabled} onPaywall={() => go("paywall", stock)} />}
                     {stage === "paywall" && stock && <Paywall key={`${owner}:${selectedKey}`} checkoutEnabled={checkoutEnabled}
                         endDate={sampleEndDate} stock={stock} />}
-                    {stage === "history" && stock && <History key={`${owner}:${selectedKey}`} stock={stock} through={historyThrough}
-                        onPaywall={() => go("paywall", stock)} />}
+                    {stage === "history" && stock && <ValuationResult key={`${owner}:${selectedKey}`} stock={stock} through={historyThrough}
+                        checkoutEnabled={checkoutEnabled} openHistory onPaywall={() => go("paywall", stock)} />}
                     {["result", "paywall", "history"].includes(stage) && !stock && <>
                         {heading("비교할 종목을 골라주세요")}
                         {actions(button("관심종목 선택하기", () => go("stocks")))}
@@ -322,15 +322,20 @@ const scanRows = (data: unknown): Record<string, unknown>[] => Array.isArray(dat
 const historyRows = (data: unknown): ValuationSnapshot[] => Array.isArray(data) ? data : [];
 const billingData = (data: unknown) => data as Billing;
 
-function FreeResult({ stock, name, checkoutEnabled }: {
-    stock: StockKey; name?: string; checkoutEnabled: boolean;
+function ValuationResult({ stock, name, checkoutEnabled, through, openHistory = false, onPaywall }: {
+    stock: StockKey; name?: string; checkoutEnabled: boolean; through: string;
+    openHistory?: boolean; onPaywall?: () => void;
 }) {
     const request = useRequest(scanPath(stock, "latest"), scanRows);
     const access = useRequest("/billing", billingData);
     const snapshot = request.data?.[0] && scanSnapshot(request.data[0], stock);
     const active = access.data?.alerts?.status === "active";
+    const showHistory = active || openHistory;
     return <>
-        <h1 id="newsletter-heading" tabIndex={-1}>{snapshot?.name || name || stock.ticker} 현재 적정가</h1>
+        <h1 id="newsletter-heading" tabIndex={-1}>{snapshot?.name || name || stock.ticker} {showHistory ? "적정가" : "현재 적정가"}</h1>
+        {showHistory && <div className={styles.resultNav}>
+            <h2>현재 적정가</h2><a href="#newsletter-history">과거 적정가 ↓</a>
+        </div>}
         <p className={styles.lede}>최근 저장된 스캔 기준</p>
         <div className={styles.stack}>
             {request.loading && <p role="status">분석 결과를 불러오는 중입니다.</p>}
@@ -338,10 +343,10 @@ function FreeResult({ stock, name, checkoutEnabled }: {
             {snapshot && <PriceAxis snapshot={snapshot} market={stock.market} />}
             {request.data && !snapshot && <p>이 종목에 저장된 스캔 가격이 없습니다.</p>}
         </div>
-        {!request.loading && !request.error && <div className={styles.actions}>
+        {showHistory && <History stock={stock} through={through} onPaywall={onPaywall} />}
+        {!showHistory && !request.loading && !request.error && <div className={styles.actions}>
             {access.loading ? <p role="status">이용권을 확인하는 중입니다.</p>
-                : active || checkoutEnabled ? <Link className={styles.button}
-                    href={active ? newsletterUrl("history", stock) : checkoutUrl(stock)}>
+                : checkoutEnabled ? <Link className={styles.button} href={checkoutUrl(stock)}>
                     과거 적정가 보기<ArrowRight size={17} aria-hidden />
                 </Link> : <p role="status">현재 새 이용권 구매를 받지 않고 있습니다.</p>}
         </div>}
@@ -398,22 +403,20 @@ function Paywall({ checkoutEnabled, endDate, stock }: {
 }
 
 function History({ stock, through, onPaywall }: {
-    stock: StockKey; through: string; onPaywall: () => void;
+    stock: StockKey; through: string; onPaywall?: () => void;
 }) {
     const history = useRequest(`/newsletter-history?stock=${encodeURIComponent(stockKey(stock))}`, historyRows);
     const snapshots = history.data ?? [];
-    return <>
-        <ComparisonHeading name={snapshots.at(-1)?.name || stock.ticker} detail="최근 5년 · 분기별 주가와 적정가" />
-        <div className={styles.stack}>
+    return <section id="newsletter-history" className={`${styles.stack} ${styles.resultHistory}`} aria-labelledby="newsletter-history-title">
+            <h2 id="newsletter-history-title">과거 적정가 <small>최근 5년</small></h2>
             {history.loading && <p role="status">이용권과 과거 기록을 확인하는 중입니다.</p>}
             {history.forbidden ? <>
                 <p>과거 적정가를 보려면 활성 이용권이 필요합니다.</p>
-                <button type="button" className={styles.button} onClick={onPaywall}>이용권 보기<ArrowRight size={17} aria-hidden /></button>
+                {onPaywall && <button type="button" className={styles.button} onClick={onPaywall}>이용권 보기<ArrowRight size={17} aria-hidden /></button>}
             </> : history.error && <RequestError message={history.error} retry={history.retry} />}
             {history.partial && <RequestError message="일부 기간의 기록만 불러왔습니다." retry={history.retry} />}
             {history.data && <HistoricalComparison snapshots={snapshots} market={stock.market} through={through} />}
-        </div>
-    </>;
+    </section>;
 }
 
 function RequestError({ message, retry }: { message: string; retry: () => void }) {

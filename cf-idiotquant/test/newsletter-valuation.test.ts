@@ -106,9 +106,30 @@ test("SEC estimates use only earlier filings and matching share-price units acro
     assert.equal(points[0].models.find(item => item.label === "PER")?.targetPrice, 5);
     assert.equal(points[0].models.find(item => item.label === "PBR")?.targetPrice, 6);
     assert.equal(points[1].models.length, 0);
+    assert.equal(points[1].financials?.equity, 600);
     const acrossSplit = fillHistoryQuarters([], quotes, "2024-12-31", "Example",
         [...quotes.slice(0, 2), { date: "2024-12-31", price: 0.5 }], [filing]);
     assert.equal(acrossSplit[1].models.length, 0);
     const sameBasis = fillHistoryQuarters([], quotes, "2024-12-31", "Example", quotes, [filing]);
     assert.equal(sameBasis[1].models.find(item => item.label === "PER")?.targetPrice, 5);
+    const [scan] = fillHistoryQuarters([{ ...points[0], models: [], source: undefined }], quotes,
+        "2024-12-31", "Example", quotes, [filing]);
+    assert.equal(scan.models.find(item => item.label === "PBR")?.targetPrice, 6);
+});
+
+test("Korean history shows published OpenDART balances in won for the matching periods", async () => {
+    const { fillHistoryQuarters } = await import("../lib/utils/newsletterHistory.ts");
+    const points = fillHistoryQuarters([], [
+        { date: "2024-06-28", price: 65000 },
+        { date: "2024-09-30", price: 70000 },
+    ], "2024-09-30", "Example", [], [], [
+        { endDate: "2024-03-31", filedDate: "2024-07-01", total_cptl: 50, cras: 20, total_lblt: 10 },
+        { endDate: "2024-06-30", filedDate: "2024-09-30", total_cptl: 60 },
+    ]);
+    assert.equal(points[0].financials, undefined);
+    assert.deepEqual(points[1].financials, {
+        source: "OpenDART", endDate: "2024-03-31", filedDate: "2024-07-01",
+        equity: 5_000_000_000, currentAssets: 2_000_000_000, liabilities: 1_000_000_000,
+    });
+    assert.deepEqual(points[1].models, []);
 });

@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import { createBackendHeaders } from "@/lib/server/proxyIdentity";
-import { fillHistoryQuarters, historyPricePath, historyQuotes } from "@/lib/utils/newsletterHistory";
+import { fillHistoryQuarters, historyPricePath, historyQuotes, type DartBalance } from "@/lib/utils/newsletterHistory";
 import { mergeValuationSnapshots, parseStockKey, scanPath, scanSnapshot, seoulDate, type ValuationSnapshot } from "@/lib/utils/newsletterValuation";
 
 export const runtime = "edge";
@@ -59,6 +59,11 @@ export async function GET(request: Request) {
             if (!Array.isArray(payload.data)) throw new Error("invalid filings");
             return payload.data;
         };
+        const dartBalance = async (): Promise<DartBalance[]> => {
+            const payload = await marketData(`/uapi/domestic-stock/v1/finance/balance-sheet?PDNO=${stock.ticker}`);
+            if (payload.rt_cd !== "0" || !Array.isArray(payload.output)) throw new Error("invalid OpenDART balance sheets");
+            return payload.output;
+        };
         const [sources, market] = await Promise.all([
             Promise.allSettled((["monthly", "weekly", "daily"] as const).map(async source => {
                 const payload = await marketData(scanPath(stock, source));
@@ -69,15 +74,16 @@ export async function GET(request: Request) {
                 }) as ValuationSnapshot[];
             })),
             Promise.allSettled([quotes(), stock.market === "US" ? quotes(true) : [],
-                stock.market === "US" ? filings() : []] as const),
+                stock.market === "US" ? filings() : [], stock.market === "KR" ? dartBalance() : []] as const),
         ]);
         const groups = sources.flatMap(source => source.status === "fulfilled" ? [source.value] : []);
         const scans = mergeValuationSnapshots(groups);
-        const [rawPrices, adjustedPrices, reports] = market;
+        const [rawPrices, adjustedPrices, reports, dart] = market;
         const data = fillHistoryQuarters(scans, rawPrices.status === "fulfilled" ? rawPrices.value : [],
             through, scans.at(-1)?.name ?? stock.ticker,
             adjustedPrices.status === "fulfilled" ? adjustedPrices.value : [],
-            reports.status === "fulfilled" ? reports.value : []);
+            reports.status === "fulfilled" ? reports.value : [],
+            dart.status === "fulfilled" ? dart.value : []);
         const partial = groups.length < sources.length || market.some(source => source.status === "rejected");
         if (!data.length && partial) {
             return failure("과거 비교 기록을 불러오지 못했습니다.", 502);

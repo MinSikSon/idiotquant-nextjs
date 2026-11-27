@@ -2,6 +2,7 @@ import { historyQuarterEnds, snapshotModels, valuationDate, valuationQuarters, t
 
 type HistoryStock = Pick<NewsletterStock, "market" | "ticker">;
 type Quote = { date: string; price: number };
+export type DartBalance = { endDate: string; filedDate: string; total_cptl?: number; cras?: number; total_lblt?: number };
 type Fact = { concept: string; value: number; unit: string };
 type Filing = {
     endDate: string;
@@ -41,7 +42,7 @@ function fact(rows: Fact[] | undefined, concept: string) {
 }
 
 export function fillHistoryQuarters(scans: ValuationSnapshot[], quotes: Quote[], through: string, name: string,
-    adjusted: Quote[] = [], filings: Filing[] = []): ValuationSnapshot[] {
+    adjusted: Quote[] = [], filings: Filing[] = [], dart: DartBalance[] = []): ValuationSnapshot[] {
     const adjustedPrices = new Map(adjusted.map(quote => [quote.date, quote.price]));
     // A change in the raw/adjusted price ratio marks an interval with a corporate action.
     // Only compare per-share fundamentals when both sides of the share count date confirm the same basis.
@@ -54,34 +55,51 @@ export function fillHistoryQuarters(scans: ValuationSnapshot[], quotes: Quote[],
     }));
     const byQuarter = new Map(valuationQuarters(history, through).map(item => [item.end, item.snapshot]));
     return valuationQuarters(scans, through).flatMap(({ end, snapshot }) => {
-        if (snapshot) return [snapshot];
-        const quote = byQuarter.get(end);
-        if (!quote) return [];
+        const point = snapshot ?? byQuarter.get(end);
+        if (!point) return [];
+        const publishedBefore = (report: { endDate: string; filedDate: string }) =>
+            valuationDate(report?.filedDate) && valuationDate(report.endDate) &&
+            report.filedDate < point.date && report.endDate <= report.filedDate &&
+            Date.parse(point.date) - Date.parse(report.endDate) <= 460 * 86_400_000;
+        const latestFirst = (a: { endDate: string; filedDate: string }, b: typeof a) =>
+            b.endDate.localeCompare(a.endDate) || b.filedDate.localeCompare(a.filedDate);
+        const krReport = dart.filter(publishedBefore).sort(latestFirst)[0];
+        if (krReport) {
+            const won = (value: number | undefined) => typeof value === "number" && Number.isFinite(value) ? value * 100_000_000 : null;
+            return [{ ...point, financials: { source: "OpenDART", endDate: krReport.endDate, filedDate: krReport.filedDate,
+                equity: won(krReport.total_cptl), currentAssets: won(krReport.cras), liabilities: won(krReport.total_lblt) } }];
+        }
 
-        const eligible = filings.filter(filing => valuationDate(filing?.filedDate) && valuationDate(filing.endDate) &&
-            filing.filedDate < quote.date && filing.endDate <= filing.filedDate &&
-            Date.parse(quote.date) - Date.parse(filing.endDate) <= 460 * 86_400_000)
-            .sort((a, b) => b.endDate.localeCompare(a.endDate));
+        const eligible = filings.filter(publishedBefore).sort(latestFirst);
         const filing = eligible[0];
-        const shares = filing?.shares;
-        const sharesDate = valuationDate(filing?.sharesDate);
-        if (!shares || !Number.isFinite(shares) || shares <= 0 || !sharesDate ||
-            sharesDate < filing.endDate || sharesDate > filing.filedDate) return [quote];
-
-        const before = ratios.findLast(item => item.date <= sharesDate);
-        const after = ratios.find(item => item.date >= sharesDate && item.date <= quote.date);
-        const atQuote = ratios.find(item => item.date === quote.date);
-        const sameBasis = (left: number, right: number) => Math.abs(Math.log(left / right)) < 0.02;
-        if (!before || !after || !atQuote || !sameBasis(before.ratio, after.ratio) ||
-            !sameBasis(before.ratio, atQuote.ratio)) return [quote];
-
-        const netIncome = fact(eligible.find(item => item.periodType === "annual")?.report?.ic, "NetIncomeLoss");
+        if (!filing) return [point];
         const equity = fact(filing.report?.bs, "StockholdersEquity");
         const assets = fact(filing.report?.bs, "AssetsCurrent");
         const liabilities = fact(filing.report?.bs, "Liabilities");
-        const models = snapshotModels(quote.price, "US",
+        const withFinancials: ValuationSnapshot = { ...point, financials: {
+            source: "SEC", endDate: filing.endDate, filedDate: filing.filedDate,
+            equity, currentAssets: assets, liabilities,
+        } };
+        if (snapshot?.models.some(model => model.targetPrice !== null)) return [withFinancials];
+
+        const shares = filing.shares;
+        const sharesDate = valuationDate(filing?.sharesDate);
+        if (!shares || !Number.isFinite(shares) || shares <= 0 || !sharesDate ||
+            sharesDate < filing.endDate || sharesDate > filing.filedDate) return [withFinancials];
+
+        const before = ratios.findLast(item => item.date <= sharesDate);
+        const after = ratios.find(item => item.date >= sharesDate && item.date <= point.date);
+        const atQuote = ratios.find(item => item.date === point.date);
+        // The scan and the paired quote must use the same unadjusted price basis.
+        if (snapshot && !quotes.some(item => item.date === point.date && item.price === point.price)) return [withFinancials];
+        const sameBasis = (left: number, right: number) => Math.abs(Math.log(left / right)) < 0.02;
+        if (!before || !after || !atQuote || !sameBasis(before.ratio, after.ratio) ||
+            !sameBasis(before.ratio, atQuote.ratio)) return [withFinancials];
+
+        const netIncome = fact(eligible.find(item => item.periodType === "annual")?.report?.ic, "NetIncomeLoss");
+        const models = snapshotModels(point.price, "US",
             netIncome === null ? null : netIncome / shares, equity === null ? null : equity / shares,
-            assets === null || liabilities === null ? null : (assets - liabilities) / shares / quote.price, netIncome);
-        return [{ ...quote, models, filedDate: filing.filedDate }];
+            assets === null || liabilities === null ? null : (assets - liabilities) / shares / point.price, netIncome);
+        return [{ ...withFinancials, models, filedDate: filing.filedDate }];
     });
 }

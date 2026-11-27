@@ -33,8 +33,8 @@ export function PriceAxis({ snapshot, market, historical = false }: {
     const tickStep = Math.max(market === "KR" ? 1 : 0.01, ([1, 2, 2.5, 5, 10].find(step => step * unit >= range / 4) ?? 10) * unit);
     const upper = Math.ceil((max + range * 0.08) / tickStep) * tickStep;
     const lower = Math.max(0, Math.min(upper - tickStep * 3, Math.floor(min / tickStep) * tickStep));
-    const separation = historical ? 30 : 43;
-    const height = Math.max(220, points.length * separation + (historical ? 38 : 30));
+    const separation = historical ? 28 : 43;
+    const height = Math.max(historical ? 160 : 220, points.length * separation + (historical ? 40 : 30));
     const y = (price: number) => historical
         ? 18 + (upper - price) / (upper - lower) * (height - 42)
         : 24 + (upper - price) / (upper - lower) * (height - 54);
@@ -60,7 +60,7 @@ export function PriceAxis({ snapshot, market, historical = false }: {
                 </time>
                 <span>가격 ({market === "US" ? "USD" : "원"})</span>
             </div>
-            <div className={styles.axis} style={{ minHeight: `${height / 16}rem` }}>
+            {(!historical || points.length > 1) ? <div className={styles.axis} style={{ minHeight: `${height / 16}rem` }}>
                 <div className={styles.axisLabels}>
                     {points.map((point, i) => <div key={point.label} className={point.reference ? styles.referenceLabel : styles.modelLabel}
                         style={{ top: `${labelYs[i] / height * 100}%` }}>
@@ -84,7 +84,7 @@ export function PriceAxis({ snapshot, market, historical = false }: {
                 <div className={styles.ticks} aria-hidden="true">
                     {ticks.map((price, i) => <span key={i} style={{ top: `${y(price) / height * 100}%` }}>{newsletterNumber(price, market)}</span>)}
                 </div>
-            </div>
+            </div> : <p className={styles.priceOnly}>당시 주가 <strong>{formatPrice(snapshot.price, market)}</strong></p>}
             {snapshot.source === "kis" && <p className={styles.note}>
                 한국투자증권 종가{snapshot.filedDate && ` · SEC 공시 ${snapshot.filedDate.replaceAll("-", ".")} 기준`}
             </p>}
@@ -116,6 +116,7 @@ export function HistoricalComparison({ snapshots, market, through, sample = fals
     const selected = quarters.find(item => item.end === end)
         ?? quarters.findLast(item => item.snapshot)
         ?? quarters[quarters.length - 1];
+    const financials = selected.snapshot?.financials;
     const selectedYear = selected.end.slice(0, 4);
     const years = [...new Set(quarters.map(item => item.end.slice(0, 4)))];
     const dateButtons = quarters.filter(item => item.end.startsWith(selectedYear));
@@ -145,29 +146,32 @@ export function HistoricalComparison({ snapshots, market, through, sample = fals
     };
 
     return <div className={styles.historyComparison}>
-        <div className={styles.yearControls} role="group" aria-label="비교 연도">
-            {years.map(year => <button key={year} type="button" aria-pressed={year === selectedYear}
-                onClick={() => {
-                    const inYear = quarters.filter(item => item.end.startsWith(year));
-                    const sameQuarter = inYear.find(item => item.end.slice(4) === selected.end.slice(4));
-                    const latestWithRecord = inYear.findLast(item => item.snapshot);
-                    setEnd((sameQuarter?.snapshot ? sameQuarter : latestWithRecord ?? sameQuarter ?? inYear[inYear.length - 1]).end);
-                }}>{year}년</button>)}
-        </div>
-        <div className={styles.quarterControls} role="group" aria-label="비교 분기">
-            {dateButtons.map(item => {
-                const quarter = quarterNumber(item.end);
-                const label = item.snapshot?.date.slice(5).replace("-", ".") ?? "기록 없음";
-                return <button key={item.end} type="button" aria-pressed={item.end === selected.end}
-                    aria-label={`${quarter}분기, ${item.snapshot?.date.replaceAll("-", ".") ?? label}`}
-                    onClick={() => setEnd(item.end)}>
-                    <span className={styles.quarterLabel}>{quarter}분기</span>
-                    <span>{label}</span>
-                </button>;
-            })}
+        <div className={styles.dateControls}>
+            <select aria-label="비교 연도" value={selectedYear} onChange={event => {
+                const inYear = quarters.filter(item => item.end.startsWith(event.target.value));
+                const sameQuarter = inYear.find(item => item.end.slice(4) === selected.end.slice(4));
+                setEnd((sameQuarter?.snapshot ? sameQuarter : inYear.findLast(item => item.snapshot) ?? sameQuarter ?? inYear.at(-1)!).end);
+            }}>
+                {years.map(year => <option key={year} value={year}>{year}년</option>)}
+            </select>
+            <select aria-label="비교 분기" value={selected.end} onChange={event => setEnd(event.target.value)}>
+                {dateButtons.map(item => <option key={item.end} value={item.end}>
+                    {quarterNumber(item.end)}분기 · {item.snapshot?.date.slice(5).replace("-", ".") ?? "기록 없음"}
+                </option>)}
+            </select>
         </div>
         {selected.snapshot ? <PriceAxis snapshot={selected.snapshot} market={market} historical />
             : <p role="status">이 분기에 조회 가능한 주가와 적정가 기록이 없습니다.</p>}
+        {financials && <details className={styles.note}>
+            <summary className={styles.method}>당시 재무정보 · {financials.source} {financials.filedDate} 공시</summary>
+            <p>재무제표 기준일 {financials.endDate}</p>
+            <dl className={styles.financials}>
+                {([["자본총계", "equity"], ["유동자산", "currentAssets"], ["부채총계", "liabilities"]] as const).map(([label, key]) => {
+                    const value = financials[key];
+                    return <div key={key}><dt>{label}</dt><dd>{value === null ? "자료 없음" : formatPrice(value, market)}</dd></div>;
+                })}
+            </dl>
+        </details>}
         {snapshots.length > 0 && <section className={`${styles.chartCard} ${styles.trendCard}`} aria-labelledby="newsletter-trend">
             <div className={styles.trendHeading}>
                 <h2 id="newsletter-trend" className={styles.marker}>
@@ -207,7 +211,7 @@ export function HistoricalComparison({ snapshots, market, through, sample = fals
         </section>}
         {!sample && <details className={styles.note}>
             <summary className={styles.method}>데이터 출처 및 계산 기준</summary>
-            <p>진행 중인 분기를 포함해 최근 20개 분기를 표시합니다. 분기별 최신 스캔을 우선 사용합니다. 스캔이 없는 분기의 주가는 한국투자증권에서 조회합니다. 미국 종목은 주가 기준일 전에 공개된 SEC 재무와 주식 수를 확인해 적정가를 계산합니다. 차이율은 비교 기준일의 주가를 기준으로 합니다. NCAV는 저장된 비율을 주당 가격으로 환산합니다. PER은 EPS의 10배, PBR은 BPS의 1배, SRIM은 EPS와 BPS에 요구수익률 8%를 적용합니다.</p>
+            <p>진행 중인 분기를 포함해 최근 20개 분기를 표시합니다. 분기별 최신 스캔을 우선 사용합니다. 스캔이 없는 분기의 주가는 한국투자증권에서 조회합니다. 기준일 전에 공개된 SEC 또는 OpenDART 재무를 확인할 수 있습니다. 미국 종목은 주식 수와 주가의 주당 기준을 확인한 경우 적정가를 계산합니다. 차이율은 비교 기준일의 주가를 기준으로 합니다. NCAV는 저장된 비율을 주당 가격으로 환산합니다. PER은 EPS의 10배, PBR은 BPS의 1배, SRIM은 EPS와 BPS에 요구수익률 8%를 적용합니다.</p>
         </details>}
     </div>;
 }

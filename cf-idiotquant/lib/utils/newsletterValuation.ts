@@ -6,6 +6,8 @@ export type Model = { label: string; basis: string; targetPrice: number | null; 
 export type ValuationSnapshot = {
     date: string; name: string; price: number; models: Model[];
     source?: "kis"; filedDate?: string;
+    financials?: { source: "SEC" | "OpenDART"; endDate: string; filedDate: string;
+        equity: number | null; currentAssets: number | null; liabilities: number | null };
 };
 
 export function stockKey(stock: Pick<NewsletterStock, "market" | "ticker">) {
