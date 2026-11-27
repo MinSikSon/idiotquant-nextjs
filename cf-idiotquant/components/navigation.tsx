@@ -297,8 +297,7 @@ export function NavbarWithSimpleLinks() {
   const inEtfFeed = pathname === "/etfs";
   const inScreener = pathname === "/screener";
   const fixedPageIdentity = pathname === "/analyze" || inScreener;
-  // 게임 안에서는 금융 서비스 이름 대신 게임 묶음의 이름을 쓴다. 공통 헤더지만
-  // 경로에 따라 한 단어만 바꾸므로, 게임 바의 색·배치는 그대로 유지된다.
+  // 게임의 데스크톱 사이드바는 별도 브랜드를 유지한다.
   const brandSuffix = inGame ? "GAMES" : "QUANT";
   const barStyle = inGame
       ? ({ background: "var(--rg-bg)", borderColor: "var(--rg-line-faint)" } as const)
@@ -316,8 +315,6 @@ export function NavbarWithSimpleLinks() {
   if (gameScroll.pathname !== pathname) setGameScroll({ pathname, scrolled: false });
   const gameScrolled = gameScroll.scrolled;
   const bottomNav = useRef<HTMLElement>(null);
-  const identity = useRef<HTMLDivElement>(null);
-  const [identityScrolled, setIdentityScrolled] = useState(false);
   const [identityOffset, setIdentityOffset] = useState(0);
   const mobilePage = MOBILE_PAGE_TITLES.find(item => active(pathname, item.href, item.exact));
   const mobilePageTitle = mobilePage && labelFor(mobilePage);
@@ -334,14 +331,7 @@ export function NavbarWithSimpleLinks() {
     }
     let state: NavigationScrollState = { y: Math.max(0, window.scrollY), direction: 0, travel: 0, hidden: false };
     const onScroll = () => {
-      const header = document.querySelector('[data-navigation-header]');
-      if (fixedPageIdentity) {
-        const offset = Math.min(56, Math.max(0, window.scrollY));
-        setIdentityOffset(offset);
-        setIdentityScrolled(offset >= 56);
-      } else {
-        setIdentityScrolled(!!identity.current && !!header && identity.current.getBoundingClientRect().bottom <= header.getBoundingClientRect().bottom);
-      }
+      if (fixedPageIdentity) setIdentityOffset(Math.min(56, Math.max(0, window.scrollY)));
       state = navigationScroll(state, window.scrollY,
         window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 2,
         moreSheet || !!bottomNav.current?.querySelector(":focus-visible"));
@@ -413,24 +403,17 @@ export function NavbarWithSimpleLinks() {
 
   const logoClass = "min-h-11 shrink-0 items-center whitespace-nowrap text-xl font-bold tracking-tight text-neutral-900 dark:text-white";
   const logoText = <span>idiot<span className="text-brand-ink">quant</span></span>;
-  const mobileIdentity = (
-    <div
-      className={cn("flex min-h-11 items-center gap-3 px-3", fixedPageIdentity && "h-[56px]", identityScrolled && "invisible")}
-      style={fixedPageIdentity ? { transform: `translateY(-${identityOffset}px)` } : undefined}
-      aria-hidden={identityScrolled || undefined}
-    >
-      <Link href="/" aria-label={t("homeLink")} className={cn(logoClass, "inline-flex")}>
-        {logoText}
-      </Link>
-      <div ref={mobile ? pageHeader?.setTitleTarget : undefined} className={cn("min-w-0 flex-1", !pageHeader?.active && "hidden")} />
-      {!pageHeader?.active && pathname !== "/" && <span className="truncate text-base font-semibold">{mobilePageTitle}</span>}
-    </div>
-  );
+  const identityScrolled = identityOffset >= 56;
+  const mobileTitle = <>
+    <div ref={mobile ? pageHeader?.setTitleTarget : undefined} className={cn("min-w-0", !pageHeader?.active && "hidden")} />
+    {!pageHeader?.active && pathname !== "/" && !inEtfFeed && mobilePageTitle &&
+      <span className="block truncate text-base font-semibold">{mobilePageTitle}</span>}
+  </>;
 
   return (
     <>
       {/* 게임은 전체 높이 지도에 맞춘 사이드바를 유지한다. */}
-      {inGame && <aside className={cn("desktop-game-sidebar hidden md:flex flex-col fixed left-0 top-0 h-full w-[220px] z-40 border-r md:max-lg:hidden",
+      {inGame && <aside className={cn("desktop-game-sidebar hidden lg:flex flex-col fixed left-0 top-0 h-full w-[220px] z-40 border-r",
         barStyle ? "" : "bg-white dark:bg-surface-dark border-neutral-200/70 dark:border-surface-dark-border")}
         style={barStyle}>
 
@@ -536,7 +519,7 @@ export function NavbarWithSimpleLinks() {
 
       {!inGame && <header data-navigation-header data-screener-navigation={inScreener || undefined} className="navigation-header fixed inset-x-0 top-0 z-40 md:sticky">
         <div className="navigation-main flex items-center gap-2 px-3 md:gap-3 md:px-4 lg:px-6">
-          <Link href="/" aria-label={t("homeLink")} className={cn(logoClass, "navigation-brand md:inline-flex md:min-h-7", inEtfFeed || identityScrolled ? "inline-flex" : "hidden")}>
+          <Link href="/" aria-label={t("homeLink")} className={cn(logoClass, "navigation-brand inline-flex md:min-h-7")}>
             {logoText}
           </Link>
           <nav aria-label={t("mainMenu")} className="hidden shrink-0 items-center gap-1 md:flex">
@@ -559,7 +542,9 @@ export function NavbarWithSimpleLinks() {
           {!pageHeader?.active && !inScreener && <span className="hidden min-w-0 flex-1 truncate text-sm font-semibold md:block lg:flex-[0_1_16rem] lg:empty:hidden">{pathname === "/" || inEtfFeed ? null : mobilePageTitle}</span>}
           <div className="min-w-0 flex-1 md:hidden">
             <div ref={pageHeader?.setInfoTarget} data-navigation-info />
-            <div ref={pageHeader?.setScrollTitleTarget} data-navigation-scroll-title hidden={!identityScrolled} />
+            {fixedPageIdentity
+              ? <div ref={pageHeader?.setScrollTitleTarget} data-navigation-scroll-title hidden={!identityScrolled} />
+              : <div data-navigation-mobile-context>{mobileTitle}</div>}
           </div>
           <div className="flex shrink-0 items-center gap-2 md:ml-auto md:gap-1.5">
             <div ref={pageHeader?.setPrimaryActionTarget} className="shrink-0 empty:hidden md:hidden" />
@@ -590,18 +575,17 @@ export function NavbarWithSimpleLinks() {
         </div>
         {fixedPageIdentity && (
           <div className="navigation-analysis-identity overflow-hidden md:hidden" style={{ height: 56 - identityOffset }}>
-            {mobileIdentity}
+            <div className={cn("flex h-14 items-center px-3", identityScrolled && "invisible")}
+              style={{ transform: `translateY(-${identityOffset}px)` }} aria-hidden={identityScrolled || undefined}>
+              {mobileTitle}
+            </div>
           </div>
         )}
         <div ref={pageHeader?.setTabsTarget} data-navigation-tabs />
       </header>}
 
-      {!inGame && !fixedPageIdentity && !inEtfFeed && <div ref={identity} className="navigation-identity bg-surface-canvas dark:bg-surface-dark-canvas md:hidden">
-        {mobileIdentity}
-      </div>}
-
-      {/* 게임 전용 모바일 헤더는 기존 구성을 유지한다. */}
-      {inGame && <header data-navigation-header data-mobile-header data-page-active={pageHeader?.active || undefined} className={cn("navigation-mobile-header md:hidden fixed top-0 left-0 right-0 z-40 border-b",
+      {/* 게임은 사이드바를 사용할 수 없는 너비에서 상단 헤더를 표시한다. */}
+      {inGame && <header data-navigation-header data-mobile-header data-page-active={pageHeader?.active || undefined} className={cn("navigation-mobile-header lg:hidden fixed top-0 left-0 right-0 z-40 border-b",
         barStyle ? "" : "bg-surface-canvas/95 backdrop-blur-[12px] dark:bg-surface-dark-canvas/95 border-neutral-300/50 dark:border-neutral-700/60")}
         style={barStyle}>
         <div className="navigation-main flex min-h-12 items-center justify-between gap-2 px-3">
@@ -619,7 +603,7 @@ export function NavbarWithSimpleLinks() {
             {!pageHeader?.active && <QuickNavigation compact items={[...mainNav, ...utilityNav]} />}
             <ThemeChanger compact />
             <MiniSession session={session} status={status} />
-            <PageShareTools key={pathname} />
+            <div className={pathname === "/games" ? "md:hidden" : undefined}><PageShareTools key={pathname} /></div>
           </div>
         </div>
         <div ref={pageHeader?.setActionsTarget} data-navigation-actions className={cn("navigation-mobile-actions px-4 pb-1.5", !pageHeader?.active && "hidden")} />
