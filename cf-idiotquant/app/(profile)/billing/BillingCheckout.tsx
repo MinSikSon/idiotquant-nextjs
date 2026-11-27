@@ -200,7 +200,7 @@ export default function BillingCheckout({ returnedSessionId, canceled, failed, n
                     {newsletter && <Link
                         href={newsletterUrl(billing.alerts?.status === "active" ? "history" : "result", newsletter)}
                         className="service-button inline-flex min-h-11 items-center px-3 font-semibold">
-                        {billing.alerts?.status === "active" ? "선택한 종목 과거 적정가 보기" : "현재 적정가로 돌아가기"}
+                        {billing.alerts?.status === "active" ? "선택한 종목 적정가 비교 보기" : "현재 적정가로 돌아가기"}
                     </Link>}
                     {status && (
                         <div className="flex flex-wrap items-center justify-between gap-x-4 text-sm">
