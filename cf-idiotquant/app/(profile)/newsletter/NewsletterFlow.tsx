@@ -16,7 +16,7 @@ import {
     newsletterUrl, parseStockKey, scanPath, scanSnapshot, stockKey,
     type NewsletterStock, type ValuationSnapshot,
 } from "@/lib/utils/newsletterValuation";
-import { HistoricalComparison, PriceAxis } from "./ValuationCharts";
+import { HistoricalComparison, PriceAxis, strategyDescriptions } from "./ValuationCharts";
 import { sampleSnapshots, sampleStocks } from "./historySample";
 import styles from "./newsletter.module.css";
 
@@ -224,13 +224,29 @@ export default function NewsletterFlow({ checkoutEnabled, sampleEndDate, history
         if (start && finger && start.x - finger.clientX > 75 && Math.abs(start.y - finger.clientY) < 44) previous();
     }}>
         <div className={styles.shell}>
-            <div className={`${styles.body} ${stage === "history" ? styles.historyPage : styles.actionStep}`}>
+            <div className={`${styles.body} ${styles.actionStep} ${stage === "history" ? styles.historyPage : ""} ${stage === "intro" ? styles.intro : ""}`}>
                 {stage === "intro" && <>
-                    <div className={styles.paywallHeading}>
-                        <Image src="/images/onboarding/newsletter-coyote.webp" width={404} height={440} alt="" loading="eager" unoptimized />
-                        {heading("좋아하는 종목, 매일 아침 읽는 적정가")}
+                    <div className={styles.introLead}>
+                        <div className={styles.paywallHeading}>
+                            <Image src="/images/onboarding/newsletter-coyote.webp" width={404} height={440} alt="" loading="eager" unoptimized />
+                            {heading("좋아하는 종목, 매일 아침 읽는 적정가")}
+                        </div>
+                        <p className={styles.lede}>관심종목의 가격을 전략별 적정가와 비교해 보세요.</p>
                     </div>
-                    <p className={styles.lede}>관심종목의 가격을 전략별 적정가와 비교해 보세요. 예시에서 6개 종목의 적정가 추이를 먼저 볼 수 있어요.</p>
+                    <section className={styles.introStrategies} aria-labelledby="newsletter-strategies">
+                        <h2 id="newsletter-strategies">전략별 적정가 계산법</h2>
+                        <dl>
+                            {Object.entries(strategyDescriptions).map(([label, description]) => <div key={label}>
+                                <dt>{label}</dt>
+                                <dd>{description}</dd>
+                            </div>)}
+                        </dl>
+                    </section>
+                    <section className={styles.introExample} aria-labelledby="newsletter-example">
+                        <h2 id="newsletter-example">예시 결과에서 볼 수 있는 것</h2>
+                        <p className={styles.lede}>국내외 6개 종목의 가상 데이터로 최근 5년간 분기별 주가와 전략별 적정가 추이를 비교할 수 있어요.</p>
+                        <p className={styles.lede}>{sampleStocks.map(stock => stock.name).join(" · ")}</p>
+                    </section>
                     <div className={`${styles.actions} ${styles.stackedActions}`}>
                         <button type="button" className={styles.secondary} onClick={() => go("example")}>예시 결과 미리보기</button>
                         {start}
@@ -243,40 +259,48 @@ export default function NewsletterFlow({ checkoutEnabled, sampleEndDate, history
                 {requiresLogin && !authenticated && <p role="status">로그인 상태를 확인하는 중입니다.</p>}
                 {requiresLogin && authenticated && <>
                     {stage === "stocks" && <>
-                        {heading("관심종목을 등록해 주세요")}
-                        <p className={styles.lede}>종목명이나 티커로 찾을 수 있어요. 다음 단계로 가면 선택한 종목을 계정에 저장합니다.</p>
-                        <div className={styles.stack}>
-                            <PageSearch label="관심종목 검색" onSelect={add} disabled={!ready || !!working} />
-                            {working === "search" && <p role="status">종목 확인 중</p>}
-                            {!ready && <p role="status">관심종목을 불러오는 중입니다.</p>}
-                            {listError && !error && <p role="status">{listError}</p>}
-                            {items.length > 0 && <ul className={styles.list}>{items.map(item => {
-                                const key = stockKey(item);
-                                const saved = likes.some(like => stockKey(like) === key);
-                                return <li key={key}><span><strong>{item.name}</strong><small>{item.market} · {item.ticker}</small></span>
-                                    {saved ? <small>저장됨</small> : <button type="button" aria-label={`${item.name} 선택 해제`} disabled={working === "save"}
-                                        onClick={() => saveDraft(draft.filter(value => stockKey(value) !== key))}><X size={17} aria-hidden /></button>}
-                                </li>;
-                            })}</ul>}
-                            {errorBlock}
+                        <div className={styles.stepContent}>
+                            <div>
+                                {heading("관심종목을 등록해 주세요")}
+                                <p className={styles.lede}>종목명이나 티커로 찾을 수 있어요. 다음 단계로 가면 선택한 종목을 계정에 저장합니다.</p>
+                            </div>
+                            <div className={styles.stack}>
+                                <PageSearch label="관심종목 검색" onSelect={add} disabled={!ready || !!working} />
+                                {working === "search" && <p role="status">종목 확인 중</p>}
+                                {!ready && <p role="status">관심종목을 불러오는 중입니다.</p>}
+                                {listError && !error && <p role="status">{listError}</p>}
+                                {items.length > 0 && <ul className={styles.list}>{items.map(item => {
+                                    const key = stockKey(item);
+                                    const saved = likes.some(like => stockKey(like) === key);
+                                    return <li key={key}><span><strong>{item.name}</strong><small>{item.market} · {item.ticker}</small></span>
+                                        {saved ? <small>저장됨</small> : <button type="button" aria-label={`${item.name} 선택 해제`} disabled={working === "save"}
+                                            onClick={() => saveDraft(draft.filter(value => stockKey(value) !== key))}><X size={17} aria-hidden /></button>}
+                                    </li>;
+                                })}</ul>}
+                                {errorBlock}
+                            </div>
                         </div>
                         {actions(back, button(working === "save" ? "저장 중 (1/2)" : "다음 (1/2)",
                             () => void registerStocks(), !items.length || !!working))}
                     </>}
                     {stage === "pick" && <>
-                        {heading("먼저 분석할 종목을 골라주세요")}
-                        <p className={styles.lede}>지금 저장된 스캔 가격과 전략별 적정가를 비교합니다.</p>
-                        <div className={styles.stack}>
-                            {!ready && <p role="status">관심종목을 불러오는 중입니다.</p>}
-                            {ready && !items.length && <p>이전 단계에서 종목을 추가해 주세요.</p>}
-                            {items.length > 0 && <ul className={styles.list}>{items.map(item => {
-                                const key = stockKey(item);
-                                return <li key={key}><label className={styles.pick}>
-                                    <input type="radio" name="newsletter-focus" checked={picked && stockKey(picked) === key}
-                                        onChange={() => setChosen(key)} />
-                                    <span><strong>{item.name}</strong><small>{item.market} · {item.ticker}</small></span>
-                                </label></li>;
-                            })}</ul>}
+                        <div className={styles.stepContent}>
+                            <div>
+                                {heading("먼저 분석할 종목을 골라주세요")}
+                                <p className={styles.lede}>지금 저장된 스캔 가격과 전략별 적정가를 비교합니다.</p>
+                            </div>
+                            <div className={styles.stack}>
+                                {!ready && <p role="status">관심종목을 불러오는 중입니다.</p>}
+                                {ready && !items.length && <p>이전 단계에서 종목을 추가해 주세요.</p>}
+                                {items.length > 0 && <ul className={styles.list}>{items.map(item => {
+                                    const key = stockKey(item);
+                                    return <li key={key}><label className={styles.pick}>
+                                        <input type="radio" name="newsletter-focus" checked={picked && stockKey(picked) === key}
+                                            onChange={() => setChosen(key)} />
+                                        <span><strong>{item.name}</strong><small>{item.market} · {item.ticker}</small></span>
+                                    </label></li>;
+                                })}</ul>}
+                            </div>
                         </div>
                         {actions(back, button("다음 (2/2)", () => picked && go("result", picked), !picked))}
                     </>}
@@ -335,14 +359,16 @@ function ValuationResult({ stock, name, checkoutEnabled, through, openHistory = 
         {showHistory ? <>
             <ComparisonHeading name={snapshot?.name || name || stock.ticker} detail="최근 5년 · 전략별 주가와 적정가" />
             <History stock={stock} through={through} current={snapshot} onPaywall={onPaywall} />
-        </> : <>
-            <h1 id="newsletter-heading" tabIndex={-1}>{snapshot?.name || name || stock.ticker} 현재 적정가</h1>
-            <p className={styles.lede}>최근 저장된 스캔 기준</p>
+        </> : <div className={styles.stepContent}>
+            <div>
+                <h1 id="newsletter-heading" tabIndex={-1}>{snapshot?.name || name || stock.ticker} 현재 적정가</h1>
+                <p className={styles.lede}>최근 저장된 스캔 기준</p>
+            </div>
             <div className={styles.stack}>
                 {snapshot && <PriceAxis snapshot={snapshot} market={stock.market} />}
                 {request.data && !snapshot && <p>이 종목에 저장된 스캔 가격이 없습니다.</p>}
             </div>
-        </>}
+        </div>}
         {request.loading && <p role="status">분석 결과를 불러오는 중입니다.</p>}
         {request.error && <RequestError message={request.error} retry={request.retry} />}
         {!showHistory && !request.loading && !request.error && <div className={styles.actions}>
@@ -368,7 +394,7 @@ function ComparisonHeading({ name, detail }: { name: string; detail: string }) {
 function SampleComparison({ endDate }: { endDate: string }) {
     const [selected, setSelected] = useState(sampleStocks[0]);
     const snapshots = sampleSnapshots(selected, endDate);
-    return <div className={styles.historyComparison}>
+    return <div className={styles.sampleComparison}>
         <ComparisonHeading name={selected.name} detail="가상 예시 데이터 · 최근 완료 분기까지 5년" />
         <div className={styles.sampleStocks} role="group" aria-label="예시 종목">
             {sampleStocks.map(stock => <button key={stock.ticker} type="button" aria-pressed={stock === selected}
@@ -385,7 +411,7 @@ function Paywall({ checkoutEnabled, endDate, stock }: {
     const active = access.data?.alerts?.status === "active";
     const checkout = checkoutEnabled && !active;
     const label = `${access.data?.offer ? formatBillingAmount(access.data.offer) + " " : ""}테스트 결제 계속하기`;
-    return <div className={`${styles.stack} ${styles.actionStep}`}>
+    return <div className={`${styles.stack} ${styles.actionStep} ${styles.paywallContent}`}>
         <SampleComparison endDate={endDate} />
         <ul className={styles.benefits}>
             <li><Lock size={17} aria-hidden /> 최근 5년 분기별 주가와 전략별 적정가 기록</li>
@@ -407,17 +433,20 @@ function History({ stock, through, current, onPaywall }: {
     stock: StockKey; through: string; current?: ValuationSnapshot; onPaywall?: () => void;
 }) {
     const history = useRequest(`/newsletter-history?stock=${encodeURIComponent(stockKey(stock))}`, historyRows);
-    return <section id="newsletter-history" className={styles.stack} aria-labelledby="newsletter-heading">
+    return <>
+        <section id="newsletter-history" className={styles.stack} aria-labelledby="newsletter-heading">
             {history.loading && <p role="status">이용권과 비교 기록을 확인하는 중입니다.</p>}
-            {history.forbidden ? <>
-                <p>분기별 적정가를 비교하려면 활성 이용권이 필요합니다.</p>
-                {onPaywall && <button type="button" className={styles.button} onClick={onPaywall}>이용권 보기<ArrowRight size={17} aria-hidden /></button>}
-            </> : history.error && <RequestError message={history.error} retry={history.retry} />}
+            {history.forbidden ? <p>분기별 적정가를 비교하려면 활성 이용권이 필요합니다.</p>
+                : history.error && <RequestError message={history.error} retry={history.retry} />}
             {history.partial && <RequestError message="일부 기간의 기록만 불러왔습니다." retry={history.retry} />}
             {history.data
                 ? <HistoricalComparison snapshots={history.data} current={current} market={stock.market} through={through} />
                 : current && <PriceAxis snapshot={current} market={stock.market} />}
-    </section>;
+        </section>
+        {history.forbidden && onPaywall && <div className={styles.actions}>
+            <button type="button" className={styles.button} onClick={onPaywall}>이용권 보기<ArrowRight size={17} aria-hidden /></button>
+        </div>}
+    </>;
 }
 
 function RequestError({ message, retry }: { message: string; retry: () => void }) {
