@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type KeyboardEvent } from "react";
-import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, usePlotArea, XAxis, YAxis } from "recharts";
+import { CartesianGrid, Line, LineChart, ReferenceArea, ReferenceLine, ResponsiveContainer, Tooltip, usePlotArea, XAxis, YAxis } from "recharts";
 import { newsletterNumber, quarterNumber, valuationQuarters, type Market, type ValuationSnapshot } from "@/lib/utils/newsletterValuation";
 import styles from "./newsletter.module.css";
 
@@ -128,21 +128,39 @@ export function HistoricalComparison({ snapshots, current, market, through, samp
     const trendQuarters = current ? valuationQuarters([current, ...snapshots], through) : quarters;
     const available = new Set(trendQuarters.flatMap(item => item.snapshot?.models
         .filter(model => model.targetPrice !== null).map(model => model.label) ?? []));
+    if (trendQuarters.some(item => item.snapshot?.lossMaking)) {
+        available.add("SRIM");
+        available.add("PER");
+    }
     const strategies = [...new Set(["SRIM", "PER", "PBR", "NCAV", ...available])].filter(label => available.has(label));
     const activeStrategy = strategies.includes(strategy) ? strategy : strategies[0];
     const strategyDescription = strategyDescriptions[activeStrategy];
+    const usesEarnings = activeStrategy === "SRIM" || activeStrategy === "PER";
     const data = trendQuarters.map(item => ({
         end: item.end,
         time: Date.parse(item.end),
         price: item.snapshot?.price ?? null,
         target: item.snapshot?.models.find(model => model.label === activeStrategy)?.targetPrice ?? null,
         scanDate: item.snapshot?.date,
+        loss: usesEarnings && !!item.snapshot?.lossMaking,
     }));
     const firstTime = data[0].time;
     const lastTime = data[data.length - 1].time;
     const latestIndex = current ? data.findIndex(point => point.scanDate === current.date) : -1;
     const selectedIndex = latestSelected ? latestIndex : data.findIndex(point => point.end === selected.end);
-    const selectedTime = data[selectedIndex]?.time;
+    const selectedPoint = data[selectedIndex];
+    const selectedTime = selectedPoint?.time;
+    const lossAreas = data.flatMap((point, index) => {
+        if (!point.loss) return [];
+        return [{
+            x1: index === 0 ? firstTime : (data[index - 1].time + point.time) / 2,
+            x2: index === data.length - 1 ? lastTime : (point.time + data[index + 1].time) / 2,
+        }];
+    });
+    const selectedTarget = snapshot?.models.find(model => model.label === activeStrategy)?.targetPrice;
+    const selectionNote = usesEarnings && snapshot?.lossMaking ? "적자 · 적정가 산정 제외"
+        : activeStrategy && selectedTarget == null ? "적정가 산정 자료 없음"
+        : "차트의 점을 눌러 분기를 확인하세요.";
     const timeTicks = years.map(year => {
         const yearPoints = data.filter(item => item.end.startsWith(year));
         return yearPoints[Math.floor(yearPoints.length / 2)].time;
@@ -190,7 +208,11 @@ export function HistoricalComparison({ snapshots, current, market, through, samp
                 <h2 id="newsletter-trend">
                     {activeStrategy ? "주가와 적정가 추이" : "주가 추이"}
                 </h2>
-                <div className={styles.legend}><span>주가</span>{activeStrategy && <span>{activeStrategy} 적정가</span>}</div>
+                <div className={styles.legend}>
+                    <span>주가</span>
+                    {activeStrategy && <span>{activeStrategy} 적정가</span>}
+                    {lossAreas.length > 0 && <span className={styles.lossLegend}>적자 구간</span>}
+                </div>
             </div>
             {strategies.length > 1 && <div className={styles.controls} role="group" aria-label="추이 차트의 전략 선택">
                 {strategies.map(model => <button key={model} type="button" aria-pressed={activeStrategy === model}
@@ -210,18 +232,20 @@ export function HistoricalComparison({ snapshots, current, market, through, samp
                         <Tooltip wrapperClassName={styles.trendTooltip} labelFormatter={value => data.find(point => point.time === Number(value))?.scanDate ?? ""}
                             formatter={(value, name) => [formatPrice(Number(value), market), name]}
                             contentStyle={{ color: "var(--newsletter-ink)", background: "var(--newsletter-card)", borderColor: "var(--newsletter-line)" }} />
+                        {lossAreas.map(({ x1, x2 }) => <ReferenceArea key={x1} x1={x1} x2={x2}
+                            fill="var(--newsletter-loss)" fillOpacity={0.18} stroke="none" />)}
                         {selectedTime !== undefined && <ReferenceLine x={selectedTime} stroke="var(--newsletter-teal)" strokeWidth={1.5} strokeDasharray="4 3" />}
                         <Line dataKey="price" name="주가" stroke="var(--newsletter-price)" strokeWidth={2.5}
                             strokeLinecap="round" strokeLinejoin="round" dot={{ r: 2.5 }} isAnimationActive={false} />
                         {activeStrategy && <Line dataKey="target" name={`${activeStrategy} 적정가`} type="stepAfter"
                             stroke="var(--newsletter-teal)" strokeWidth={3} strokeLinecap="round"
-                            dot={{ r: 2.5 }} isAnimationActive={false} />}
+                            dot={{ r: 2.5 }} connectNulls={false} isAnimationActive={false} />}
                         <TrendDateSelector onSelect={selectTrendDate} />
                     </LineChart>
                 </ResponsiveContainer>
             </div>
             <div className={styles.trendFooter}>
-                <strong>{period}</strong><p>차트의 점을 눌러 분기를 확인하세요.</p>
+                <strong>{period}</strong><p aria-live="polite">{selectionNote}</p>
                 {current && latestIndex < 0 && !latestSelected && <button type="button" className={styles.latestScan}
                     onClick={() => setEnd("latest")}>최신 스캔 보기</button>}
             </div>

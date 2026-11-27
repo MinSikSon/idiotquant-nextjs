@@ -178,3 +178,31 @@ test("Missing quarterly shares use an earlier compatible filing while keeping th
     const adjusted = quotes.map(quote => quote.date < "2025-03-31" ? { ...quote, price: quote.price * 2 } : quote);
     assert.deepEqual(fillHistoryQuarters([], quotes, "2025-06-30", "Example", adjusted, [], reports).at(-1)?.models, []);
 });
+
+test("losses suppress earnings-based targets while zero and missing earnings are distinct from losses", () => {
+    const loss = scanSnapshot({ ...archived, eps: -100, net_income: -1000 }, stock)!;
+    assert.equal(loss.lossMaking, true);
+    assert.equal(loss.models.find(model => model.label === "PER")?.targetPrice, null);
+    assert.equal(loss.models.some(model => model.label === "SRIM"), false);
+    assert.equal(loss.models.find(model => model.label === "PBR")?.targetPrice, 63000);
+    assert.notEqual(loss.models.find(model => model.label === "NCAV")?.targetPrice, null);
+
+    const negativeIncome = scanSnapshot({ ...archived, net_income: -1000 }, stock)!;
+    assert.equal(negativeIncome.lossMaking, true);
+    assert.equal(negativeIncome.models.find(model => model.label === "PER")?.targetPrice, null);
+    for (const eps of [0, null]) {
+        const noTarget = scanSnapshot({ ...archived, eps }, stock)!;
+        assert.equal(noTarget.lossMaking, false);
+        assert.equal(noTarget.models.find(model => model.label === "PER")?.targetPrice, null);
+    }
+});
+
+test("quarterly history marks losses only after the report is published, even without a share count", async () => {
+    const { fillHistoryQuarters } = await import("../lib/utils/newsletterHistory.ts");
+    const quotes = [{ date: "2025-03-31", price: 10000 }, { date: "2025-06-30", price: 11000 }];
+    const reports = [{ endDate: "2024-12-31", filedDate: "2025-04-01", annualNetIncome: -25, fs_div: "CFS" }];
+    const [before, after] = fillHistoryQuarters([], quotes, "2025-06-30", "Example", [], [], reports);
+    assert.equal(before.lossMaking ?? false, false);
+    assert.equal(after.lossMaking, true);
+    assert.deepEqual(after.models, []);
+});
