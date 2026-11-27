@@ -1,4 +1,4 @@
-import { historyQuarterEnds, snapshotModels, valuationDate, valuationQuarters, type Market, type NewsletterStock, type ValuationSnapshot } from "./newsletterValuation.ts";
+import { historyQuarterEnds, isValuationLoss, snapshotModels, valuationDate, valuationQuarters, type Market, type NewsletterStock, type ValuationSnapshot } from "./newsletterValuation.ts";
 
 type HistoryStock = Pick<NewsletterStock, "market" | "ticker">;
 type Quote = { date: string; price: number };
@@ -62,6 +62,8 @@ export function fillHistoryQuarters(scans: ValuationSnapshot[], quotes: Quote[],
     return valuationQuarters(scans, through).flatMap(({ end, snapshot }) => {
         const point = snapshot ?? byQuarter.get(end);
         if (!point) return [];
+        const hasEarningsTarget = point.models.some(model =>
+            (model.label === "PER" || model.label === "SRIM") && model.targetPrice !== null);
         const publishedBefore = (report: { endDate: string; filedDate: string }) =>
             valuationDate(report?.filedDate) && valuationDate(report.endDate) &&
             report.filedDate < point.date && report.endDate <= report.filedDate &&
@@ -82,7 +84,10 @@ export function fillHistoryQuarters(scans: ValuationSnapshot[], quotes: Quote[],
             const equity = won(krReport.total_cptl);
             const currentAssets = won(krReport.cras);
             const liabilities = won(krReport.total_lblt);
-            const withFinancials: ValuationSnapshot = { ...point, financials: {
+            const annual = krReports.find(item => item.fs_div === krReport.fs_div && item.endDate.endsWith("-12-31") &&
+                typeof item.annualNetIncome === "number");
+            const netIncome = won(annual?.annualNetIncome);
+            const withFinancials: ValuationSnapshot = { ...point, lossMaking: point.lossMaking || (!hasEarningsTarget && isValuationLoss(null, netIncome)), financials: {
                 source: "OpenDART", endDate: krReport.endDate, filedDate: krReport.filedDate, equity, currentAssets, liabilities,
             } };
             if (point.models.some(model => model.targetPrice !== null)) return [withFinancials];
@@ -99,10 +104,7 @@ export function fillHistoryQuarters(scans: ValuationSnapshot[], quotes: Quote[],
             const shareReport = krReports.find(usableShares);
             const shares = shareReport?.shares;
             if (!shares) return [withFinancials];
-            const annual = krReports.find(item => item.fs_div === krReport.fs_div && item.endDate.endsWith("-12-31") &&
-                typeof item.annualNetIncome === "number");
-            const netIncome = won(annual?.annualNetIncome);
-            const models = snapshotModels(point.price, "KR", netIncome === null ? null : netIncome / shares,
+            const models = snapshotModels(point.price, "KR", withFinancials.lossMaking || netIncome === null ? null : netIncome / shares,
                 equity === null ? null : equity / shares,
                 currentAssets === null || liabilities === null ? null : (currentAssets - liabilities) / shares / point.price,
                 netIncome);
@@ -116,7 +118,8 @@ export function fillHistoryQuarters(scans: ValuationSnapshot[], quotes: Quote[],
         const equity = fact(filing.report?.bs, "StockholdersEquity");
         const assets = fact(filing.report?.bs, "AssetsCurrent");
         const liabilities = fact(filing.report?.bs, "Liabilities");
-        const withFinancials: ValuationSnapshot = { ...point, financials: {
+        const netIncome = fact(eligible.find(item => item.periodType === "annual")?.report?.ic, "NetIncomeLoss");
+        const withFinancials: ValuationSnapshot = { ...point, lossMaking: point.lossMaking || (!hasEarningsTarget && isValuationLoss(null, netIncome)), financials: {
             source: "SEC", endDate: filing.endDate, filedDate: filing.filedDate,
             equity, currentAssets: assets, liabilities,
         } };
@@ -140,9 +143,8 @@ export function fillHistoryQuarters(scans: ValuationSnapshot[], quotes: Quote[],
         const shares = shareFiling?.shares;
         if (!shares) return [withFinancials];
 
-        const netIncome = fact(eligible.find(item => item.periodType === "annual")?.report?.ic, "NetIncomeLoss");
         const models = snapshotModels(point.price, "US",
-            netIncome === null ? null : netIncome / shares, equity === null ? null : equity / shares,
+            withFinancials.lossMaking || netIncome === null ? null : netIncome / shares, equity === null ? null : equity / shares,
             assets === null || liabilities === null ? null : (assets - liabilities) / shares / point.price, netIncome);
         return [{ ...withFinancials, models, filedDate: filing.filedDate,
             sharesEndDate: shareFiling.endDate === filing.endDate ? undefined : shareFiling.sharesDate }];

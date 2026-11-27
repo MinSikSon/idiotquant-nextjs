@@ -5,6 +5,7 @@ export type NewsletterStock = { market: Market; ticker: string; name: string };
 export type Model = { label: string; basis: string; targetPrice: number | null; gapPercent: number | null };
 export type ValuationSnapshot = {
     date: string; name: string; price: number; models: Model[];
+    lossMaking?: boolean;
     source?: "kis"; filedDate?: string; sharesEndDate?: string;
     financials?: { source: "SEC" | "OpenDART"; endDate: string; filedDate: string;
         equity: number | null; currentAssets: number | null; liabilities: number | null };
@@ -36,9 +37,10 @@ export function scanSnapshot(row: Record<string, unknown>, stock: Pick<Newslette
     const price = number(row.last_price);
     if (price === null || price <= 0) return null;
     // Daily and archive rows use the stored NCAV ratio so the strategies compare consistently.
-    const models = snapshotModels(price, stock.market, number(row.eps), number(row.bps),
-        number(row.ncav_ratio), number(row.net_income));
-    return { date, name: typeof row.name === "string" && row.name ? row.name : stock.ticker, price, models };
+    const eps = number(row.eps);
+    const netIncome = number(row.net_income);
+    const models = snapshotModels(price, stock.market, eps, number(row.bps), number(row.ncav_ratio), netIncome);
+    return { date, name: typeof row.name === "string" && row.name ? row.name : stock.ticker, price, models, lossMaking: isValuationLoss(eps, netIncome) };
 }
 
 export function valuationDate(raw: unknown) {
@@ -49,19 +51,24 @@ export function valuationDate(raw: unknown) {
     return date;
 }
 
+export function isValuationLoss(eps: number | null, netIncome: number | null) {
+    return (eps !== null && eps < 0) || (netIncome !== null && netIncome < 0);
+}
+
 export function snapshotModels(price: number, market: Market, eps: number | null, bps: number | null,
     ncavRatio: number | null, netIncome: number | null) {
     const isUs = Number(market === "US");
+    const eligibleEps = isValuationLoss(eps, netIncome) ? null : eps;
     const models = scanValuationSummary({
-        last_price: price, is_us: isUs, eps, bps,
+        last_price: price, is_us: isUs, eps: eligibleEps, bps,
         current_assets: null, total_liabilities: null,
         ncav_ratio: ncavRatio, net_income: netIncome,
     });
     // Same residual income formula as Analyze, using the available EPS and BPS.
     const costOfEquity = 0.08;
-    if (eps !== null && eps > 0 && bps !== null && bps > 0 && !(isUs && netIncome !== null && netIncome <= 0)) {
+    if (eligibleEps !== null && eligibleEps > 0 && bps !== null && bps > 0 && !(isUs && netIncome !== null && netIncome <= 0)) {
         const scale = isUs ? 100 : 1;
-        const targetPrice = Math.round(eps / costOfEquity * scale) / scale;
+        const targetPrice = Math.round(eligibleEps / costOfEquity * scale) / scale;
         if (Number.isFinite(targetPrice) && targetPrice > 0) models.push({
             label: "SRIM", basis: "Ke 8%", targetPrice, gapPercent: (targetPrice / price - 1) * 100,
         });
