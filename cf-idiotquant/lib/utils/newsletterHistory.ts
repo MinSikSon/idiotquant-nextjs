@@ -2,7 +2,8 @@ import { historyQuarterEnds, snapshotModels, valuationDate, valuationQuarters, t
 
 type HistoryStock = Pick<NewsletterStock, "market" | "ticker">;
 type Quote = { date: string; price: number };
-export type DartBalance = { endDate: string; filedDate: string; total_cptl?: number; cras?: number; total_lblt?: number };
+export type DartBalance = { endDate: string; filedDate: string; total_cptl?: number | null; cras?: number | null; total_lblt?: number | null;
+    shares?: number | null; annualNetIncome?: number | null; fs_div?: string };
 type Fact = { concept: string; value: number; unit: string };
 type Filing = {
     endDate: string;
@@ -13,7 +14,7 @@ type Filing = {
     report?: { bs?: Fact[]; ic?: Fact[] };
 };
 
-export function historyPricePath(stock: HistoryStock, through: string, adjusted = false) {
+export function historyPricePath(stock: HistoryStock, through: string, adjusted = false, unadjusted = false) {
     const query = new URLSearchParams({ PDNO: stock.ticker });
     const end = through.replaceAll("-", "");
     if (stock.market === "US") {
@@ -25,6 +26,7 @@ export function historyPricePath(stock: HistoryStock, through: string, adjusted 
     const firstMonth = Number(firstQuarter.slice(5, 7)) - 2;
     query.set("FID_INPUT_DATE_1", firstQuarter.slice(0, 4) + String(firstMonth).padStart(2, "0") + "01");
     query.set("FID_INPUT_DATE_2", end);
+    if (unadjusted) query.set("unadjusted", "true");
     return `/uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice?${query}`;
 }
 
@@ -63,11 +65,35 @@ export function fillHistoryQuarters(scans: ValuationSnapshot[], quotes: Quote[],
             Date.parse(point.date) - Date.parse(report.endDate) <= 460 * 86_400_000;
         const latestFirst = (a: { endDate: string; filedDate: string }, b: typeof a) =>
             b.endDate.localeCompare(a.endDate) || b.filedDate.localeCompare(a.filedDate);
-        const krReport = dart.filter(publishedBefore).sort(latestFirst)[0];
+        const krReports = dart.filter(publishedBefore).sort(latestFirst);
+        const krReport = krReports[0];
         if (krReport) {
-            const won = (value: number | undefined) => typeof value === "number" && Number.isFinite(value) ? value * 100_000_000 : null;
-            return [{ ...point, financials: { source: "OpenDART", endDate: krReport.endDate, filedDate: krReport.filedDate,
-                equity: won(krReport.total_cptl), currentAssets: won(krReport.cras), liabilities: won(krReport.total_lblt) } }];
+            const won = (value: number | null | undefined) => typeof value === "number" && Number.isFinite(value) ? value * 100_000_000 : null;
+            const equity = won(krReport.total_cptl);
+            const currentAssets = won(krReport.cras);
+            const liabilities = won(krReport.total_lblt);
+            const withFinancials: ValuationSnapshot = { ...point, financials: {
+                source: "OpenDART", endDate: krReport.endDate, filedDate: krReport.filedDate, equity, currentAssets, liabilities,
+            } };
+            const shares = krReport.shares;
+            if (point.models.some(model => model.targetPrice !== null) || !shares || !Number.isSafeInteger(shares) || shares < 1) {
+                return [withFinancials];
+            }
+            const before = ratios.findLast(item => item.date <= krReport.endDate);
+            const after = ratios.filter(item => item.date > krReport.endDate && item.date <= point.date);
+            const pairedQuote = quotes.find(item => item.date === point.date);
+            // The KR chart keeps its adjusted quote history. Only use filing shares where raw and
+            // adjusted closes confirm that the filing and selected days use the same units.
+            if (!before || after.at(-1)?.date !== point.date || pairedQuote?.price !== point.price ||
+                [before, ...after].some(item => Math.abs(item.ratio - 1) >= 0.002)) return [withFinancials];
+            const annual = krReports.find(item => item.fs_div === krReport.fs_div && item.endDate.endsWith("-12-31") &&
+                typeof item.annualNetIncome === "number");
+            const netIncome = won(annual?.annualNetIncome);
+            const models = snapshotModels(point.price, "KR", netIncome === null ? null : netIncome / shares,
+                equity === null ? null : equity / shares,
+                currentAssets === null || liabilities === null ? null : (currentAssets - liabilities) / shares / point.price,
+                netIncome);
+            return [{ ...withFinancials, models, filedDate: krReport.filedDate }];
         }
 
         const eligible = filings.filter(publishedBefore).sort(latestFirst);

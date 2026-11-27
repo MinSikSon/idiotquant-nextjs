@@ -133,3 +133,26 @@ test("Korean history shows published OpenDART balances in won for the matching p
     });
     assert.deepEqual(points[1].models, []);
 });
+
+test("Korean backfill values June 2025 using the March filing and prior annual earnings", async () => {
+    const { fillHistoryQuarters } = await import("../lib/utils/newsletterHistory.ts");
+    const quotes = [
+        { date: "2025-03-31", price: 58000 }, { date: "2025-04-30", price: 56000 },
+        { date: "2025-06-30", price: 59800 },
+    ];
+    const reports = [
+        { endDate: "2024-12-31", filedDate: "2025-03-11", annualNetIncome: 300_000, fs_div: "CFS" },
+        { endDate: "2025-03-31", filedDate: "2025-05-15", shares: 6_000_000_000, total_cptl: 3_600_000,
+            cras: 2_200_000, total_lblt: 1_000_000, fs_div: "CFS" },
+        { endDate: "2025-06-30", filedDate: "2025-08-14", shares: 6_000_000_000, total_cptl: 3_900_000, fs_div: "CFS" },
+    ];
+    const [june] = fillHistoryQuarters([], quotes, "2025-06-30", "Example", quotes, [], reports).slice(-1);
+    assert.equal(june.financials?.endDate, "2025-03-31");
+    assert.equal(june.models.find(model => model.label === "PBR")?.targetPrice, 60000);
+    assert.equal(june.models.find(model => model.label === "PER")?.targetPrice, 50000);
+    assert.equal(june.models.find(model => model.label === "SRIM")?.targetPrice, 62500);
+    const shifted = [{ ...quotes[0], price: quotes[0].price * 2 }, ...quotes.slice(1)];
+    const split = fillHistoryQuarters([], quotes, "2025-06-30", "Example", shifted, [], reports).at(-1);
+    assert.equal(split?.models.length, 0);
+    assert.equal(split?.financials?.endDate, "2025-03-31");
+});
