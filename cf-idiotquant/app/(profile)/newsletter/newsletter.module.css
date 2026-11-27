@@ -1,4 +1,4 @@
-:global(body):has(.surface) {
+:global(html):has(.surface) {
     --newsletter-bg: #faf1e2;
     --newsletter-card: #fcf4e7;
     --newsletter-ink: #211e19;
@@ -9,6 +9,8 @@
     --newsletter-hint: #fae4a9;
     --newsletter-teal: #086557;
     --newsletter-paper: var(--newsletter-bg) url("/images/onboarding/newsletter-paper.webp") repeat;
+    background: var(--newsletter-paper);
+    overscroll-behavior-y: none;
 }
 .surface {
     background: var(--newsletter-paper);
@@ -24,7 +26,7 @@
 .stack { display: grid; gap: 0.85rem; margin-top: 0.85rem; }
 .lede { margin-top: 0.45rem; color: var(--newsletter-muted); line-height: 1.55; }
 .note { font-size: 0.8125rem; color: var(--newsletter-muted); line-height: 1.45; }
-.actions { position: sticky; bottom: 0; z-index: 4; background: var(--newsletter-bg) url("/images/onboarding/newsletter-paper.webp") repeat; padding: 0.7rem 0 max(0.7rem, env(safe-area-inset-bottom)); margin-top: 1rem; display: flex; gap: 0.55rem; }
+.actions { position: sticky; bottom: 0; z-index: 4; background: var(--newsletter-paper); padding: 0.7rem 0 calc(0.7rem + env(safe-area-inset-bottom, 0px)); margin-top: 1rem; display: flex; gap: 0.55rem; }
 .actions > * { flex: 1; }
 .actionStep { display: flex; flex-direction: column; flex: 1; margin-bottom: 0; }
 .actionStep > .actions { margin-top: auto; }
@@ -86,7 +88,6 @@
 .historyHeading p { margin-top: 0.22rem; color: var(--newsletter-muted); font-size: clamp(0.85rem, 4vw, 1.1rem); font-weight: 680; }
 .historyCoyote { width: 100%; height: auto; aspect-ratio: 1; object-fit: contain; object-position: bottom; }
 .historyComparison { display: grid; gap: 0.65rem; }
-.historyComparison ~ .actions { position: static; }
 .sampleStocks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.35rem; }
 .sampleStocks button { min-height: 2.75rem; padding: 0.25rem; border: 1px solid var(--newsletter-line); border-radius: 0.45rem; background: var(--newsletter-card); font-weight: 730; }
 .sampleStocks button[aria-pressed="true"] { border-color: var(--newsletter-ink); background: var(--newsletter-gold); font-weight: 850; }
@@ -151,9 +152,15 @@
 .legend span + span::before { background: var(--newsletter-teal); }
 .pick { width: 100%; justify-content: start; align-items: center; gap: 0.5rem; text-align: left; }
 
-:global(.desktop-workspace):has(.surface) { --desktop-workspace-width: 100%; }
+:global(.desktop-workspace):has(.surface) {
+    --desktop-workspace-width: 100%;
+    min-height: 100dvh;
+    background: var(--newsletter-paper);
+    overscroll-behavior-y: none;
+}
 :global(body):has(.surface) :global([data-bottom-navigation]) { display: none; }
-:global(main):has(.surface) { padding-bottom: 0; }
+/* Safari에서 가로 클리핑이 sticky 버튼의 스크롤 기준을 바꾸지 않도록 한다. */
+:global(main):has(.surface) { padding-bottom: 0; overflow-x: visible; }
 
 :global(body):has(.surface) :global(:is(.navigation-header, .navigation-service-popover)) {
     --service-ink: var(--newsletter-ink);
