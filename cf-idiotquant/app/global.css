@@ -467,6 +467,11 @@ body :is(.font-mono, .font-serif) {
   main:has(#game-canvas) { min-height: 100dvh; }
 }
 
+@media (min-width: 768px) and (max-width: 1023px) {
+  main:has(#game-canvas) { padding-top: var(--topbar-h); }
+  #rogue-root { height: calc(100dvh - var(--topbar-h)); }
+}
+
 @media (min-width: 1024px) {
   main:has(#game-canvas) { margin-left: var(--sidebar-w); }
 }
@@ -952,8 +957,7 @@ html:has(.navigation-header [data-page-tabs]) { --navigation-h: calc(var(--topba
 
 @media (max-width: 767px) {
   .navigation-header .navigation-main { border-bottom-width: 0; }
-  .navigation-identity { padding-top: var(--navigation-h, 48px); }
-  .navigation-identity ~ main { padding-top: 0; }
+  [data-navigation-info]:not(:empty) + [data-navigation-mobile-context] { display: none; }
 }
 
 /* 분석 화면의 폭·여백을 모든 서비스 화면에서 공유한다. */

@@ -4,10 +4,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { getSession, useSession } from "next-auth/react";
-import { ArrowRight, Lock, Mail, Search, X } from "lucide-react";
+import { ArrowRight, Lock, Mail, X } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { PageSearch } from "@/components/page-search";
-import { useStockSearchModal } from "@/components/stock-search-provider";
 import { apiRequest } from "@/lib/features/apiRequest";
 import { getMyLikes, toggleLike } from "@/lib/features/stockLikes/stockLikesAPI";
 import type { LikedStockItem } from "@/lib/features/stockLikes/stockLikesSlice";
@@ -64,7 +63,6 @@ export default function NewsletterFlow({ checkoutEnabled, sampleEndDate, history
     const requiresLogin = stage !== "intro" && stage !== "example";
     const authenticated = status === "authenticated";
     const owner = session?.user?.id ?? "guest";
-    const { openSearch } = useStockSearchModal();
     const [chosen, setChosen] = useState("");
     const [draft, setDraft] = useState<NewsletterStock[]>([]);
     const [likes, setLikes] = useState<NewsletterStock[]>([]);
@@ -226,7 +224,6 @@ export default function NewsletterFlow({ checkoutEnabled, sampleEndDate, history
         if (start && finger && start.x - finger.clientX > 75 && Math.abs(start.y - finger.clientY) < 44) previous();
     }}>
         <div className={styles.shell}>
-            <span className={styles.brand}>IdiotQuant</span>
             <div className={`${styles.body} ${stage === "history" ? styles.historyPage : styles.actionStep}`}>
                 {stage === "intro" && <>
                     <div className={styles.paywallHeading}>
@@ -250,9 +247,7 @@ export default function NewsletterFlow({ checkoutEnabled, sampleEndDate, history
                         <p className={styles.lede}>종목명이나 티커로 찾을 수 있어요. 다음 단계로 가면 선택한 종목을 계정에 저장합니다.</p>
                         <div className={styles.stack}>
                             <PageSearch label="관심종목 검색" onSelect={add} disabled={!ready || !!working} />
-                            <button type="button" className={styles.secondary} onClick={openSearch} disabled={!ready || !!working}>
-                                <Search size={17} aria-hidden />{working === "search" ? "종목 확인 중" : "종목 검색"}
-                            </button>
+                            {working === "search" && <p role="status">종목 확인 중</p>}
                             {!ready && <p role="status">관심종목을 불러오는 중입니다.</p>}
                             {listError && !error && <p role="status">{listError}</p>}
                             {items.length > 0 && <ul className={styles.list}>{items.map(item => {
