@@ -375,6 +375,8 @@
     "resultView": "結果の表示形式",
     "list": "一覧",
     "ratio": "資産比率",
+    "valuationView": "適正価格",
+    "valuationViewTip": "スキャン基準価格と戦略ごとの適正価格を比較",
     "listTip": "指標を一覧で比較",
     "ratioTip": "資産比率を比較",
     "group": "結果をグループ化",

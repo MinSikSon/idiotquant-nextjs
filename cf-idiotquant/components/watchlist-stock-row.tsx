@@ -1,5 +1,6 @@
 import { useLocale, useTranslations } from "next-intl";
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { StockLogo } from '@/components/stockLogo';
 import { scanDateLabel } from '@/lib/features/stockLikes/changes';
@@ -37,6 +38,23 @@ export function WatchlistStockRow({ ticker, name, isUs, scanDate, reference, mod
         ? usStockDisplayName(usDirectory?.get(ticker.toUpperCase()), name, locale)
         : krStockDisplayName(code ?? ticker, name, locale);
     const showCode = code && (isUs || locale !== "ko") && code !== displayName;
+    return <Link href={analysisHref(ticker)} aria-label={t("analysis", { stock: showCode ? `${displayName} ${code}` : displayName })}
+        className="block min-h-11 rounded px-1 py-1.5 hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-ink dark:hover:bg-white/5">
+        <StockValuationContent {...{ ticker, name, isUs, scanDate, reference, models, emptyMessage, displayName }}
+            code={showCode ? code : undefined}
+            trailing={<ArrowRight size={15} aria-hidden="true" className="shrink-0 text-brand-ink" />} />
+    </Link>;
+}
+
+export function StockValuationContent({ ticker, name, isUs, scanDate, reference, models, emptyMessage, displayName, code, leading, details, trailing }: WatchlistStockRowProps & {
+    displayName: string;
+    code?: string;
+    leading?: ReactNode;
+    details?: ReactNode;
+    trailing?: ReactNode;
+}) {
+    const t = useTranslations("watchlist");
+    const locale = useLocale();
     const formatPrice = (value: number) => `${isUs ? '$' : '₩'}${value.toLocaleString(locale, {
         minimumFractionDigits: isUs ? 2 : 0,
         maximumFractionDigits: isUs ? 4 : 0,
@@ -45,15 +63,16 @@ export function WatchlistStockRow({ ticker, name, isUs, scanDate, reference, mod
     const axis = valuationComparisonAxis(price ?? 0, models.map(model => model.targetPrice));
     const referencePosition = price === null ? null : axis.position(price);
 
-    return <Link href={analysisHref(ticker)} aria-label={t("analysis", { stock: showCode ? `${displayName} ${code}` : displayName })}
-        className="block min-h-11 rounded px-1 py-1.5 hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-ink dark:hover:bg-white/5">
+    return <>
         <div className="flex min-h-8 items-center gap-2">
+            {leading}
             <span className="shrink-0 rounded-lg bg-white ring-1 ring-neutral-200 dark:ring-transparent">
                 <StockLogo ticker={ticker} name={name} isUs={isUs} decorative />
             </span>
             <div className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-x-2">
                 <div className="min-w-0 flex-1 basis-24 [overflow-wrap:anywhere]">
-                    <p className="font-semibold leading-5">{displayName}{showCode && <span className={`ml-1 text-xs font-normal ${secondary}`}>{code}</span>}</p>
+                    <p className="font-semibold leading-5">{displayName}{code && <span className={`ml-1 text-xs font-normal ${secondary}`}>{code}</span>}</p>
+                    {details}
                     {scanDate && <p className={`text-xs ${secondary}`}>{t("scanDate", { date: scanDateLabel(scanDate) })}</p>}
                 </div>
                 {reference && <div className="ml-auto min-w-0 max-w-full text-right tabular-nums [overflow-wrap:anywhere]">
@@ -61,7 +80,7 @@ export function WatchlistStockRow({ ticker, name, isUs, scanDate, reference, mod
                     <p className="font-semibold leading-5">{price !== null ? formatPrice(price) : reference.pending ? t("loading") : t("unavailable")}</p>
                 </div>}
             </div>
-            <ArrowRight size={15} aria-hidden="true" className="shrink-0 text-brand-ink" />
+            {trailing}
         </div>
         {models.length > 0 ? <dl aria-label={t("targets")} className="mt-1.5 grid grid-cols-[auto_minmax(1.25rem,1fr)_minmax(0,max-content)] gap-x-2 text-sm leading-5">
             {models.map(({ label, basis, targetPrice }) => {
@@ -89,5 +108,5 @@ export function WatchlistStockRow({ ticker, name, isUs, scanDate, reference, mod
                 </div>;
             })}
         </dl> : emptyMessage && <p className={`mt-1 text-xs ${secondary}`}>{emptyMessage}</p>}
-    </Link>;
+    </>;
 }
