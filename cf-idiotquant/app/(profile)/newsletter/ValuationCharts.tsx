@@ -5,11 +5,11 @@ import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Too
 import { newsletterNumber, quarterNumber, valuationQuarters, type Market, type ValuationSnapshot } from "@/lib/utils/newsletterValuation";
 import styles from "./newsletter.module.css";
 
-const strategyDescriptions: Partial<Record<string, string>> = {
-    SRIM: "기업이 자기자본에 대해 투자자가 요구하는 수익을 넘겨 얼마나 더 벌 수 있는지 평가합니다.",
-    PER: "주당순이익(EPS)에 일정 배수를 곱해, 기업이 버는 이익을 기준으로 적정가를 구합니다.",
-    PBR: "주당순자산(BPS)에 일정 배수를 곱해, 장부에 기록된 순자산을 기준으로 적정가를 구합니다.",
-    NCAV: "유동자산에서 전체 부채를 뺀 금액을 기준으로 주당 가치를 평가합니다.",
+export const strategyDescriptions: Partial<Record<string, string>> = {
+    SRIM: "자기자본과 요구수익률을 초과하는 이익을 바탕으로 적정가를 추정합니다.",
+    PER: "주당순이익(EPS)에 일정 배수를 곱해 적정가를 추정합니다.",
+    PBR: "주당순자산(BPS)에 일정 배수를 곱해 적정가를 추정합니다.",
+    NCAV: "유동자산에서 전체 부채를 뺀 금액을 바탕으로 주당 가치를 추정합니다.",
 };
 
 function formatPrice(price: number, market: Market) {

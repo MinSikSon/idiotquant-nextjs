@@ -32,6 +32,54 @@
 .actionStep > .actions { margin-top: auto; }
 .actionStep > .stack:not(.actionStep) { margin-bottom: 0.75rem; }
 .stackedActions { flex-direction: column; }
+.introStrategies { margin-block: 1.4rem 0.75rem; }
+.introExample { margin-block: 0.65rem 0.75rem; word-break: keep-all; }
+.introStrategies h2 { margin-bottom: 0.65rem; }
+.introStrategies dl > div {
+    display: grid;
+    grid-template-columns: 3rem minmax(0, 1fr);
+    gap: 0.6rem;
+    padding-block: 0.65rem;
+    border-block-start: 1px solid var(--newsletter-line);
+}
+.introStrategies dl > div:last-child { border-block-end: 1px solid var(--newsletter-line); }
+.introStrategies dt { color: var(--newsletter-teal); font-weight: 800; }
+.introStrategies dd { color: var(--newsletter-muted); line-height: 1.5; word-break: keep-all; }
+
+@media (min-width: 64rem) {
+    .actions { width: calc(100vw - 4rem); align-self: center; }
+    .shell { width: min(100%, 80rem); }
+    .stepContent {
+        display: grid;
+        grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+        align-items: start;
+        gap: clamp(1.5rem, 4vw, 4rem);
+        padding-block: 1rem;
+    }
+    .stepContent > .stack { margin-top: 0; }
+    .stepContent .list {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        column-gap: 1rem;
+    }
+    .stepContent .list li > span, .stepContent .pick > span {
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+    .intro {
+        display: grid;
+        grid-template: "lead lead" auto "strategies example" 1fr "actions actions" auto / minmax(0, 1.15fr) minmax(0, 1fr);
+        align-items: start;
+        column-gap: clamp(2.5rem, 6vw, 5rem);
+        row-gap: 1.25rem;
+        margin-top: clamp(1.5rem, 4vh, 2.5rem);
+    }
+    .introLead { grid-area: lead; width: min(100%, 35rem); justify-self: center; }
+    .introStrategies { grid-area: strategies; margin: 0; }
+    .introExample { grid-area: example; margin: 0; }
+    .introStrategies dl > div { padding-block: 0.85rem; }
+    .intro > .actions { grid-area: actions; align-self: start; justify-self: center; }
+}
 .button, .secondary {
     display: inline-flex; align-items: center; justify-content: center; gap: 0.55rem;
     min-height: 2.85rem; padding: 0.55rem 0.65rem; border: 1px solid var(--newsletter-ink);
@@ -88,7 +136,7 @@
 .historyHeading p { margin-top: 0.22rem; color: var(--newsletter-muted); font-size: clamp(0.8rem, 3.5vw, 1rem); font-weight: 680; }
 .historyCoyote { grid-column: 2; grid-row: 1; width: 100%; height: auto; aspect-ratio: 1; object-fit: contain; object-position: bottom; }
 .historyHeading > div { grid-column: 1; grid-row: 1; }
-.historyComparison, .comparisonDetail { display: grid; gap: 0.55rem; min-width: 0; }
+.historyComparison, .sampleComparison, .comparisonDetail { display: grid; gap: 0.55rem; min-width: 0; }
 .sampleStocks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.35rem; }
 .sampleStocks button { min-height: 2.75rem; padding: 0.25rem; border: 1px solid var(--newsletter-line); border-radius: 0.45rem; background: var(--newsletter-card); font-weight: 730; }
 .sampleStocks button[aria-pressed="true"] { border-color: var(--newsletter-ink); background: var(--newsletter-gold); font-weight: 850; }
@@ -176,3 +224,23 @@
 }
 .diamond { z-index: 2; }
 .method { min-height: 2.75rem; display: list-item; align-content: center; cursor: pointer; }
+
+@media (min-width: 64rem) {
+    .sampleComparison, .historyComparison {
+        grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+        align-items: start;
+        gap: 0.85rem 1rem;
+    }
+    .sampleComparison > .historyComparison, .historyComparison > .note { grid-column: 1 / -1; }
+    .sampleComparison > .sampleStocks { align-self: center; }
+    .benefits { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .paywallContent { gap: 0.55rem; margin-top: 0.3rem; }
+    .paywallContent .historyHeading { grid-template-columns: minmax(0, 1fr) 4.5rem; }
+    .paywallContent .trend { height: 11.5rem; }
+    .paywallContent > [role="alert"] {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.35rem 0.75rem;
+    }
+}

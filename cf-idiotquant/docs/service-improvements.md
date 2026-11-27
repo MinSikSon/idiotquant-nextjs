@@ -51,6 +51,13 @@ Chrome의 저장된 계정으로 로그인 흐름은 진행했으나 이메일 �
 로컬 개발 시에는 JWT 검증이 있는 Worker 작업 트리에서 `npx wrangler dev --local --port 8787`을 실행하고,
 프론트에서 `npm run dev:worker`를 실행합니다. 로컬 D1에는 해당 Worker의 마이그레이션이 필요합니다.
 
+### 관심종목 로그인 검증 (2026-11-27)
+
+로컬 Next.js가 읽는 `INTERNAL_JWT_SECRET`이 운영 Worker의 값과 일치하고, 운영 Pages와 Worker가 같은 D1에 연결된 것을 확인했습니다.
+일반 `next dev`에서는 Auth.js가 D1 어댑터 없이 로그인하므로 세션에 임시 사용자 ID가 들어갑니다.
+이 세션으로 운영 Worker의 `/user/likes`를 호출하면 JWT를 보내도 운영 D1에서 사용자를 찾을 수 없어 401이 반환됩니다.
+운영 계정의 관심종목은 D1이 연결된 배포 프론트에서 로그인해 확인합니다. 로컬 브라우저에서 같은 흐름을 검증하려면 프론트 인증과 Worker가 같은 로컬 D1을 사용해야 합니다.
+
 ## Worker 연동 테스트 (2026-10-23)
 
 - Worker `origin/main` (`f849937`): 단위 테스트 458개, Wrangler dry-run 번들 빌드 통과
