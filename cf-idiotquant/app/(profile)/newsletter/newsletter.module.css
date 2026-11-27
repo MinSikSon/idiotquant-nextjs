@@ -89,7 +89,6 @@
 .historyCoyote { grid-column: 2; grid-row: 1; width: 100%; height: auto; aspect-ratio: 1; object-fit: contain; object-position: bottom; }
 .historyHeading > div { grid-column: 1; grid-row: 1; }
 .historyComparison, .comparisonDetail { display: grid; gap: 0.55rem; min-width: 0; }
-.selectedPeriod { justify-self: start; padding: 0.22rem 0.55rem; color: var(--newsletter-ink); background: var(--newsletter-hint); border-radius: 0.25rem; font-size: 0.875rem; font-weight: 750; }
 .sampleStocks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.35rem; }
 .sampleStocks button { min-height: 2.75rem; padding: 0.25rem; border: 1px solid var(--newsletter-line); border-radius: 0.45rem; background: var(--newsletter-card); font-weight: 730; }
 .sampleStocks button[aria-pressed="true"] { border-color: var(--newsletter-ink); background: var(--newsletter-gold); font-weight: 850; }
@@ -99,7 +98,9 @@
 .strategyNote { border-block-start: 1px dashed var(--newsletter-line); font-size: 0.875rem; }
 .strategyNote summary { font-weight: 750; }
 .strategyNote p { padding-block-end: 0.5rem; color: var(--newsletter-muted); line-height: 1.55; word-break: keep-all; }
-.historyAxisCard .chartHeader time { font-size: clamp(1.2rem, 5.4vw, 1.75rem); }
+.periodHeading { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.12rem 0.5rem; }
+.periodHeading strong { color: var(--newsletter-ink); font-size: clamp(1.05rem, 4.5vw, 1.35rem); font-weight: 850; }
+.periodHeading time { color: var(--newsletter-muted); font-size: 0.8125rem; font-weight: 650; }
 .historyAxisCard .axis { grid-template-columns: minmax(0, 1fr) 17% minmax(3.6rem, 17%); }
 .historyAxisCard .axisLabels > div { padding: 0.24rem 0.4rem; font-size: clamp(0.8rem, 3.55vw, 1.1rem); }
 .historyAxisCard .axisLabels b { color: var(--newsletter-price); }

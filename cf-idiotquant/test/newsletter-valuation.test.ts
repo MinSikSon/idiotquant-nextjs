@@ -69,7 +69,7 @@ test("live history uses only the latest saved scan in each of 20 quarters, inclu
 test("registered price API fills missing quarters without replacing saved scans", async () => {
     const { fillHistoryQuarters, historyPricePath, historyQuotes } = await import("../lib/utils/newsletterHistory.ts");
     const through = "2026-11-27";
-    assert.match(historyPricePath(stock, through), /FID_INPUT_DATE_1=20220101/);
+    assert.match(historyPricePath(stock, through), /FID_INPUT_DATE_1=20210701/);
     assert.match(historyPricePath({ market: "US", ticker: "LGCL" }, through, true), /adjusted=true/);
     const prices = historyQuotes([
         { xymd: "20260930", clos: "2.36" },
@@ -155,4 +155,26 @@ test("Korean backfill values June 2025 using the March filing and prior annual e
     const split = fillHistoryQuarters([], quotes, "2025-06-30", "Example", shifted, [], reports).at(-1);
     assert.equal(split?.models.length, 0);
     assert.equal(split?.financials?.endDate, "2025-03-31");
+});
+
+
+test("Missing quarterly shares use an earlier compatible filing while keeping the newer balance sheet", async () => {
+    const { fillHistoryQuarters } = await import("../lib/utils/newsletterHistory.ts");
+    const quotes = [
+        { date: "2024-12-30", price: 53000 }, { date: "2025-01-31", price: 54000 },
+        { date: "2025-03-31", price: 58000 }, { date: "2025-06-30", price: 59800 },
+    ];
+    const reports = [
+        { endDate: "2024-12-31", filedDate: "2025-03-11", shares: 6_000_000_000, annualNetIncome: 300_000, fs_div: "CFS" },
+        { endDate: "2025-03-31", filedDate: "2025-05-15", shares: null, total_cptl: 3_600_000,
+            cras: 2_200_000, total_lblt: 1_000_000, fs_div: "CFS" },
+        { endDate: "2025-06-30", filedDate: "2025-08-14", shares: 3_000_000_000, total_cptl: 1, fs_div: "CFS" },
+    ];
+    const point = fillHistoryQuarters([], quotes, "2025-06-30", "Example", quotes, [], reports).at(-1);
+    assert.equal(point?.financials?.endDate, "2025-03-31");
+    assert.equal(point?.sharesEndDate, "2024-12-31");
+    assert.equal(point?.models.find(model => model.label === "PBR")?.targetPrice, 60000);
+    assert.equal(point?.models.find(model => model.label === "NCAV")?.targetPrice, 20000);
+    const adjusted = quotes.map(quote => quote.date < "2025-03-31" ? { ...quote, price: quote.price * 2 } : quote);
+    assert.deepEqual(fillHistoryQuarters([], quotes, "2025-06-30", "Example", adjusted, [], reports).at(-1)?.models, []);
 });
