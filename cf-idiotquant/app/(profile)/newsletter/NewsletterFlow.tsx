@@ -355,9 +355,10 @@ function ValuationResult({ stock, name, checkoutEnabled, through, openHistory = 
     const snapshot = (request.data?.[0] && scanSnapshot(request.data[0], stock)) || undefined;
     const active = access.data?.alerts?.status === "active";
     const showHistory = active || openHistory;
+    if (!openHistory && access.loading) return <p role="status">이용권을 확인하는 중입니다.</p>;
     return <>
         {showHistory ? <>
-            <ComparisonHeading name={snapshot?.name || name || stock.ticker} detail="최근 5년 · 전략별 주가와 적정가" />
+            <ComparisonHeading name={snapshot?.name || name || stock.ticker} />
             <History stock={stock} through={through} current={snapshot} onPaywall={onPaywall} />
         </> : <div className={styles.stepContent}>
             <div>
@@ -372,21 +373,20 @@ function ValuationResult({ stock, name, checkoutEnabled, through, openHistory = 
         {request.loading && <p role="status">분석 결과를 불러오는 중입니다.</p>}
         {request.error && <RequestError message={request.error} retry={request.retry} />}
         {!showHistory && !request.loading && !request.error && <div className={styles.actions}>
-            {access.loading ? <p role="status">이용권을 확인하는 중입니다.</p>
-                : checkoutEnabled ? <Link className={styles.button} href={checkoutUrl(stock)}>
+            {checkoutEnabled ? <Link className={styles.button} href={checkoutUrl(stock)}>
                     적정가 비교 보기<ArrowRight size={17} aria-hidden />
                 </Link> : <p role="status">현재 새 이용권 구매를 받지 않고 있습니다.</p>}
         </div>}
     </>;
 }
 
-function ComparisonHeading({ name, detail }: { name: string; detail: string }) {
+function ComparisonHeading({ name, detail }: { name: string; detail?: string }) {
     return <div className={styles.historyHeading}>
         <Image className={styles.historyCoyote} src="/images/onboarding/newsletter-history-coyote.webp"
             width={360} height={360} alt="" loading="eager" unoptimized />
         <div>
             <h1 id="newsletter-heading" tabIndex={-1}>{name} 적정가 비교</h1>
-            <p>{detail}</p>
+            {detail && <p>{detail}</p>}
         </div>
     </div>;
 }

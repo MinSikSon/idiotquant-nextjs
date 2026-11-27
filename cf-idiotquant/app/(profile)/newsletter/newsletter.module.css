@@ -131,7 +131,7 @@
 .benefits svg { flex: none; }
 .historyPage { margin-top: 0.45rem; }
 .historyPage > .stack { gap: 0.6rem; margin-top: 0.25rem; }
-.historyHeading { display: grid; grid-template-columns: minmax(0, 1fr) min(23%, 6.4rem); align-items: center; gap: 0.5rem; padding: 0.45rem 0.6rem 0.15rem; border-bottom: 1px dashed var(--newsletter-line); background: var(--newsletter-hint) url("/images/onboarding/newsletter-paper.webp") repeat; }
+.historyHeading { display: grid; grid-template-columns: minmax(0, 1fr) min(18%, 4.25rem); align-items: center; gap: 0.5rem; padding: 0.45rem 0.6rem 0.15rem; border-bottom: 1px dashed var(--newsletter-line); background: var(--newsletter-hint) url("/images/onboarding/newsletter-paper.webp") repeat; }
 .historyHeading h1 { font-size: clamp(1.4rem, 6.6vw, 2.45rem); font-weight: 900; text-wrap: pretty; word-break: keep-all; }
 .historyHeading p { margin-top: 0.22rem; color: var(--newsletter-muted); font-size: clamp(0.8rem, 3.5vw, 1rem); font-weight: 680; }
 .historyCoyote { grid-column: 2; grid-row: 1; width: 100%; height: auto; aspect-ratio: 1; object-fit: contain; object-position: bottom; }
@@ -143,13 +143,10 @@
 .loginRequired { display: inline-flex; align-items: center; gap: 0.2rem; font-size: 0.75rem; font-weight: 700; }
 .historyAxisCard, .trendCard { padding: clamp(0.65rem, 3.3vw, 1.25rem); }
 .trendCard { background: var(--newsletter-card); }
-.strategyNote { border-block-start: 1px dashed var(--newsletter-line); font-size: 0.875rem; }
-.strategyNote summary { font-weight: 750; }
-.strategyNote p { padding-block-end: 0.5rem; color: var(--newsletter-muted); line-height: 1.55; word-break: keep-all; }
 .periodHeading { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.12rem 0.5rem; }
 .periodHeading strong { color: var(--newsletter-ink); font-size: clamp(1.05rem, 4.5vw, 1.35rem); font-weight: 850; }
 .periodHeading time { color: var(--newsletter-muted); font-size: 0.8125rem; font-weight: 650; }
-.historyAxisCard .axis { grid-template-columns: minmax(0, 1fr) 17% minmax(3.6rem, 17%); }
+.historyAxisCard .axis { grid-template-columns: minmax(0, 1fr) 13% minmax(3.6rem, 17%); }
 .historyAxisCard .axisLabels > div { padding: 0.24rem 0.4rem; font-size: clamp(0.8rem, 3.55vw, 1.1rem); }
 .historyAxisCard .axisLabels b { color: var(--newsletter-price); }
 .historyAxisCard .referenceLabel { --ref-inset: clamp(0.45rem, 4.5vw, 2.25rem); inset-inline-end: var(--ref-inset); }
@@ -160,7 +157,6 @@
 }
 .historyAxisCard .dot, .historyAxisCard .diamond { width: 0.62rem; height: 0.62rem; }
 .historyAxisCard .ticks { min-width: 0; font-size: clamp(0.74rem, 3.3vw, 1.05rem); }
-.historyHighlight { font-size: clamp(0.94rem, 4.2vw, 1.25rem); font-weight: 850; word-break: keep-all; text-wrap: pretty; }
 .controls { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.48rem; }
 .controls button { min-height: 2.75rem; padding-inline: 0.6rem; border: 1px solid transparent; border-radius: 0.4rem; font-weight: 700; }
 .controls button:hover { border-color: var(--newsletter-line); }
@@ -168,9 +164,7 @@
 .priceOnly, .financials > div { display: flex; justify-content: space-between; gap: 0.5rem; align-items: center; }
 .priceOnly { padding-block: 0.45rem; }
 .financials { margin-top: 0.3rem; }
-.trendHeading { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 0.45rem; }
-.trendHeading h2 { font-size: clamp(1.12rem, 4.8vw, 1.5rem); font-weight: 850; word-break: keep-all; text-wrap: balance; }
-.trend { width: 100%; height: clamp(9.1rem, 35vw, 13rem); margin-top: 0.65rem; }
+.trend { width: 100%; height: clamp(7.25rem, 30vw, 13rem); margin-top: 0.35rem; }
 .trend:focus-visible { outline: 2px solid var(--newsletter-teal); outline-offset: 2px; }
 .trendDateSelector { cursor: crosshair; }
 @media (pointer: coarse) {
@@ -180,7 +174,7 @@
 .trendFooter strong { color: var(--newsletter-ink); }
 .latestScan { min-height: 2.75rem; color: var(--newsletter-teal); font-weight: 750; text-decoration: underline; text-underline-offset: 0.18em; }
 .trend :global(.recharts-cartesian-axis-tick-value) { fill: var(--newsletter-price); font-size: 0.85rem; font-weight: 650; }
-.legend { display: grid; justify-items: start; gap: 0.12rem; color: var(--newsletter-price); font-size: clamp(0.75rem, 3.2vw, 1rem); font-weight: 650; }
+.legend { display: flex; flex-wrap: wrap; gap: 0.25rem 0.75rem; color: var(--newsletter-price); font-size: clamp(0.75rem, 3.2vw, 1rem); font-weight: 650; }
 .legend span::before { content: ""; display: inline-block; width: 1rem; height: 3px; border-radius: 1rem; background: var(--newsletter-price); vertical-align: middle; margin-right: 0.35rem; }
 .legend span + span::before { background: var(--newsletter-teal); }
 .trendCard { --newsletter-loss: #a94629; }
