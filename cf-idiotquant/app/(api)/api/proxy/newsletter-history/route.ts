@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { createBackendHeaders } from "@/lib/server/proxyIdentity";
 import { fillHistoryQuarters, historyPricePath, historyQuotes, type DartBalance } from "@/lib/utils/newsletterHistory";
-import { mergeValuationSnapshots, parseStockKey, scanPath, scanSnapshot, seoulDate, type ValuationSnapshot } from "@/lib/utils/newsletterValuation";
+import { historyQuarterEnds, mergeValuationSnapshots, parseStockKey, scanPath, scanSnapshot, seoulDate, type ValuationSnapshot } from "@/lib/utils/newsletterValuation";
 
 export const runtime = "edge";
 const headers = { "Cache-Control": "private, no-store" };
@@ -41,15 +41,15 @@ export async function GET(request: Request) {
         const through = seoulDate(now);
         // The quote API can include a still-trading candle on the current calendar day.
         const closedThrough = seoulDate(now - 86_400_000);
-        const marketData = async (path: string) => {
+        const marketData = async (path: string, timeout = 8000) => {
             const response = await fetch(marketBase + path, {
-                cache: "no-store", redirect: "manual", signal: AbortSignal.timeout(8000),
+                cache: "no-store", redirect: "manual", signal: AbortSignal.timeout(timeout),
             });
             if (!response.ok) throw new Error("market source failed");
             return response.json();
         };
-        const quotes = async (adjusted = false) => {
-            const payload = await marketData(historyPricePath(stock, closedThrough, adjusted));
+        const quotes = async (adjusted = false, unadjusted = false) => {
+            const payload = await marketData(historyPricePath(stock, closedThrough, adjusted, unadjusted));
             if (payload.rt_cd !== "0" || !Array.isArray(payload.output2)) throw new Error("invalid quotes");
             return historyQuotes(payload.output2, stock.market, closedThrough);
         };
@@ -59,10 +59,23 @@ export async function GET(request: Request) {
             if (!Array.isArray(payload.data)) throw new Error("invalid filings");
             return payload.data;
         };
-        const dartBalance = async (): Promise<DartBalance[]> => {
-            const payload = await marketData(`/uapi/domestic-stock/v1/finance/balance-sheet?PDNO=${stock.ticker}`);
-            if (payload.rt_cd !== "0" || !Array.isArray(payload.output)) throw new Error("invalid OpenDART balance sheets");
-            return payload.output;
+        const dartHistory = async () => {
+            const firstYear = Number(historyQuarterEnds(through)[0].slice(0, 4)) - 1;
+            const years = Array.from({ length: Number(through.slice(0, 4)) - firstYear + 1 }, (_, index) => firstYear + index);
+            const results = await Promise.allSettled(years.map(async year => {
+                const query = new URLSearchParams({ PDNO: stock.ticker, year: String(year) });
+                const payload = await marketData(`/uapi/domestic-stock/v1/finance/valuation-history?${query}`, 26000);
+                if (payload.rt_cd !== "0" || !Array.isArray(payload.output)) throw new Error("invalid OpenDART history");
+                return { rows: payload.output as DartBalance[], partial: payload.partial === true };
+            }));
+            const available = results.flatMap(result => result.status === "fulfilled" ? [result.value] : []);
+            const partial = available.length !== years.length || available.some(result => result.partial);
+            if (!available.length) {
+                const payload = await marketData(`/uapi/domestic-stock/v1/finance/balance-sheet?PDNO=${stock.ticker}`);
+                if (payload.rt_cd !== "0" || !Array.isArray(payload.output)) throw new Error("invalid OpenDART balance sheets");
+                return { rows: payload.output as DartBalance[], partial: true };
+            }
+            return { rows: available.flatMap(result => result.rows), partial };
         };
         const [sources, market] = await Promise.all([
             Promise.allSettled((["monthly", "weekly", "daily"] as const).map(async source => {
@@ -74,17 +87,21 @@ export async function GET(request: Request) {
                 }) as ValuationSnapshot[];
             })),
             Promise.allSettled([quotes(), stock.market === "US" ? quotes(true) : [],
-                stock.market === "US" ? filings() : [], stock.market === "KR" ? dartBalance() : []] as const),
+                stock.market === "US" ? filings() : [], stock.market === "KR" ? dartHistory() : null,
+                stock.market === "KR" ? quotes(false, true) : []] as const),
         ]);
         const groups = sources.flatMap(source => source.status === "fulfilled" ? [source.value] : []);
         const scans = mergeValuationSnapshots(groups);
-        const [rawPrices, adjustedPrices, reports, dart] = market;
-        const data = fillHistoryQuarters(scans, rawPrices.status === "fulfilled" ? rawPrices.value : [],
+        const [prices, adjustedPrices, reports, dart, krRaw] = market;
+        const displayPrices = prices.status === "fulfilled" ? prices.value : [];
+        const krPairs = krRaw.status === "fulfilled" ? krRaw.value : [];
+        const data = fillHistoryQuarters(scans, displayPrices,
             through, scans.at(-1)?.name ?? stock.ticker,
-            adjustedPrices.status === "fulfilled" ? adjustedPrices.value : [],
+            stock.market === "KR" ? krPairs : adjustedPrices.status === "fulfilled" ? adjustedPrices.value : [],
             reports.status === "fulfilled" ? reports.value : [],
-            dart.status === "fulfilled" ? dart.value : []);
-        const partial = groups.length < sources.length || market.some(source => source.status === "rejected");
+            dart.status === "fulfilled" ? dart.value?.rows : []);
+        const partial = groups.length < sources.length || market.some(source => source.status === "rejected") ||
+            (dart.status === "fulfilled" && dart.value?.partial);
         if (!data.length && partial) {
             return failure("과거 비교 기록을 불러오지 못했습니다.", 502);
         }

@@ -332,8 +332,11 @@ function ValuationResult({ stock, name, checkoutEnabled, through, openHistory = 
     const active = access.data?.alerts?.status === "active";
     const showHistory = active || openHistory;
     return <>
-        <h1 id="newsletter-heading" tabIndex={-1}>{snapshot?.name || name || stock.ticker} {showHistory ? "적정가 비교" : "현재 적정가"}</h1>
-        {showHistory ? <History stock={stock} through={through} current={snapshot} onPaywall={onPaywall} /> : <>
+        {showHistory ? <>
+            <ComparisonHeading name={snapshot?.name || name || stock.ticker} detail="최근 5년 · 전략별 주가와 적정가" />
+            <History stock={stock} through={through} current={snapshot} onPaywall={onPaywall} />
+        </> : <>
+            <h1 id="newsletter-heading" tabIndex={-1}>{snapshot?.name || name || stock.ticker} 현재 적정가</h1>
             <p className={styles.lede}>최근 저장된 스캔 기준</p>
             <div className={styles.stack}>
                 {snapshot && <PriceAxis snapshot={snapshot} market={stock.market} />}
