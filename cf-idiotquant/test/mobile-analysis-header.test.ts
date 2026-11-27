@@ -33,6 +33,7 @@ function header(initialY = 0, pathname = '/analyze', role?: 'user' | 'admin', vi
     require(name: string) {
       if (name === 'next-intl') return koreanIntl;
       if (name === 'react') return {
+        useLayoutEffect: (callback: () => unknown) => effects.push(callback),
         useState(initial: unknown) {
           const index = cursor++;
           if (!(index in states)) states[index] = initial;
