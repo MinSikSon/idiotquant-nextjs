@@ -2190,7 +2190,7 @@ function ScreenerContent() {
                     </>
                 )}
                 {!etfCreationMode && compareTickers.length > 0 && (
-                    <div aria-label="선택한 종목 비교" role="group" className={cn(styles.panelSurface, "sticky bottom-[var(--bottombar-h)] z-30 mt-3 flex flex-wrap items-center justify-end gap-2 p-2 md:bottom-4")}>
+                    <div aria-label="선택한 종목 비교" role="group" className={cn(styles.panelSurface, "sticky bottom-[var(--mobile-bottom-inset)] z-30 mt-3 flex flex-wrap items-center justify-end gap-2 p-2 md:bottom-4")}>
                         <button type="button" onClick={clearStockSelection} className={styles.action}>선택 취소</button>
                         {canAddEtfHoldings && <button type="button" onClick={addSelectionToEtf} className={styles.action}>ETF에 담기</button>}
                         <button type="button" className={styles.actionPrimary} onClick={() => {

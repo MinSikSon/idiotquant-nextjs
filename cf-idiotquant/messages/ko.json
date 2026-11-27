@@ -31,7 +31,7 @@
     "mainMenu": "주요 서비스",
     "userMenu": "사용자 및 서비스 메뉴",
     "createEtf": "ETF 만들기",
-    "bottomMenu": "하단 메뉴",
+    "closeMenu": "메뉴 닫기",
     "serviceMenu": "서비스 메뉴",
     "language": "언어"
   },
@@ -42,6 +42,9 @@
     "searchHint": "이름이나 티커로 찾기",
     "discover": "종목 발굴",
     "discoverHint": "재무 조건으로 찾아보기",
+    "openService": "열기",
+    "analyzeHint": "재무지표와 적정주가 확인",
+    "compareHint": "여러 종목의 지표 한눈에 보기",
     "guide": "이용 방법",
     "guideBody": "검색과 발굴은 로그인 없이 이용할 수 있습니다. 관심종목을 저장하려면 로그인한 뒤 분석 화면에서 하트를 누르세요.",
     "service": "서비스 안내",

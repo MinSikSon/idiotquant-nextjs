@@ -31,7 +31,7 @@
     "mainMenu": "Main services",
     "userMenu": "Account and services",
     "createEtf": "Create ETF",
-    "bottomMenu": "Bottom navigation",
+    "closeMenu": "Close menu",
     "serviceMenu": "Services menu",
     "language": "Language"
   },
@@ -42,6 +42,9 @@
     "searchHint": "Find by name or ticker",
     "discover": "Discover stocks",
     "discoverHint": "Screen by financial criteria",
+    "openService": "Open",
+    "analyzeHint": "Review financials and fair value",
+    "compareHint": "See key metrics side by side",
     "guide": "How to use",
     "guideBody": "Search and screen stocks without signing in. To save a stock, sign in and select the heart on its analysis page.",
     "service": "About this service",

@@ -31,7 +31,7 @@
     "mainMenu": "主要サービス",
     "userMenu": "アカウントとサービス",
     "createEtf": "ETFを作成",
-    "bottomMenu": "下部ナビゲーション",
+    "closeMenu": "メニューを閉じる",
     "serviceMenu": "サービスメニュー",
     "language": "言語"
   },
@@ -42,6 +42,9 @@
     "searchHint": "銘柄名やティッカーで探す",
     "discover": "銘柄発掘",
     "discoverHint": "財務条件で絞り込む",
+    "openService": "開く",
+    "analyzeHint": "財務指標と適正株価を確認",
+    "compareHint": "複数の銘柄の指標を見比べる",
     "guide": "使い方",
     "guideBody": "検索と発掘はログインせずに利用できます。銘柄を保存するには、ログイン後に分析画面のハートを押してください。",
     "service": "サービスについて",

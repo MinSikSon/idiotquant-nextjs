@@ -59,7 +59,7 @@ test("모바일 게임은 상단 헤더만큼만 빼고 하단 여백을 없앤�
     {
         const layout = read(LAYOUT);
         const pt = /pt-\[var\(--navigation-h,(\d+)px\)\]/.exec(layout);
-        const pb = /pb-\[var\(--bottombar-h\)\]/.exec(layout);
+        const pb = /pb-\[var\(--mobile-bottom-inset\)\]/.exec(layout);
         assert.ok(pt && pb, `${LAYOUT} 에서 위아래 여백을 못 찾았다`);
 
         const game = read(GAME);
@@ -84,18 +84,16 @@ test("모바일 게임은 상단 헤더만큼만 빼고 하단 여백을 없앤�
         const nav = read(NAV);
         const css = read("app/global.css");
         const pt = Number(/pt-\[var\(--navigation-h,(\d+)px\)\]/.exec(layout)![1]);
-        assert.match(layout, /pb-\[var\(--bottombar-h\)\]/);
+        assert.match(layout, /pb-\[var\(--mobile-bottom-inset\)\]/);
 
-        // 공통 상단 머리줄과 하단 탭 바 치수는 레이아웃 여백 값과 일치해야 한다.
-        // 게임은 하단 탭이 숨겨져 있어 해당 padding 만 별도로 없앤다.
+        // 공통 레이아웃은 상단 헤더와 기기 하단 안전 영역의 높이를 반영한다.
         const headerHeight = /--topbar-h:\s*(\d+)px/.exec(css);
         assert.ok(headerHeight, "공통 헤더의 기본 높이를 찾지 못했다");
         assert.equal(Number(headerHeight[1]), pt, "헤더의 기본 높이와 레이아웃의 기본 상단 여백이 다르다");
         assert.match(css, /\.navigation-main\s*\{[^}]*min-height:\s*var\(--topbar-h\)/);
         assert.match(css, /--navigation-h:\s*var\(--topbar-h\)/);
-        assert.match(css, /--bottombar-h:\s*calc\(52px \+ env\(safe-area-inset-bottom, 0px\)\)/);
-        assert.match(css, /\[data-bottom-navigation\]\s*\{[^}]*height: var\(--bottombar-h\)/);
-        assert.match(nav, /inGame \? "hidden" : "md:hidden/);
+        assert.match(css, /--mobile-bottom-inset:\s*env\(safe-area-inset-bottom, 0px\)/);
+        assert.doesNotMatch(nav, /data-bottom-navigation/);
         assert.match(layout, /viewportFit: "cover"/);
         assert.match(read("app/(game)/layout.tsx"), /viewportFit: "auto"/);
 

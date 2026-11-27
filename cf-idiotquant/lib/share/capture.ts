@@ -22,9 +22,7 @@ function drawRangeForCapture(input: HTMLInputElement, doc: Document) {
 export async function captureScreen() {
   const { scrollX, scrollY } = window;
   const { left, width } = document.body.getBoundingClientRect();
-  const bottomBar = document.querySelector('[data-bottom-navigation]')?.getBoundingClientRect();
   const { clientWidth: viewportWidth, clientHeight: viewportHeight } = document.documentElement;
-  const height = bottomBar?.height && bottomBar.top > 0 ? Math.min(bottomBar.top, viewportHeight) : viewportHeight;
 
   const { default: html2canvas } = await import('html2canvas');
   const canvas = await html2canvas(document.documentElement, {
@@ -33,12 +31,12 @@ export async function captureScreen() {
     scrollX,
     scrollY,
     width: Math.min(width, viewportWidth),
-    height,
+    height: viewportHeight,
     scale: Math.min(window.devicePixelRatio, 2),
     useCORS: true,
     imageTimeout: 3000,
     logging: false,
-    ignoreElements: element => element.matches('.navigation-popover, nextjs-portal, ins.adsbygoogle, [data-bottom-navigation]'),
+    ignoreElements: element => element.matches('.navigation-popover, nextjs-portal, ins.adsbygoogle'),
     onclone: doc => {
       // 복제한 문서에서는 부드러운 스크롤을 기다리지 않고 실제 위치를 맞춘다.
       doc.defaultView?.scrollTo({ left: scrollX, top: scrollY, behavior: 'instant' });

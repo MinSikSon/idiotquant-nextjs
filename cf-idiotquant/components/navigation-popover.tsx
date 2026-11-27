@@ -7,11 +7,10 @@ import { cloneElement, useEffect, useLayoutEffect, useSyncExternalStore, useId, 
 const subscribe = () => () => {};
 
 /** 닫힌 동안에도 공유 대화상자·빠른 이동의 상태와 단축키를 유지한다. */
-export function NavigationPopover({ label, trigger, children, side = "bottom", align = "end", defaultOpen = false, className = "", onOpenChange }: {
+export function NavigationPopover({ label, trigger, children, align = "end", defaultOpen = false, className = "", onOpenChange }: {
   label: string;
   trigger: ReactElement;
   children: ReactNode;
-  side?: "top" | "bottom";
   align?: "start" | "end";
   defaultOpen?: boolean;
   className?: string;
@@ -37,13 +36,8 @@ export function NavigationPopover({ label, trigger, children, side = "bottom", a
       const rect = trigger.getBoundingClientRect();
       const left = align === "start" ? rect.left : rect.right - content.offsetWidth;
       content.style.left = `${Math.max(12, Math.min(left, window.innerWidth - content.offsetWidth - 12))}px`;
-      if (side === "top") {
-        content.style.bottom = "calc(var(--bottombar-h) + 4px)";
-        content.style.maxHeight = "calc(100dvh - var(--bottombar-h) - 16px)";
-      } else {
-        content.style.top = `${rect.bottom + 4}px`;
-        content.style.maxHeight = `${Math.max(44, window.innerHeight - rect.bottom - 16)}px`;
-      }
+      content.style.top = `${rect.bottom + 4}px`;
+      content.style.maxHeight = `${Math.max(44, window.innerHeight - rect.bottom - 16)}px`;
     };
     position();
     const focusTarget = () => {
@@ -85,7 +79,7 @@ export function NavigationPopover({ label, trigger, children, side = "bottom", a
       window.removeEventListener("resize", position);
       window.removeEventListener("scroll", position, true);
     };
-  }, [open, pathname, side, align, mounted]);
+  }, [open, pathname, align, mounted]);
 
   return <>
     {cloneElement(trigger as ReactElement<Record<string, unknown>>, {

@@ -193,7 +193,6 @@
     background: var(--newsletter-paper);
     overscroll-behavior-y: none;
 }
-:global(body):has(.surface) :global([data-bottom-navigation]) { display: none; }
 /* Safari에서 가로 클리핑이 sticky 버튼의 스크롤 기준을 바꾸지 않도록 한다. */
 :global(main):has(.surface) { padding-bottom: 0; overflow-x: visible; }
 

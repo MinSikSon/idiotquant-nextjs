@@ -10,7 +10,6 @@ import { useMobilePageHeader } from "@/components/mobile-page-header";
 import { StockSearchTrigger } from "@/components/stock-search-provider";
 import { PageShareTools } from "@/components/page-share";
 import { NavigationPopover } from "@/components/navigation-popover";
-import { navigationScroll, type NavigationScrollState } from "@/lib/navigation-scroll";
 import QuickNavigation from "@/components/quick-navigation";
 import { cn } from "@/lib/utils";
 import { CONTROL_FOCUS_CLS } from "@/lib/ui-controls";
@@ -25,7 +24,9 @@ import {
   Eye,
   ShieldCheck,
   MoreHorizontal,
-  LayoutGrid,
+  Menu,
+  X,
+  ChevronRight,
   ChevronDown,
   Check,
   UserRound,
@@ -65,7 +66,6 @@ const DESKTOP_NAV_CONTROL = cn(
   "navigation-menubar-item inline-flex min-h-7 items-center whitespace-nowrap px-2.5 font-medium lg:px-3",
   CONTROL_FOCUS_CLS,
 );
-const MOBILE_NAV_CONTROL = "service-button-quiet service-nav-tab navigation-tab flex h-11 min-w-0 flex-1 basis-0 flex-col items-center justify-center gap-[3px] py-1";
 
 const RESEARCH_NAV: NavItem[] = [
   { label: "종목 비교", message: "compare", href: "/compare", icon: GitCompareArrows },
@@ -151,24 +151,6 @@ function SideItem({
           {badge}
         </span>
       )}
-    </Link>
-  );
-}
-
-/* ─── BOTTOM TAB ITEM (mobile) ────────────────────────────────────── */
-function TabItem({
-  href, label, icon: Icon, isActive,
-}: {
-  href: string; label: string; icon?: any; isActive: boolean;
-}) {
-  return (
-    <Link
-      href={href}
-      aria-current={isActive ? "page" : undefined}
-      className={MOBILE_NAV_CONTROL}
-    >
-      <Icon size={20} strokeWidth={isActive ? 2 : 1.6} />
-      <span className="text-xs font-semibold leading-none">{label}</span>
     </Link>
   );
 }
@@ -303,18 +285,14 @@ export function NavbarWithSimpleLinks() {
       ? ({ background: "var(--rg-bg)", borderColor: "var(--rg-line-faint)" } as const)
       : undefined;
   const [moreOpen, setMoreOpen] = useState(false);
-  const [sheetState, setSheetState] = useState({ pathname, open: false });
-  if (sheetState.pathname !== pathname) setSheetState({ pathname, open: false });
-  const moreSheet = sheetState.pathname === pathname && sheetState.open;
-  const setMoreSheet = (open: boolean) => setSheetState({ pathname, open });
-  const [bottomState, setBottomState] = useState({ pathname, hidden: false });
-  if (bottomState.pathname !== pathname) setBottomState({ pathname, hidden: false });
-  const bottomHidden = bottomState.pathname === pathname && bottomState.hidden;
-  const setBottomHidden = (hidden: boolean) => setBottomState(previous => previous.pathname === pathname && previous.hidden === hidden ? previous : { pathname, hidden });
+  const mobileMenu = useRef<HTMLDialogElement>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  useEffect(() => {
+    mobileMenu.current?.close();
+  }, [pathname, mobile]);
   const [gameScroll, setGameScroll] = useState({ pathname, scrolled: false });
   if (gameScroll.pathname !== pathname) setGameScroll({ pathname, scrolled: false });
   const gameScrolled = gameScroll.scrolled;
-  const bottomNav = useRef<HTMLElement>(null);
   const [identityOffset, setIdentityOffset] = useState(0);
   const mobilePage = MOBILE_PAGE_TITLES.find(item => active(pathname, item.href, item.exact));
   const mobilePageTitle = mobilePage && labelFor(mobilePage);
@@ -329,13 +307,8 @@ export function NavbarWithSimpleLinks() {
       window.addEventListener("scroll", update, { passive: true });
       return () => window.removeEventListener("scroll", update);
     }
-    let state: NavigationScrollState = { y: Math.max(0, window.scrollY), direction: 0, travel: 0, hidden: false };
     const onScroll = () => {
       if (fixedPageIdentity) setIdentityOffset(Math.min(56, Math.max(0, window.scrollY)));
-      state = navigationScroll(state, window.scrollY,
-        window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 2,
-        moreSheet || !!bottomNav.current?.querySelector(":focus-visible"));
-      setBottomState(previous => previous.pathname === pathname && previous.hidden === state.hidden ? previous : { pathname, hidden: state.hidden });
     };
     const observer = new ResizeObserver(onScroll);
     observer.observe(document.body);
@@ -347,7 +320,7 @@ export function NavbarWithSimpleLinks() {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
     };
-  }, [pathname, inGame, moreSheet, fixedPageIdentity]);
+  }, [pathname, inGame, fixedPageIdentity]);
 
   /* Theme sync: persist choice in localStorage, hydrate on mount */
   useEffect(() => {
@@ -369,17 +342,22 @@ export function NavbarWithSimpleLinks() {
 
   const serviceMenu = (compact: boolean) => {
     const groups = [
+      ...(compact ? [{ label: t("mainMenu"), items: mainNav.map(item => ({
+        ...item,
+        label: item.href === "/screener" ? t("discoverStocks") : item.href === "/analyze" ? t("analyzeStocks") : item.label,
+      })) }] : []),
       { label: t("research"), items: researchNav },
       { label: t("other"), items: otherServicesNav },
       { label: "관리", items: adminNav },
     ];
+    const pageTools = !inEtfFeed && <section aria-label={t("tools")} className="navigation-menu-group py-1.5">
+      <p className="px-2.5 pb-1 pt-1.5 text-xs font-semibold text-[var(--service-muted)]">{t("tools")}</p>
+      <div ref={mobile === compact ? pageHeader?.setToolsTarget : undefined}>
+        {mobile === compact && !pageHeader?.active && <PageShareTools key={pathname} inMenu share={pathname.startsWith("/ledger/join/") ? { path: "/ledger" } : undefined} />}
+      </div>
+    </section>;
     return <div className="navigation-service-menu text-base md:text-sm">
-      {!inEtfFeed && <section aria-label={t("tools")} className="navigation-menu-group py-1.5">
-        <p className="px-2.5 pb-1 pt-1.5 text-xs font-semibold text-[var(--service-muted)]">{t("tools")}</p>
-        <div ref={mobile === compact ? pageHeader?.setToolsTarget : undefined}>
-          {mobile === compact && !pageHeader?.active && <PageShareTools key={pathname} inMenu share={pathname.startsWith("/ledger/join/") ? { path: "/ledger" } : undefined} />}
-        </div>
-      </section>}
+      {!compact && pageTools}
       <nav aria-label={compact ? t("allServices") : t("extraServices")}>
         {groups.filter(group => group.items.length).map(group => <section key={group.label} aria-label={group.label} className="navigation-menu-group py-1.5">
           <p className="px-2.5 pb-1 pt-1.5 text-xs font-semibold text-[var(--service-muted)]">{group.label}</p>
@@ -387,16 +365,17 @@ export function NavbarWithSimpleLinks() {
             const isActive = active(pathname, item.href, item.exact);
             return <Link key={item.href} href={item.href}
               aria-current={isActive ? "page" : undefined}
-              className="navigation-menu-link flex min-h-11 items-center gap-2.5 px-2.5 py-1.5 leading-6">
+              className={cn("navigation-menu-link flex min-h-11 items-center gap-2.5 px-2.5 py-1.5 leading-6", compact && "!min-h-14 font-semibold")}>
               <span className="navigation-menu-icon grid size-7 shrink-0 place-items-center rounded-md">
                 <Icon size={17} strokeWidth={1.8} aria-hidden="true" />
               </span>
               <span className="min-w-0 flex-1">{item.label}</span>
-              {isActive && <Check size={16} aria-hidden="true" className="shrink-0" />}
+              {isActive ? <Check size={16} aria-hidden="true" className="shrink-0" /> : compact && <ChevronRight size={16} aria-hidden="true" className="shrink-0 text-[var(--service-muted)]" />}
             </Link>;
           })}
         </section>)}
       </nav>
+      {compact && pageTools}
       <div className="navigation-menu-group flex flex-wrap items-center gap-2 px-2.5 pt-2"><ThemeChanger compact /><QuickNavigation compact={compact} items={[...mainNav, ...utilityNav]} /></div>
     </div>;
   };
@@ -553,24 +532,32 @@ export function NavbarWithSimpleLinks() {
               <Plus size={16} aria-hidden="true" />{t("createEtf")}
             </Link>}
             <StockSearchTrigger showDesktopLabel />
-            <NavigationPopover label={t("account")} className="navigation-service-popover text-base md:text-sm" trigger={
-              <button type="button" aria-label={t("account")} className="service-button navigation-action navigation-account">
-                <UserRound size={18} aria-hidden="true" />
-              </button>
-            }>
-              {(status !== "unauthenticated" || pathname !== "/login") && <div className="mb-1 border-b border-[var(--service-line)] pb-1">
-                {status === "authenticated" ? <>
-                  <Link href="/profile" aria-current={pathname === "/profile" ? "page" : undefined} className="navigation-menu-link flex min-h-11 items-center gap-3 px-2.5 py-2">
-                    <UserRound size={18} aria-hidden="true" className="shrink-0" />
-                    <span className="min-w-0 flex-1 break-words">{session?.user?.name || t("account")}{session?.user?.name && <span className="ml-2 text-xs text-[var(--service-muted)]">{t("account")}</span>}</span>
-                  </Link>
-                  <button type="button" onClick={() => signOut({ callbackUrl: "/" })} className="navigation-menu-link flex min-h-11 w-full items-center gap-3 px-2.5 py-2 text-left"><LogOut size={18} aria-hidden="true" className="shrink-0" />{t("signOut")}</button>
-                </> : status === "unauthenticated" ?
-                  <Link href="/login" className="navigation-menu-link flex min-h-11 items-center gap-3 px-2.5 py-2"><LogIn size={18} aria-hidden="true" className="shrink-0" />{t("signIn")}</Link> :
-                  <span className="block px-2.5 py-3 text-[var(--service-muted)]">{t("checkingAccount")}</span>}
-              </div>}
-              <LanguageSelect />
-            </NavigationPopover>
+            <div className="hidden md:block">
+              <NavigationPopover label={t("account")} className="navigation-service-popover text-base md:text-sm" trigger={
+                <button type="button" aria-label={t("account")} className="service-button navigation-action navigation-account">
+                  <UserRound size={18} aria-hidden="true" />
+                </button>
+              }>
+                {(status !== "unauthenticated" || pathname !== "/login") && <div className="mb-1 border-b border-[var(--service-line)] pb-1">
+                  {status === "authenticated" ? <>
+                    <Link href="/profile" aria-current={pathname === "/profile" ? "page" : undefined} className="navigation-menu-link flex min-h-11 items-center gap-3 px-2.5 py-2">
+                      <UserRound size={18} aria-hidden="true" className="shrink-0" />
+                      <span className="min-w-0 flex-1 break-words">{session?.user?.name || t("account")}{session?.user?.name && <span className="ml-2 text-xs text-[var(--service-muted)]">{t("account")}</span>}</span>
+                    </Link>
+                    <button type="button" onClick={() => signOut({ callbackUrl: "/" })} className="navigation-menu-link flex min-h-11 w-full items-center gap-3 px-2.5 py-2 text-left"><LogOut size={18} aria-hidden="true" className="shrink-0" />{t("signOut")}</button>
+                  </> : status === "unauthenticated" ?
+                    <Link href="/login" className="navigation-menu-link flex min-h-11 items-center gap-3 px-2.5 py-2"><LogIn size={18} aria-hidden="true" className="shrink-0" />{t("signIn")}</Link> :
+                    <span className="block px-2.5 py-3 text-[var(--service-muted)]">{t("checkingAccount")}</span>}
+                </div>}
+                <LanguageSelect />
+              </NavigationPopover>
+            </div>
+            <button type="button" aria-label={t("serviceMenu")} aria-haspopup="dialog"
+              aria-controls="mobile-service-menu" aria-expanded={menuOpen}
+              onClick={() => { mobileMenu.current?.showModal(); setMenuOpen(true); }}
+              className={cn("navigation-action service-button md:!hidden", CONTROL_FOCUS_CLS)}>
+              <Menu size={22} aria-hidden="true" />
+            </button>
           </div>
         </div>
         {fixedPageIdentity && (
@@ -609,20 +596,38 @@ export function NavbarWithSimpleLinks() {
         <div ref={pageHeader?.setActionsTarget} data-navigation-actions className={cn("navigation-mobile-actions px-4 pb-1.5", !pageHeader?.active && "hidden")} />
       </header>}
 
-      {/* ══ MOBILE BOTTOM TAB BAR ════════════════════════════════════ */}
-      <nav ref={bottomNav} aria-label={t("bottomMenu")} data-bottom-navigation data-hidden={bottomHidden && !moreSheet && !inEtfFeed || undefined}
-        onFocusCapture={() => setBottomHidden(false)}
-        className={cn(inGame ? "hidden" : "md:hidden navigation-bottom fixed bottom-0 left-0 right-0 z-40 flex items-center gap-1.5 px-3")}>
-        {mainNav.map(item => (
-          <TabItem key={item.href} href={item.href} label={item.label} icon={item.icon}
-            isActive={active(pathname, item.href, item.exact)} />
-        ))}
-        <NavigationPopover label={t("serviceMenu")} side="top" className="navigation-service-popover" onOpenChange={open => { setMoreSheet(open); setBottomHidden(false); }} trigger={
-          <button type="button" data-current-section={moreActive || undefined} className={MOBILE_NAV_CONTROL}>
-            <LayoutGrid size={20} aria-hidden="true" /><span className="text-xs font-semibold leading-none">{t("more")}</span>
-          </button>
-        }>{!inGame && serviceMenu(true)}</NavigationPopover>
-      </nav>
+      {!inGame && <dialog ref={mobileMenu} id="mobile-service-menu" data-html2canvas-ignore aria-label={t("serviceMenu")}
+        onClose={() => setMenuOpen(false)}
+        onClick={event => {
+          if ((event.target as Element).closest("a[href]")) mobileMenu.current?.close();
+        }}
+        className="navigation-mobile-menu">
+        <div className="navigation-mobile-menu-content mx-auto max-w-lg px-4">
+          <div className="sticky top-[env(safe-area-inset-top,0px)] z-10 flex min-h-14 items-center justify-between bg-[var(--service-panel)]">
+            <Link href="/" aria-label={t("homeLink")} className={cn(logoClass, "inline-flex")}>{logoText}</Link>
+            <button autoFocus type="button" aria-label={t("closeMenu")} onClick={() => mobileMenu.current?.close()}
+              className={cn("navigation-action service-button", CONTROL_FOCUS_CLS)}>
+              <X size={22} aria-hidden="true" />
+            </button>
+          </div>
+          <div className="mb-4 border-b border-[var(--service-line)] py-4">
+            {status === "authenticated" ? <div className="flex flex-wrap items-center justify-between gap-x-2">
+              <Link href="/profile" className="navigation-menu-link flex min-h-11 items-center gap-2 px-2 font-semibold">
+                <UserRound size={18} aria-hidden="true" />{session?.user?.name || t("account")}
+              </Link>
+              <button type="button" onClick={() => signOut({ callbackUrl: "/" })} className="navigation-menu-link flex min-h-11 items-center gap-2 px-2">
+                <LogOut size={18} aria-hidden="true" />{t("signOut")}
+              </button>
+            </div> : status === "unauthenticated" && pathname !== "/login" ?
+              <Link href="/login" className="service-button flex min-h-12 items-center justify-center gap-2 bg-[var(--service-accent-ink)] px-4 font-semibold text-[var(--service-canvas)]">
+                <LogIn size={18} aria-hidden="true" />{t("signIn")}
+              </Link> : status === "loading" ?
+              <p role="status" className="px-2 py-2 text-[var(--service-muted)]">{t("checkingAccount")}</p> : null}
+          </div>
+          {serviceMenu(true)}
+          <div className="mt-4"><LanguageSelect /></div>
+        </div>
+      </dialog>}
 
       {/* ══ 일반 사용자 화면으로 보는 중 ══════════════════════════════
           켜 놓고 잊으면 "메뉴가 왜 없지" 가 되므로 어디서나 보이는 자리에 둔다.
@@ -633,7 +638,7 @@ export function NavbarWithSimpleLinks() {
         <button
           type="button"
           onClick={() => setViewAsUser(false)}
-          className="fixed z-50 bottom-[calc(var(--bottombar-h)+12px)] left-3 md:bottom-4 md:left-4 flex items-center gap-2 rounded-xl border border-brand-light-hover bg-brand-light px-3.5 py-2 text-[11px] font-bold text-brand-ink shadow-lg hover:bg-[#e5e3ff] dark:border-brand/40 dark:bg-brand-muted dark:text-brand-ink-hover"
+          className="fixed z-50 bottom-[calc(var(--mobile-bottom-inset)+12px)] left-3 md:bottom-4 md:left-4 flex items-center gap-2 rounded-xl border border-brand-light-hover bg-brand-light px-3.5 py-2 text-[11px] font-bold text-brand-ink shadow-lg hover:bg-[#e5e3ff] dark:border-brand/40 dark:bg-brand-muted dark:text-brand-ink-hover"
         >
           <EyeOff size={13} className="shrink-0" />
           일반 사용자 화면
