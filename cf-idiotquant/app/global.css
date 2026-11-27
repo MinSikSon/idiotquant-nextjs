@@ -757,7 +757,17 @@ html:has(#rogue-root) body { background-color: var(--rg-bg); }
 .navigation-popover :is(button, a, summary, select) { min-height: 44px; min-width: 44px; }
 [data-page-secondary-actions] [data-balance-header-actions] { display: flex; flex-wrap: wrap; gap: 8px; }
 [data-page-secondary-actions] > :is(button, a) { width: 100%; justify-content: flex-start; }
-html:has(.navigation-mobile-menu[open]) { overflow: hidden; }
+html:has(.navigation-mobile-menu:modal) {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+html:has(.navigation-mobile-menu:modal) body {
+  /* iOS Safari can scroll the document even when the root clips overflow. */
+  position: fixed;
+  top: var(--mobile-menu-page-offset, 0px);
+  inset-inline: 0;
+  overflow: hidden;
+}
 .navigation-mobile-menu {
   position: fixed;
   inset: 0;
@@ -767,7 +777,7 @@ html:has(.navigation-mobile-menu[open]) { overflow: hidden; }
   max-height: none;
   margin: 0;
   overflow-y: auto;
-  overscroll-behavior: contain;
+  overscroll-behavior: none;
   background: var(--service-panel);
   color: var(--service-ink);
 }

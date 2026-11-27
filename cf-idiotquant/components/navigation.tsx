@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useEffect, useState, useRef, Fragment } from "react";
+import { useEffect, useLayoutEffect, useState, useRef, Fragment } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
@@ -286,10 +286,24 @@ export function NavbarWithSimpleLinks() {
       : undefined;
   const [moreOpen, setMoreOpen] = useState(false);
   const mobileMenu = useRef<HTMLDialogElement>(null);
+  const menuPagePosition = useRef<{ x: number; y: number; url: string } | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   useEffect(() => {
     mobileMenu.current?.close();
   }, [pathname, mobile]);
+  useLayoutEffect(() => {
+    const position = menuPagePosition.current;
+    if (!menuOpen || !position) return;
+    const root = document.documentElement;
+    root.style.setProperty("--mobile-menu-page-offset", `${-position.y}px`);
+
+    return () => {
+      root.style.removeProperty("--mobile-menu-page-offset");
+      if (window.location.href === position.url) {
+        window.scrollTo({ left: position.x, top: position.y, behavior: "instant" });
+      }
+    };
+  }, [menuOpen]);
   const [gameScroll, setGameScroll] = useState({ pathname, scrolled: false });
   if (gameScroll.pathname !== pathname) setGameScroll({ pathname, scrolled: false });
   const gameScrolled = gameScroll.scrolled;
@@ -554,7 +568,11 @@ export function NavbarWithSimpleLinks() {
             </div>
             <button type="button" aria-label={t("serviceMenu")} aria-haspopup="dialog"
               aria-controls="mobile-service-menu" aria-expanded={menuOpen}
-              onClick={() => { mobileMenu.current?.showModal(); setMenuOpen(true); }}
+              onClick={() => {
+                menuPagePosition.current = { x: window.scrollX, y: window.scrollY, url: window.location.href };
+                mobileMenu.current?.showModal();
+                setMenuOpen(true);
+              }}
               className={cn("navigation-action service-button md:!hidden", CONTROL_FOCUS_CLS)}>
               <Menu size={22} aria-hidden="true" />
             </button>

@@ -20,9 +20,13 @@ function drawRangeForCapture(input: HTMLInputElement, doc: Document) {
 }
 
 export async function captureScreen() {
-  const { scrollX, scrollY } = window;
+  const { scrollX } = window;
+  const root = document.documentElement;
+  // The cloned document excludes the open menu and its fixed-body scroll lock.
+  const menuOffset = root.style.getPropertyValue('--mobile-menu-page-offset');
+  const scrollY = menuOffset ? -parseFloat(menuOffset) : window.scrollY;
   const { left, width } = document.body.getBoundingClientRect();
-  const { clientWidth: viewportWidth, clientHeight: viewportHeight } = document.documentElement;
+  const { clientWidth: viewportWidth, clientHeight: viewportHeight } = root;
 
   const { default: html2canvas } = await import('html2canvas');
   const canvas = await html2canvas(document.documentElement, {
