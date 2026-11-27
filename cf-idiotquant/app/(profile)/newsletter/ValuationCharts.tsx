@@ -107,8 +107,8 @@ function TrendDateSelector({ onSelect }: { onSelect: (fraction: number) => void 
         }} />;
 }
 
-export function HistoricalComparison({ snapshots, market, through, sample = false }: {
-    snapshots: ValuationSnapshot[]; market: Market; through: string; sample?: boolean;
+export function HistoricalComparison({ snapshots, current, market, through, sample = false }: {
+    snapshots: ValuationSnapshot[]; current?: ValuationSnapshot; market: Market; through: string; sample?: boolean;
 }) {
     const [end, setEnd] = useState("");
     const [strategy, setStrategy] = useState("");
@@ -116,16 +116,22 @@ export function HistoricalComparison({ snapshots, market, through, sample = fals
     const selected = quarters.find(item => item.end === end)
         ?? quarters.findLast(item => item.snapshot)
         ?? quarters[quarters.length - 1];
-    const financials = selected.snapshot?.financials;
-    const selectedYear = selected.end.slice(0, 4);
+    const latestSelected = !!current && (end === "" || end === "latest");
+    const snapshot = latestSelected ? current : selected.snapshot;
+    const financials = latestSelected
+        ? snapshots.find(point => point.date === current.date)?.financials
+        : snapshot?.financials;
+    const latestYear = through.slice(0, 4);
+    const selectedYear = latestSelected ? latestYear : selected.end.slice(0, 4);
     const years = [...new Set(quarters.map(item => item.end.slice(0, 4)))];
     const dateButtons = quarters.filter(item => item.end.startsWith(selectedYear));
-    const available = new Set(quarters.flatMap(item => item.snapshot?.models
+    const trendQuarters = current ? valuationQuarters([current, ...snapshots], through) : quarters;
+    const available = new Set(trendQuarters.flatMap(item => item.snapshot?.models
         .filter(model => model.targetPrice !== null).map(model => model.label) ?? []));
     const strategies = [...new Set(["SRIM", "PER", "PBR", "NCAV", ...available])].filter(label => available.has(label));
     const activeStrategy = strategies.includes(strategy) ? strategy : strategies[0];
     const strategyDescription = strategyDescriptions[activeStrategy];
-    const data = quarters.map(item => ({
+    const data = trendQuarters.map(item => ({
         end: item.end,
         time: Date.parse(item.end),
         price: item.snapshot?.price ?? null,
@@ -134,6 +140,7 @@ export function HistoricalComparison({ snapshots, market, through, sample = fals
     }));
     const firstTime = data[0].time;
     const lastTime = data[data.length - 1].time;
+    const selectedTime = latestSelected ? data.find(point => point.scanDate === current.date)?.time : Date.parse(selected.end);
     const timeTicks = years.map(year => {
         const yearPoints = data.filter(item => item.end.startsWith(year));
         return yearPoints[Math.floor(yearPoints.length / 2)].time;
@@ -148,19 +155,26 @@ export function HistoricalComparison({ snapshots, market, through, sample = fals
     return <div className={styles.historyComparison}>
         <div className={styles.dateControls}>
             <select aria-label="비교 연도" value={selectedYear} onChange={event => {
+                if (current && event.target.value === latestYear) {
+                    setEnd("latest");
+                    return;
+                }
                 const inYear = quarters.filter(item => item.end.startsWith(event.target.value));
                 const sameQuarter = inYear.find(item => item.end.slice(4) === selected.end.slice(4));
                 setEnd((sameQuarter?.snapshot ? sameQuarter : inYear.findLast(item => item.snapshot) ?? sameQuarter ?? inYear.at(-1)!).end);
             }}>
                 {years.map(year => <option key={year} value={year}>{year}년</option>)}
             </select>
-            <select aria-label="비교 분기" value={selected.end} onChange={event => setEnd(event.target.value)}>
+            <select aria-label="비교 시점" value={latestSelected ? "latest" : selected.end} onChange={event => setEnd(event.target.value)}>
+                {current && selectedYear === latestYear && <option value="latest">
+                    최신 스캔 · {(current.date.startsWith(latestYear) ? current.date.slice(5) : current.date).replaceAll("-", ".")}
+                </option>}
                 {dateButtons.map(item => <option key={item.end} value={item.end}>
                     {quarterNumber(item.end)}분기 · {item.snapshot?.date.slice(5).replace("-", ".") ?? "기록 없음"}
                 </option>)}
             </select>
         </div>
-        {selected.snapshot ? <PriceAxis snapshot={selected.snapshot} market={market} historical />
+        {snapshot ? <PriceAxis snapshot={snapshot} market={market} historical={!latestSelected} />
             : <p role="status">이 분기에 조회 가능한 주가와 적정가 기록이 없습니다.</p>}
         {financials && <details className={styles.note}>
             <summary className={styles.method}>당시 재무정보 · {financials.source} {financials.filedDate} 공시</summary>
@@ -172,7 +186,7 @@ export function HistoricalComparison({ snapshots, market, through, sample = fals
                 })}
             </dl>
         </details>}
-        {snapshots.length > 0 && <section className={`${styles.chartCard} ${styles.trendCard}`} aria-labelledby="newsletter-trend">
+        {data.some(point => point.price !== null) && <section className={`${styles.chartCard} ${styles.trendCard}`} aria-labelledby="newsletter-trend">
             <div className={styles.trendHeading}>
                 <h2 id="newsletter-trend" className={styles.marker}>
                     {activeStrategy ? `주가와 ${activeStrategy} 적정가 추이` : "주가 추이"}
@@ -190,7 +204,7 @@ export function HistoricalComparison({ snapshots, market, through, sample = fals
                         <Tooltip labelFormatter={value => data.find(point => point.time === Number(value))?.scanDate ?? ""}
                             formatter={(value, name) => [formatPrice(Number(value), market), name]}
                             contentStyle={{ color: "var(--newsletter-ink)", background: "var(--newsletter-card)", borderColor: "var(--newsletter-line)" }} />
-                        <ReferenceLine x={Date.parse(selected.end)} stroke="var(--newsletter-line)" strokeDasharray="4 3" />
+                        {selectedTime !== undefined && <ReferenceLine x={selectedTime} stroke="var(--newsletter-line)" strokeDasharray="4 3" />}
                         <Line dataKey="price" name="주가" stroke="var(--newsletter-price)" strokeWidth={2.5}
                             strokeLinecap="round" strokeLinejoin="round" dot={{ r: 2 }} isAnimationActive={false} />
                         {activeStrategy && <Line dataKey="target" name={`${activeStrategy} 적정가`} type="stepAfter"
