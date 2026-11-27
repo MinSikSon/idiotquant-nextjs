@@ -94,11 +94,11 @@ function screen(query = '', loggedIn = false, savedFilters = {}) {
 }
 
 test('비로그인도 전체 종목을 필터·정렬한 상위 10개를 보고 현재 조건을 공유한다', () => {
-  const page = screen('maxpbr=1&sort=ncav_ratio&order=asc&view=card', false, { view: 'ratio' });
+  const page = screen('maxpbr=1&sort=ncav_ratio&order=asc');
   page.effects.slice(0, 4).forEach(effect => effect());
   assert.equal(page.requests.length, 1);
   assert.equal(page.requests[0].scan.limit, undefined);
-  const rows = page.nodes().filter(node => node.type?.name === 'TableRow');
+  const rows = page.nodes().filter(node => node.type === 'StockValuationRow');
   assert.equal(rows.length, 10);
   assert.equal(rows[0].props.item.ticker, '000044');
   assert.equal(rows[9].props.item.ticker, '000035');
@@ -106,9 +106,10 @@ test('비로그인도 전체 종목을 필터·정렬한 상위 10개를 보고 
   for (const [key, value] of Object.entries({ maxpbr: '1', order: 'asc', from: 'share' })) {
     assert.equal(shareUrl.searchParams.get(key), value);
   }
+  assert.equal(shareUrl.searchParams.get('view'), null);
   assert.equal(shareUrl.searchParams.get('sort'), null, '기본 정렬은 짧은 주소에서 생략한다');
   const reopened = screen(shareUrl.search.slice(1), false, { country: 'US', view: 'table', maxpbr: 0 });
-  assert.equal(reopened.nodes().filter(node => node.type?.name === 'TableRow')[0].props.item.ticker, '000044');
+  assert.equal(reopened.nodes().filter(node => node.type === 'StockValuationRow')[0].props.item.ticker, '000044');
   assert.equal(page.find('FactorWorkbench'), undefined);
   const filterButton = page.nodes().find(node => node.type === 'button' && node.props.children?.some?.((child: any) => child === '상세 필터'));
   filterButton.props.onClick();
@@ -120,9 +121,15 @@ test('비로그인도 전체 종목을 필터·정렬한 상위 10개를 보고 
   assert.equal(page.find('ResultSummary').props.list.length, 10);
 });
 
+test('목록과 자산 비율은 기존 링크와 저장 설정에서 열 수 있다', () => {
+  assert.ok(screen('view=card', false, { view: 'ratio' }).nodes().some(node => node.type?.name === 'TableRow'));
+  assert.ok(screen('view=table').nodes().some(node => node.type?.name === 'TableRow'));
+  assert.ok(screen('', false, { view: 'ratio' }).find('StockRatioRow'));
+});
+
 test('예전 OR 공유 링크도 선택한 전략을 모두 충족하는 종목만 보여준다', () => {
   const single = screen('strategies=ncav');
-  assert.ok(single.nodes().some(node => node.type?.name === 'TableRow'));
+  assert.ok(single.nodes().some(node => node.type === 'StockValuationRow'));
   const combined = screen('strategies=ncav,low_pbr&mode=OR&from=share');
   assert.ok(combined.nodes().some(node => node.props?.children === '조건에 맞는 종목이 없습니다'));
   const shareUrl = new URL(combined.find('PageHeader').props.share.path, 'https://idiotquant.com');
@@ -149,21 +156,21 @@ test('비로그인 비교는 4종목까지 선택한다', () => {
   const page = screen();
   const compareControls = () => page.nodes().find(node => node.props?.['aria-label'] === '선택한 종목 비교');
   assert.equal(compareControls(), undefined);
-  const first = page.nodes().find(node => node.type?.name === 'TableRow').props;
+  const first = page.nodes().find(node => node.type === 'StockValuationRow').props;
   first.actions.toggleComparison(first.item.ticker);
   page.render();
   assert.ok(compareControls());
-  assert.equal(page.nodes().find(node => node.type?.name === 'TableRow').props.comparison.selected, true);
+  assert.equal(page.nodes().find(node => node.type === 'StockValuationRow').props.comparison.selected, true);
   for (let index = 1; index < 4; index++) {
-    page.nodes().filter(node => node.type?.name === 'TableRow')[index].props.comparison.toggle();
+    page.nodes().filter(node => node.type === 'StockValuationRow')[index].props.comparison.toggle();
     page.render();
   }
-  const rows = page.nodes().filter(node => node.type?.name === 'TableRow');
+  const rows = page.nodes().filter(node => node.type === 'StockValuationRow');
   assert.equal(rows[4].props.comparison.disabled, true);
   assert.equal(rows[0].props.comparison.disabled, false);
   rows[4].props.comparison.toggle();
   page.render();
-  assert.equal(page.nodes().filter(node => node.type?.name === 'TableRow' && node.props.comparison.selected).length, 4);
+  assert.equal(page.nodes().filter(node => node.type === 'StockValuationRow' && node.props.comparison.selected).length, 4);
 });
 
 

@@ -375,6 +375,8 @@
     "resultView": "Result view",
     "list": "List",
     "ratio": "Asset ratios",
+    "valuationView": "Fair value",
+    "valuationViewTip": "Compare the scan price with each valuation estimate",
     "listTip": "Compare metrics in a list",
     "ratioTip": "Compare asset ratios",
     "group": "Group results",

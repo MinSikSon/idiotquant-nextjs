@@ -29,6 +29,8 @@ import { PageHeader, PAGE_ACTION_CLS, PAGE_PRIMARY_ACTION_CLS } from "@/componen
 import { buildGroups, defaultOpenGroups, GroupedResults, type Group, type GroupMode } from "./components/GroupedResults";
 import { ResultSummary, TermStrip } from "./components/ResultSummary";
 import { krStockDisplayName } from "@/lib/utils/krStockNames";
+import { WatchlistPriceLegend } from "@/components/watchlist-stock-row";
+import { StockValuationRow } from "./components/StockValuationRow";
 import { StockRatioRow } from "./components/StockRatioRow";
 import { StockResult, type StockResultActions } from "./components/StockResult";
 import { FilterWorldcup } from "./components/FilterWorldcup";
@@ -177,12 +179,11 @@ function MixRow({ label, mix, strategy = false }: { label: string; mix: Mix; str
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 
 // 단일 전략 선택 시 강조할 지표 컬럼 + 기준 충족 판정. 키는 전략의 기준이 되는 컬럼.
-// table: 표 · ratio: 자산·부채·시총 비율 비교
-type ViewMode = 'table' | 'ratio';
-const DEFAULT_VIEW: ViewMode = 'table';
-// 예전 카드 보기 링크와 저장값도 목록으로 열리도록 한다.
+type ViewMode = 'valuation' | 'table' | 'ratio';
+const DEFAULT_VIEW: ViewMode = 'valuation';
+// 기존 링크와 저장 설정에서 명시적으로 선택한 보기를 유지한다.
 const parseViewMode = (value: string | null | undefined): ViewMode =>
-    value === 'ratio' ? value : DEFAULT_VIEW;
+    value === 'ratio' ? 'ratio' : value === 'table' || value === 'card' ? 'table' : DEFAULT_VIEW;
 type MetricKey = "ncav_ratio" | "pbr" | "per" | "roe";
 type HighlightMap = Partial<Record<MetricKey, (i: any) => boolean>>;
 // 상세 분석 화면의 S-RIM 카드는 ROE를 당기순이익÷자본총계(연결 전체)로 계산해 값이 다르다.
@@ -1043,6 +1044,7 @@ function ScreenerContent() {
         country === 'KR' ? krStockDisplayName(item.ticker, item.name, locale)
             : locale === 'ko' ? item.name : item.eng_name || item.name;
     const stockActions: StockResultActions = { openDetails: openStockDetails, toggleComparison };
+    const ChartRow = viewMode === 'valuation' ? StockValuationRow : StockRatioRow;
 
     // 국내 관심종목은 이름 또는 코드로 저장된 기존 자료가 모두 있다.
     const watchTickerFor = (ticker: string, name: string) =>
@@ -2091,9 +2093,9 @@ function ScreenerContent() {
 
                         <div className={styles.resultToolbar}>
                             <Tabs.List aria-label={t("resultView")} className={styles.viewTabs}>
-                                {([['table', t("list")], ['ratio', t("ratio")]] as const).map(([id, label]) => (
-                                    <Tabs.Trigger key={id} value={id} title={t(id === "table" ? "listTip" : "ratioTip")} className={styles.tab}>
-                                        {label}
+                                {([['valuation', 'valuationView', 'valuationViewTip'], ['table', 'list', 'listTip'], ['ratio', 'ratio', 'ratioTip']] as const).map(([id, label, tip]) => (
+                                    <Tabs.Trigger key={id} value={id} title={t(tip)} className={styles.tab}>
+                                        {t(label)}
                                     </Tabs.Trigger>
                                 ))}
                             </Tabs.List>
@@ -2112,21 +2114,24 @@ function ScreenerContent() {
                             </label>
                         </div>
                         <Tabs.Content value={viewMode} className={styles.resultPanel}>
-                        {viewMode === 'ratio' ? (
-                            groups ? (
-                                <div className="bg-white dark:bg-surface-dark-card rounded-lg border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
-                                    <GroupedResults {...groupedProps} bodyClassName={styles.stockGrid}
-                                        renderRow={(item: any) => (
-                                            <StockRatioRow key={item.ticker} item={item} displayName={stockName(item)} actions={stockActions} isLiked={likedTickers.has(watchTickerFor(item.ticker, item.name))} onToggleLike={handleToggleLike} comparison={comparisonFor(item.ticker)} />
-                                        )} />
-                                </div>
-                            ) : (
-                                <div className={styles.stockGrid}>
-                                    {visibleList.map((item: any) => (
-                                        <StockRatioRow key={item.ticker} item={item} displayName={stockName(item)} actions={stockActions} isLiked={likedTickers.has(watchTickerFor(item.ticker, item.name))} onToggleLike={handleToggleLike} comparison={comparisonFor(item.ticker)} />
-                                    ))}
-                                </div>
-                            )
+                        {viewMode !== 'table' ? (
+                            <>
+                                {viewMode === 'valuation' && <div className="px-3 pb-1"><WatchlistPriceLegend /></div>}
+                                {groups ? (
+                                    <div className="bg-white dark:bg-surface-dark-card rounded-lg border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
+                                        <GroupedResults {...groupedProps} bodyClassName={styles.stockGrid}
+                                            renderRow={(item: any) => (
+                                                <ChartRow isUs={country === "US"} key={item.ticker} item={item} displayName={stockName(item)} actions={stockActions} isLiked={likedTickers.has(watchTickerFor(item.ticker, item.name))} onToggleLike={handleToggleLike} comparison={comparisonFor(item.ticker)} />
+                                            )} />
+                                    </div>
+                                ) : (
+                                    <div className={styles.stockGrid}>
+                                        {visibleList.map((item: any) => (
+                                            <ChartRow isUs={country === "US"} key={item.ticker} item={item} displayName={stockName(item)} actions={stockActions} isLiked={likedTickers.has(watchTickerFor(item.ticker, item.name))} onToggleLike={handleToggleLike} comparison={comparisonFor(item.ticker)} />
+                                        ))}
+                                    </div>
+                                )}
+                            </>
                         ) : (
                         <div className="bg-white dark:bg-surface-dark-card overflow-x-auto">
                             <div className="min-w-[17rem]">

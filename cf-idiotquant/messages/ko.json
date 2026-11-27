@@ -375,6 +375,8 @@
     "resultView": "결과 보기 방식",
     "list": "목록",
     "ratio": "자산 비율",
+    "valuationView": "적정가",
+    "valuationViewTip": "스캔 기준가와 전략별 적정가 비교",
     "listTip": "표로 보기",
     "ratioTip": "비율로 보기 — 유동자산·부채총계·시가총액을 같은 축에서 비교",
     "group": "결과 묶기",
