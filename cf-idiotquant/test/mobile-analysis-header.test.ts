@@ -4,7 +4,6 @@ import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import test from 'node:test';
 import ts from 'typescript';
-import { navigationScroll } from '../lib/navigation-scroll.ts';
 
 function header(initialY = 0, pathname = '/analyze', role?: 'user' | 'admin', viewAsUser = false) {
   const states: unknown[] = [];
@@ -54,7 +53,6 @@ function header(initialY = 0, pathname = '/analyze', role?: 'user' | 'admin', vi
       }) };
       if (name === '@/lib/viewAsUser') return { useViewAsUser: () => viewAsUser };
       if (name === '@/lib/utils') return { cn: (...values: unknown[]) => values.filter(Boolean).join(' ') };
-      if (name === '@/lib/navigation-scroll') return { navigationScroll };
       if (name === '@/components/mobile-page-header') return { useMobilePageHeader: () => ({ active: true }) };
       return {};
     },
@@ -70,10 +68,13 @@ function header(initialY = 0, pathname = '/analyze', role?: 'user' | 'admin', vi
       header,
       sidebar: tree.find(node => node.props?.className?.includes('desktop-game-sidebar')),
       desktopNav: tree.find(node => node.props?.['aria-label'] === '주요 서비스'),
-      bottomNav: tree.find(node => node.props?.['aria-label'] === '하단 메뉴'),
+      bottomNav: tree.find(node => 'data-bottom-navigation' in (node.props ?? {})),
+      mobileMenu: tree.find(node => node.type === 'dialog' && node.props.id === 'mobile-service-menu'),
+      mobileTrigger: nodes(header).find(node => node.props?.['aria-controls'] === 'mobile-service-menu'),
+      mobileLinks: tree.find(node => node.type === 'section' && node.props?.['aria-label'] === '주요 서비스')?.props.children[1],
       serviceMenus: tree.filter(node => ['추가 서비스', '전체 서비스'].includes(node.props?.['aria-label'])),
       fixedLogo: nodes(header).find(node => node.props?.['aria-label'] === 'idiotquant 홈'),
-      logoCount: tree.filter(node => node.props?.['aria-label'] === 'idiotquant 홈').length,
+      logoCount: tree.filter(node => node.props?.['aria-label'] === 'idiotquant 홈' && !nodes(tree.find(node => node.type === 'dialog')).includes(node)).length,
       title: tree.find(node => 'data-navigation-scroll-title' in (node.props ?? {})),
     };
   }
@@ -84,13 +85,15 @@ function header(initialY = 0, pathname = '/analyze', role?: 'user' | 'admin', vi
 
 test('주요 메뉴는 발굴과 분석을 순서대로 표시하고 현재 경로의 항목을 선택한다', () => {
   for (const pathname of ['/screener', '/analyze']) {
-    const { desktopNav, bottomNav } = header(0, pathname).render();
+    const { desktopNav, bottomNav, mobileMenu, mobileLinks, mobileTrigger } = header(0, pathname).render();
     const desktopLinks = desktopNav.props.children[0];
-    const bottomTabs = bottomNav.props.children[0];
+    assert.equal(mobileTrigger.props['aria-haspopup'], 'dialog');
+    assert.equal(mobileTrigger.props['aria-controls'], mobileMenu.props.id);
+    assert.equal(bottomNav, undefined);
     assert.deepEqual(Array.from(desktopLinks, (node: any) => node.props.children), ['오늘', '발굴', '분석']);
-    assert.deepEqual(Array.from(bottomTabs, (node: any) => node.props.label), ['오늘', '발굴', '분석']);
+    assert.deepEqual(Array.from(mobileLinks, (node: any) => node.props.href), ['/', '/screener', '/analyze']);
     assert.equal(desktopLinks.find((node: any) => node.props['aria-current'] === 'page')?.props.href, pathname);
-    assert.equal(bottomTabs.find((node: any) => node.props.isActive)?.props.href, pathname);
+    assert.equal(mobileLinks.find((node: any) => node.props['aria-current'] === 'page')?.props.href, pathname);
   }
 });
 

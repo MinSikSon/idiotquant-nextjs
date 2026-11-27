@@ -119,7 +119,7 @@ export default function CommunityEtfsPage() {
         }
     }
 
-    return <div className="mx-auto flex h-[calc(100dvh-var(--navigation-h)-var(--bottombar-h))] w-full max-w-3xl flex-col text-neutral-900 dark:text-neutral-100 md:h-[calc(100dvh-var(--navigation-h))]">
+    return <div className="mx-auto flex h-[calc(100dvh-var(--navigation-h)-var(--mobile-bottom-inset))] w-full max-w-3xl flex-col text-neutral-900 dark:text-neutral-100 md:h-[calc(100dvh-var(--navigation-h))]">
         <ToastContainer toasts={toasts} onRemove={removeToast} />
         <h1 className="sr-only">공개 가상 ETF 피드</h1>
         <section ref={feed} id="etf-feed" aria-label="ETF 목록" tabIndex={0} onScroll={syncActiveCard}

@@ -10,29 +10,42 @@ import { NewsletterEntry } from '@/components/newsletter-entry';
 import { useStockSearchModal } from '@/components/stock-search-provider';
 
 const HeroCoinRain = dynamic(() => import('@/components/hero-coin-rain'), { ssr: false });
-const choice = 'service-button group flex min-w-0 flex-col items-center justify-between gap-1 px-2 pb-3 pt-1 text-center font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink md:flex-row md:justify-center md:px-3 md:py-2 md:text-left';
-const choiceArt = 'h-24 w-full object-contain motion-safe:transition-transform motion-safe:group-hover:-translate-y-1 motion-safe:group-active:translate-y-0 motion-safe:group-active:scale-95 md:h-20 md:w-20';
-const choiceDescription = 'hidden break-keep text-sm font-normal leading-snug md:block';
+const choice = 'service-button-quiet group flex min-h-20 min-w-0 items-center justify-between gap-2 rounded-2xl bg-[var(--service-panel)] px-4 py-3 text-left text-[var(--service-ink)] hover:bg-[var(--service-soft)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink md:justify-center md:px-3 md:py-2';
+const choiceArt = 'hidden h-20 w-20 shrink-0 object-contain motion-safe:transition-transform motion-safe:group-hover:-translate-y-1 md:block';
+const choiceDescription = 'mt-0.5 block break-keep text-sm font-normal leading-snug text-[var(--service-muted)] md:mt-0 md:text-current';
 
 export default function GuestLanding() {
   const t = useTranslations("home");
+  const nav = useTranslations("nav");
   const { openSearch } = useStockSearchModal();
   return <div className="mx-auto w-full max-w-5xl space-y-5 px-4 py-3 text-neutral-900 dark:text-neutral-100 sm:space-y-8 sm:px-6 sm:py-8">
     <NewsletterEntry label={t("newsletter")} description={t("newsletterHint")} />
-    <section aria-labelledby="home-title" className="relative isolate rounded-2xl bg-[#faf4e9] p-4 dark:bg-[#26221f] md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.65fr)] md:items-center md:gap-5 md:p-5">
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-2xl [mask-image:linear-gradient(to_bottom,transparent_2.25rem,black_4rem,black_90%,transparent)]">
+    <section aria-labelledby="home-title" className="relative isolate -mx-4 bg-[var(--service-accent)] px-4 pb-5 pt-5 sm:-mx-6 sm:px-6 md:mx-0 md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.65fr)] md:items-center md:gap-5 md:rounded-2xl md:bg-[#faf4e9] md:p-5 md:dark:bg-[#26221f]">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 hidden overflow-hidden rounded-2xl [mask-image:linear-gradient(to_bottom,transparent_2.25rem,black_4rem,black_90%,transparent)] md:block">
         <HeroCoinRain />
       </div>
-      <h1 id="home-title" className="text-balance break-keep text-center text-2xl font-semibold leading-tight tracking-tight">{t("heading")}</h1>
-      <div className="mt-3 grid grid-cols-2 gap-3 md:mt-0 md:gap-4">
-        <button type="button" onClick={openSearch} className={`${choice} bg-[#f8eee8]/80 text-[#563626] hover:bg-[#f3e4db]/90 dark:bg-[#392c2d]/75 dark:text-[#ffe3d3] dark:hover:bg-[#443334]/90`}>
-          <Image src="/images/onboarding/search-company.webp" width={480} height={480} alt="" unoptimized loading="eager" className={choiceArt} />
-          <span>{t("search")}<span className={choiceDescription}>{t("searchHint")}</span></span>
-        </button>
-        <Link href="/screener" className={`${choice} bg-[#e7f1eb]/80 text-[#244b3e] hover:bg-[#dcebe3]/90 dark:bg-[#243b31]/75 dark:text-[#d9f4e7] dark:hover:bg-[#2b4239]/90`}>
-          <Image src="/images/onboarding/discover-stocks.webp" width={480} height={480} alt="" unoptimized loading="eager" className={choiceArt} />
-          <span>{t("discover")}<span className={choiceDescription}>{t("discoverHint")}</span></span>
-        </Link>
+      <div className="relative flex min-h-24 items-center pb-3 pr-24 md:block md:min-h-0 md:p-0">
+        <h1 id="home-title" className="text-balance break-keep text-2xl font-bold leading-tight tracking-tight md:text-center">{t("heading")}</h1>
+        <Image src="/images/onboarding/discover-stocks.webp" width={480} height={480} alt="" unoptimized className="pointer-events-none absolute bottom-0 right-0 size-24 object-contain md:hidden" />
+      </div>
+      <div className="grid gap-3 md:grid-cols-2 md:gap-4">
+        {[
+          { title: t("search"), hint: t("searchHint"), art: "search-company", style: "md:bg-[#f8eee8]/80 md:text-[#563626] md:hover:bg-[#f3e4db]/90 md:dark:bg-[#392c2d]/75 md:dark:text-[#ffe3d3] md:dark:hover:bg-[#443334]/90" },
+          { title: t("discover"), hint: t("discoverHint"), art: "discover-stocks", href: "/screener", style: "md:bg-[#e7f1eb]/80 md:text-[#244b3e] md:hover:bg-[#dcebe3]/90 md:dark:bg-[#243b31]/75 md:dark:text-[#d9f4e7] md:dark:hover:bg-[#2b4239]/90" },
+          { title: nav("analyzeStocks"), hint: t("analyzeHint"), href: "/analyze", style: "md:hidden" },
+          { title: nav("compare"), hint: t("compareHint"), href: "/compare", style: "md:hidden" },
+        ].map(({ title, hint, art, href, style }) => {
+          const content = <>
+            {art && <Image src={`/images/onboarding/${art}.webp`} width={480} height={480} alt="" unoptimized loading="eager" className={choiceArt} />}
+            <span className="min-w-0 break-keep text-lg font-semibold leading-tight md:text-base">
+              {title}<span className={choiceDescription}>{hint}</span>
+            </span>
+            <span aria-hidden="true" className="grid min-h-11 shrink-0 place-items-center rounded-lg bg-[var(--service-accent-ink)] px-3 text-sm font-semibold text-[var(--service-canvas)] group-active:opacity-80 md:hidden">{t("openService")}</span>
+          </>;
+          return href
+            ? <Link key={href} href={href} className={`${choice} ${style}`}>{content}</Link>
+            : <button key="search" type="button" onClick={openSearch} className={`${choice} ${style}`}>{content}</button>;
+        })}
       </div>
     </section>
     <GuestWatchlist />

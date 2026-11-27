@@ -69,7 +69,7 @@ export default function NewCommunityEtfPage() {
 
     return <>
         <PageHeader title={published ? "공개 완료" : "가상 ETF 공개하기"} width="content" />
-        <main className={`${PAGE_WIDTH.content} pb-[calc(var(--bottombar-h)+2rem)] pt-4 md:pt-6`}>
+        <main className={`${PAGE_WIDTH.content} pb-[calc(var(--mobile-bottom-inset)+2rem)] pt-4 md:pt-6`}>
             <div className="mx-auto max-w-3xl">
                 <Link href="/etfs/draft" className={`mb-3 inline-flex min-h-11 items-center gap-2 rounded text-sm font-semibold text-brand-ink ${CONTROL_FOCUS_CLS}`}>
                     <ArrowLeft size={16} aria-hidden="true" />{published ? "내 가상 ETF" : "초안으로 돌아가기"}

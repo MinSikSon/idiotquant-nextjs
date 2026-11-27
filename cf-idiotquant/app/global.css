@@ -41,7 +41,7 @@
   }
 
   :where(button:not([role], [aria-pressed], [aria-expanded], [aria-haspopup], .service-button-quiet,
-                    th *, [data-navigation-header] *, [data-bottom-navigation] *, .navigation-popover *, #game-canvas *),
+                    th *, [data-navigation-header] *, .navigation-mobile-menu *, .navigation-popover *, #game-canvas *),
          input:is([type="button"], [type="submit"], [type="reset"]), .service-button) {
     --button-rest-depth: 2px;
     --button-face: var(--button-edge);
@@ -140,7 +140,7 @@
   --font-serif-kr: var(--font-sans);
   --sidebar-w: 220px;
   --topbar-h: 48px;
-  --bottombar-h: calc(52px + env(safe-area-inset-bottom, 0px));
+  --mobile-bottom-inset: env(safe-area-inset-bottom, 0px);
   --navigation-h: var(--topbar-h);
   --brand-ink: 18 101 87;
   --brand-ink-hover: 14 79 68;
@@ -757,10 +757,24 @@ html:has(#rogue-root) body { background-color: var(--rg-bg); }
 .navigation-popover :is(button, a, summary, select) { min-height: 44px; min-width: 44px; }
 [data-page-secondary-actions] [data-balance-header-actions] { display: flex; flex-wrap: wrap; gap: 8px; }
 [data-page-secondary-actions] > :is(button, a) { width: 100%; justify-content: flex-start; }
-[data-bottom-navigation] { height: var(--bottombar-h); padding-bottom: env(safe-area-inset-bottom, 0px); transition: transform 180ms ease; }
-[data-bottom-navigation][data-hidden] { transform: translateY(100%); }
-/* flex-basis 0로 텍스트 길이에 관계없이 다섯 탭을 같은 폭으로 배분한다. */
-[data-bottom-navigation] > :is(a, button) { flex: 1 1 0; min-width: 0; }
+html:has(.navigation-mobile-menu[open]) { overflow: hidden; }
+.navigation-mobile-menu {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--service-panel);
+  color: var(--service-ink);
+}
+.navigation-mobile-menu-content {
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: calc(var(--mobile-bottom-inset) + 16px);
+}
 html:has(.navigation-header [data-page-tabs]) { --navigation-h: calc(var(--topbar-h) + 44px); }
 [data-page-tabs] { height: 44px; background: inherit; }
 [data-page-tabs] > div { padding-block: 0; }
@@ -768,22 +782,17 @@ html:has(.navigation-header [data-page-tabs]) { --navigation-h: calc(var(--topba
 [data-page-tabs] :is(button, a) { flex: 1 0 0; min-width: 44px; min-height: 44px; height: 44px; margin: 0; padding-block: 0; white-space: nowrap; border-radius: 0; }
 [data-page-tabs] .navigation-strategy-tabs > button { min-width: 100px; }
 [data-page-tabs] .navigation-strategy-tabs > button > span { display: inline; }
-@media (prefers-reduced-motion: reduce) {
-  [data-bottom-navigation] { transition: none; }
-}
 
 .navigation-main [data-page-title-meta] > * { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .navigation-main [data-page-title-meta] > :last-child { flex-shrink: 0; }
 
 [data-compact-tabs] [role="tab"], [data-header-market-switch] button { min-height: 44px; min-width: 44px; flex: 1 1 0; }
 
-.navigation-header,
-.navigation-bottom {
+.navigation-header {
   background: color-mix(in srgb, var(--service-canvas) 67%, var(--service-accent));
   border-color: color-mix(in srgb, var(--service-line) 75%, var(--service-accent-ink));
 }
 
-.navigation-bottom { border-top-width: 1px; }
 .navigation-header [data-share-controls] { gap: 4px; }
 
 .navigation-menubar-item {
@@ -804,24 +813,6 @@ html:has(.navigation-header [data-page-tabs]) { --navigation-h: calc(var(--topba
 
 .navigation-menubar-item:active {
   background: color-mix(in srgb, var(--service-ink) 18%, transparent);
-}
-
-.navigation-tab {
-  --button-depth: 0px;
-  --button-face: transparent;
-  --button-edge: rgb(var(--service-accent-ink-rgb) / 24%);
-  border-radius: 8px;
-  color: var(--service-ink);
-}
-
-.navigation-tab:hover,
-.navigation-tab:is([aria-current="page"], [aria-expanded="true"], [data-current-section]) {
-  background: var(--service-accent);
-  color: var(--service-accent-ink);
-}
-
-.navigation-tab:is([aria-current="page"], [aria-expanded="true"], [data-current-section]) {
-  --button-pressed: var(--button-edge);
 }
 
 .navigation-service-popover {

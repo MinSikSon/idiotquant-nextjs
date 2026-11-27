@@ -177,17 +177,17 @@ export default async function RootLayout({
               <StockSearchProvider>
               <MobilePageHeaderProvider>
               <NavbarWithSimpleLinks />
-              {/* 모바일 상단 헤더 + 하단 탭바. 데스크톱 헤더는 문서 흐름 안에 있다. */}
+              {/* 모바일 상단 헤더와 하단 안전 영역. 데스크톱 헤더는 문서 흐름 안에 있다. */}
               {/* min-h-screen(100vh) 이 아니라 100dvh 다.
                   모바일 브라우저에서 100vh 는 주소창이 접혔을 때의 큰 높이라, 주소창이
                   보이는 동안에는 화면보다 늘 커진다 — 내용이 다 들어가는 페이지에서도
                   주소창 높이만큼 끌려 내려갔다 튕겨 오는 헛스크롤이 생긴다. dvh 는 지금
                   보이는 높이라 그 차이가 없다.
-                  padding 은 box-sizing:border-box 라 이 높이에 포함된다(상단바와 고정 탭 + 하단 52px 및 기기 안전 영역).
+                  padding 은 box-sizing:border-box 라 이 높이에 포함된다(상단바와 고정 탭 + 하단 기기 안전 영역).
                   가로만 자를 때 clip 을 써야 sticky 헤더의 기준이 이 main 으로 바뀌지 않는다. */}
               <main className={cn(
                 "pt-[var(--navigation-h,48px)] md:pt-0",
-                "pb-[var(--bottombar-h)] md:pb-0",
+                "pb-[var(--mobile-bottom-inset)] md:pb-0",
                 "min-h-[100dvh] md:min-h-[calc(100dvh-var(--navigation-h,48px))] overflow-x-clip"
               )}>
                 <PageInputShortcuts />
