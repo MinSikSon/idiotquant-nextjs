@@ -287,7 +287,9 @@ export function NavbarWithSimpleLinks() {
   const [moreOpen, setMoreOpen] = useState(false);
   const mobileMenu = useRef<HTMLDialogElement>(null);
   const menuPagePosition = useRef<{ x: number; y: number; url: string } | null>(null);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuPath, setMenuPath] = useState<string | null>(null);
+  const menuOpen = menuPath === pathname;
+  if (menuPath !== null && !menuOpen) setMenuPath(null);
   useEffect(() => {
     mobileMenu.current?.close();
   }, [pathname, mobile]);
@@ -571,7 +573,7 @@ export function NavbarWithSimpleLinks() {
               onClick={() => {
                 menuPagePosition.current = { x: window.scrollX, y: window.scrollY, url: window.location.href };
                 mobileMenu.current?.showModal();
-                setMenuOpen(true);
+                setMenuPath(pathname);
               }}
               className={cn("navigation-action service-button md:!hidden", CONTROL_FOCUS_CLS)}>
               <Menu size={22} aria-hidden="true" />
@@ -615,7 +617,7 @@ export function NavbarWithSimpleLinks() {
       </header>}
 
       {!inGame && <dialog ref={mobileMenu} id="mobile-service-menu" data-html2canvas-ignore aria-label={t("serviceMenu")}
-        onClose={() => setMenuOpen(false)}
+        onClose={() => setMenuPath(null)}
         onClick={event => {
           if ((event.target as Element).closest("a[href]")) mobileMenu.current?.close();
         }}
