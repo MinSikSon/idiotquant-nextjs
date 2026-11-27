@@ -34,7 +34,7 @@ export function PriceAxis({ snapshot, market, historical = false, compact = hist
     const upper = Math.ceil((max + range * 0.08) / tickStep) * tickStep;
     const lower = Math.max(0, Math.min(upper - tickStep * 3, Math.floor(min / tickStep) * tickStep));
     const separation = compact ? 28 : 43;
-    const height = Math.max(compact ? 160 : 220, points.length * separation + (compact ? 40 : 30));
+    const height = compact ? 180 : Math.max(220, points.length * separation + 30);
     const y = (price: number) => compact
         ? 18 + (upper - price) / (upper - lower) * (height - 42)
         : 24 + (upper - price) / (upper - lower) * (height - 54);
@@ -81,11 +81,14 @@ export function PriceAxis({ snapshot, market, historical = false, compact = hist
                 <div className={styles.ticks} aria-hidden="true">
                     {ticks.map((price, i) => <span key={i} style={{ top: `${y(price) / height * 100}%` }}>{newsletterNumber(price, market)}</span>)}
                 </div>
-            </div> : <p className={styles.priceOnly}>{points[0].label} <strong>{formatPrice(snapshot.price, market)}</strong></p>}
-            {snapshot.source === "kis" && <p className={styles.note}>
+            </div> : <div className={styles.comparisonEmpty}>
+                <p className={styles.priceOnly}>{points[0].label} <strong>{formatPrice(snapshot.price, market)}</strong></p>
+                <p className={styles.note}>계산 가능한 적정가가 없습니다.</p>
+            </div>}
+            {!compact && snapshot.source === "kis" && <p className={styles.note}>
                 한국투자증권 종가
             </p>}
-            {points.length === 1 && <p className={styles.note}>이 날짜에 계산할 수 있는 적정가가 없습니다.</p>}
+            {!compact && points.length === 1 && <p className={styles.note}>이 날짜에 계산할 수 있는 적정가가 없습니다.</p>}
         </section>
         {!compact && points.length > 1 && <p className={styles.highlight}>
             {points.length - 1}개 전략 중 {above}개의 적정가가 스캔 기준가보다 높아요.
@@ -182,21 +185,11 @@ export function HistoricalComparison({ snapshots, current, market, through, samp
     const period = latestSelected ? "최신 스캔" : `${selected.end.slice(0, 4)}년 ${quarterNumber(selected.end)}분기`;
 
     return <div className={styles.historyComparison}>
-        <div className={styles.comparisonDetail}>
-            {snapshot ? <PriceAxis snapshot={snapshot} market={market} historical={!latestSelected} compact period={period} />
-                : <p className={styles.chartCard} role="status"><strong>{period}</strong> · 주가와 적정가 기록이 없습니다.</p>}
-            {financials && <details className={styles.note}>
-                <summary className={styles.method}>당시 재무정보 · {financials.source} {financials.filedDate} 공시</summary>
-                <p>재무제표 기준일 {financials.endDate}</p>
-                {snapshot?.sharesEndDate && <p>주식 수 기준일 {snapshot.sharesEndDate}</p>}
-                <dl className={styles.financials}>
-                    {([["자본총계", "equity"], ["유동자산", "currentAssets"], ["부채총계", "liabilities"]] as const).map(([label, key]) => {
-                        const value = financials[key];
-                        return <div key={key}><dt>{label}</dt><dd>{value === null ? "자료 없음" : formatPrice(value, market)}</dd></div>;
-                    })}
-                </dl>
-            </details>}
-        </div>
+        {snapshot ? <PriceAxis snapshot={snapshot} market={market} historical={!latestSelected} compact period={period} />
+            : <section className={`${styles.chartCard} ${styles.historyAxisCard}`} aria-label="전략별 적정가 비교">
+                <div className={styles.periodHeading}><strong>{period}</strong></div>
+                <p className={styles.comparisonEmpty} role="status">주가와 적정가 기록이 없습니다.</p>
+            </section>}
         {data.some(point => point.price !== null) && <section className={`${styles.chartCard} ${styles.trendCard}`} aria-labelledby="newsletter-trend">
             <div>
                 <h2 id="newsletter-trend" className="sr-only">
@@ -239,14 +232,26 @@ export function HistoricalComparison({ snapshots, current, market, through, samp
                 </ResponsiveContainer>
             </div>
             <div className={styles.trendFooter}>
-                <strong>{period}</strong><p aria-live="polite">{selectionNote}</p>
-                {current && latestIndex < 0 && !latestSelected && <button type="button" className={styles.latestScan}
+                <p aria-live="polite">{selectionNote}</p>
+                {current && latestIndex < 0 && <button type="button" className={styles.latestScan} disabled={latestSelected}
                     onClick={() => setEnd("latest")}>최신 스캔 보기</button>}
             </div>
         </section>}
         {(!sample || strategyDescription) && <details className={styles.note}>
             <summary className={styles.method}>{sample ? "전략 설명" : "전략 및 데이터 기준"}</summary>
             {strategyDescription && <p><strong>{activeStrategy}</strong> · {strategyDescription}</p>}
+            {snapshot?.source === "kis" && <p>주가 출처 한국투자증권 종가</p>}
+            {financials && <div>
+                <p>당시 재무정보 · {financials.source} {financials.filedDate} 공시</p>
+                <p>재무제표 기준일 {financials.endDate}</p>
+                {snapshot?.sharesEndDate && <p>주식 수 기준일 {snapshot.sharesEndDate}</p>}
+                <dl className={styles.financials}>
+                    {([["자본총계", "equity"], ["유동자산", "currentAssets"], ["부채총계", "liabilities"]] as const).map(([label, key]) => {
+                        const value = financials[key];
+                        return <div key={key}><dt>{label}</dt><dd>{value === null ? "자료 없음" : formatPrice(value, market)}</dd></div>;
+                    })}
+                </dl>
+            </div>}
             {!sample && <p>진행 중인 분기를 포함해 최근 20개 분기를 표시합니다. 분기별 최신 스캔을 우선 사용합니다. 스캔이 없는 분기의 주가는 한국투자증권에서 조회합니다. 기준일 전에 공개된 SEC 또는 OpenDART 재무를 확인할 수 있습니다. 공시 추정 적정가는 당시 주식 수와 주가의 기준이 일치할 때 계산합니다. 필요한 자료가 빠진 분기는 기준일 전에 공개된 가까운 공시를 사용합니다. 국내 종목은 공시된 보통주 발행 수와 최신 공시 연간 순이익을 사용합니다. 차이율은 비교 기준일의 주가를 기준으로 합니다. NCAV는 저장된 비율을 주당 가격으로 환산합니다. PER은 EPS의 10배, PBR은 BPS의 1배, SRIM은 EPS와 BPS에 요구수익률 8%를 적용합니다.</p>}
         </details>}
     </div>;
