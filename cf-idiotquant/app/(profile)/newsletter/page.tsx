@@ -11,6 +11,7 @@ export default function NewsletterPage() {
     const today = seoulDate();
     return <Suspense fallback={<p role="status" className="p-5">관심종목 뉴스레터를 여는 중입니다.</p>}>
         <NewsletterFlow checkoutEnabled={process.env.NEXT_PUBLIC_PADDLE_CHECKOUT === "true"}
+            memberSandbox={process.env.NEXT_PUBLIC_PADDLE_SANDBOX_CHECKOUT === "true" && process.env.NEXT_PUBLIC_PADDLE_CHECKOUT !== "true"}
             sandboxAvailable={Boolean(process.env.BILLING_SANDBOX_WORKER_URL && process.env.BILLING_SANDBOX_INTERNAL_JWT_SECRET)}
             sampleEndDate={latestCompletedQuarter(today)} historyThrough={today} />
     </Suspense>;
