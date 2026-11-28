@@ -29,7 +29,8 @@ export default function BillingManagement() {
 
     return (
         <>
-            <PageHeader icon={<CreditCard size={18} />} title="구독관리" mobileTitleInNavigation />
+            <PageHeader icon={<CreditCard size={18} />} title="구독관리" mobileTitleInNavigation
+                primaryAction={<Link href="/admin/billing/paddle" className={PAGE_PRIMARY_ACTION_CLS}>Paddle 구독 테스트</Link>} />
             <main className={`${PAGE_WIDTH.data} service-content flex flex-col gap-4`}>
                 <Link href="/admin" className="inline-flex min-h-11 w-fit items-center text-sm font-semibold text-brand-ink hover:underline">어드민 대시보드</Link>
                 <nav aria-label="구독관리 메뉴" className="flex flex-wrap gap-2">

@@ -16,11 +16,13 @@ async function handleProxy(req: Request, { params }: { params: Promise<{ path: s
         const isTradingOperations = pathArray[0] === 'admin' && pathArray[1] === 'trading';
         const isWatchReview = path === 'user/likes/review';
         const isBilling = pathArray[0] === 'billing';
-        const isBillingAdmin = (isBilling && pathArray[1] === 'admin') || path === 'billing/mailing/stocks';
+        const isBillingSandbox = isBilling && pathArray[1] === 'sandbox';
+        const isBillingAdmin = isBillingSandbox || (isBilling && pathArray[1] === 'admin') || path === 'billing/mailing/stocks';
         if (isBilling && ![
             'billing', 'billing/checkout', 'billing/confirm', 'billing/cancellation', 'billing/portal',
             'billing/admin', 'billing/admin/members', 'billing/admin/subscriptions', 'billing/admin/cancellation',
             'billing/mailing', 'billing/mailing/stocks',
+            'billing/sandbox', 'billing/sandbox/checkout', 'billing/sandbox/portal',
         ].includes(path)) {
             return NextResponse.json({ success: false, error: "요청한 결제 경로가 없습니다." }, { status: 404 });
         }
@@ -30,8 +32,11 @@ async function handleProxy(req: Request, { params }: { params: Promise<{ path: s
         if (isBillingAdmin && (session?.user as { role?: string } | undefined)?.role !== 'admin') {
             return NextResponse.json({ success: false, error: "관리자 권한이 필요합니다." }, { status: 403, headers: { 'Cache-Control': 'no-store' } });
         }
-        if (isBilling && (!process.env.BILLING_WORKER_URL || !process.env.BILLING_INTERNAL_JWT_SECRET)) {
-            return NextResponse.json({ success: false, error: "결제 Worker 연결 설정이 필요합니다." }, { status: 503, headers: { 'Cache-Control': 'no-store' } });
+        const billingWorkerUrl = isBillingSandbox ? process.env.BILLING_SANDBOX_WORKER_URL : process.env.BILLING_WORKER_URL;
+        const billingSecret = isBillingSandbox ? process.env.BILLING_SANDBOX_INTERNAL_JWT_SECRET : process.env.BILLING_INTERNAL_JWT_SECRET;
+        if (isBilling && (!billingWorkerUrl || !billingSecret)) {
+            const error = isBillingSandbox ? "Paddle Sandbox 결제 Worker 연결 설정이 필요합니다." : "결제 Worker 연결 설정이 필요합니다.";
+            return NextResponse.json({ success: false, error }, { status: 503, headers: { 'Cache-Control': 'no-store' } });
         }
         if (isTradingOperations &&
             (session?.user as { role?: string } | undefined)?.role !== 'admin') {
@@ -50,11 +55,11 @@ async function handleProxy(req: Request, { params }: { params: Promise<{ path: s
         const backendHeaders = await createBackendHeaders(
             req.headers,
             isBilling ? { id: session?.user?.id } : session?.user as { id?: string; role?: string } | undefined,
-            isBilling ? process.env.BILLING_INTERNAL_JWT_SECRET : process.env.INTERNAL_JWT_SECRET,
+            isBilling ? billingSecret : process.env.INTERNAL_JWT_SECRET,
             isTradingOperations || isBilling,
         );
 
-        const baseUrl = (isBilling ? process.env.BILLING_WORKER_URL : process.env.NEXT_PUBLIC_API_URL)?.replace(/\/$/, "");
+        const baseUrl = (isBilling ? billingWorkerUrl : process.env.NEXT_PUBLIC_API_URL)?.replace(/\/$/, "");
         if (!baseUrl) return NextResponse.json(
             { success: false, error: "서버 연결 설정을 확인 중입니다." }, { status: 503 },
         );
