@@ -718,6 +718,19 @@ html:has(#rogue-root) body { background-color: var(--rg-bg); }
 }
 .navigation-action[aria-expanded="true"] { --button-depth: 0px; }
 
+@media (prefers-reduced-motion: no-preference) {
+  .navigation-search-guide {
+    animation: navigation-search-guide 1.2s ease-in-out 3;
+  }
+}
+
+@keyframes navigation-search-guide {
+  45% {
+    opacity: 0.35;
+    translate: -5px 0;
+  }
+}
+
 @media (min-width: 768px) {
   html:has(.navigation-header) { --topbar-h: 32px; }
   .navigation-header .navigation-main {
