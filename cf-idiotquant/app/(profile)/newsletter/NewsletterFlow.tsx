@@ -213,7 +213,7 @@ export default function NewsletterFlow({ checkoutEnabled, sampleEndDate, history
             <ArrowRight size={17} aria-hidden />
         </Link>;
 
-    return <div className={styles.surface} onTouchStart={event => {
+    return <div className={`${styles.surface} ${stage === "paywall" ? styles.adaptivePaper : ""}`} onTouchStart={event => {
         const finger = event.touches[0];
         touch.current = event.touches.length === 1 && !((event.target as Element).closest("button, a, input, select, [data-no-swipe]"))
             ? { x: finger.clientX, y: finger.clientY } : null;
@@ -275,10 +275,10 @@ export default function NewsletterFlow({ checkoutEnabled, sampleEndDate, history
                         <div className={styles.stepContent}>
                             <div>
                                 {heading("관심종목을 등록해 주세요")}
-                                <p className={styles.lede}>종목명이나 티커로 찾을 수 있어요. 다음 단계로 가면 선택한 종목을 계정에 저장합니다.</p>
+                                <p className={styles.lede}>상단 돋보기를 눌러 종목명이나 티커로 검색해 주세요. 다음 단계로 가면 선택한 종목을 계정에 저장합니다.</p>
                             </div>
                             <div className={styles.stack}>
-                                <PageSearch label="관심종목 검색" onSelect={add} disabled={!ready || !!working} />
+                                <PageSearch label="관심종목 검색" onSelect={add} disabled={!ready || !!working} guideTrigger />
                                 {working === "search" && <p role="status">종목 확인 중</p>}
                                 {!ready && <p role="status">관심종목을 불러오는 중입니다.</p>}
                                 {listError && !error && <p role="status">{listError}</p>}
