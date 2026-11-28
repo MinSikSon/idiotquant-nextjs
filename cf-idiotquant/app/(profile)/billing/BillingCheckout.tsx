@@ -67,7 +67,7 @@ export default function BillingCheckout({ adminSandbox = false, paddleEnabled, r
     const [loading, setLoading] = useState(true);
     const [refresh, setRefresh] = useState(0);
     const [redirecting, setRedirecting] = useState(false);
-    const [openingPortal, setOpeningPortal] = useState(false);
+    const [openingPortal, setOpeningPortal] = useState<"manage" | "cancel" | null>(null);
     const [loadError, setLoadError] = useState("");
     const [checkoutError, setCheckoutError] = useState("");
     const [recipient, setRecipient] = useState("");
@@ -182,15 +182,16 @@ export default function BillingCheckout({ adminSandbox = false, paddleEnabled, r
         setRedirecting(false);
     }
 
-    async function openPortal() {
-        setOpeningPortal(true);
+    async function openPortal(action: "manage" | "cancel") {
+        setOpeningPortal(action);
         setCheckoutError("");
-        const result = await apiRequest(`${billingEndpoint}/portal`, { method: "POST", body: {} });
+        const query = action === "cancel" ? "?action=cancel" : "";
+        const result = await apiRequest(`${billingEndpoint}/portal${query}`, { method: "POST", body: {} });
         if (result.success && typeof result.data?.url === "string") {
             window.location.assign(result.data.url);
         } else {
             setCheckoutError(result.error || "Paddle 구독 관리 페이지를 열지 못했습니다.");
-            setOpeningPortal(false);
+            setOpeningPortal(null);
         }
     }
 
@@ -319,10 +320,21 @@ export default function BillingCheckout({ adminSandbox = false, paddleEnabled, r
                                 </fieldset>
                             </form>
                         ) : <p className="mt-2 text-sm">현재 새 구독을 받지 않고 있습니다.</p>}
-                        {subscriptionStatus && <button type="button" onClick={openPortal} disabled={openingPortal}
-                            className="service-button mt-3 min-h-11 px-4 text-sm font-semibold disabled:opacity-60">
-                            {openingPortal ? "Paddle 여는 중" : "Paddle에서 결제수단·해지 관리"}
-                        </button>}
+                        {subscriptionStatus && (
+                            <div className="mt-3 flex flex-wrap gap-2">
+                                <button type="button" onClick={() => openPortal("manage")} disabled={openingPortal !== null}
+                                    className="service-button min-h-11 px-4 text-sm font-semibold disabled:opacity-60">
+                                    {openingPortal === "manage" ? "Paddle 여는 중" : "Paddle 구독 관리"}
+                                </button>
+                                {billing.alerts?.scheduledAction !== "cancel" && (
+                                    <button type="button" onClick={() => openPortal("cancel")} disabled={openingPortal !== null}
+                                        className="service-button min-h-11 px-4 text-sm font-semibold disabled:opacity-60">
+                                        {openingPortal === "cancel" ? "해지 화면 여는 중" : "Paddle에서 구독 해지"}
+                                    </button>
+                                )}
+                                <p className="w-full text-sm text-neutral-600 dark:text-neutral-300">Paddle에서 결제에 사용한 이메일로 로그인해 구독을 관리할 수 있습니다.</p>
+                            </div>
+                        )}
                         {checkoutError && <p role="alert" className="mt-2 text-sm">{checkoutError}</p>}
                         {billing.alerts?.cancellation ? (
                             <p role="status" className="mt-4 text-sm">
