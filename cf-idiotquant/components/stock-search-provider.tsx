@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from "react";
 import { flushSync } from "react-dom";
 import { usePathname, useRouter } from "next/navigation";
-import { Search } from "lucide-react";
+import { ArrowRight, Search } from "lucide-react";
 import { StockSearchModal } from "@/components/stock-search-modal";
 
 import type { StockSearchName } from "@/lib/utils/stockSuggestions";
@@ -20,6 +20,7 @@ export type PageSearchConfig = {
   stockNames?: StockSearchName[];
   requireSelection?: boolean;
   disabled?: boolean;
+  guideTrigger?: boolean;
   onSelect: (value: string) => void | Promise<void>;
 };
 
@@ -28,6 +29,7 @@ type SearchContext = {
   openSearch: () => void;
   label: string;
   open: boolean;
+  guideTrigger: boolean;
 };
 const Context = createContext<SearchContext | null>(null);
 
@@ -64,8 +66,9 @@ export function StockSearchProvider({ children }: { children: ReactNode }) {
     else router.push(`/analyze?ticker=${encodeURIComponent(value)}`);
   };
   const label = config?.label ?? t("title");
-  const context = useMemo(() => ({ register, openSearch, label, open }),
-    [register, openSearch, label, open]);
+  const guideTrigger = !!config?.guideTrigger && !open;
+  const context = useMemo(() => ({ register, openSearch, label, open, guideTrigger }),
+    [register, openSearch, label, open, guideTrigger]);
   return <Context.Provider value={context}>
     {children}
     <StockSearchModal purpose={config?.purpose ?? "analyze"} disabledMessage={config?.disabledMessage} open={open} label={label} market={config?.market} options={config?.options} stockNames={config?.stockNames} requireSelection={config?.requireSelection}
@@ -75,10 +78,12 @@ export function StockSearchProvider({ children }: { children: ReactNode }) {
 
 export function StockSearchTrigger({ showDesktopLabel = false }: { showDesktopLabel?: boolean }) {
   const t = useTranslations("search");
-  const { openSearch, label, open } = useStockSearchModal();
+  const { openSearch, label, open, guideTrigger } = useStockSearchModal();
   return <button type="button" data-page-search-trigger data-page-input-trigger aria-label={label}
     aria-haspopup="dialog" aria-controls="stock-search-modal" aria-expanded={open}
-    onClick={openSearch} className="service-button navigation-action navigation-stock-search">
+    onClick={openSearch} className="service-button navigation-action navigation-stock-search relative">
+    {guideTrigger && <ArrowRight size={22} strokeWidth={2.5} aria-hidden="true"
+      className="pointer-events-none absolute right-full top-1/2 mr-1 -translate-y-1/2 text-[var(--newsletter-teal,currentColor)]" />}
     <Search size={17} aria-hidden="true" />
     {showDesktopLabel && <span className="hidden whitespace-nowrap md:inline">{t("title")}</span>}
   </button>;
