@@ -24,6 +24,12 @@
 
 ## 전환과 확인
 
+운영 사이트에서는 **관리자 → 구독관리 → Paddle 구독 테스트**에서 Sandbox 결제와 해지를 확인합니다. 테스트 이용권과 결제 이력은 관리자 테스트 화면에 표시되며 실제 회원 이용권에는 반영되지 않습니다.
+
+- 별도 Worker를 `npx wrangler deploy --config billing/wrangler.admin-sandbox.jsonc`로 배포합니다. 위 Sandbox 변수와 테스트 Supabase 자격 증명을 설정하고, `BILLING_CHECKOUT_ORIGIN`에는 운영 사이트의 오리진을 넣습니다. 이 Worker에는 예약 발송 작업이 없습니다.
+- 운영 사이트 서버 환경에 `BILLING_SANDBOX_WORKER_URL`과 이 Worker의 `BILLING_INTERNAL_JWT_SECRET`과 같은 값인 `BILLING_SANDBOX_INTERNAL_JWT_SECRET`을 설정합니다. 운영 결제와 별도의 서명 키를 사용합니다.
+- Paddle Sandbox 기본 결제 링크는 운영 사이트의 `/admin/billing/paddle`로, 알림 대상은 Sandbox Worker의 `/billing/paddle/webhook`으로 설정합니다.
+
 - 테스트 결제를 완료하고 이용권 활성화, 과거 적정가 화면 접근, 관리자 결제 이력을 확인합니다. 갱신 시 이용 기간과 이력이 갱신되는지, 해지 예약 시 기간 종료까지 접근 가능한지 확인합니다. Paddle에서 동일 웹훅을 다시 보내도 거래 이력은 한 건으로 유지됩니다.
 - 첫 결제는 완료됐으나 이용권이 반영되지 않았다면 Paddle 알림 기록에서 `transaction.completed`와 구독 웹훅의 응답을 확인하고 실패한 알림을 다시 보냅니다.
 - 운영 전환 시 Paddle의 승인된 도메인과 운영 가격·키·토큰·웹훅을 별도로 설정하고, 운영 Worker에서 `PADDLE_ENVIRONMENT=production`을 사용합니다. Sandbox와 운영 Worker는 별도 Supabase 프로젝트를 사용합니다. 마이그레이션과 Worker를 먼저 반영한 뒤 프론트의 `NEXT_PUBLIC_PADDLE_CHECKOUT=true`를 켭니다. [Paddle 운영 전환 체크리스트](https://developer.paddle.com/build/go-live-checklist/)
