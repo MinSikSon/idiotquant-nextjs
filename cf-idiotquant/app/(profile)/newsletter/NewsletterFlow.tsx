@@ -44,6 +44,15 @@ function readDraft(owner: string) {
     }
 }
 
+function watchlistError(response: { status?: number; error?: string }, fallback: string) {
+    if (response.status === 401 || response.status === 403) {
+        return process.env.NODE_ENV === "development"
+            ? "관심종목 서버에서 로그인 계정을 확인할 수 없습니다. 로컬 인증과 Worker가 같은 사용자 DB를 사용하는지 확인해 주세요."
+            : "관심종목 서버에서 로그인 계정을 확인할 수 없습니다.";
+    }
+    return response.error || fallback;
+}
+
 function fromLikes(data: LikedStockItem[]): NewsletterStock[] {
     return data.flatMap(item => {
         const key = parseStockKey(`${item.is_us ? "US" : "KR"}:${item.ticker.toUpperCase()}`);
@@ -67,6 +76,7 @@ export default function NewsletterFlow({ checkoutEnabled, sampleEndDate, history
     const [draft, setDraft] = useState<NewsletterStock[]>([]);
     const [likes, setLikes] = useState<NewsletterStock[]>([]);
     const [listError, setListError] = useState("");
+    const [listRevision, setListRevision] = useState(0);
     const [readyOwner, setReadyOwner] = useState("");
     const [error, setError] = useState("");
     const [working, setWorking] = useState<"search" | "save" | null>(null);
@@ -85,12 +95,13 @@ export default function NewsletterFlow({ checkoutEnabled, sampleEndDate, history
         void (owner === "guest" ? Promise.resolve(null) : getMyLikes()).then(result => {
             if (!active) return;
             setLikes(Array.isArray(result?.data) ? fromLikes(result.data) : []);
-            setListError(result?.success === false ? result.error : "");
+            setListError(result && (result.success !== true || !Array.isArray(result.data))
+                ? watchlistError(result, "관심종목을 불러오지 못했습니다.") : "");
             setDraft(readDraft(owner));
             setReadyOwner(owner);
         });
         return () => { active = false; };
-    }, [owner, status]);
+    }, [owner, status, listRevision]);
 
     const ready = status !== "loading" && readyOwner === owner;
     const items = ready ? [...new Map([...draft, ...likes].map(item => [stockKey(item), item])).values()] : [];
@@ -160,12 +171,10 @@ export default function NewsletterFlow({ checkoutEnabled, sampleEndDate, history
                     const currentSession = await getSession({ broadcast: false });
                     if (!currentSession?.user) {
                         window.location.replace(loginUrl(newsletterUrl("stocks")));
-                    } else {
-                        setError("관심종목 저장 권한을 확인하지 못했습니다. 다시 시도해 주세요.");
+                        return false;
                     }
-                } else {
-                    setError(response.error || fallback);
                 }
+                setError(watchlistError(response, fallback));
                 return false;
             };
             const persist = async () => {
@@ -281,7 +290,11 @@ export default function NewsletterFlow({ checkoutEnabled, sampleEndDate, history
                                 <PageSearch label="관심종목 검색" onSelect={add} disabled={!ready || !!working} guideTrigger />
                                 {working === "search" && <p role="status">종목 확인 중</p>}
                                 {!ready && <p role="status">관심종목을 불러오는 중입니다.</p>}
-                                {listError && !error && <p role="status">{listError}</p>}
+                                {listError && !error && !working && <RequestError message={listError} retry={() => {
+                                    setReadyOwner("");
+                                    setListError("");
+                                    setListRevision(count => count + 1);
+                                }} />}
                                 {items.length > 0 && <ul className={styles.list}>{items.map(item => {
                                     const key = stockKey(item);
                                     const saved = likes.some(like => stockKey(like) === key);
@@ -366,8 +379,6 @@ function ValuationResult({ stock, name, checkoutEnabled, through, openHistory = 
     const request = useRequest(scanPath(stock, "latest"), scanRows);
     const access = useRequest(openHistory ? null : "/billing", billingData);
     const snapshot = (request.data?.[0] && scanSnapshot(request.data[0], stock)) || undefined;
-    if (!openHistory && access.loading) return <p role="status">이용권을 확인하는 중입니다.</p>;
-    if (!openHistory && access.error) return <RequestError message={access.error} retry={access.retry} />;
     if (openHistory || access.data?.alerts?.status === "active") return <>
         <ComparisonHeading name={snapshot?.name || name || stock.ticker} />
         {request.error && <RequestError message={request.error} retry={request.retry} />}
@@ -387,7 +398,9 @@ function ValuationResult({ stock, name, checkoutEnabled, through, openHistory = 
         </div>
         {request.loading && <p role="status">분석 결과를 불러오는 중입니다.</p>}
         {request.error && <RequestError message={request.error} retry={request.retry} />}
-        {!request.loading && !request.error && <div className={styles.actions}>
+        {access.loading && <p role="status">이용권을 확인하는 중입니다.</p>}
+        {access.error && <RequestError message={`이용권 상태를 확인하지 못했습니다. ${access.error}`} retry={access.retry} />}
+        {!request.loading && !request.error && !access.loading && !access.error && <div className={styles.actions}>
             {checkoutEnabled ? <Link className={styles.button} href={checkoutUrl(stock)}>
                 적정가 비교 보기<ArrowRight size={17} aria-hidden />
             </Link> : <p role="status">현재 새 이용권 구매를 받지 않고 있습니다.</p>}

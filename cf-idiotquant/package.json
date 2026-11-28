@@ -14,7 +14,7 @@
     "typecheck": "tsc --noEmit",
     "check": "npm run lint && npm run typecheck && npm test",
     "test:worker": "WORKER_TEST_REQUIRED=1 node --test --experimental-strip-types --import ./test/register.mjs test/worker-integration.test.ts",
-    "dev:worker": "node --env-file=.env.worker.local node_modules/next/dist/bin/next dev"
+    "dev:worker": "node scripts/dev-worker.mjs"
   },
   "dependencies": {
     "@auth/core": "^0.41.1",

@@ -40,3 +40,6 @@ next-env.d.ts
 AGENTS.md
 .opencode.json
 .env.local
+
+# Local Worker D1
+/.wrangler/
