@@ -77,15 +77,16 @@ export async function GET(request: Request) {
 
                 // OpenDART can return only some reports when an individual request fails upstream.
                 const retry = await requestYear(8000).catch(() => null);
-                if (retry && !retry.partial) return retry;
-                const reports = new Map(initial?.rows.map(row => [row.endDate, row]));
+                const filingKey = (row: DartBalance) => `${row.endDate}|${row.filedDate}|${row.fs_div ?? ""}`;
+                const reports = new Map(initial?.rows.map(row => [filingKey(row), row]));
                 for (const row of retry?.rows ?? []) {
-                    const previous = reports.get(row.endDate);
-                    if (!previous || row.filedDate > previous.filedDate ||
-                        (row.filedDate === previous.filedDate && previous.shares == null && row.shares != null)) {
-                        reports.set(row.endDate, row);
+                    const key = filingKey(row);
+                    const previous = reports.get(key);
+                    if (!previous || (previous.shares == null && row.shares != null)) {
+                        reports.set(key, row);
                     }
                 }
+                if (retry && !retry.partial) return { rows: [...reports.values()], partial: false };
                 // Preserve the published balances for local verification when the upstream
                 // aggregate omits a filing. OpenDART amounts below are in KRW 100 millions.
                 if (process.env.NODE_ENV === "development" && stock.ticker === "000660") {
@@ -98,12 +99,15 @@ export async function GET(request: Request) {
                         // DART 20240516001638, consolidated statements and note 27.
                         ["2024-03-31", "2024-05-16", 555074.02, 330260.65, 476901.13, 728002365],
                     ] as const : [];
+                    const periodEnds = new Set([...reports.values()].map(row => row.endDate));
                     for (const [endDate, filedDate, total_cptl, cras, total_lblt, shares] of localFilings) {
-                        if (!reports.has(endDate)) {
-                            reports.set(endDate, { endDate, filedDate, total_cptl, cras, total_lblt, shares, fs_div: "CFS" });
+                        if (!periodEnds.has(endDate)) {
+                            const row = { endDate, filedDate, total_cptl, cras, total_lblt, shares, fs_div: "CFS" };
+                            reports.set(filingKey(row), row);
+                            periodEnds.add(endDate);
                         }
                     }
-                    if (year === 2024 && reports.size === 4 && [...reports.values()].every(row => row.shares != null)) {
+                    if (year === 2024 && periodEnds.size === 4 && [...reports.values()].every(row => row.shares != null)) {
                         return { rows: [...reports.values()], partial: false };
                     }
                 }
