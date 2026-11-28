@@ -20,12 +20,16 @@ interface StockCardProps {
   };
   chartConfig: { data: number[]; categories: string[]; color: string };
   chartNotice?: 'suspended' | 'delisted';
+  showMetrics?: boolean;
 }
 
-export function StockCard({ stock, chartConfig, chartNotice }: StockCardProps) {
+export function StockCard({ stock, chartConfig, chartNotice, showMetrics = true }: StockCardProps) {
   const t = useTranslations("metrics");
   const common = useTranslations("analysis");
   const { ncavMultiple, roe, per, pbr } = stock;
+  const sector = stock.sector === "DEFAULT" ? undefined : stock.sector;
+  if (!showMetrics && !sector && chartConfig.data.length === 0 && !chartNotice) return null;
+
   const metrics = [
     { label: common("ncavMultiple"), value: ncavMultiple === null ? "—" : common("multiple", { value: ncavMultiple.toFixed(2) }), basis: t("ncavBasis") },
     { label: "PBR", value: pbr > 0 ? common("multiple", { value: pbr.toFixed(2) }) : "—", basis: t("pbrBasis") },
@@ -34,9 +38,9 @@ export function StockCard({ stock, chartConfig, chartNotice }: StockCardProps) {
   ];
 
   return (
-    <div className={ui.surface}>
-      {stock.sector && stock.sector !== "DEFAULT" && <p className="px-3 py-1 text-sm text-neutral-600 dark:text-neutral-300">{t("sector", { sector: stock.sector === "전기·전자" ? t("electricElectronics") : stock.sector })}</p>}
-      <dl className={ui.stats}>
+    <div className={cn(ui.surface, "mb-2")}>
+      {sector && <p className="px-3 py-1 text-sm text-neutral-600 dark:text-neutral-300">{t("sector", { sector: sector === "전기·전자" ? t("electricElectronics") : sector })}</p>}
+      {showMetrics && <dl className={ui.stats}>
         {metrics.map(({ label, value, basis }) => (
           <div key={label} className={ui.stat}>
             <dt className={ui.statLabel}>{label}</dt>
@@ -44,7 +48,7 @@ export function StockCard({ stock, chartConfig, chartNotice }: StockCardProps) {
             <dd className={ui.statDescription}>{basis}</dd>
           </div>
         ))}
-      </dl>
+      </dl>}
       {chartConfig.data.length > 0 ? (
         <SecondarySection title={t("priceChart")} className="mx-3 mb-2">
           <LineChart
