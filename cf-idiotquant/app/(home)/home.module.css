@@ -75,3 +75,12 @@
   .footer { align-items: flex-start; flex-direction: column; }
 }
 @media (prefers-reduced-motion: reduce) { .home * { scroll-behavior: auto; } }
+
+.paperChoice {
+  border: 1px solid var(--newsletter-line);
+  border-radius: 0.55rem;
+  background: var(--newsletter-card);
+  box-shadow: inset 0 -3px var(--newsletter-line);
+}
+.paperChoice:hover { border-color: var(--newsletter-teal); }
+.paperChoice:active { transform: translateY(1px); box-shadow: inset 0 -1px var(--newsletter-line); }

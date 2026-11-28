@@ -8,7 +8,7 @@ import { WatchlistPriceLegend, WatchlistStockRow } from '@/components/watchlist-
 import { scanValuationSummary } from '@/lib/utils/valuationSummary';
 import { guestWatchlistGroups, loadGuestQuote, loadGuestWatchlist, type GuestStock, type GuestWatchlistGroup } from './guestWatchlistData';
 
-const secondary = 'text-neutral-600 dark:text-neutral-300';
+const secondary = 'text-[var(--newsletter-muted)]';
 
 export default function GuestWatchlist() {
   const t = useTranslations("home");
@@ -21,7 +21,7 @@ export default function GuestWatchlist() {
             {guestWatchlistGroups.map(group => <WatchlistGroup key={group.id} group={group} />)}
         </div>
         <p className={`mt-3 break-keep text-xs leading-5 ${secondary}`}>{t("estimate")}</p>
-        <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 border-t border-neutral-200 dark:border-surface-dark-border">
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 border-t border-[var(--newsletter-line)]">
             <p className={`text-sm ${secondary}`}>{t("savePrompt")}</p>
             <Link href="/login?callbackUrl=%2F" className="inline-flex min-h-11 items-center gap-2 rounded px-1 text-sm font-semibold text-brand-ink hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-ink">{t("signIn")}<ArrowRight size={15} aria-hidden="true" /></Link>
         </div>
@@ -45,7 +45,7 @@ function WatchlistGroup({ group }: { group: GuestWatchlistGroup }) {
 
     const loading = !result && !failed;
     const showRetry = failed || result?.partialFailure;
-    return <section aria-labelledby={group.id} aria-busy={loading} className="rounded-2xl border border-neutral-200 bg-white px-3 dark:border-surface-dark-border dark:bg-surface-dark-card sm:px-4">
+    return <section aria-labelledby={group.id} aria-busy={loading} className="rounded-xl border border-[var(--newsletter-line)] bg-[var(--newsletter-card)] px-3 sm:px-4">
         <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 border-b border-neutral-200 py-2 dark:border-surface-dark-border">
             <h3 id={group.id} className="font-semibold">{t(({
                 'kr-large': 'krLarge',
@@ -57,7 +57,7 @@ function WatchlistGroup({ group }: { group: GuestWatchlistGroup }) {
         </div>
         {loading && <p role="status" className={`py-4 text-sm ${secondary}`}>{t("loadingStocks")}</p>}
         {result?.stocks.length === 0 && <p className={`py-4 text-sm ${secondary}`}>{t("noStocks")}</p>}
-        {result && result.stocks.length > 0 && <ul className="divide-y divide-neutral-200 dark:divide-surface-dark-border">
+        {result && result.stocks.length > 0 && <ul className="divide-y divide-[var(--newsletter-line)]">
             {result.stocks.map(stock => <li key={stock.ticker}>
                 <StockComparison stock={stock} country={group.country} />
             </li>)}
