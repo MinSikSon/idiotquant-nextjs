@@ -244,7 +244,7 @@ export default function NewsletterFlow({ checkoutEnabled, sampleEndDate, history
                         <p className={styles.lede}>관심종목의 가격을 전략별 적정가와 비교해 보세요.</p>
                     </div>
                     <section className={styles.introStrategies} aria-labelledby="newsletter-strategies">
-                        <h2 id="newsletter-strategies">전략별 적정가 계산법</h2>
+                        <h2 id="newsletter-strategies">적정가는 이렇게 살펴봐요</h2>
                         <dl>
                             {Object.entries(strategyDescriptions).map(([label, description]) => <div key={label}>
                                 <dt>{label}</dt>

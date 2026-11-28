@@ -6,10 +6,10 @@ import { newsletterNumber, quarterNumber, valuationQuarters, type Market, type V
 import styles from "./newsletter.module.css";
 
 export const strategyDescriptions: Partial<Record<string, string>> = {
-    SRIM: "자기자본과 요구수익률을 초과하는 이익을 바탕으로 적정가를 추정합니다.",
-    PER: "주당순이익(EPS)에 일정 배수를 곱해 적정가를 추정합니다.",
-    PBR: "주당순자산(BPS)에 일정 배수를 곱해 적정가를 추정합니다.",
-    NCAV: "유동자산에서 전체 부채를 뺀 금액을 바탕으로 주당 가치를 추정합니다.",
+    SRIM: "회사가 투자자 기대보다 얼마나 더 벌 수 있는지 봐요.",
+    PER: "회사가 한 해에 남긴 이익을 봐요.",
+    PBR: "회사가 가진 것에서 빚을 빼면 얼마인지 봐요.",
+    NCAV: "곧 현금으로 바꿀 수 있는 것에서 빚을 전부 빼 봐요.",
 };
 
 function formatPrice(price: number, market: Market) {
