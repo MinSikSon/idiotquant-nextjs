@@ -83,7 +83,7 @@ export function StockSearchTrigger({ showDesktopLabel = false }: { showDesktopLa
     aria-haspopup="dialog" aria-controls="stock-search-modal" aria-expanded={open}
     onClick={openSearch} className="service-button navigation-action navigation-stock-search relative">
     {guideTrigger && <ArrowRight size={22} strokeWidth={2.5} aria-hidden="true"
-      className="pointer-events-none absolute right-full top-1/2 mr-1 -translate-y-1/2 text-[var(--newsletter-teal,currentColor)]" />}
+      className="navigation-search-guide pointer-events-none absolute right-full top-1/2 mr-1 -translate-y-1/2 text-[var(--newsletter-teal,currentColor)]" />}
     <Search size={17} aria-hidden="true" />
     {showDesktopLabel && <span className="hidden whitespace-nowrap md:inline">{t("title")}</span>}
   </button>;
