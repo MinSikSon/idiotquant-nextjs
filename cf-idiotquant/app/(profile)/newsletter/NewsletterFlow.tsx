@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { getSession, useSession } from "next-auth/react";
-import { ArrowRight, Lock, Mail, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Lock, Mail, X } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { PageSearch } from "@/components/page-search";
 import { apiRequest } from "@/lib/features/apiRequest";
@@ -258,6 +258,19 @@ export default function NewsletterFlow({ checkoutEnabled, sampleEndDate, history
                 </>}
                 {requiresLogin && !authenticated && <p role="status">로그인 상태를 확인하는 중입니다.</p>}
                 {requiresLogin && authenticated && <>
+                    {stock && ["result", "paywall", "history"].includes(stage) && (
+                        <div className="mb-3 flex flex-wrap gap-2">
+                            <button type="button" className={styles.secondary} onClick={previous}>
+                                <ArrowLeft size={17} aria-hidden />뒤로
+                            </button>
+                            <button type="button" className={styles.secondary} onClick={() => {
+                                setChosen(selectedKey);
+                                go("pick");
+                            }}>
+                                다른 종목 선택
+                            </button>
+                        </div>
+                    )}
                     {stage === "stocks" && <>
                         <div className={styles.stepContent}>
                             <div>
