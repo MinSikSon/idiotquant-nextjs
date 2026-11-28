@@ -1,12 +1,15 @@
 import NextAuth from "next-auth";
 import { D1Adapter } from "@auth/d1-adapter";
+import { localAuthDatabase } from "./lib/server/localAuthDatabase";
 import { authConfig } from "./auth.config";
 
 export const { handlers, auth, signIn, signOut } = NextAuth((req: any) => {
     // 1. 모든 경로를 통해 env 확보 시도
     const env = req?.context?.env || (process as any).env;
     const node_env = env?.NODE_ENV;
-    const db = env?.DB || env?.db;
+    const localUrl = node_env === "development" && process.env.LOCAL_AUTH_D1_URL;
+    const localToken = process.env.LOCAL_AUTH_D1_TOKEN;
+    const db = localUrl && localToken ? localAuthDatabase(localUrl, localToken) : env?.DB || env?.db;
 
     // 이 블록은 요청마다 돈다 — 다섯 줄짜리 디버그를 남겨두면 로그가 그것만으로 찬다.
     // 게다가 db 바인딩 객체를 통째로 찍고 있었다. 정말 알아야 할 것(설정이 빠졌는가)만
@@ -25,7 +28,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth((req: any) => {
         secret: env?.AUTH_SECRET, // 💡 명시적 주입
         trustHost: true,
         basePath: "/api/auth",
-        adapter: db && "development" != node_env ? D1Adapter(db) : undefined,
+        adapter: db ? D1Adapter(db) : undefined,
 
         events: {
             async createUser({ user }) {

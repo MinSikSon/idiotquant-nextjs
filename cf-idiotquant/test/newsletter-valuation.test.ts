@@ -179,6 +179,25 @@ test("Missing quarterly shares use an earlier compatible filing while keeping th
     assert.deepEqual(fillHistoryQuarters([], quotes, "2025-06-30", "Example", adjusted, [], reports).at(-1)?.models, []);
 });
 
+
+test("SEC annual-only issuers can use the prior annual share count throughout the reporting cycle", async () => {
+    const { fillHistoryQuarters } = await import("../lib/utils/newsletterHistory.ts");
+    const quotes = [
+        { date: "2024-12-31", price: 4 }, { date: "2025-01-31", price: 4 },
+        { date: "2025-09-30", price: 5 },
+    ];
+    const annual = {
+        endDate: "2024-12-31", filedDate: "2025-04-30", sharesDate: "2024-12-31",
+        periodType: "annual", shares: 100,
+        report: { bs: [{ concept: "StockholdersEquity", value: 600, unit: "USD" }] },
+    };
+    const value = (filings: [typeof annual, ...typeof annual[]]) =>
+        fillHistoryQuarters([], quotes, "2025-09-30", "Example", quotes, filings).at(-1)?.models;
+    assert.equal(value([annual])?.find(model => model.label === "PBR")?.targetPrice, 6);
+    assert.deepEqual(value([annual, { ...annual, endDate: "2025-06-30", filedDate: "2025-08-15",
+        periodType: "ytd", shares: 0 }]), []);
+});
+
 test("losses suppress earnings-based targets while zero and missing earnings are distinct from losses", () => {
     const loss = scanSnapshot({ ...archived, eps: -100, net_income: -1000 }, stock)!;
     assert.equal(loss.lossMaking, true);

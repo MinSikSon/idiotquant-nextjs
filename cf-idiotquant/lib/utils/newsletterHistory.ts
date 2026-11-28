@@ -4,6 +4,7 @@ type HistoryStock = Pick<NewsletterStock, "market" | "ticker">;
 type Quote = { date: string; price: number };
 const DAY = 86_400_000;
 const NEARBY_REPORT_DAYS = 220;
+const ANNUAL_REPORT_DAYS = 460;
 export type DartBalance = { endDate: string; filedDate: string; total_cptl?: number | null; cras?: number | null; total_lblt?: number | null;
     shares?: number | null; annualNetIncome?: number | null; fs_div?: string };
 type Fact = { concept: string; value: number; unit: string };
@@ -67,7 +68,7 @@ export function fillHistoryQuarters(scans: ValuationSnapshot[], quotes: Quote[],
         const publishedBefore = (report: { endDate: string; filedDate: string }) =>
             valuationDate(report?.filedDate) && valuationDate(report.endDate) &&
             report.filedDate < point.date && report.endDate <= report.filedDate &&
-            Date.parse(point.date) - Date.parse(report.endDate) <= 460 * DAY;
+            Date.parse(point.date) - Date.parse(report.endDate) <= ANNUAL_REPORT_DAYS * DAY;
         const latestFirst = (a: { endDate: string; filedDate: string }, b: typeof a) =>
             b.endDate.localeCompare(a.endDate) || b.filedDate.localeCompare(a.filedDate);
         const krReports = dart.filter(publishedBefore).sort(latestFirst);
@@ -129,11 +130,13 @@ export function fillHistoryQuarters(scans: ValuationSnapshot[], quotes: Quote[],
         const atQuote = ratios.find(item => item.date === point.date);
         if (!atQuote) return [withFinancials];
         const sameBasis = (left: number, right: number) => Math.abs(Math.log(left / right)) < 0.02;
+        const usShareAge = filings.some(report => report.periodType !== "annual" && report.filedDate < point.date)
+            ? NEARBY_REPORT_DAYS : ANNUAL_REPORT_DAYS;
         const shareFiling = eligible.find(candidate => {
             const sharesDate = valuationDate(candidate.sharesDate);
             if (!candidate.shares || !Number.isFinite(candidate.shares) || candidate.shares <= 0 || !sharesDate ||
                 sharesDate < candidate.endDate || sharesDate > candidate.filedDate ||
-                Date.parse(point.date) - Date.parse(sharesDate) > NEARBY_REPORT_DAYS * DAY) return false;
+                Date.parse(point.date) - Date.parse(sharesDate) > usShareAge * DAY) return false;
             const before = ratios.findLast(item => item.date <= sharesDate);
             const after = ratios.find(item => item.date >= sharesDate && item.date <= point.date);
             return !!before && !!after && sameBasis(before.ratio, after.ratio) &&

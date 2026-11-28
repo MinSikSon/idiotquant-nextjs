@@ -34,7 +34,7 @@ React Compiler를 사용하지 않는 현재 구성에서는 관련 이행 진�
 Next.js 서버와 Worker에 **같은 `INTERNAL_JWT_SECRET`**을 서버 전용 환경변수로 설정해야 합니다.
 2026-10-23 로컬 `.env.worker.local`과 두 Worker 작업 트리의 `.dev.vars`에 같은 로컬 전용 키를 설정했습니다.
 기존 `AUTH_SECRET`·`NEXT_PUBLIC_JWT_SECRET_KEY`·`JWT_SECRET` 값은 보존했고, 환경파일이 Git 제외 대상임을 확인했습니다.
-`.env.worker.local`은 로컬 Worker 주소(`http://127.0.0.1:8787`)와 키를 함께 담으며 `npm run dev:worker`에서만 읽습니다.
+`.env.worker.local`에 있던 주소와 키는 이전 수동 실행 방식과 아래의 명시적 통합 테스트에 사용했습니다.
 기존 `.env.local`의 운영 API 주소에는 새 로컬 키를 적용하지 않습니다.
 키가 없는 기존 배포에서는 서버에서 검증한 세션의 `X-User-Id`·`X-User-Role`을 전달합니다.
 외부 요청의 신원 헤더·Authorization·쿠키는 제거합니다. 양쪽에 키를 설정하면 JWT 경로를 사용합니다.
@@ -48,8 +48,13 @@ Chrome의 저장된 계정으로 로그인 흐름은 진행했으나 이메일 �
 운영 키의 설정 여부·실제 값·프론트와의 일치 여부는 확인하지 못했습니다. 운영 설정은 변경하지 않았습니다.
 운영 Worker에 연결할 때는 운영에서 이미 사용 중인 `INTERNAL_JWT_SECRET`과 일치하는 값을 별도로 설정해야 합니다.
 
-로컬 개발 시에는 JWT 검증이 있는 Worker 작업 트리에서 `npx wrangler dev --local --port 8787`을 실행하고,
-프론트에서 `npm run dev:worker`를 실행합니다. 로컬 D1에는 해당 Worker의 마이그레이션이 필요합니다.
+로컬에서 로그인과 관심종목을 검증할 때는 프론트에서 `npm run dev:worker`를 실행합니다.
+이 명령은 기본적으로 `../../idiotquant-worker/idiotquant-backend`의 Worker를 빌드하고
+Next.js(`localhost:3000`)와 로컬 Worker(`127.0.0.1:8787`)를 함께 실행합니다.
+Worker 경로가 다르면 `LOCAL_WORKER_ROOT`로 지정합니다. 해당 작업 트리에 npm 의존성이 설치되어 있어야 합니다.
+두 서버는 실행 시 생성한 내부 서명 키와 프론트의 `.wrangler/local-auth`에 저장하는 D1을 공유합니다.
+필요한 테이블은 시작 시 초기화합니다. OAuth 제공자의 localhost 콜백 설정은 기존과 동일합니다.
+새로 실행하면 다시 로그인해야 하며, 같은 계정으로 로그인하면 이전 로컬 관심종목을 조회할 수 있습니다.
 
 ### 관심종목 로그인 검증 (2026-11-27)
 
