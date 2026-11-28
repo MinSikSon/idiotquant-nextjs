@@ -86,14 +86,6 @@ export default function ProfilePage() {
     const likedList = useAppSelector(selectLikedList);
     const likesState = useAppSelector(selectLikesState);
     const [watchlistMarket, setWatchlistMarket] = useState<WatchlistMarket>("all");
-    const [mobileViewport, setMobileViewport] = useState(false);
-    useEffect(() => {
-        const media = window.matchMedia("(max-width: 767px)");
-        const update = () => setMobileViewport(media.matches);
-        update();
-        media.addEventListener("change", update);
-        return () => media.removeEventListener("change", update);
-    }, []);
     const [nickname, setNickname] = useState("");
     const [nicknameInput, setNicknameInput] = useState("");
     const [nicknameMessage, setNicknameMessage] = useState("");
@@ -231,23 +223,6 @@ export default function ProfilePage() {
         ? null
         : new Intl.DateTimeFormat("ko-KR", { dateStyle: "long", timeZone: "Asia/Seoul" }).format(new Date(nicknameNextChangeAt * 1000));
 
-    const marketControls = (
-        <div role="group" aria-label="관심 종목 시장·거래소 필터" className="flex overflow-x-auto px-3">
-            {WATCHLIST_MARKETS.map(market => {
-                const count = likedList.filter(item => matchesWatchlistMarket(item, market.value)).length;
-                if (market.value === "unknown" && count === 0) return null;
-                return (
-                    <button key={market.value} type="button" aria-pressed={watchlistMarket === market.value}
-                        onClick={() => setWatchlistMarket(market.value)}
-                        className={cn("min-h-11 shrink-0 border-b-2 px-3 text-xs font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand",
-                            watchlistMarket === market.value ? "border-brand text-brand-ink" : "border-transparent text-neutral-600 hover:bg-neutral-200 dark:text-neutral-300 dark:hover:bg-surface-dark-hover")}>
-                        {market.label} <span className="font-mono tabular-nums">{count}</span>
-                    </button>
-                );
-            })}
-        </div>
-    );
-
     return (
         <div className="landing-style-page min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas">
             <PageHeader
@@ -257,17 +232,13 @@ export default function ProfilePage() {
                 mobileTitleInNavigation={!isNewUser}
                 mobileTitleOnScroll
                 compactMeta={likesState === "fulfilled" && likedList.length > 0 ? `관심 ${filteredLikedList.length}종목` : undefined}
-                tabs={mobileViewport && likesState === "fulfilled" && likedList.length > 0 ? marketControls : undefined}
             />
             <div className={cn(PROFILE_CONTAINER, "py-4 sm:py-6")}>
                 <div className="overflow-hidden rounded-lg border border-neutral-300 bg-white dark:border-border-subtle-dark dark:bg-surface-dark-card md:grid md:grid-cols-[minmax(0,1fr)_minmax(280px,360px)]">
                     <section aria-label="관심종목 요약" className="border-b border-neutral-300 dark:border-border-subtle-dark md:col-span-2">
-                        <div className="flex flex-wrap items-end justify-between gap-3 bg-white px-4 py-5 dark:bg-surface-dark-card sm:px-6 md:py-8">
-                            <div>
-                                <h2 className="text-2xl font-semibold leading-[1.1] tracking-tight text-neutral-900 dark:text-neutral-50 md:text-4xl">내 관심종목</h2>
-                                <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300">관심 목록과 점수를 한곳에서 확인하세요.</p>
-                            </div>
-                            <Link href="/screener" className="inline-flex min-h-11 items-center gap-2 rounded border border-neutral-500 px-3 text-sm font-semibold text-neutral-800 hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand dark:border-neutral-500 dark:text-neutral-100 dark:hover:bg-surface-dark-hover">종목 발굴 <ChevronRight size={16} aria-hidden="true" /></Link>
+                        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 bg-white px-4 py-2 dark:bg-surface-dark-card sm:px-6 md:py-5">
+                            <h2 className="text-2xl font-semibold leading-tight tracking-tight text-neutral-900 dark:text-neutral-50 md:text-4xl">내 관심종목</h2>
+                            <Link href="/screener" className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded border border-neutral-500 px-3 text-sm font-semibold text-neutral-800 hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand dark:border-neutral-500 dark:text-neutral-100 dark:hover:bg-surface-dark-hover">종목 발굴 <ChevronRight size={16} aria-hidden="true" /></Link>
                         </div>
                         <div className="grid grid-cols-2 border-t border-neutral-300 bg-surface-canvas dark:border-border-subtle-dark dark:bg-surface-dark-muted">
                             <div className="border-r border-neutral-300 px-4 py-3 dark:border-border-subtle-dark sm:px-6 md:py-5">
@@ -361,11 +332,22 @@ export default function ProfilePage() {
                     </div>
 
                     {likesState === "fulfilled" && likedList.length > 0 && (
-                        <div className="border-y border-neutral-200 bg-surface-canvas dark:border-border-subtle-dark dark:bg-surface-dark-muted">
-                            <div className="md:block hidden">{marketControls}</div>
-                            <div className="px-5 pb-2">
-                                <span role="status" className="text-xs text-neutral-600 dark:text-neutral-300 tabular-nums">전체 {likedList.length}개 중 {filteredLikedList.length}개</span>
-                            </div>
+                        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-neutral-200 bg-surface-canvas px-4 py-1.5 dark:border-border-subtle-dark dark:bg-surface-dark-muted sm:px-5">
+                            <select
+                                aria-label="관심 종목 시장·거래소 필터"
+                                value={watchlistMarket}
+                                onChange={event => setWatchlistMarket(event.target.value as WatchlistMarket)}
+                                className="min-h-11 max-w-full rounded border border-neutral-400 bg-white px-2 text-base font-medium text-neutral-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand dark:border-neutral-500 dark:bg-surface-dark-card dark:text-neutral-100 dark:[color-scheme:dark]"
+                            >
+                                {WATCHLIST_MARKETS.map(market => {
+                                    const count = likedList.filter(item => matchesWatchlistMarket(item, market.value)).length;
+                                    if (market.value === "unknown" && count === 0 && watchlistMarket !== market.value) return null;
+                                    return <option key={market.value} value={market.value}>{market.label} ({count})</option>;
+                                })}
+                            </select>
+                            <span role="status" className="text-xs text-neutral-600 dark:text-neutral-300 tabular-nums">
+                                {watchlistMarket !== "all" && `전체 ${likedList.length}개 중 ${filteredLikedList.length}개`}
+                            </span>
                         </div>
                     )}
 
