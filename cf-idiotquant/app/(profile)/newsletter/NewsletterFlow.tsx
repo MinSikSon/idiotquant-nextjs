@@ -267,19 +267,6 @@ export default function NewsletterFlow({ checkoutEnabled, sampleEndDate, history
                 </>}
                 {requiresLogin && !authenticated && <p role="status">로그인 상태를 확인하는 중입니다.</p>}
                 {requiresLogin && authenticated && <>
-                    {stock && ["result", "paywall", "history"].includes(stage) && (
-                        <div className="mb-3 flex flex-wrap gap-2">
-                            <button type="button" className={styles.secondary} onClick={previous}>
-                                <ArrowLeft size={17} aria-hidden />뒤로
-                            </button>
-                            <button type="button" className={styles.secondary} onClick={() => {
-                                setChosen(selectedKey);
-                                go("pick");
-                            }}>
-                                다른 종목 선택
-                            </button>
-                        </div>
-                    )}
                     {stage === "stocks" && <>
                         <div className={styles.stepContent}>
                             <div>
@@ -337,6 +324,17 @@ export default function NewsletterFlow({ checkoutEnabled, sampleEndDate, history
                         endDate={sampleEndDate} stock={stock} />}
                     {stage === "history" && stock && <ValuationResult key={`${owner}:${selectedKey}`} stock={stock} through={historyThrough}
                         checkoutEnabled={checkoutEnabled} openHistory onPaywall={() => go("paywall", stock)} />}
+                    {stock && ["result", "paywall", "history"].includes(stage) && actions(
+                        <button type="button" className={styles.secondary} onClick={previous}>
+                            <ArrowLeft size={17} aria-hidden />뒤로
+                        </button>,
+                        <button type="button" className={styles.secondary} onClick={() => {
+                            setChosen(selectedKey);
+                            go("pick");
+                        }}>
+                            다른 종목 선택
+                        </button>,
+                    )}
                     {["result", "paywall", "history"].includes(stage) && !stock && <>
                         {heading("비교할 종목을 골라주세요")}
                         {actions(button("관심종목 선택하기", () => go("stocks")))}
@@ -400,7 +398,7 @@ function ValuationResult({ stock, name, checkoutEnabled, through, openHistory = 
         {request.error && <RequestError message={request.error} retry={request.retry} />}
         {access.loading && <p role="status">이용권을 확인하는 중입니다.</p>}
         {access.error && <RequestError message={`이용권 상태를 확인하지 못했습니다. ${access.error}`} retry={access.retry} />}
-        {!request.loading && !request.error && !access.loading && !access.error && <div className={styles.actions}>
+        {!request.loading && !request.error && !access.loading && !access.error && <div className={styles.inlineActions}>
             {checkoutEnabled ? <Link className={styles.button} href={checkoutUrl(stock)}>
                 적정가 비교 보기<ArrowRight size={17} aria-hidden />
             </Link> : <p role="status">현재 새 이용권 구매를 받지 않고 있습니다.</p>}
@@ -448,7 +446,7 @@ function Paywall({ checkoutEnabled, endDate, stock }: {
         {access.loading && <p role="status">이용권을 확인하는 중입니다.</p>}
         {access.error && <RequestError message={access.error} retry={access.retry} />}
         {checkout && <p className={styles.note}>30일 이용 · 1회 테스트 결제 · 실제 청구 없음 · 자동 갱신 없음</p>}
-        {!access.loading && (active || checkout) && <div className={styles.actions}>
+        {!access.loading && (active || checkout) && <div className={styles.inlineActions}>
             <Link className={styles.button} href={active ? newsletterUrl("history", stock) : checkoutUrl(stock)}>
                 {active ? "적정가 비교 열기" : label}<ArrowRight size={17} aria-hidden />
             </Link>
@@ -471,7 +469,7 @@ function History({ stock, through, current, currentLoading, onPaywall }: {
             {!loading && history.data &&
                 <HistoricalComparison snapshots={history.data} current={current} market={stock.market} through={through} />}
         </section>
-        {history.forbidden && onPaywall && <div className={styles.actions}>
+        {history.forbidden && onPaywall && <div className={styles.inlineActions}>
             <button type="button" className={styles.button} onClick={onPaywall}>이용권 보기<ArrowRight size={17} aria-hidden /></button>
         </div>}
     </>;

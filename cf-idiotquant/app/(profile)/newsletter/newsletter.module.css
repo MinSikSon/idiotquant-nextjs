@@ -49,6 +49,7 @@
 .note { font-size: 0.8125rem; color: var(--newsletter-muted); line-height: 1.45; }
 .actions { position: sticky; bottom: 0; z-index: 4; background: var(--newsletter-paper); padding: 0.7rem 0 calc(0.7rem + env(safe-area-inset-bottom, 0px)); margin-top: 1rem; display: flex; gap: 0.55rem; }
 .actions > * { flex: 1; }
+.inlineActions { display: grid; margin-block: 1rem 0.75rem; }
 .actionStep { display: flex; flex-direction: column; flex: 1; margin-bottom: 0; }
 .actionStep > .actions { margin-top: auto; }
 .actionStep > .stack:not(.actionStep) { margin-bottom: 0.75rem; }
