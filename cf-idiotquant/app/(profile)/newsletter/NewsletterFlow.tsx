@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { getSession, useSession } from "next-auth/react";
-import { ArrowLeft, ArrowRight, Lock, Mail, X } from "lucide-react";
+import { ArrowRight, Lock, Mail, X } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { PageSearch } from "@/components/page-search";
 import { apiRequest } from "@/lib/features/apiRequest";
@@ -325,9 +325,6 @@ export default function NewsletterFlow({ checkoutEnabled, sampleEndDate, history
                     {stage === "history" && stock && <ValuationResult key={`${owner}:${selectedKey}`} stock={stock} through={historyThrough}
                         checkoutEnabled={checkoutEnabled} openHistory onPaywall={() => go("paywall", stock)} />}
                     {stock && ["result", "paywall", "history"].includes(stage) && actions(
-                        <button type="button" className={styles.secondary} onClick={previous}>
-                            <ArrowLeft size={17} aria-hidden />뒤로
-                        </button>,
                         <button type="button" className={styles.secondary} onClick={() => {
                             setChosen(selectedKey);
                             go("pick");
