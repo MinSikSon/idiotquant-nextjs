@@ -242,6 +242,7 @@ interface VerdictMetrics { ncavMultiple: number | null; pbr: number; per: number
 // 판정 항목 = 종목 카드에 표시하는 지표 4개와 같다. 산문으로 늘어놓으면 어느 지표가
 // 걸렸는지 다시 대조해야 하므로, 기준·값·충족 여부를 한 줄씩 세운다.
 const VERDICT_LABELS = { ncav: "NCAV", pbr: "PBR", per: "PER", roe: "ROE" } as const;
+const VERDICT_BASES = { ncav: "ncavBasis", pbr: "pbrBasis", per: "perBasis", roe: "roeBasis" } as const;
 const VERDICT_CHECKS: {
   label: keyof typeof VERDICT_LABELS;
   criterion: "minimumNcav" | "pbrRange" | "perRange" | "minimumRoe";
@@ -331,6 +332,7 @@ function StockName({ name }: { name: string }) {
 function AnalyzeContent() {
   const locale = useLocale();
   const t = useTranslations("analysis");
+  const tMetrics = useTranslations("metrics");
   const router = useRouter();
   const dispatch = useAppDispatch();
   const searchParams = useSearchParams();
@@ -786,6 +788,7 @@ function AnalyzeContent() {
                             </div>
                           )}
                           <span className={styles.verdictCriterion}>{t("criteria", { value: t(check.criterion) })}</span>
+                          <span className={styles.verdictCriterion}>{tMetrics(VERDICT_BASES[check.label])}</span>
                         </li>
                       ))}
                     </ul>
@@ -810,21 +813,20 @@ function AnalyzeContent() {
 
                 <AnalysisSection tab="metrics" desktop={isDesktop}>
                   {((isDesktop && isPriceLoaded) || visitedTabs.includes('metrics')) && <>
-              <div className="mb-2">
-                <StockCard
-                  stock={{
-                    name: localizedDisplayName,
-                    ticker: tickerLabel,
-                    isUs: krOrUs === 'US',
-                    sector: krOrUs === 'KR' ? data?.kiPrice?.output?.bstp_kor_isnm : undefined,
-                    ncavMultiple, roe,
-                    per: stockData?.per ?? 0,
-                    pbr: stockData?.pbr ?? 0,
-                  }}
-                  chartConfig={chartConfig}
-                  chartNotice={chartNotice}
-                />
-              </div>
+                    <StockCard
+                      stock={{
+                        name: localizedDisplayName,
+                        ticker: tickerLabel,
+                        isUs: krOrUs === 'US',
+                        sector: krOrUs === 'KR' ? data?.kiPrice?.output?.bstp_kor_isnm : undefined,
+                        ncavMultiple, roe,
+                        per: stockData?.per ?? 0,
+                        pbr: stockData?.pbr ?? 0,
+                      }}
+                      chartConfig={chartConfig}
+                      chartNotice={chartNotice}
+                      showMetrics={!verdict || !verdictOpen}
+                    />
 
                     {isLoaded ? <div className="space-y-2">
                       <TechnicalSummary bars={technicalBars} currency={currency} />
