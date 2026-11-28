@@ -54,19 +54,38 @@
 .actionStep > .actions { margin-top: auto; }
 .actionStep > .stack:not(.actionStep) { margin-bottom: 0.75rem; }
 .stackedActions { flex-direction: column; }
-.introStrategies { margin-block: 1.4rem 0.75rem; }
 .introExample { margin-block: 0.65rem 0.75rem; word-break: keep-all; }
-.introStrategies h2 { margin-bottom: 0.65rem; }
+.introStrategies {
+    position: relative;
+    margin-block: 0.9rem 0.6rem;
+    padding: 0.75rem clamp(0.7rem, 3vw, 1rem);
+    border: 1px solid var(--newsletter-ink);
+    border-radius: 0.9rem;
+    background: var(--newsletter-card);
+}
+.introStrategies::before {
+    content: "";
+    position: absolute;
+    inset-block-start: -0.4rem;
+    inset-inline-start: 12%;
+    width: 0.75rem;
+    height: 0.75rem;
+    border-block-start: 1px solid var(--newsletter-ink);
+    border-inline-start: 1px solid var(--newsletter-ink);
+    background: inherit;
+    transform: rotate(45deg);
+}
+.introStrategies dl { margin-block-start: 0.35rem; }
 .introStrategies dl > div {
     display: grid;
-    grid-template-columns: 3rem minmax(0, 1fr);
-    gap: 0.6rem;
-    padding-block: 0.65rem;
-    border-block-start: 1px solid var(--newsletter-line);
+    grid-template-columns: 3.25rem minmax(0, 1fr);
+    gap: 0.45rem;
+    padding-block: 0.35rem;
+    line-height: 1.4;
 }
-.introStrategies dl > div:last-child { border-block-end: 1px solid var(--newsletter-line); }
+.introStrategies dl > div + div { border-block-start: 1px solid var(--newsletter-line); }
 .introStrategies dt { color: var(--newsletter-teal); font-weight: 800; }
-.introStrategies dd { color: var(--newsletter-muted); line-height: 1.5; word-break: keep-all; }
+.introStrategies dd { word-break: keep-all; }
 
 @media (min-width: 64rem) {
     .actions { width: calc(100vw - 4rem); align-self: center; }
@@ -99,7 +118,7 @@
     .introLead { grid-area: lead; width: min(100%, 35rem); justify-self: center; }
     .introStrategies { grid-area: strategies; margin: 0; }
     .introExample { grid-area: example; margin: 0; }
-    .introStrategies dl > div { padding-block: 0.85rem; }
+    .introStrategies::before { inset-inline-start: 70%; }
     .intro > .actions { grid-area: actions; align-self: start; justify-self: center; }
 }
 .button, .secondary {
