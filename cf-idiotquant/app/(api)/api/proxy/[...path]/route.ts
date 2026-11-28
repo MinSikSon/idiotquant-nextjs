@@ -18,7 +18,7 @@ async function handleProxy(req: Request, { params }: { params: Promise<{ path: s
         const isBilling = pathArray[0] === 'billing';
         const isBillingAdmin = (isBilling && pathArray[1] === 'admin') || path === 'billing/mailing/stocks';
         if (isBilling && ![
-            'billing', 'billing/checkout', 'billing/confirm', 'billing/cancellation',
+            'billing', 'billing/checkout', 'billing/confirm', 'billing/cancellation', 'billing/portal',
             'billing/admin', 'billing/admin/members', 'billing/admin/subscriptions', 'billing/admin/cancellation',
             'billing/mailing', 'billing/mailing/stocks',
         ].includes(path)) {
