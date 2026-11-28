@@ -2,12 +2,38 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { latestCompletedQuarter, mergeValuationSnapshots, newsletterUrl, parseStockKey, scanPath, scanSnapshot, seoulDate, valuationQuarters } from "../lib/utils/newsletterValuation.ts";
 import { sampleSnapshots, sampleStocks } from "../app/(profile)/newsletter/historySample.ts";
+import { GET as getCurrentValuation } from "../app/(api)/api/proxy/newsletter-current/route.ts";
 
 const stock = { market: "KR", ticker: "005930" } as const;
 const archived = {
     ticker: "005930", name: "삼성전자", period_end_date: "20250630", last_price: 59000,
     eps: 5600, bps: 63000, ncav_ratio: 0.95,
 };
+
+test("newsletter current valuation reads the market source configured for local development", async t => {
+    const env = { ...process.env };
+    t.after(() => {
+        for (const key of ["NODE_ENV", "NEXT_PUBLIC_API_URL", "LOCAL_NEWSLETTER_MARKET_URL"]) {
+            if (env[key] === undefined) delete process.env[key];
+            else process.env[key] = env[key];
+        }
+    });
+    Object.assign(process.env, {
+        NODE_ENV: "development",
+        NEXT_PUBLIC_API_URL: "http://localhost:8787",
+        LOCAL_NEWSLETTER_MARKET_URL: "https://market.example/",
+    });
+    const source = t.mock.method(globalThis, "fetch", async (url: string, options: RequestInit) => {
+        assert.equal(url, "https://market.example/scan/daily/ticker/035420?country=KR&limit=1");
+        assert.equal(options.headers, undefined);
+        return Response.json({ success: true, data: [{ ticker: "035420", scan_date: "20261111", last_price: 193000 }] });
+    });
+    const request = new Request("http://localhost/api/proxy/newsletter-current?stock=KR%3A035420");
+    const response = await getCurrentValuation(request);
+    assert.equal(response.status, 200);
+    assert.equal((await response.json()).data.price, 193000);
+    assert.equal(source.mock.callCount(), 1);
+});
 
 test("history uses the financial data stored at each date, and prefers a daily source for duplicates", () => {
     const monthly = scanSnapshot(archived, stock)!;
