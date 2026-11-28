@@ -211,7 +211,8 @@ export default function NewsletterFlow({ checkoutEnabled, sampleEndDate, history
     const heading = (title: string) => <h1 id="newsletter-heading" tabIndex={-1}>{title}</h1>;
     const button = (label: string, onClick: () => void, disabled = false) =>
         <button type="button" className={styles.button} onClick={onClick} disabled={disabled}>{label}<ArrowRight size={17} aria-hidden /></button>;
-    const actions = (...children: ReactNode[]) => <div className={styles.actions}>{children.map((child, index) => <div key={index} className="grid">{child}</div>)}</div>;
+    const actions = (...children: ReactNode[]) => <div className={styles.actions}>{children.map((child, index) => child &&
+        <div key={index} className="grid">{child}</div>)}</div>;
     const back = <button type="button" className={styles.secondary} onClick={previous}>이전</button>;
     const errorBlock = error && <p role="alert">{error}</p>;
     const stocksHref = newsletterUrl("stocks");
@@ -325,7 +326,7 @@ export default function NewsletterFlow({ checkoutEnabled, sampleEndDate, history
                     {stage === "history" && stock && <ValuationResult key={`${owner}:${selectedKey}`} stock={stock} through={historyThrough}
                         checkoutEnabled={checkoutEnabled} openHistory onPaywall={() => go("paywall", stock)} />}
                     {stock && ["result", "paywall", "history"].includes(stage) && actions(
-                        <button type="button" className={styles.secondary} onClick={previous}>
+                        stage !== "result" && <button type="button" className={styles.secondary} onClick={previous}>
                             <ArrowLeft size={17} aria-hidden />뒤로
                         </button>,
                         <button type="button" className={styles.secondary} onClick={() => {
