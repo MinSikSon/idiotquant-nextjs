@@ -16,13 +16,16 @@ async function handleProxy(req: Request, { params }: { params: Promise<{ path: s
         const isTradingOperations = pathArray[0] === 'admin' && pathArray[1] === 'trading';
         const isWatchReview = path === 'user/likes/review';
         const isBilling = pathArray[0] === 'billing';
-        const isBillingSandbox = isBilling && pathArray[1] === 'sandbox';
-        const isBillingAdmin = isBillingSandbox || (isBilling && pathArray[1] === 'admin') || path === 'billing/mailing/stocks';
+        const isAdminSandbox = isBilling && pathArray[1] === 'sandbox';
+        const isMemberSandbox = isBilling && pathArray[1] === 'test';
+        const isBillingSandbox = isAdminSandbox || isMemberSandbox;
+        const isBillingAdmin = isAdminSandbox || (isBilling && pathArray[1] === 'admin') || path === 'billing/mailing/stocks';
         if (isBilling && ![
             'billing', 'billing/checkout', 'billing/confirm', 'billing/cancellation', 'billing/portal',
             'billing/admin', 'billing/admin/members', 'billing/admin/subscriptions', 'billing/admin/cancellation',
             'billing/mailing', 'billing/mailing/stocks',
             'billing/sandbox', 'billing/sandbox/checkout', 'billing/sandbox/portal',
+            'billing/test', 'billing/test/checkout', 'billing/test/portal',
         ].includes(path)) {
             return NextResponse.json({ success: false, error: "요청한 결제 경로가 없습니다." }, { status: 404 });
         }
@@ -31,6 +34,9 @@ async function handleProxy(req: Request, { params }: { params: Promise<{ path: s
         }
         if (isBillingAdmin && (session?.user as { role?: string } | undefined)?.role !== 'admin') {
             return NextResponse.json({ success: false, error: "관리자 권한이 필요합니다." }, { status: 403, headers: { 'Cache-Control': 'no-store' } });
+        }
+        if (isMemberSandbox && process.env.NEXT_PUBLIC_PADDLE_SANDBOX_CHECKOUT !== 'true') {
+            return NextResponse.json({ success: false, error: "테스트 구독을 이용할 수 없습니다." }, { status: 404 });
         }
         const billingWorkerUrl = isBillingSandbox ? process.env.BILLING_SANDBOX_WORKER_URL : process.env.BILLING_WORKER_URL;
         const billingSecret = isBillingSandbox ? process.env.BILLING_SANDBOX_INTERNAL_JWT_SECRET : process.env.BILLING_INTERNAL_JWT_SECRET;

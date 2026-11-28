@@ -31,5 +31,6 @@
 - Paddle Sandbox 기본 결제 링크는 운영 사이트의 `/admin/billing/paddle`로, 알림 대상은 Sandbox Worker의 `/billing/paddle/webhook`으로 설정합니다.
 
 - 테스트 결제를 완료하고 이용권 활성화, 과거 적정가 화면 접근, 관리자 결제 이력을 확인합니다. 갱신 시 이용 기간과 이력이 갱신되는지, 해지 예약 시 기간 종료까지 접근 가능한지 확인합니다. Paddle에서 동일 웹훅을 다시 보내도 거래 이력은 한 건으로 유지됩니다.
+- 일반 사용자에게 Sandbox를 열려면 Sandbox Worker에 회원 테스트 경로를 배포한 다음 Pages에 `NEXT_PUBLIC_PADDLE_SANDBOX_CHECKOUT=true`를 설정하고 프론트를 배포합니다. 실제 결제 플래그는 끈 상태에서 검증합니다. 로그인한 사용자는 뉴스레터 또는 프로필의 **이용권 관리**에서 테스트 구독을 시작하고 상태를 확인할 수 있습니다. 회원 테스트 이용권은 테스트 Supabase에 저장되며 실제 적정가 과거 비교나 정기 발송 권한을 부여하지 않습니다.
 - 첫 결제는 완료됐으나 이용권이 반영되지 않았다면 Paddle 알림 기록에서 `transaction.completed`와 구독 웹훅의 응답을 확인하고 실패한 알림을 다시 보냅니다.
 - 운영 전환 시 Paddle의 승인된 도메인과 운영 가격·키·토큰·웹훅을 별도로 설정하고, 운영 Worker에서 `PADDLE_ENVIRONMENT=production`을 사용합니다. Sandbox와 운영 Worker는 별도 Supabase 프로젝트를 사용합니다. 마이그레이션과 Worker를 먼저 반영한 뒤 프론트의 `NEXT_PUBLIC_PADDLE_CHECKOUT=true`를 켭니다. [Paddle 운영 전환 체크리스트](https://developer.paddle.com/build/go-live-checklist/)

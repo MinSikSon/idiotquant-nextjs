@@ -52,15 +52,17 @@ type BillingData = {
     } | null;
 };
 
-export default function BillingCheckout({ adminSandbox = false, paddleEnabled, returnedSessionId, canceled, failed, newsletterStock }: {
+export default function BillingCheckout({ adminSandbox = false, memberSandbox = false, paddleEnabled, returnedSessionId, canceled, failed, newsletterStock }: {
     adminSandbox?: boolean;
+    memberSandbox?: boolean;
     paddleEnabled: boolean;
     returnedSessionId: string | null;
     canceled: boolean;
     failed: boolean;
     newsletterStock?: string;
 }) {
-    const billingEndpoint = adminSandbox ? "/billing/sandbox" : "/billing";
+    const sandboxOnly = adminSandbox || memberSandbox;
+    const billingEndpoint = adminSandbox ? "/billing/sandbox" : memberSandbox ? "/billing/test" : "/billing";
     const submitting = useRef(false);
     const [billing, setBilling] = useState<BillingData | null>(null);
     const [sdkReady, setSdkReady] = useState(false);
@@ -84,12 +86,12 @@ export default function BillingCheckout({ adminSandbox = false, paddleEnabled, r
             const result = await apiRequest(`${billingEndpoint}${query}`);
             if (!current) return;
             if (result.success) {
-                if (adminSandbox && result.data.paddle?.sandbox !== true) {
+                if (sandboxOnly && result.data.paddle?.sandbox !== true) {
                     setLoadError("Paddle Sandbox 설정을 확인해 주세요.");
                     setLoading(false);
                     return;
                 }
-                if (stock && result.data.alerts?.status === "active") {
+                if (!memberSandbox && stock && result.data.alerts?.status === "active") {
                     window.location.replace(newsletterUrl("history", stock));
                     return;
                 }
@@ -106,7 +108,7 @@ export default function BillingCheckout({ adminSandbox = false, paddleEnabled, r
         }
         void load(10);
         return () => { current = false; clearTimeout(timer); };
-    }, [adminSandbox, billingEndpoint, newsletterStock, refresh, returnedSessionId]);
+    }, [memberSandbox, sandboxOnly, billingEndpoint, newsletterStock, refresh, returnedSessionId]);
 
     const token = billing?.paddle?.clientToken;
     const sandbox = billing?.paddle?.sandbox;
@@ -241,11 +243,11 @@ export default function BillingCheckout({ adminSandbox = false, paddleEnabled, r
                 <Link href={adminSandbox ? "/admin/billing" : "/profile"} className="inline-flex min-h-11 items-center text-sm font-medium text-brand-ink hover:underline">
                     {adminSandbox ? "구독관리" : "내 계정"}
                 </Link>
-                <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{adminSandbox ? "Paddle 구독 테스트" : newsletter ? "과거 적정가 이용권" : "이용권 관리"}</h1>
-                {(adminSandbox || sandbox) && <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300">Paddle 테스트 결제 · 실제 청구 없음</p>}
+                <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{adminSandbox ? "Paddle 구독 테스트" : memberSandbox ? "이용권 관리" : newsletter ? "과거 적정가 이용권" : "이용권 관리"}</h1>
+                {(sandboxOnly || sandbox) && <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300">Paddle Sandbox 테스트 구독입니다. 실제 구독이나 청구가 발생하지 않습니다.</p>}
             </div>
 
-            {!adminSandbox && <section id="alert-benefits" aria-labelledby="alert-benefits-title" className="scroll-mt-16 rounded-lg border border-neutral-300 bg-white p-4 dark:border-border-subtle-dark dark:bg-surface-dark-card sm:p-5">
+            {!sandboxOnly && <section id="alert-benefits" aria-labelledby="alert-benefits-title" className="scroll-mt-16 rounded-lg border border-neutral-300 bg-white p-4 dark:border-border-subtle-dark dark:bg-surface-dark-card sm:p-5">
                 <h2 id="alert-benefits-title" className="text-lg font-semibold">과거 적정가 월 구독</h2>
                 <dl className="mt-3 grid gap-3 break-keep text-sm leading-relaxed sm:grid-cols-[auto_1fr] sm:gap-x-5">
                     <dt className="font-semibold">받는 내용</dt>
@@ -281,7 +283,7 @@ export default function BillingCheckout({ adminSandbox = false, paddleEnabled, r
                     <section aria-labelledby="billing-offer" className="rounded-lg border border-neutral-300 bg-white p-4 dark:border-border-subtle-dark dark:bg-surface-dark-card sm:p-5">
                         <h2 id="billing-offer" className="text-lg font-semibold">내 이용권</h2>
                         <p className="mt-2 text-sm font-semibold" role="status">
-                            {subscriptionStatus === "past_due" ? "갱신 결제 확인 필요" : subscriptionStatus === "paused" ? "구독 일시 중지" : billing.alerts?.status === "active" ? "이용권 활성" : billing.alerts?.status === "expired" ? "이용권 만료" : billing.alerts?.status === "canceled" ? "이용권 취소" : "활성 이용권 없음"}
+                            {subscriptionStatus === "past_due" ? "갱신 결제 확인 필요" : subscriptionStatus === "paused" ? "구독 일시 중지" : billing.alerts?.status === "active" ? (memberSandbox ? "테스트 이용권 활성" : "이용권 활성") : billing.alerts?.status === "expired" ? "이용권 만료" : billing.alerts?.status === "canceled" ? "이용권 취소" : "활성 이용권 없음"}
                         </p>
                         {billing.alerts && <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-300">
                             {billing.alerts.status === "canceled" ? "기존 만료 시각" : billing.alerts.provider === "paddle" && billing.alerts.status === "active" && !scheduledEndAt ? "현재 결제 기간 종료" : "만료 시각"} <time dateTime={billing.alerts.expiresAt}>{billingDate.format(new Date(billing.alerts.expiresAt))} (KST)</time>
@@ -291,7 +293,7 @@ export default function BillingCheckout({ adminSandbox = false, paddleEnabled, r
                             {billing.alerts.scheduledAction === "cancel" ? "해지 예약됨" : "일시 중지 예약됨"}
                         </p>}
                         {paddleEnabled && billing.paddle && !subscriptionStatus && billing.alerts?.status !== "active" && <p className="mt-2 text-lg font-semibold tabular-nums">
-                            {formatBillingAmount(billing.offer)} <span className="text-sm font-normal">/ 월</span>
+                            {memberSandbox && <span className="mr-2 text-sm font-normal">테스트 가격</span>}{formatBillingAmount(billing.offer)} <span className="text-sm font-normal">/ 월</span>
                         </p>}
                         {billing.alerts?.status === "active" || subscriptionStatus ? (
                             billing.alerts?.recipients?.[0] && (
@@ -314,7 +316,7 @@ export default function BillingCheckout({ adminSandbox = false, paddleEnabled, r
                                             className="mt-1 block min-h-11 w-full rounded-md border border-neutral-400 bg-transparent px-3 text-base font-normal dark:border-border-subtle-dark" />
                                     </label>
                                     <button type="submit" disabled={!sdkReady} className="service-button mt-2 min-h-11 bg-brand px-4 text-sm font-semibold text-white hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-60 dark:text-surface-dark-canvas">
-                                        {redirecting ? "Paddle 결제창 여는 중" : billing.paddle.pendingRecipient ? "진행 중인 결제 열기" : "월 구독 시작하기"}
+                                        {redirecting ? "Paddle 결제창 여는 중" : billing.paddle.pendingRecipient ? "진행 중인 결제 열기" : memberSandbox ? "테스트 구독 시작하기" : "월 구독 시작하기"}
                                     </button>
                                 </fieldset>
                             </form>
@@ -329,7 +331,7 @@ export default function BillingCheckout({ adminSandbox = false, paddleEnabled, r
                                 취소 요청 {cancellationLabel[billing.alerts.cancellation.status]} · 접수{" "}
                                 <time dateTime={billing.alerts.cancellation.requestedAt}>{billingDate.format(new Date(billing.alerts.cancellation.requestedAt))} (KST)</time>
                             </p>
-                        ) : !adminSandbox && billing.alerts?.status === "active" && billing.alerts.provider !== "paddle" && (
+                        ) : !sandboxOnly && billing.alerts?.status === "active" && billing.alerts.provider !== "paddle" && (
                             <details className="mt-3 border-t border-neutral-200 dark:border-border-subtle-dark">
                                 <summary className="min-h-11 cursor-pointer py-3 text-sm font-semibold">이용권 취소 요청</summary>
                                 <form onSubmit={submitCancellation} className="space-y-2">
