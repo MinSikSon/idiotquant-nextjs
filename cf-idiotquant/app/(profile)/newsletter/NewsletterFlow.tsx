@@ -13,9 +13,10 @@ import type { LikedStockItem } from "@/lib/features/stockLikes/stockLikesSlice";
 import { formatBillingAmount } from "@/lib/utils/billingFormat";
 import { loadStaticStockData } from "@/lib/utils/stockSearchData";
 import {
-    newsletterUrl, parseStockKey, scanPath, scanSnapshot, stockKey,
+    newsletterUrl, parseStockKey, stockKey,
     type NewsletterStock, type ValuationSnapshot,
 } from "@/lib/utils/newsletterValuation";
+import { useViewAsUser } from "@/lib/viewAsUser";
 import { HistoricalComparison, PriceAxis, strategyDescriptions } from "./ValuationCharts";
 import { sampleSnapshots, sampleStocks } from "./historySample";
 import styles from "./newsletter.module.css";
@@ -64,8 +65,8 @@ function fromLikes(data: LikedStockItem[]): NewsletterStock[] {
     });
 }
 
-export default function NewsletterFlow({ checkoutEnabled, sampleEndDate, historyThrough }: {
-    checkoutEnabled: boolean; sampleEndDate: string; historyThrough: string;
+export default function NewsletterFlow({ checkoutEnabled, sandboxAvailable, sampleEndDate, historyThrough }: {
+    checkoutEnabled: boolean; sandboxAvailable: boolean; sampleEndDate: string; historyThrough: string;
 }) {
     const params = useSearchParams();
     const requestedStage = params.get("step") ?? "";
@@ -73,6 +74,8 @@ export default function NewsletterFlow({ checkoutEnabled, sampleEndDate, history
     const stock = parseStockKey(params.get("stock"));
     const selectedKey = stock ? stockKey(stock) : "";
     const { data: session, status } = useSession();
+    const viewAsUser = useViewAsUser();
+    const canTestCheckout = sandboxAvailable && !viewAsUser && (session?.user as { role?: string } | undefined)?.role === "admin";
     const requiresLogin = stage !== "intro" && stage !== "example";
     const authenticated = status === "authenticated";
     const owner = session?.user?.id ?? "guest";
@@ -324,9 +327,9 @@ export default function NewsletterFlow({ checkoutEnabled, sampleEndDate, history
                     </>}
                     {stage === "result" && stock && <ValuationResult key={`${owner}:${selectedKey}`} stock={stock} through={historyThrough}
                         name={items.find(item => stockKey(item) === selectedKey)?.name}
-                        checkoutEnabled={checkoutEnabled} onPaywall={() => go("paywall", stock)} />}
+                        checkoutEnabled={checkoutEnabled} canTestCheckout={canTestCheckout} onPaywall={() => go("paywall", stock)} />}
                     {stage === "paywall" && stock && <Paywall key={`${owner}:${selectedKey}`} checkoutEnabled={checkoutEnabled}
-                        endDate={sampleEndDate} stock={stock} />}
+                        canTestCheckout={canTestCheckout} endDate={sampleEndDate} stock={stock} />}
                     {stage === "history" && stock && <ValuationResult key={`${owner}:${selectedKey}`} stock={stock} through={historyThrough}
                         checkoutEnabled={checkoutEnabled} openHistory onPaywall={() => go("paywall", stock)} />}
                     {stock && ["result", "paywall", "history"].includes(stage) && actions(
@@ -371,21 +374,22 @@ function useRequest<T>(path: string | null, transform: (data: unknown) => T) {
     return { ...current, loading: Boolean(path && !current), retry: () => setRevision(count => count + 1) };
 }
 
-const scanRows = (data: unknown): Record<string, unknown>[] => Array.isArray(data) ? data : [];
+const currentScan = (data: unknown) => data as ValuationSnapshot | null;
 const historyRows = (data: unknown): ValuationSnapshot[] => Array.isArray(data) ? data : [];
 const billingData = (data: unknown) => data as Billing;
 
-function ValuationResult({ stock, name, checkoutEnabled, through, openHistory = false, onPaywall }: {
+function ValuationResult({ stock, name, checkoutEnabled, canTestCheckout = false, through, openHistory = false, onPaywall }: {
     stock: StockKey; name?: string; checkoutEnabled: boolean; through: string;
-    openHistory?: boolean; onPaywall?: () => void;
+    canTestCheckout?: boolean; openHistory?: boolean; onPaywall?: () => void;
 }) {
-    const request = useRequest(scanPath(stock, "latest"), scanRows);
+    const request = useRequest(`/newsletter-current?stock=${encodeURIComponent(stockKey(stock))}`, currentScan);
     const access = useRequest(openHistory ? null : "/billing", billingData);
-    const snapshot = (request.data?.[0] && scanSnapshot(request.data[0], stock)) || undefined;
+    const snapshot = request.data ?? undefined;
     if (openHistory || access.data?.alerts?.status === "active") return <>
         <ComparisonHeading name={snapshot?.name || name || stock.ticker} />
         {request.error && <RequestError message={request.error} retry={request.retry} />}
         <History stock={stock} through={through} current={snapshot} currentLoading={request.loading} onPaywall={onPaywall} />
+        {canTestCheckout && <SandboxCheckoutLink />}
     </>;
 
     return <>
@@ -396,18 +400,19 @@ function ValuationResult({ stock, name, checkoutEnabled, through, openHistory = 
             </div>
             <div className={styles.stack}>
                 {snapshot && <PriceAxis snapshot={snapshot} market={stock.market} />}
-                {request.data && !snapshot && <p>이 종목에 저장된 스캔 가격이 없습니다.</p>}
+                {request.data === null && <p>이 종목에 저장된 스캔 가격이 없습니다.</p>}
             </div>
         </div>
         {request.loading && <p role="status">분석 결과를 불러오는 중입니다.</p>}
         {request.error && <RequestError message={request.error} retry={request.retry} />}
         {access.loading && <p role="status">이용권을 확인하는 중입니다.</p>}
         {access.error && <RequestError message={`이용권 상태를 확인하지 못했습니다. ${access.error}`} retry={access.retry} />}
-        {!request.loading && !request.error && !access.loading && !access.error && <div className={styles.inlineActions}>
+        {(checkoutEnabled || !canTestCheckout) && !request.loading && !request.error && !access.loading && !access.error && <div className={styles.inlineActions}>
             {checkoutEnabled ? <Link className={styles.button} href={checkoutUrl(stock)}>
                 적정가 비교 보기<ArrowRight size={17} aria-hidden />
             </Link> : <p role="status">현재 새 이용권 구매를 받지 않고 있습니다.</p>}
         </div>}
+        {canTestCheckout && <SandboxCheckoutLink />}
     </>;
 }
 
@@ -435,8 +440,16 @@ function SampleComparison({ endDate }: { endDate: string }) {
     </div>;
 }
 
-function Paywall({ checkoutEnabled, endDate, stock }: {
-    checkoutEnabled: boolean; endDate: string; stock: StockKey;
+function SandboxCheckoutLink() {
+    return <div className={styles.inlineActions}>
+        <Link className={styles.secondary} href="/admin/billing/paddle">
+            Paddle 구독 테스트<ArrowRight size={17} aria-hidden />
+        </Link>
+    </div>;
+}
+
+function Paywall({ checkoutEnabled, canTestCheckout, endDate, stock }: {
+    checkoutEnabled: boolean; canTestCheckout: boolean; endDate: string; stock: StockKey;
 }) {
     const access = useRequest("/billing", billingData);
     const active = access.data?.alerts?.status === "active";
@@ -456,7 +469,8 @@ function Paywall({ checkoutEnabled, endDate, stock }: {
                 {active ? "적정가 비교 열기" : label}<ArrowRight size={17} aria-hidden />
             </Link>
         </div>}
-        {!active && !checkout && !access.loading && !access.error && <p role="status">현재 새 이용권 구매를 받지 않고 있습니다.</p>}
+        {!active && !checkout && !canTestCheckout && !access.loading && !access.error && <p role="status">현재 새 이용권 구매를 받지 않고 있습니다.</p>}
+        {canTestCheckout && <SandboxCheckoutLink />}
     </div>;
 }
 

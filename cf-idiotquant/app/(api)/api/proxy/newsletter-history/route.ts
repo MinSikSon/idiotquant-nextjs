@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+import { newsletterMarketBase } from "@/lib/server/newsletterMarket";
 import { createBackendHeaders } from "@/lib/server/proxyIdentity";
 import { fillHistoryQuarters, historyPricePath, historyQuotes, type DartBalance } from "@/lib/utils/newsletterHistory";
 import { historyQuarterEnds, mergeValuationSnapshots, parseStockKey, scanPath, scanSnapshot, seoulDate, type ValuationSnapshot } from "@/lib/utils/newsletterValuation";
@@ -17,9 +18,7 @@ export async function GET(request: Request) {
     if (!user?.id) return failure("로그인이 필요합니다.", 401, "SIGN_IN_REQUIRED");
 
     const billingBase = process.env.BILLING_WORKER_URL?.replace(/\/$/, "");
-    const marketBase = (process.env.NODE_ENV === "development"
-        ? process.env.LOCAL_NEWSLETTER_MARKET_URL || process.env.NEXT_PUBLIC_API_URL
-        : process.env.NEXT_PUBLIC_API_URL)?.replace(/\/$/, "");
+    const marketBase = newsletterMarketBase();
     const secret = process.env.BILLING_INTERNAL_JWT_SECRET;
     if (!billingBase || !marketBase || !secret) {
         return failure("이용권과 과거 비교 서버 연결을 확인 중입니다.", 503);
