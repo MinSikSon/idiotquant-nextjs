@@ -136,16 +136,6 @@ const StockCardSkeleton = memo(() => (
     <div className="px-5 pb-4">
       <div className="h-[68px] bg-surface-canvas dark:bg-surface-dark-canvas rounded-xl border border-neutral-100 dark:border-border-subtle-dark" />
     </div>
-    {/* 카드의 지표 4칸 + 복사줄과 같은 구성 */}
-    <div className="border-t border-neutral-100 dark:border-border-subtle-dark grid grid-cols-2 sm:grid-cols-4 gap-px bg-neutral-100 dark:bg-surface-dark-muted">
-      {[...Array(4)].map((_, i) => (
-        <div key={i} className="bg-white dark:bg-surface-dark-card px-4 py-3.5 flex flex-col gap-1.5">
-          <div className="h-2 w-10 bg-neutral-200 dark:bg-surface-dark-muted rounded" />
-          <div className="h-4 w-14 bg-neutral-200 dark:bg-surface-dark-muted rounded" />
-          <div className="h-2 w-16 bg-neutral-200 dark:bg-surface-dark-muted rounded" />
-        </div>
-      ))}
-    </div>
     <div className="border-t border-neutral-100 dark:border-border-subtle-dark px-4 py-2 flex justify-end">
       <div className="h-5 w-28 bg-neutral-200 dark:bg-surface-dark-muted rounded-md" />
     </div>
@@ -239,8 +229,7 @@ function AnalysisSection({ tab, desktop, children }: {
 // =========================================================================
 interface VerdictMetrics { ncavMultiple: number | null; pbr: number; per: number; roe: number | null }
 
-// 판정 항목 = 종목 카드에 표시하는 지표 4개와 같다. 산문으로 늘어놓으면 어느 지표가
-// 걸렸는지 다시 대조해야 하므로, 기준·값·충족 여부를 한 줄씩 세운다.
+// 주요 지표의 값과 계산식, 저평가 판정 기준을 같은 위치에 표시한다.
 const VERDICT_LABELS = { ncav: "NCAV", pbr: "PBR", per: "PER", roe: "ROE" } as const;
 const VERDICT_BASES = { ncav: "ncavBasis", pbr: "pbrBasis", per: "perBasis", roe: "roeBasis" } as const;
 const VERDICT_CHECKS: {
@@ -358,7 +347,7 @@ function AnalyzeContent() {
   const [hasMounted, setHasMounted] = useState(false);
   const [staticStockData, setStaticStockData] = useState<StaticStockData>({ allTickers: [], krTickers: [], usTickers: [], usStocks: [], krStocks: [], corpCodeJson: {} });
   // 모바일 종합 판단 — 한 줄 요약을 눌러 지표 4개(기준·값·충족 여부)를 펼친다
-  const [verdictOpen, setVerdictOpen] = useState(false);
+  const [verdictExpanded, setVerdictExpanded] = useState<boolean | null>(null);
   // 재무 탭 — 추이 그래프와 기간별 숫자표를 전환한다
   const requestedTab = DETAIL_TAB_KEYS.find(tab => tab === searchParams.get('tab')) ?? 'strategy';
   const requestedFinanceView = searchParams.get('finance') === 'table' ? 'table' : 'bars';
@@ -366,13 +355,19 @@ function AnalyzeContent() {
   const [detailTab, setDetailTab] = useState<DetailTab>(requestedTab);
   const [visitedTabs, setVisitedTabs] = useState<DetailTab[]>([requestedTab]);
   const detailStart = useRef<HTMLDivElement>(null);
+  const verdictStart = useRef<HTMLDivElement>(null);
   const isDesktop = useSyncExternalStore(subscribeToDesktopAnalysis, getDesktopAnalysis, getServerDesktopAnalysis);
+  const verdictOpen = verdictExpanded ?? (isDesktop || detailTab === 'metrics');
 
   const changeDetailTab = (value: string) => {
     const tab = value as DetailTab;
     setDetailTab(tab);
+    if (tab === 'metrics') setVerdictExpanded(null);
     setVisitedTabs(current => current.includes(tab) ? current : [...current, tab]);
-    requestAnimationFrame(() => detailStart.current?.scrollIntoView({ block: 'start' }));
+    requestAnimationFrame(() => {
+      const target = tab === 'metrics' ? verdictStart.current ?? detailStart.current : detailStart.current;
+      target?.scrollIntoView({ block: 'start' });
+    });
   };
   // 결과를 보는 중에는 검색줄을 접어 헤더가 종목 정보를 대신 보여준다
 
@@ -409,7 +404,7 @@ function AnalyzeContent() {
     setDetailTab(requestedTab);
     setVisitedTabs([requestedTab]);
     setFinanceView(requestedFinanceView);
-    setVerdictOpen(false);
+    setVerdictExpanded(null);
   }
 
   const shareParams = new URLSearchParams();
@@ -761,10 +756,10 @@ function AnalyzeContent() {
               )}
 
               {verdict && (
-                <div className={styles.verdict}>
+                <div ref={verdictStart} className={styles.verdict}>
                   <button
                     type="button"
-                    onClick={() => setVerdictOpen(open => !open)}
+                    onClick={() => setVerdictExpanded(!verdictOpen)}
                     aria-expanded={verdictOpen}
                     className="flex min-h-11 w-full items-center justify-between gap-2 text-left font-semibold"
                   >
@@ -815,17 +810,12 @@ function AnalyzeContent() {
                   {((isDesktop && isPriceLoaded) || visitedTabs.includes('metrics')) && <>
                     <StockCard
                       stock={{
-                        name: localizedDisplayName,
                         ticker: tickerLabel,
                         isUs: krOrUs === 'US',
                         sector: krOrUs === 'KR' ? data?.kiPrice?.output?.bstp_kor_isnm : undefined,
-                        ncavMultiple, roe,
-                        per: stockData?.per ?? 0,
-                        pbr: stockData?.pbr ?? 0,
                       }}
                       chartConfig={chartConfig}
                       chartNotice={chartNotice}
-                      showMetrics={!verdict || !verdictOpen}
                     />
 
                     {isLoaded ? <div className="space-y-2">

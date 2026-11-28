@@ -198,7 +198,7 @@
 }
 .analysisTab:active { background: var(--service-accent); }
 .analysisTab:focus-visible, .tabPanel:focus-visible, .columnScroll:focus-visible { outline: 2px solid rgb(var(--brand-ink)); outline-offset: -2px; }
-.detailContent { scroll-margin-top: calc(var(--navigation-h, 92px) + 16px); }
+.detailContent, .verdict { scroll-margin-top: calc(var(--navigation-h, 92px) + 16px); }
 .desktopResults { display: flex; flex-direction: column; gap: 8px; height: max(32rem, calc(100dvh - var(--navigation-h, 48px) - 40px)); }
 .desktopResults .verdict { margin: 0; padding: 0 12px; }
 .desktopResults .detailContent { display: flex; flex: 1; flex-direction: column; gap: 8px; min-height: 0; }

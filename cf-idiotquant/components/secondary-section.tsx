@@ -5,15 +5,17 @@ import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /** 부가 기능은 처음 펼칠 때 준비하고, 접은 뒤에도 입력 상태를 유지한다. */
-export function SecondarySection({ title, children, className }: {
+export function SecondarySection({ title, children, className, defaultOpen = false }: {
     title: string;
     children: ReactNode;
     className?: string;
+    defaultOpen?: boolean;
 }) {
-    const [visited, setVisited] = useState(false);
+    const [visited, setVisited] = useState(defaultOpen);
 
     return (
         <details
+            open={defaultOpen}
             className={cn("group/secondary min-w-0 rounded-lg border border-neutral-200 bg-white dark:border-surface-dark-border dark:bg-surface-dark-card", className)}
             onToggle={event => {
                 if (event.currentTarget.open) setVisited(true);
