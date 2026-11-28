@@ -213,7 +213,7 @@ export default function NewsletterFlow({ checkoutEnabled, sampleEndDate, history
             <ArrowRight size={17} aria-hidden />
         </Link>;
 
-    return <div className={styles.surface} onTouchStart={event => {
+    return <div className={`${styles.surface} ${stage === "paywall" ? styles.adaptivePaper : ""}`} onTouchStart={event => {
         const finger = event.touches[0];
         touch.current = event.touches.length === 1 && !((event.target as Element).closest("button, a, input, select, [data-no-swipe]"))
             ? { x: finger.clientX, y: finger.clientY } : null;
