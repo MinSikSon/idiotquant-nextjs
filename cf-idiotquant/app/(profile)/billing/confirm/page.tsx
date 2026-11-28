@@ -10,7 +10,7 @@ export const runtime = "edge";
 export default async function ConfirmPage({ searchParams }: {
     searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-    if (process.env.NEXT_PUBLIC_TOSS_TEST_CHECKOUT !== "true") notFound();
+    if (process.env.NEXT_PUBLIC_TOSS_TEST_CHECKOUT !== "true" && process.env.NEXT_PUBLIC_PADDLE_CHECKOUT !== "true") notFound();
 
     const { orderId, paymentKey, amount, newsletter } = await searchParams;
     const valid = typeof orderId === "string" && /^toss_[a-f0-9]{48}$/.test(orderId) &&

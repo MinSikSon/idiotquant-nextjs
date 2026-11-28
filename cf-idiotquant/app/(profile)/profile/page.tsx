@@ -643,7 +643,7 @@ export default function ProfilePage() {
                     무료 종목 메일
                     <ChevronRight size={16} aria-hidden="true" />
                 </Link>
-                {process.env.NEXT_PUBLIC_TOSS_TEST_CHECKOUT === "true" && (
+                {(process.env.NEXT_PUBLIC_PADDLE_CHECKOUT === "true" || process.env.NEXT_PUBLIC_TOSS_TEST_CHECKOUT === "true") && (
                     <Link href="/billing" className="flex min-h-11 items-center justify-between gap-3 px-5 py-3 text-sm font-semibold text-neutral-700 hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand dark:text-neutral-300 dark:hover:bg-surface-dark-hover">
                         이용권 관리
                         <ChevronRight size={16} aria-hidden="true" />
@@ -816,6 +816,9 @@ export default function ProfilePage() {
                                     <><br />탈퇴 후 <b>{cooldownDays}일간</b> 같은 카카오 계정으로 재가입할 수 없습니다.</>
                                 )}
                             </p>
+                            {process.env.NEXT_PUBLIC_PADDLE_CHECKOUT === "true" && <p className="mb-3 text-xs leading-relaxed text-neutral-600 dark:text-neutral-400">
+                                Paddle 구독을 이용 중이라면 탈퇴 전에 <Link href="/billing" className="font-semibold underline">이용권 관리</Link>에서 해지해 주세요.
+                            </p>}
                             <label className="block text-xs text-neutral-500 dark:text-neutral-400 mb-1.5">
                                 계속하려면 <span className="font-semibold text-red-600 dark:text-red-400">{DELETE_CONFIRM_PHRASE}</span> 을(를) 입력하세요
                             </label>

@@ -22,7 +22,11 @@ import styles from "./newsletter.module.css";
 
 const draftKey = "idiotquant-newsletter-selection";
 const stages = ["stocks", "pick", "result", "paywall", "history", "example"];
-type Billing = { offer?: { amount: number; currency: string }; alerts?: { status: string } | null };
+type Billing = {
+    offer?: { amount: number; currency: string };
+    alerts?: { status: string } | null;
+    paddle?: { sandbox: boolean };
+};
 type StockKey = NonNullable<ReturnType<typeof parseStockKey>>;
 
 function loginUrl(callback: string) {
@@ -436,8 +440,8 @@ function Paywall({ checkoutEnabled, endDate, stock }: {
 }) {
     const access = useRequest("/billing", billingData);
     const active = access.data?.alerts?.status === "active";
-    const checkout = checkoutEnabled && !active;
-    const label = `${access.data?.offer ? formatBillingAmount(access.data.offer) + " " : ""}테스트 결제 계속하기`;
+    const checkout = checkoutEnabled && !!access.data?.paddle && !active;
+    const label = access.data?.offer ? `월 ${formatBillingAmount(access.data.offer)} 구독하기` : "월 구독 시작하기";
     return <div className={`${styles.stack} ${styles.actionStep} ${styles.paywallContent}`}>
         <SampleComparison endDate={endDate} />
         <ul className={styles.benefits}>
@@ -446,7 +450,7 @@ function Paywall({ checkoutEnabled, endDate, stock }: {
         </ul>
         {access.loading && <p role="status">이용권을 확인하는 중입니다.</p>}
         {access.error && <RequestError message={access.error} retry={access.retry} />}
-        {checkout && <p className={styles.note}>30일 이용 · 1회 테스트 결제 · 실제 청구 없음 · 자동 갱신 없음</p>}
+        {checkout && <p className={styles.note}>매월 자동 갱신 · Paddle에서 해지 가능{access.data?.paddle?.sandbox && " · 테스트 결제, 실제 청구 없음"}</p>}
         {!access.loading && (active || checkout) && <div className={styles.inlineActions}>
             <Link className={styles.button} href={active ? newsletterUrl("history", stock) : checkoutUrl(stock)}>
                 {active ? "적정가 비교 열기" : label}<ArrowRight size={17} aria-hidden />

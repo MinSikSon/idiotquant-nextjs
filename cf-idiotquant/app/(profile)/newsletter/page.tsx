@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: "관심종목 뉴스레터", robots: 
 export default function NewsletterPage() {
     const today = seoulDate();
     return <Suspense fallback={<p role="status" className="p-5">관심종목 뉴스레터를 여는 중입니다.</p>}>
-        <NewsletterFlow checkoutEnabled={process.env.NEXT_PUBLIC_TOSS_TEST_CHECKOUT === "true"}
+        <NewsletterFlow checkoutEnabled={process.env.NEXT_PUBLIC_PADDLE_CHECKOUT === "true"}
             sampleEndDate={latestCompletedQuarter(today)} historyThrough={today} />
     </Suspense>;
 }

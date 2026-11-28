@@ -19,7 +19,7 @@ type History = {
         paid_at: string | null;
         pass: { status: "active" | "expired" | "canceled"; expiresAt: string } | null;
         stripeUrl: string | null;
-        provider?: "toss";
+        provider?: "toss" | "paddle";
     }[];
     deliveries: { delivery_day: string; claimed_at: string; sent_at: string | null }[];
     nextOffset: number | null;
@@ -104,7 +104,7 @@ export default function BillingHistory({ accountId, member }: { accountId: strin
                                                     <a href={payment.stripeUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center gap-1 whitespace-nowrap font-semibold text-brand-ink hover:underline">
                                                         결제 상세 <ExternalLink size={14} aria-hidden="true" />
                                                     </a>
-                                                ) : payment.provider === "toss" ? "토스페이먼츠" : "—"}</td>
+                                                ) : payment.provider === "toss" ? "토스페이먼츠" : payment.provider === "paddle" ? "Paddle" : "—"}</td>
                                             </tr>
                                         ))}
                                     </tbody>
